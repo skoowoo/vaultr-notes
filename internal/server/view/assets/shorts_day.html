@@ -1,0 +1,31 @@
+<div id="shorts-feed">
+  {{if .Entries}}
+  <div class="shorts-day-header">
+    <span class="shorts-day-label">{{.DateLabel}}</span>
+  </div>
+  <div class="shorts-entry-list">
+    {{range .Entries}}
+    <div class="shorts-entry">
+      <div class="shorts-entry-divider">
+        <span class="shorts-entry-time">{{.Time}}</span>
+        <span class="shorts-entry-line"></span>
+      </div>
+      <div class="prose shorts-entry-prose">{{.HTML}}</div>
+    </div>
+    {{end}}
+  </div>
+  {{else if .IsToday}}
+  <div class="shorts-empty-today">
+    <p class="shorts-empty-today-label">No shorts for today</p>
+    <button type="button" class="shorts-empty-today-btn"
+            onclick="window.openShortDialog && window.openShortDialog()">
+      <svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></svg>Write a short
+    </button>
+  </div>
+  {{else}}
+  <div class="shorts-day-header">
+    <span class="shorts-day-label">{{.DateLabel}}</span>
+  </div>
+  <div class="shorts-empty">Nothing written on this day</div>
+  {{end}}
+</div>

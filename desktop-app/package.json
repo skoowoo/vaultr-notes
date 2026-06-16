@@ -1,0 +1,41 @@
+{
+  "name": "vaultr-desktop",
+  "productName": "Vaultr",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Desktop shell for the local Vaultr web app.",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron .",
+    "build:editor": "cd editor && npm install && npm run build",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder"
+  },
+  "build": {
+    "appId": "dev.hardhacker.vaultr",
+    "productName": "Vaultr",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "src/**/*",
+      "assets/**/*",
+      "package.json"
+    ],
+    "mac": {
+      "icon": "assets/icon.icns",
+      "category": "public.app-category.developer-tools",
+      "target": [
+        "dmg",
+        "zip"
+      ]
+    },
+    "dmg": {
+      "title": "Vaultr"
+    }
+  },
+  "devDependencies": {
+    "electron": "^41.3.0",
+    "electron-builder": "^26.0.12"
+  }
+}

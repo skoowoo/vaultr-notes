@@ -1,0 +1,52 @@
+    /* ── Info dialog ──────────────────────────────────────────────── */
+    .info-overlay {
+      position: fixed; inset: 0; z-index: 9000;
+      display: flex; align-items: center; justify-content: center;
+      padding: 1.5rem;
+      background: var(--overlay-bg);
+      animation: info-bg-in 160ms ease both;
+    }
+    .info-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-bd);
+      border-radius: var(--radius-lg);
+      padding: 1.5rem 1.5rem 1.25rem;
+      max-width: 400px; width: 100%;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.36);
+      animation: info-card-in 180ms cubic-bezier(0.16,1,0.3,1) both;
+    }
+    .info-title {
+      font-size: var(--text-base); font-weight: 600;
+      color: var(--fg); margin: 0 0 0.625rem; line-height: 1.4;
+    }
+    .info-body {
+      font-size: var(--text-sm); color: var(--muted); line-height: 1.65;
+    }
+    .info-body p  { margin: 0 0 0.6rem; }
+    .info-body p:last-child { margin-bottom: 0; }
+    .info-body ol, .info-body ul { margin: 0.4rem 0 0.6rem; padding-left: 1.25rem; }
+    .info-body li { margin-bottom: 0.3rem; }
+    .info-body code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: var(--text-xs); background: var(--nav-act);
+      padding: 0.1em 0.35em; border-radius: var(--radius-xs); color: var(--fg);
+    }
+    .info-body strong { color: var(--fg); font-weight: 600; }
+    .info-actions {
+      display: flex; justify-content: flex-end; margin-top: 1.25rem;
+    }
+    .info-btn-close {
+      height: 30px; padding: 0 0.875rem; border-radius: var(--radius-sm);
+      font-size: var(--text-sm); font-weight: 500; cursor: pointer;
+      font-family: inherit;
+      background: var(--link); color: #fff; border: none;
+      transition: opacity 120ms;
+    }
+    .info-btn-close:hover { opacity: 0.85; }
+    .info-btn-close.error { background: var(--s-err); }
+
+    @keyframes info-bg-in  { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes info-card-in {
+      from { opacity: 0; transform: translateY(6px) scale(0.97); }
+      to   { opacity: 1; transform: translateY(0)  scale(1); }
+    }

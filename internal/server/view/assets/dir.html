@@ -1,0 +1,77 @@
+
+    <div class="home-container">
+      <!-- Hero -->
+      <div class="home-hero-wrapper">
+        <section class="home-hero" aria-label="Folder">
+          <div class="home-hero-row">
+            <div class="home-hero-copy">
+              <h1 class="home-hero-title">{{.DirLabel}}</h1>
+              <p class="home-hero-lede">{{.Count}} notes in this folder</p>
+            </div>
+            <div class="home-compose-strip">
+              <div class="home-choice-row">
+                <div class="choice-grid">
+                  <button type="button" class="choice-card" id="dir-new-card"
+                          title="Start from a blank document">
+                    <svg class="choice-icon" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"/><path stroke-linecap="round" stroke-linejoin="round" d="M14 2v5a1 1 0 0 0 1 1h5"/><path stroke-linecap="round" stroke-linejoin="round" d="M9 15h6"/><path stroke-linecap="round" stroke-linejoin="round" d="M12 18v-6"/></svg>
+                    <span class="choice-title">New note</span>
+                  </button>
+                  <button type="button" class="choice-card" id="dir-import-card"
+                          title="Open an existing Markdown file">
+                    <svg class="choice-icon" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v12"/><path stroke-linecap="round" stroke-linejoin="round" d="m17 8-5-5-5 5"/><path stroke-linecap="round" stroke-linejoin="round" d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/></svg>
+                    <span class="choice-title">Import .md</span>
+                  </button>
+                </div>
+                <input type="file" id="dir-compose-file-input" accept=".md" style="display:none">
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- Notes -->
+      <div class="home-content">
+        <main class="home-left">
+          <div class="feed">
+            <div>
+              <div class="s-head">
+                <span class="s-label">Notes</span>
+                <span class="s-count" id="dir-note-count-head">{{.Count}}</span>
+              </div>
+              <div class="card-grid" id="dir-notes-grid">
+                {{range .Notes}}
+                <div class="card">
+                  <div class="card-a"
+                       @click="__vaultrOpenNote($event.currentTarget)"
+                       data-note-path="{{.Path}}"
+                       data-note-title="{{label .}}"
+                       data-note-is-knowledge="{{.IsKnowledge}}"
+                       data-note-is-index="{{.IsIndex}}"
+                       data-note-can-compile="{{.CanCompile}}"
+                       data-note-pinned="{{.Pinned}}">
+                    <span class="card-title">{{label .}}</span>
+                    <div class="card-foot">
+                      <span class="card-meta">{{.UpdatedAt}}</span>
+                      {{if .IsKnowledge}}<span class="card-ai">k</span>{{end}}
+                      {{if .IsShort}}<span class="card-short">s</span>{{end}}
+                      {{if .IsIndex}}<span class="card-index">i</span>{{end}}
+                      {{if .IsCompiled}}<span class="card-compiled"><svg fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" viewBox="0 0 24 24" width="9" height="9"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg></span>{{end}}
+                    </div>
+                  </div>
+                </div>
+                {{end}}
+                {{if .NextNs}}
+                <div class="dir-load-sentinel"
+                     hx-get="/dir/notes?path={{encdir .DirPath}}&before={{.NextNs}}"
+                     hx-trigger="intersect once"
+                     hx-swap="outerHTML"></div>
+                {{end}}
+                {{if not .Notes}}
+                <div class="grid-empty">No notes in this folder</div>
+                {{end}}
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>

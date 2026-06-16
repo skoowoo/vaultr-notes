@@ -1,0 +1,242 @@
+
+    <main class="chat-main">
+
+      <!-- ── Mate chips ───────────────────────────────────────────── -->
+      <div class="mate-chips-bar">
+        <div class="mate-chips-scroll">
+          <template x-if="mates.length === 0">
+            <span class="mates-empty-hint">No mates yet — create one in Settings</span>
+          </template>
+          <template x-for="m in mates" :key="m.id">
+            <button class="mate-chip" :class="m.id === selectedMateId ? 'is-active' : ''"
+                    :style="m.id === selectedMateId && m.color ? 'border-color:' + m.color : ''"
+                    @click="selectMate(m.id)" type="button">
+              <span class="mate-chip-avatar"
+                    :style="m.color ? 'background:' + m.color : ''"
+                    x-text="mateInitials(m.name)"></span>
+              <span x-text="m.name"></span>
+            </button>
+          </template>
+        </div>
+        <span class="mate-bar-desc"
+              x-show="selectedMate && selectedMate.description"
+              x-text="selectedMate ? selectedMate.description : ''"></span>
+
+        <!-- ── Conv type segmented control ───────────────────── -->
+        <div class="conv-seg" x-show="selectedMateId">
+          <template x-for="t in convTypes" :key="t.value">
+            <button class="conv-seg-btn" :class="convType === t.value ? 'active' : ''"
+                    @click="setConvType(t.value)" type="button" x-text="t.label"></button>
+          </template>
+        </div>
+
+        <button class="new-chat-btn" type="button" title="New chat"
+                :disabled="isRunning || !selectedMateId || messages.length === 0 || convType !== 'chat'"
+                @click="newChat()">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14M5 12h14"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- ── Messages ─────────────────────────────────────────────── -->
+      <div class="chat-scroll" id="chat-scroll">
+
+        <template x-if="messages.length === 0">
+          <div class="chat-empty">
+            <template x-if="!selectedMate">
+              <div class="chat-empty-text">Select a mate above to start</div>
+            </template>
+            <template x-if="selectedMate">
+              <div class="chat-empty-card">
+                <div class="chat-empty-name" x-text="selectedMate.name"></div>
+                <div class="chat-empty-desc">Ask anything or assign a task</div>
+                <div class="chat-empty-hint">
+                  <kbd x-text="isMac ? '⌘' : 'Ctrl'"></kbd><kbd>K</kbd>
+                  <span>search notes</span>
+                  <span class="chat-empty-hint-sep">·</span>
+                  <span>then</span>
+                  <kbd x-text="isMac ? '⌘' : 'Ctrl'"></kbd><kbd>↵</kbd>
+                  <span>insert into message</span>
+                </div>
+              </div>
+            </template>
+          </div>
+        </template>
+
+        <template x-for="(msg, i) in messages" :key="i">
+          <div :class="'msg-row msg-row-' + msg.role">
+
+            <template x-if="msg.role === 'user'">
+              <div class="msg-user-wrap">
+                <div class="msg-user-bubble" x-text="msg.content"></div>
+              </div>
+            </template>
+
+            <template x-if="msg.role === 'assistant'">
+              <div class="msg-assistant-wrap">
+                <div class="msg-agent-header">
+                  <div class="msg-agent-avatar"
+                       :style="getMateColor(msg.mateId) ? 'background:' + getMateColor(msg.mateId) : ''"
+                       x-text="mateInitials(getMateNameForMsg(msg))"></div>
+                  <div class="msg-agent-name" x-text="getMateNameForMsg(msg)"></div>
+                  <template x-if="msg.triggerEvent">
+                    <span class="msg-trigger-badge" x-text="triggerEventLabel(msg.triggerEvent)"></span>
+                  </template>
+                  <template x-if="msg._fmtTime">
+                    <span class="msg-agent-time" x-text="msg._fmtTime"></span>
+                  </template>
+                </div>
+                <div class="msg-body">
+                  <template x-for="(seg, j) in msg.segments" :key="j">
+                    <div>
+                      <template x-if="seg.type === 'text'">
+                        <div class="prose" x-html="renderMarkdown(seg.content)"></div>
+                      </template>
+                      <template x-if="seg.type === 'thinking'">
+                        <div class="seg-thinking">
+                          <button class="seg-thinking-toggle"
+                                  :class="{'open': seg.open, 'is-streaming': msg.status === 'running'}"
+                                  @click="seg.open = !seg.open" type="button">
+                            <svg fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M9 18l6-6-6-6"/>
+                            </svg>
+                            Thinking
+                          </button>
+                          <div class="seg-thinking-content" x-show="seg.open" x-text="seg.content"></div>
+                        </div>
+                      </template>
+                      <template x-if="seg.type === 'tool_use'">
+                        <div>
+                          <template x-if="seg.results.length === 0">
+                            <div class="seg-tool-use">
+                              <span class="seg-tool-spinner"></span>
+                              <span x-text="seg.name"></span>
+                            </div>
+                          </template>
+                          <template x-if="seg.results.length > 0">
+                            <div class="seg-tool-result">
+                              <button class="seg-tool-result-toggle" :class="seg.open ? 'open' : ''"
+                                      @click="seg.open = !seg.open" type="button">
+                                <svg fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 18l6-6-6-6"/>
+                                </svg>
+                                <span x-text="seg.count > 1 ? seg.name + ' ×' + seg.count : seg.name"></span>
+                              </button>
+                              <template x-if="seg.open">
+                                <div>
+                                  <template x-for="(r, ri) in seg.results" :key="ri">
+                                    <pre class="seg-tool-result-content"
+                                         :style="seg.results.length > 1 ? 'margin-top:0.25rem' : ''"
+                                         x-text="seg.results.length > 1 ? '[' + (ri + 1) + '] ' + r : r"></pre>
+                                  </template>
+                                </div>
+                              </template>
+                            </div>
+                          </template>
+                        </div>
+                      </template>
+                      <template x-if="seg.type === 'tool_result'">
+                        <div class="seg-tool-result">
+                          <button class="seg-tool-result-toggle" :class="seg.open ? 'open' : ''"
+                                  @click="seg.open = !seg.open" type="button">
+                            <svg fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M9 18l6-6-6-6"/>
+                            </svg>
+                            Result
+                          </button>
+                          <pre class="seg-tool-result-content" x-show="seg.open" x-text="seg.content"></pre>
+                        </div>
+                      </template>
+                      <template x-if="seg.type === 'status'">
+                        <div class="seg-status" :class="{'is-running': msg.status === 'running'}" x-text="seg.label"></div>
+                      </template>
+                      <template x-if="seg.type === 'console'">
+                        <pre class="seg-console" x-text="seg.content"></pre>
+                      </template>
+                      <template x-if="seg.type === 'error'">
+                        <div class="seg-error" x-text="seg.message"></div>
+                      </template>
+                    </div>
+                  </template>
+                </div>
+                <div class="msg-footer">
+                  <template x-if="msg.status === 'running'">
+                    <span class="msg-thinking-label">Thinking<span class="thinking-dots"><span></span><span></span><span></span></span></span>
+                  </template>
+                  <template x-if="msg.status === 'succeeded'">
+                    <button class="msg-copy-btn" type="button" title="Copy reply"
+                            :class="msg.copied ? 'copied' : ''"
+                            @click="copyMateText(msg)">
+                      <template x-if="!msg.copied">
+                        <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                          <rect width="14" height="14" x="8" y="8" rx="2" ry="2"/>
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>
+                        </svg>
+                      </template>
+                      <template x-if="msg.copied">
+                        <svg fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M20 6L9 17l-5-5"/>
+                        </svg>
+                      </template>
+                    </button>
+                  </template>
+                  <template x-if="msg.status === 'failed'">
+                    <span class="msg-failed">Failed</span>
+                  </template>
+                </div>
+              </div>
+            </template>
+
+          </div>
+        </template>
+
+      </div><!-- .chat-scroll -->
+
+      <!-- ── Input (chat only) ────────────────────────────────────── -->
+      <div class="chat-input-outer" x-show="convType === 'chat'">
+        <div class="chat-input-card">
+          <div class="chat-input-hint" x-show="!inputText" aria-hidden="true">
+            <span class="chat-hint-name"
+                  x-text="selectedMate ? 'Ask ' + selectedMate.name + '…' : 'Select a mate above'"></span>
+          </div>
+          <textarea class="chat-textarea" id="chat-textarea" rows="1"
+                    placeholder=""
+                    x-model="inputText"
+                    :disabled="isRunning || !selectedMateId"
+                    @keydown="handleKeydown($event)"
+                    @input="autoResize($event.target)"></textarea>
+          <div class="chat-input-bar">
+            <span class="chat-shortcut-hint" x-text="isMac ? '⌘↵ send' : 'Ctrl+↵ send'"></span>
+            <div class="chat-input-bar-right">
+              <button x-show="!isRunning" type="button" class="chat-send-circle"
+                      :disabled="!inputText.trim() || !selectedMateId"
+                      @click="send()">
+                <svg fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 19V5M5 12l7-7 7 7"/>
+                </svg>
+              </button>
+              <button x-show="isRunning" type="button" class="chat-stop-circle" @click="cancel()">
+                <svg fill="currentColor" viewBox="0 0 24 24">
+                  <rect x="5" y="5" width="14" height="14" rx="2"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- ── Run completion toast ──────────────────────────── -->
+  <div class="run-toast" :class="toastKind === 'ok' ? 'run-toast-ok' : 'run-toast-err'"
+       x-show="toastVisible" x-transition style="display:none">
+    <span x-text="toastText"></span>
+    <button class="run-toast-dismiss" @click="toastVisible = false" type="button" title="Dismiss">
+      <svg fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6"/>
+        <path stroke-linecap="round" stroke-linejoin="round" d="m6 6 12 12"/>
+      </svg>
+    </button>
+  </div>

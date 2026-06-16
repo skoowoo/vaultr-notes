@@ -1,0 +1,23 @@
+{{range .Groups}}
+{{$date := .CompactDate}}
+{{range .Entries}}
+<div class="shorts-entry">
+  <span class="shorts-entry-meta">{{$date}} · {{.Time}}</span>
+  <div class="prose shorts-entry-prose">{{.HTML}}</div>
+</div>
+{{end}}
+{{end}}
+<div id="shorts-load-more" hx-swap-oob="true">
+  {{if .HasMore}}
+  <div class="shorts-load-more-wrap">
+    <button class="shorts-loadmore-btn"
+            hx-get="/shorts/stream?before={{.Cursor}}"
+            hx-target="#shorts-stream-groups"
+            hx-swap="beforeend">
+      Load earlier
+    </button>
+  </div>
+  {{else}}
+  <p class="shorts-end-msg">— beginning —</p>
+  {{end}}
+</div>

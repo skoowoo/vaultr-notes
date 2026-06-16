@@ -1,0 +1,203 @@
+
+    [x-cloak] { display: none !important; }
+    *, *::before, *::after { box-sizing: border-box; }
+    button:focus, a:focus { outline: none; }
+    html, body { height: 100%; margin: 0; overflow: hidden; }
+    body {
+      display: flex; flex-direction: column; height: 100vh;
+      background: var(--bg); color: var(--fg);
+      font-family: var(--font-sans);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .shorts-body { flex: 1; display: flex; min-height: 0; overflow: hidden; }
+    .shorts-main { flex: 1; min-width: 0; display: flex; flex-direction: column; overflow: hidden; }
+
+    /* ── Stream layout: feed + month rail ────────────── */
+    .shorts-stream-layout {
+      flex: 1;
+      display: flex;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    /* ── Feed column ──────────────────────────────────── */
+    .shorts-stream-wrap {
+      flex: 1;
+      min-width: 0;
+      overflow-y: auto;
+      padding: 48px 40px 80px;
+      display: flex;
+      justify-content: center;
+      scrollbar-width: none;
+    }
+    .shorts-stream-wrap::-webkit-scrollbar { display: none; }
+
+    .shorts-stream-inner {
+      width: 100%;
+      max-width: 600px;
+    }
+
+    /* ── Month rail ───────────────────────────────────── */
+    .shorts-month-rail {
+      width: 68px;
+      flex-shrink: 0;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding: 48px 0 80px;
+      border-left: 1px solid var(--hr);
+      display: flex;
+      flex-direction: column;
+      scrollbar-width: none;
+    }
+    .shorts-month-rail::-webkit-scrollbar { display: none; }
+
+    .shorts-month-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 8px 4px;
+      text-decoration: none;
+      transition: background 100ms;
+      gap: 2px;
+      cursor: pointer;
+    }
+    .shorts-month-item:hover { background: var(--nav-act); }
+
+    .shorts-month-abbr {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--muted);
+      opacity: 0.2;
+      line-height: 1;
+    }
+    .shorts-month-year {
+      font-size: 9px;
+      font-weight: 400;
+      letter-spacing: 0.02em;
+      color: var(--muted);
+      opacity: 0.12;
+      line-height: 1;
+    }
+
+    .shorts-month-item.has-data .shorts-month-abbr { opacity: 0.8; color: var(--fg); }
+    .shorts-month-item.has-data .shorts-month-year { opacity: 0.4; }
+
+    .shorts-month-item.is-current .shorts-month-abbr { opacity: 1; color: var(--link); }
+    .shorts-month-item.is-current .shorts-month-year { opacity: 0.65; color: var(--link); }
+
+    /* ── Compose button ─────────────────────────────── */
+    .shorts-compose {
+      display: flex;
+      align-items: center;
+      gap: var(--space-xs);
+      justify-content: space-between;
+      width: 100%;
+      padding: var(--space-sm) var(--space-md);
+      margin-bottom: var(--space-lg);
+      background: transparent;
+      border: 1px solid var(--hr);
+      border-radius: var(--radius-md);
+      color: var(--muted);
+      font-size: var(--text-base);
+      font-family: var(--font-sans);
+      cursor: pointer;
+      text-align: left;
+      transition: border-color 120ms, color 120ms, background 120ms;
+    }
+    .shorts-compose:hover {
+      border-color: var(--muted-soft);
+      color: var(--fg);
+      background: var(--surface-soft);
+    }
+    .shorts-compose svg { width: 14px; height: 14px; flex-shrink: 0; opacity: 0.5; }
+
+    /* ── Entries (flat feed, Twitter-style) ─────────── */
+    .shorts-entry {
+      padding: var(--space-lg) 0;
+      border-bottom: 1px solid var(--hr);
+    }
+    .shorts-entry:last-child { border-bottom: none; }
+
+    .shorts-entry-meta {
+      font-size: var(--text-xs);
+      font-family: var(--font-mono);
+      color: var(--muted);
+      opacity: 0.4;
+      margin-bottom: var(--space-xs);
+      user-select: none;
+    }
+
+    /* Reset first/last margins so prose doesn't add extra gap at edges */
+    .shorts-entry-prose > :first-child { margin-top: 0 !important; }
+    .shorts-entry-prose > :last-child  { margin-bottom: 0 !important; }
+    /* Demote all heading levels to a small label style */
+    .shorts-entry-prose :is(h1, h2, h3, h4, h5, h6) {
+      font-size: var(--text-xs) !important;
+      font-weight: var(--fw-medium) !important;
+      line-height: var(--lh-relaxed) !important;
+      letter-spacing: var(--ls-cap) !important;
+      text-transform: uppercase !important;
+      color: var(--muted) !important;
+      margin: 0.7em 0 0.2em !important;
+    }
+
+    /* ── Load more ────────────────────────────────────── */
+    .shorts-load-more-wrap {
+      padding: 24px 0 40px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .shorts-loadmore-btn {
+      height: 30px;
+      padding: 0 14px;
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid var(--hr);
+      border-radius: var(--radius-md);
+      font-size: 11px;
+      font-weight: var(--fw-medium);
+      font-family: inherit;
+      letter-spacing: 0.02em;
+      cursor: pointer;
+      opacity: 0.55;
+      transition: opacity 120ms, border-color 120ms, color 120ms;
+    }
+    .shorts-loadmore-btn:hover { opacity: 1; color: var(--fg); border-color: var(--muted); }
+    .shorts-loadmore-btn.htmx-request { opacity: 0.25; pointer-events: none; }
+
+    .shorts-end-msg {
+      padding: 24px 0 48px;
+      text-align: center;
+      font-size: 10px;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      opacity: 0.25;
+    }
+
+    /* ── Empty state ─────────────────────────────────── */
+    .shorts-empty-state {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 14px; text-align: center; padding: 80px 0;
+    }
+    .shorts-empty-label {
+      font-size: var(--text-sm); color: var(--muted); opacity: 0.4;
+      font-weight: var(--fw-regular); margin: 0;
+    }
+    .shorts-empty-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      height: var(--btn-h); padding: 0 var(--space-md);
+      background: var(--bg); color: var(--fg);
+      border: 1px solid var(--card-bd); border-radius: var(--radius-md);
+      font-size: var(--text-sm); font-weight: var(--fw-medium);
+      font-family: inherit; cursor: pointer;
+      transition: background 120ms, border-color 120ms;
+    }
+    .shorts-empty-btn:hover { background: var(--surface-soft); border-color: var(--muted); }
+    .shorts-empty-btn svg { width: 14px; height: 14px; flex-shrink: 0; }
+
+    ::-webkit-scrollbar { display: none; }
+    .lib-nav, .nav-item { user-select: none; }

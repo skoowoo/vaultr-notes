@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Vaultr Clip — Settings</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+
+<body>
+  <main class="options-page">
+    <h1 class="title">Settings</h1>
+    <form id="form">
+      <label class="field">
+        <span class="label">HTTP base URL</span>
+        <input type="url" id="baseUrl" required placeholder="http://127.0.0.1:54321" autocomplete="off" />
+        <span class="help">Must match <code>server.host</code> and <code>server.port</code> in
+          <code>vaultr.toml</code>. Prefer binding to
+          <code>127.0.0.1</code>.</span>
+      </label>
+      <label class="field">
+        <span class="label">API Key (optional)</span>
+        <input type="password" id="apiKey" placeholder="Leave empty if no authentication required" autocomplete="off" />
+        <span class="help">If your server requires authentication, enter the API key here. It will be sent as
+          <code>X-Vaultr-API-Key</code> header. Stored securely in Chrome sync storage.</span>
+      </label>
+      <label class="field">
+        <span class="label">Save directory</span>
+        <input type="text" id="saveDir" placeholder="Web Clips" autocomplete="off" />
+        <span class="help">Vault-relative folder where clipped pages are saved. Default: <code>Web Clips</code>. </span>
+      </label>
+      <p class="actions">
+        <button type="submit" class="btn primary">Save</button>
+      </p>
+      <div id="saveFeedback" class="feedback feedback--compact is-hidden" role="status" aria-live="polite">
+        <div class="feedback__inner">
+          <p class="feedback__label" id="saveFeedbackLabel"></p>
+          <p class="feedback__detail" id="saveFeedbackDetail"></p>
+        </div>
+      </div>
+    </form>
+  </main>
+  <script src="options.js"></script>
+</body>
+
+</html>

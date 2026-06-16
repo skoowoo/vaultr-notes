@@ -1,0 +1,28 @@
+
+  <div id="confirm-dialog"
+       x-data="confirmDialogCtrl()"
+       x-show="open"
+       x-cloak
+       class="confirm-overlay"
+       @click.self="cancel()">
+    <div class="confirm-card" :class="{ 'is-wide': threeButton }" @click.stop>
+      <p class="confirm-title">
+        <span x-show="!titleHTML" x-text="title"></span>
+        <span x-show="titleHTML"  x-html="titleHTML"></span>
+      </p>
+      <p class="confirm-message" x-text="message"></p>
+      <div class="confirm-actions">
+        <button class="confirm-btn confirm-btn-cancel"  @click="cancel()">Cancel</button>
+        <button class="confirm-btn confirm-btn-confirm"
+                :class="{ 'is-danger': danger }"
+                x-text="confirmLabel"
+                @click="confirm()"></button>
+        <button class="confirm-btn confirm-btn-confirm"
+                type="button"
+                x-show="threeButton"
+                :class="{ 'is-danger': altDanger }"
+                x-text="altLabel"
+                @click="chooseAlt()"></button>
+      </div>
+    </div>
+  </div>

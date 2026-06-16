@@ -1,0 +1,35 @@
+<div class="shorts-strip-bar" id="shorts-cal-sidebar"
+     data-year="{{.Year}}" data-month="{{.Month}}" data-today="{{.Today}}">
+  <div class="strip-month-nav">
+    <button type="button" class="strip-nav-btn"
+            hx-get="/shorts/calendar?year={{.PrevYear}}&month={{.PrevMonth}}"
+            hx-target="#shorts-cal-sidebar"
+            hx-swap="outerHTML"
+            title="Previous month">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M15 18l-6-6 6-6"/>
+      </svg>
+    </button>
+    <span class="strip-month-label">{{.MonthLabel}}</span>
+    <button type="button" class="strip-nav-btn"
+            hx-get="/shorts/calendar?year={{.NextYear}}&month={{.NextMonth}}"
+            hx-target="#shorts-cal-sidebar"
+            hx-swap="outerHTML"
+            title="Next month">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M9 18l6-6-6-6"/>
+      </svg>
+    </button>
+  </div>
+  <div class="strip-days" id="shorts-strip-days">
+    {{range .Cells}}
+    {{if .Day}}
+    <div class="strip-day{{if .HasEntries}} has-entries{{end}}{{if .IsToday}} is-today{{end}}"
+         data-date="{{.Date}}">
+      <span class="strip-day-num">{{.Day}}</span>
+      <span class="strip-day-dot"></span>
+    </div>
+    {{end}}
+    {{end}}
+  </div>
+</div>

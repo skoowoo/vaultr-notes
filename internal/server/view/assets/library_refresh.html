@@ -1,0 +1,107 @@
+<p id="lib-hero-lede" class="home-hero-lede" hx-swap-oob="true">{{.KnowledgeCount}} knowledge</p>
+<span id="index-col-count" class="tag-count" data-total="{{.IndexCount}}" x-show="selectedMode === 'index'" hx-swap-oob="true">{{.IndexCount}}</span>
+<span id="tags-col-count" class="tag-count" data-total="{{.TagCount}}" x-show="selectedMode === 'tags'" style="display:none" hx-swap-oob="true">{{.TagCount}}</span>
+<span id="knowledge-col-count" class="tag-count" data-total="{{.KnowledgeCount}}" hx-swap-oob="true">{{.KnowledgeCount}}</span>
+<span id="raw-col-count" class="tag-count" data-total="{{.RawCount}}" hx-swap-oob="true">{{.RawCount}}</span>
+<div id="index-col-body" hx-swap-oob="innerHTML">
+{{- if .IndexNotes}}
+<div class="tags-wrap">
+  {{- range .IndexNotes}}
+  <div class="tag-card"
+       :class="{'selected': selectedIndex === '{{.Path}}'}"
+       @click="selectIndex('{{.Path}}')">
+    <span class="tag-name">{{if .Title}}{{.Title}}{{else}}{{.Name}}{{end}}</span>
+    {{if .DepCount}}<span class="tag-count">{{.DepCount}}</span>{{end}}
+  </div>
+  {{- end}}
+</div>
+{{- else}}
+<div class="col-empty">No index notes yet</div>
+{{- end}}
+</div>
+<div id="tags-col-body" hx-swap-oob="innerHTML">
+{{- if .Tags}}
+<div class="tags-wrap">
+  {{- range .Tags}}
+  <div class="tag-card"
+       :class="{'selected': selectedTag === '{{.Name}}'}"
+       @click="selectTag('{{.Name}}')">
+    <span class="tag-name">#{{.Name}}</span>
+    <span class="tag-count">{{.Count}}</span>
+  </div>
+  {{- end}}
+</div>
+{{- else}}
+<div class="col-empty">No tags found</div>
+{{- end}}
+</div>
+<div id="knowledge-col-body" hx-swap-oob="innerHTML">
+{{- if .KnowledgeNotes}}
+{{- range .KnowledgeNotes}}
+<div class="note-card"
+     data-path="{{.Path}}"
+     @click="selectKCard('{{.Path}}', '{{.FocusURL}}')">
+  <div class="note-title-row">
+    <div class="note-name">{{if .Title}}{{.Title}}{{else}}{{.Name}}{{end}}</div>
+    <button class="note-read-btn"
+            @click.stop="__vaultrOpenNote($event.currentTarget)"
+            data-note-path="{{.Path}}"
+            data-note-title="{{if .Title}}{{.Title}}{{else}}{{.Name}}{{end}}"
+            data-note-is-knowledge="{{.IsKnowledge}}"
+            data-note-is-index="{{.IsIndex}}"
+            data-note-can-compile="{{.CanCompile}}"
+            data-note-pinned="{{.Pinned}}" title="Open">
+      <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 7v14"/><path stroke-linecap="round" stroke-linejoin="round" d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></svg>
+      <span>Open</span>
+    </button>
+  </div>
+  <div class="note-meta">
+    <span class="note-dir">{{if .Tags}}{{range .Tags}}<span class="note-tag-pill">{{.}}</span>{{end}}{{else if ne .Dir "/"}}{{.Dir}}{{end}}</span>
+    <span class="note-time">{{.UpdatedAt}}</span>
+  </div>
+</div>
+{{- end}}
+{{- if .KnowledgeNext}}
+<div class="load-sentinel"
+     hx-get="/library/notes?type=knowledge&before={{.KnowledgeNext}}"
+     hx-trigger="intersect once"
+     hx-swap="outerHTML"></div>
+{{- end}}
+{{- else}}
+<div class="col-empty">No knowledge notes yet</div>
+{{- end}}
+</div>
+<div id="raw-col-body" hx-swap-oob="innerHTML">
+{{- if .RawNotes}}
+{{- range .RawNotes}}
+<div class="note-card" @click="focusNote('{{.FocusURL}}')">
+  <div class="note-title-row">
+    <div class="note-name">{{.Name}}</div>
+    <button class="note-read-btn"
+            @click.stop="__vaultrOpenNote($event.currentTarget)"
+            data-note-path="{{.Path}}"
+            data-note-title="{{.Name}}"
+            data-note-is-knowledge="{{.IsKnowledge}}"
+            data-note-is-index="{{.IsIndex}}"
+            data-note-can-compile="{{.CanCompile}}"
+            data-note-pinned="{{.Pinned}}" title="Open">
+      <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 7v14"/><path stroke-linecap="round" stroke-linejoin="round" d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></svg>
+      <span>Open</span>
+    </button>
+  </div>
+  <div class="note-meta">
+    <span class="note-dir">{{if ne .Dir "/"}}{{.Dir}}{{end}}</span>
+    <span class="note-time">{{.UpdatedAt}}</span>
+  </div>
+</div>
+{{- end}}
+{{- if .RawNext}}
+<div class="load-sentinel"
+     hx-get="/library/notes?type=raw&before={{.RawNext}}"
+     hx-trigger="intersect once"
+     hx-swap="outerHTML"></div>
+{{- end}}
+{{- else}}
+<div class="col-empty">No raw notes yet</div>
+{{- end}}
+</div>

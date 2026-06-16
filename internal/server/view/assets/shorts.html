@@ -1,0 +1,60 @@
+
+    <main class="shorts-main">
+      <div class="shorts-stream-layout">
+
+        <!-- ── Feed column ──────────────────────────────────── -->
+        <div class="shorts-stream-wrap">
+          <div class="shorts-stream-inner">
+            <button type="button" class="shorts-compose"
+                    onclick="window.openShortDialog && window.openShortDialog()">
+              Write a short...
+              <svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+            </button>
+            <div id="shorts-stream-groups">
+              {{range .Groups}}
+              {{$date := .CompactDate}}
+              {{range .Entries}}
+              <div class="shorts-entry">
+                <span class="shorts-entry-meta">{{$date}} · {{.Time}}</span>
+                <div class="prose shorts-entry-prose">{{.HTML}}</div>
+              </div>
+              {{end}}
+              {{else}}
+              <div class="shorts-empty-state">
+                <p class="shorts-empty-label">No shorts yet</p>
+                <button type="button" class="shorts-empty-btn"
+                        onclick="window.openShortDialog && window.openShortDialog()">
+                  <svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></svg>Write a short
+                </button>
+              </div>
+              {{end}}
+            </div>
+
+            <div id="shorts-load-more">
+              {{if .HasMore}}
+              <div class="shorts-load-more-wrap">
+                <button class="shorts-loadmore-btn"
+                        hx-get="/shorts/stream?before={{.Cursor}}"
+                        hx-target="#shorts-stream-groups"
+                        hx-swap="beforeend">
+                  Load earlier
+                </button>
+              </div>
+              {{end}}
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Month rail ───────────────────────────────────── -->
+        <nav class="shorts-month-rail">
+          {{range .Months}}
+          <a href="/shorts?from={{.YM}}"
+             class="shorts-month-item{{if .IsCurrent}} is-current{{end}}{{if .HasData}} has-data{{end}}">
+            <span class="shorts-month-abbr">{{.Abbr}}</span>
+            <span class="shorts-month-year">{{.Year}}</span>
+          </a>
+          {{end}}
+        </nav>
+
+      </div>
+    </main>

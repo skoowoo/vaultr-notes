@@ -1,0 +1,151 @@
+  <div class="drawer-overlay"
+       :class="{ open: drawerOpen }"
+       @click.self="drawerOpen = false"
+       @close-drawer.document="drawerOpen = false">
+    <div class="drawer-panel" :class="{ expanded: drawerExpanded }" @click.stop>
+
+      <!-- ① Tab bar -->
+      <div class="drawer-tab-bar">
+        <div class="drawer-tab-bar-start">
+          <button type="button" class="drawer-expand-btn"
+                  @click.stop="drawerExpanded = !drawerExpanded; $el.blur()"
+                  :title="drawerExpanded ? 'Exit focus mode (⌘\\)' : 'Focus mode (⌘\\)'">
+            <!-- enter focus: corners pointing outward -->
+            <svg x-show="!drawerExpanded" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 9V5h4"/><path d="M20 9V5h-4"/>
+              <path d="M4 15v4h4"/><path d="M20 15v4h-4"/>
+            </svg>
+            <!-- exit focus: corners pointing inward -->
+            <svg x-show="drawerExpanded" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 5v4H5"/><path d="M15 5v4h4"/>
+              <path d="M9 19v-4H5"/><path d="M15 19v-4h4"/>
+            </svg>
+          </button>
+        </div>
+        <div class="drawer-tabs" role="tablist">
+          <template x-for="(tab, i) in tabs" :key="tab.id">
+            <button class="drawer-tab" :class="{active: activeTab === i, draft: !tab.path}"
+                    @click.stop="drawerSwitchTab(i)" role="tab" :title="tab.title">
+              <span class="drawer-tab-title" x-text="tab.title"></span>
+              <span class="drawer-tab-draft-icon" x-show="!tab.path" title="Draft" aria-hidden="true">
+                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 20h9"/>
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>
+                </svg>
+              </span>
+              <span class="drawer-tab-close"
+                    x-show="tab.path"
+                    @click.stop="if (tab.path) drawerCloseTab(i)"
+                    title="Close tab">
+                <svg fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" style="width:10px;height:10px">
+                  <path stroke-linecap="round" d="M18 6 6 18"/>
+                  <path stroke-linecap="round" d="m6 6 12 12"/>
+                </svg>
+              </span>
+            </button>
+          </template>
+        </div>
+        <div class="drawer-tab-bar-end">
+          <button type="button" class="frag-close-btn" title="Close (Esc)" @click.stop="drawerOpen = false">
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:14px;height:14px">
+              <path stroke-linecap="round" d="M18 6 6 18"/>
+              <path stroke-linecap="round" d="m6 6 12 12"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- ② Tool bar: create-mode left | edit-mode left -->
+      <div class="drawer-tool-bar">
+        <!-- Create mode: editable path input + source / discard / publish -->
+        <div class="drawer-create-bar" x-show="tabs[activeTab] && !tabs[activeTab].path" style="display:none">
+          <div class="drawer-path-input-wrap">
+            <input type="text" id="drawer-path-input" class="drawer-path-input"
+                   placeholder="filename.md  ·  or  /folder/note.md"
+                   spellcheck="false" autocomplete="off"
+                   aria-autocomplete="list" aria-controls="drawer-path-ac">
+            <ul class="drawer-path-ac" id="drawer-path-ac" role="listbox" aria-expanded="false" hidden></ul>
+          </div>
+          <button type="button" class="drawer-source-btn" title="Toggle source">
+            <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="m18 16 4-4-4-4"/>
+              <path stroke-linecap="round" stroke-linejoin="round" d="m6 8-4 4 4 4"/>
+              <path stroke-linecap="round" stroke-linejoin="round" d="m14.5 4-5 16"/>
+            </svg>
+          </button>
+          <button type="button" class="drawer-discard-btn" @click.stop="discardNewNote()">Discard</button>
+          <button type="button" id="drawer-publish-btn" class="drawer-publish-btn">Publish</button>
+        </div>
+        <!-- Edit mode: path label + save status + note actions -->
+        <span id="drawer-path-text" class="drawer-path-text"
+              x-show="activeTab >= 0 && (!tabs[activeTab] || tabs[activeTab].path)"></span>
+        <span id="drawer-save-status" class="drawer-save-status"
+              x-show="activeTab >= 0 && (!tabs[activeTab] || tabs[activeTab].path)">
+          <svg class="ssi-pending" width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="color:var(--muted)">
+            <circle cx="4" cy="4" r="3.5"/>
+          </svg>
+          <svg class="ssi-saved" width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--s-ok)">
+            <path d="M2 7l4 4 6-6"/>
+          </svg>
+        </span>
+        <div class="drawer-tool-actions" x-show="activeTab >= 0 && (!tabs[activeTab] || tabs[activeTab].path)">
+          <button type="button" class="drawer-compile-btn"
+                  x-show="tabs[activeTab] && tabs[activeTab].canCompile"
+                  @click.stop="compileDrawerNote($event)"
+                  title="Compile to knowledge note">
+            <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="4"/><path stroke-linecap="round" d="M12 2v2"/><path stroke-linecap="round" d="M12 20v2"/><path stroke-linecap="round" d="m4.93 4.93 1.41 1.41"/><path stroke-linecap="round" d="m17.66 17.66 1.41 1.41"/><path stroke-linecap="round" d="M2 12h2"/><path stroke-linecap="round" d="M20 12h2"/><path stroke-linecap="round" d="m6.34 17.66-1.41 1.41"/><path stroke-linecap="round" d="m19.07 4.93-1.41 1.41"/>
+            </svg>
+          </button>
+          <button type="button" class="frag-pin-btn"
+                  x-show="tabs[activeTab] && tabs[activeTab].path && !tabs[activeTab].pinned"
+                  @click.stop="pinActiveNote()" title="Pin note">
+            <svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+              <path d="M17 3a2 2 0 0 1 2 2v15a1 1 0 0 1-1.496.868l-4.512-2.578a2 2 0 0 0-1.984 0l-4.512 2.578A1 1 0 0 1 5 20V5a2 2 0 0 1 2-2z"/>
+            </svg>
+          </button>
+          <button type="button" class="frag-unpin-btn"
+                  x-show="tabs[activeTab] && tabs[activeTab].path && tabs[activeTab].pinned"
+                  @click.stop="unpinActiveNote()" title="Unpin note">
+            <svg viewBox="0 0 24 24"><path fill="currentColor" d="M17 3a2 2 0 0 1 2 2v15a1 1 0 0 1-1.496.868l-4.512-2.578a2 2 0 0 0-1.984 0l-4.512 2.578A1 1 0 0 1 5 20V5a2 2 0 0 1 2-2z"/></svg>
+          </button>
+          <button type="button" class="drawer-source-btn" title="Toggle source">
+            <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="m18 16 4-4-4-4"/>
+              <path stroke-linecap="round" stroke-linejoin="round" d="m6 8-4 4 4 4"/>
+              <path stroke-linecap="round" stroke-linejoin="round" d="m14.5 4-5 16"/>
+            </svg>
+          </button>
+          <div class="drawer-more-wrap" x-data="{ moreOpen: false }"
+               @mousedown.window="moreOpen = false"
+               @drawer:close-more.document="moreOpen = false">
+            <button type="button" class="drawer-more-btn"
+                    @mousedown.stop
+                    @click.stop="moreOpen = !moreOpen"
+                    :class="{ active: moreOpen }"
+                    title="More actions">
+              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <circle cx="12" cy="5" r="1" fill="currentColor" stroke="none"/>
+                <circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/>
+                <circle cx="12" cy="19" r="1" fill="currentColor" stroke="none"/>
+              </svg>
+            </button>
+            <div class="drawer-more-menu" x-show="moreOpen" x-cloak @mousedown.stop>
+              <button class="drawer-more-item drawer-more-item-danger"
+                      @click.stop="moreOpen = false; deleteActiveNote()">
+                <svg fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M3 6h18"/><path stroke-linecap="round" stroke-linejoin="round" d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path stroke-linecap="round" stroke-linejoin="round" d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path stroke-linecap="round" stroke-linejoin="round" d="M10 11v6"/><path stroke-linecap="round" stroke-linejoin="round" d="M14 11v6"/>
+                </svg>
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ③ Editor areas -->
+      <div id="drawer-edit-area" tabindex="-1"><div id="drawer-milkdown"></div></div>
+      <div id="drawer-cm-wrap"></div>
+    </div>
+  </div>
+

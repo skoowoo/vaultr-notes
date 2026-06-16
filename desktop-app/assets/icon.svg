@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <!-- Pixel dot-grid baked into the plate background -->
+    <pattern id="px-dot" x="0" y="0" width="8" height="8" patternUnits="userSpaceOnUse">
+      <rect width="8" height="8" fill="#1c1b18"/>
+      <rect x="0" y="0" width="1.5" height="1.5" fill="#27251f"/>
+    </pattern>
+    <clipPath id="sq-clip">
+      <rect x="102" y="102" width="820" height="820" rx="184.5" ry="184.5"/>
+    </clipPath>
+  </defs>
+
+  <!-- macOS squircle plate — shape and size unchanged -->
+  <rect x="102" y="102" width="820" height="820" rx="184.5" ry="184.5" fill="#1c1b18"/>
+  <!-- Dot-grid texture clipped to squircle -->
+  <rect x="0" y="0" width="1024" height="1024" fill="url(#px-dot)" clip-path="url(#sq-clip)"/>
+  <!-- Plate edge ring -->
+  <rect x="102" y="102" width="820" height="820" rx="184.5" ry="184.5"
+        fill="none" stroke="#3d3b37" stroke-opacity="0.45" stroke-width="2"/>
+
+  <!-- Hard pixel shadow — V offset 16 px down-right, no blur -->
+  <g transform="translate(528 528) skewX(-8)">
+    <path fill="#070605" d="M -220 -260 L -80 -260 L 20 240 L -120 240 Z"/>
+    <path fill="#070605" d="M 80 -260 L 220 -260 L 120 240 L -20 240 Z"/>
+  </g>
+
+  <!-- V mark — asymmetric, dynamic, pixel-lit -->
+  <g transform="translate(512 512) skewX(-8)">
+
+    <!-- LEFT STROKE: single flat coral -->
+    <path fill="#cc785c"
+          d="M -220 -260 L -80 -260 L 20 240 L -120 240 Z"/>
+
+    <!-- RIGHT STROKE: single flat cream -->
+    <path fill="#ddd0b8"
+          d="M 80 -260 L 220 -260 L 120 240 L -20 240 Z"/>
+
+  </g>
+</svg>

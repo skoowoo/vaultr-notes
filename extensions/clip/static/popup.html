@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Vaultr Clip</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+
+<body>
+
+  <!-- View 1: Initial clip view -->
+  <div id="view-initial" class="view">
+    <main class="wrap">
+      <h1 class="title">Vaultr Clip</h1>
+      <p class="hint">Extract readable content from this page and preview it as Markdown.</p>
+      <button type="button" id="clip" class="btn primary">Clip Page</button>
+      <div id="clipError" class="feedback is-hidden" role="status" aria-live="polite">
+        <p class="feedback__label" id="clipErrorLabel"></p>
+        <p class="feedback__detail" id="clipErrorDetail"></p>
+      </div>
+      <a class="link" id="openOptions" href="#">Settings</a>
+    </main>
+  </div>
+
+  <!-- View 2: Markdown preview panel -->
+  <div id="view-preview" class="view is-hidden">
+    <div class="preview-header">
+      <button type="button" id="back" class="icon-btn" title="Back" aria-label="Back">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+        </svg>
+      </button>
+      <span class="preview-label">markdown preview</span>
+      <button type="button" id="copyMd" class="icon-btn copy-btn" title="Copy Markdown" aria-label="Copy Markdown">
+        <svg id="copyIcon" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <rect x="9" y="9" width="13" height="13" rx="2"/><path stroke-linecap="round" d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+        </svg>
+        <svg id="checkIcon" class="is-hidden" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M20 6L9 17l-5-5"/>
+        </svg>
+      </button>
+    </div>
+
+    <pre id="mdContent" class="md-content" tabindex="0"></pre>
+
+    <div class="preview-footer">
+      <button type="button" id="save" class="btn primary">Add to Vaultr</button>
+      <div id="saveFeedback" class="feedback is-hidden" role="status" aria-live="polite">
+        <p class="feedback__label" id="saveFeedbackLabel"></p>
+        <p class="feedback__detail" id="saveFeedbackDetail"></p>
+      </div>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+
+</html>

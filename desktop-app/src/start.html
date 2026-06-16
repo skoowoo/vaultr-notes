@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html data-theme="dark">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Vaultr</title>
+  <style>
+    @font-face {
+      font-family: 'JetBrains Mono';
+      font-style: normal;
+      font-weight: 400;
+      font-display: swap;
+      src: url('../assets/fonts/jetbrains-mono-400-latin.woff2') format('woff2');
+    }
+    @font-face {
+      font-family: 'Press Start 2P';
+      font-style: normal;
+      font-weight: 400;
+      font-display: swap;
+      src: url('../assets/fonts/press-start-2p-400-latin.woff2') format('woff2');
+    }
+  </style>
+  <script>(function () { var t = localStorage.getItem('theme') || 'dark'; document.documentElement.setAttribute('data-theme', t); })()</script>
+  <style>
+    :root {
+      --bg: #0e0d0b;
+      --fg: #faf9f5;
+      --muted: #a09d96;
+      --coral: #cc785c;
+      --coral-dim: rgba(204, 120, 92, 0.12);
+      --bd: rgba(250, 249, 245, 0.09);
+      --bd-str: rgba(250, 249, 245, 0.15);
+      --error: #c64545;
+      --ok: #5db872;
+    }
+
+    html[data-theme="light"] {
+      --bg: #eae4d9;
+      --fg: #141413;
+      --muted: #6c6a64;
+      --coral-dim: rgba(204, 120, 92, 0.10);
+      --bd: rgba(20, 20, 19, 0.09);
+      --bd-str: rgba(20, 20, 19, 0.18);
+    }
+
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html,
+    body {
+      height: 100%;
+    }
+
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg);
+      color: var(--fg);
+      font-family: 'JetBrains Mono', ui-monospace, 'Courier New', monospace;
+      -webkit-font-smoothing: antialiased;
+      -webkit-app-region: drag;
+    }
+
+    /* Pixel scanlines */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      background: repeating-linear-gradient(to bottom,
+          transparent 0, transparent 3px,
+          rgba(0, 0, 0, 0.02) 3px, rgba(0, 0, 0, 0.02) 4px);
+    }
+
+    .shell {
+      position: relative;
+      z-index: 1;
+      -webkit-app-region: no-drag;
+      width: min(360px, 88vw);
+      padding: 2.75rem 2rem 2.25rem;
+    }
+
+    /* Corner brackets — top-left & bottom-right */
+    .shell::before,
+    .shell::after {
+      content: '';
+      position: absolute;
+      width: 18px;
+      height: 18px;
+      border-color: var(--coral);
+      border-style: solid;
+      opacity: 0.4;
+    }
+
+    .shell::before {
+      top: 0;
+      left: 0;
+      border-width: 2px 0 0 2px;
+    }
+
+    .shell::after {
+      bottom: 0;
+      right: 0;
+      border-width: 0 2px 2px 0;
+    }
+
+    /* Logo */
+    .logo {
+      font-family: 'Press Start 2P', 'Courier New', monospace;
+      font-size: clamp(1rem, 4.5vw, 1.375rem);
+      color: var(--coral);
+      letter-spacing: 0.06em;
+      -webkit-font-smoothing: none;
+      user-select: none;
+      line-height: 1;
+      margin-bottom: 0.45rem;
+    }
+
+    .tagline {
+      font-family: 'Press Start 2P', 'Courier New', monospace;
+      font-size: 0.42rem;
+      color: var(--muted);
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      -webkit-font-smoothing: none;
+      user-select: none;
+      margin-bottom: 2.5rem;
+    }
+
+    /* URL input row */
+    .url-row {
+      display: flex;
+      border: 1px solid var(--bd-str);
+      margin-bottom: 0.875rem;
+      transition: border-color 120ms;
+    }
+
+    .url-row:focus-within {
+      border-color: var(--coral);
+    }
+
+    .url-input {
+      flex: 1;
+      min-width: 0;
+      background: transparent;
+      border: none;
+      outline: none;
+      padding: 0.6rem 0.75rem;
+      font-size: 0.7rem;
+      color: var(--fg);
+      font-family: 'JetBrains Mono', ui-monospace, monospace;
+    }
+
+    .url-input::placeholder {
+      color: var(--muted);
+      opacity: 0.4;
+    }
+
+    .connect-btn {
+      flex-shrink: 0;
+      width: 36px;
+      background: transparent;
+      border: none;
+      border-left: 1px solid var(--bd-str);
+      color: var(--fg);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0.55;
+      transition: opacity 80ms, background 80ms;
+    }
+
+    .connect-btn:hover:not(:disabled) {
+      opacity: 1;
+      background: var(--coral-dim);
+    }
+
+    .connect-btn:disabled {
+      opacity: 0.18;
+      cursor: not-allowed;
+    }
+
+    .connect-btn svg {
+      width: 13px;
+      height: 13px;
+      flex-shrink: 0;
+    }
+
+    /* Status row */
+    .status-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      min-height: 1.1rem;
+    }
+
+    .dot {
+      width: 5px;
+      height: 5px;
+      flex-shrink: 0;
+      background: var(--muted);
+    }
+
+    .dot.ok {
+      background: var(--ok);
+    }
+
+    .dot.error {
+      background: var(--error);
+    }
+
+    .dot.pulse {
+      background: var(--coral);
+    }
+
+    @keyframes blink {
+
+      0%,
+      49% {
+        opacity: 1
+      }
+
+      50%,
+      100% {
+        opacity: 0
+      }
+    }
+
+    .dot.pulse {
+      animation: blink 0.85s step-start infinite;
+    }
+
+    .status-txt {
+      font-size: 0.58rem;
+      color: var(--muted);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      font-family: 'JetBrains Mono', monospace;
+      -webkit-font-smoothing: none;
+    }
+
+    .status-txt.error {
+      color: var(--error);
+    }
+
+    .status-txt.ok {
+      color: var(--ok);
+    }
+
+    /* Hint */
+    .hint {
+      margin-top: 1rem;
+      font-size: 0.56rem;
+      line-height: 1.7;
+      color: var(--muted);
+      opacity: 0.72;
+      font-family: 'JetBrains Mono', monospace;
+      border-left: 2px solid var(--bd);
+      padding-left: 0.75rem;
+      word-break: break-all;
+      white-space: pre-wrap;
+    }
+
+    .hint[hidden] {
+      display: none;
+    }
+
+    /* Install button */
+    .install-btn {
+      margin-top: 1.625rem;
+      width: 100%;
+      padding: 0.75rem 1rem;
+      background: transparent;
+      border: 1px solid var(--coral);
+      color: var(--coral);
+      font-family: 'Press Start 2P', 'Courier New', monospace;
+      font-size: 0.44rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.625rem;
+      -webkit-font-smoothing: none;
+      transition: background 80ms;
+      user-select: none;
+    }
+
+    .install-btn:hover {
+      background: var(--coral-dim);
+    }
+
+    .install-btn[hidden] {
+      display: none;
+    }
+
+    .install-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .install-btn svg {
+      width: 13px;
+      height: 13px;
+      opacity: 0.85;
+      flex-shrink: 0;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="shell">
+    <p class="logo">VAULTR</p>
+    <p class="tagline">personal vault</p>
+
+    <div class="url-row">
+      <input id="url-input" type="url" class="url-input" placeholder="http://localhost:54321" spellcheck="false"
+        autocomplete="off">
+      <button id="connect-btn" class="connect-btn" title="Connect">
+        <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14m-7-7 7 7-7 7" />
+        </svg>
+      </button>
+    </div>
+
+    <div class="status-row">
+      <span id="dot" class="dot pulse"></span>
+      <span id="status" class="status-txt">connecting</span>
+    </div>
+    <p id="hint" class="hint" hidden></p>
+
+    <button id="install-btn" class="install-btn" hidden>
+      <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round"
+          d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4-4 4m0 0-4-4m4 4V4" />
+      </svg>
+      install vaultr cli
+    </button>
+  </div>
+
+  <script>
+      (function () {
+        const input = document.getElementById('url-input');
+        const btn = document.getElementById('connect-btn');
+        const dotEl = document.getElementById('dot');
+        const statusEl = document.getElementById('status');
+        const hintEl = document.getElementById('hint');
+        const installBtn = document.getElementById('install-btn');
+
+        let retryTimer = null;
+        let busy = false;
+        let isRetrying = false; // true after first failure — suppresses "connecting" flash on bg retries
+
+        function setUI(state, msg, hint) {
+          // Don't flash "connecting" during silent background retries
+          if (isRetrying && state === 'connecting') return;
+
+          dotEl.className = 'dot ' + (
+            state === 'ok' ? 'ok' :
+              state === 'error' ? 'error' : 'pulse'
+          );
+          statusEl.textContent = msg;
+          statusEl.className = 'status-txt' + (
+            state === 'error' ? ' error' :
+              state === 'ok' ? ' ok' : ''
+          );
+
+          const h = (hint || '').trim();
+          if (!h) {
+            hintEl.hidden = true;
+          } else if (hintEl.textContent !== h) {
+            hintEl.textContent = h;
+            hintEl.hidden = false;
+          } else {
+            hintEl.hidden = false;
+          }
+        }
+
+        function showInstall(v) { installBtn.hidden = !v; }
+
+        function isLocal(raw) {
+          try {
+            const h = new URL(raw).hostname.toLowerCase();
+            return h === 'localhost' || h === '127.0.0.1' || h === '::1';
+          } catch { return false; }
+        }
+
+        let detachStartConsumed = false;
+        let spawnedLocalServerOk = false;
+
+        async function debugPaths() {
+          try {
+            if (window.vaultrDesktop?.getShellDebugPaths)
+              return await window.vaultrDesktop.getShellDebugPaths();
+          } catch { }
+          return {};
+        }
+
+        async function attempt(urlRaw, { userInitiated = false } = {}) {
+          if (busy) return;
+          const url = urlRaw.trim().replace(/\/$/, '');
+          clearTimeout(retryTimer);
+          busy = true;
+          btn.disabled = true;
+          setUI('connecting', 'connecting');
+
+          let ok = false;
+          if (window.vaultrDesktop) {
+            try { ok = await window.vaultrDesktop.checkServer(url); } catch { }
+          }
+
+          if (ok) {
+            isRetrying = false;
+            detachStartConsumed = false;
+            spawnedLocalServerOk = false;
+            busy = false; btn.disabled = false;
+            showInstall(false);
+            setUI('ok', 'connected');
+            if (window.vaultrDesktop) await window.vaultrDesktop.setServerUrl(url);
+            return;
+          }
+
+          const paths = await debugPaths();
+          let retryMs = 3000;
+          let pendingStart = false;
+          let headline = '', hint = '', showInst = false;
+
+          if (!window.vaultrDesktop) {
+            headline = 'preload api unavailable';
+            hint = 'Desktop API not found. Check DevTools.';
+          } else if (isLocal(url) && !detachStartConsumed) {
+            try {
+              const probe = await window.vaultrDesktop.vaultrOnPath();
+              if (!probe.available) {
+                headline = 'vaultr cli not found';
+                showInst = true;
+              } else {
+                detachStartConsumed = true;
+                const st = await window.vaultrDesktop.startVaultrServerDetached({ userInitiated });
+                if (st.ok) {
+                  spawnedLocalServerOk = true;
+                  pendingStart = true;
+                  retryMs = 1400;
+                } else if (st.reason === 'stopped_by_user') {
+                  isRetrying = false;
+                  busy = false; btn.disabled = false;
+                  showInstall(false);
+                  setUI('error', 'server stopped', 'Click → to start it again.');
+                  return;
+                } else {
+                  spawnedLocalServerOk = false;
+                  headline = 'server start failed';
+                  hint = (st.error ? st.error + '\n\n' : '') +
+                    'Server output:\n' + (paths.serverOutput || '');
+                }
+              }
+            } catch (e) {
+              headline = 'connection error';
+              hint = String(e?.message ?? e);
+            }
+          } else if (spawnedLocalServerOk && isLocal(url)) {
+            headline = 'waiting for server';
+            hint = (paths.serverOutput || '') +
+              (paths.diagnostics ? '\n\nElectron log:\n' + paths.diagnostics : '');
+          } else if (isLocal(url) && detachStartConsumed && !spawnedLocalServerOk) {
+            headline = 'server start failed';
+            hint = (paths.serverOutput || '') +
+              (paths.diagnostics ? '\n\nElectron log:\n' + paths.diagnostics : '');
+          } else {
+            headline = 'cannot connect';
+            if (paths.diagnostics) hint = 'Shell log:\n' + paths.diagnostics;
+          }
+
+          busy = false; btn.disabled = false;
+          isRetrying = true;
+          showInstall(showInst);
+          setUI(
+            pendingStart ? 'starting' : 'error',
+            pendingStart ? 'starting server' : headline,
+            pendingStart ? '' : hint
+          );
+          retryTimer = setTimeout(() => attempt(url), retryMs);
+        }
+
+        async function init() {
+          let url = 'http://localhost:54321';
+          if (window.vaultrDesktop) {
+            try { url = await window.vaultrDesktop.getServerUrl() || url; } catch { }
+          }
+          input.value = url;
+          attempt(url);
+        }
+
+        function userConnect() {
+          isRetrying = false;
+          detachStartConsumed = false;
+          spawnedLocalServerOk = false;
+          showInstall(false);
+          attempt(input.value.trim().replace(/\/$/, ''), { userInitiated: true });
+        }
+
+        btn.addEventListener('click', userConnect);
+        input.addEventListener('keydown', e => { if (e.key === 'Enter') userConnect(); });
+        installBtn.addEventListener('click', async () => {
+          if (installBtn.disabled || !window.vaultrDesktop?.installCli) return;
+          clearTimeout(retryTimer);
+          installBtn.disabled = true;
+          isRetrying = false;
+          showInstall(false);
+          setUI('connecting', 'installing cli...');
+
+          const result = await window.vaultrDesktop.installCli();
+
+          installBtn.disabled = false;
+          if (result.ok) {
+            detachStartConsumed = false;
+            spawnedLocalServerOk = false;
+            attempt(input.value.trim().replace(/\/$/, ''));
+          } else {
+            const msg = (result.output || result.error || 'install failed').trim();
+            showInstall(true);
+            setUI('error', 'install failed', msg);
+            retryTimer = setTimeout(() => attempt(input.value.trim().replace(/\/$/, '')), 5000);
+          }
+        });
+
+        init();
+      })();
+  </script>
+</body>
+
+</html>

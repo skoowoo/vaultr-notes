@@ -1,0 +1,124 @@
+
+{{- if not .RawOnly}}
+<div id="knowledge-col-body" hx-swap-oob="innerHTML">
+  {{- if .FocusedIsKnowledge}}
+  <div class="note-card note-card-pinned"
+       data-path="{{.Focused.Path}}"
+       @click="focusNote('{{.Focused.FocusURL}}')">
+    <div class="note-title-row">
+      <div class="note-name">{{if .Focused.Title}}{{.Focused.Title}}{{else}}{{.Focused.Name}}{{end}}</div>
+      <button class="note-read-btn"
+              @click.stop="__vaultrOpenNote($event.currentTarget)"
+              data-note-path="{{.Focused.Path}}"
+              data-note-title="{{if .Focused.Title}}{{.Focused.Title}}{{else}}{{.Focused.Name}}{{end}}"
+              data-note-is-knowledge="{{.FocusedIsKnowledge}}"
+              data-note-is-index="{{.Focused.IsIndex}}"
+              data-note-can-compile="{{.Focused.CanCompile}}"
+              data-note-pinned="{{.Focused.Pinned}}" title="Open">
+        <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 7v14"/><path stroke-linecap="round" stroke-linejoin="round" d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></svg>
+        <span>Open</span>
+      </button>
+    </div>
+    <div class="note-meta">
+      <span class="note-dir">{{if .Focused.Tags}}{{range .Focused.Tags}}<span class="note-tag-pill">{{.}}</span>{{end}}{{else if ne .Focused.Dir "/"}}{{.Focused.Dir}}{{end}}</span>
+      <span class="note-time">{{.Focused.UpdatedAt}}</span>
+    </div>
+  </div>
+  {{- end}}
+  {{- if .LinkedKnowledge}}
+  {{- if .FocusedIsKnowledge}}
+  <div class="linked-sep"></div>
+  {{- end}}
+  {{- range .LinkedKnowledge}}
+  <div class="note-card note-card-linked"
+       data-path="{{.Path}}"
+       @click="selectKCard('{{.Path}}', '{{.FocusURL}}')">
+    <div class="note-title-row">
+      <div class="note-name">{{if .Title}}{{.Title}}{{else}}{{.Name}}{{end}}</div>
+      <button class="note-read-btn"
+              @click.stop="__vaultrOpenNote($event.currentTarget)"
+              data-note-path="{{.Path}}"
+              data-note-title="{{if .Title}}{{.Title}}{{else}}{{.Name}}{{end}}"
+              data-note-is-knowledge="{{.IsKnowledge}}"
+              data-note-is-index="{{.IsIndex}}"
+              data-note-can-compile="{{.CanCompile}}"
+              data-note-pinned="{{.Pinned}}" title="Open">
+        <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 7v14"/><path stroke-linecap="round" stroke-linejoin="round" d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></svg>
+        <span>Open</span>
+      </button>
+    </div>
+    <div class="note-meta">
+      <span class="note-dir">{{if .Tags}}{{range .Tags}}<span class="note-tag-pill">{{.}}</span>{{end}}{{else if ne .Dir "/"}}{{.Dir}}{{end}}</span>
+      <span class="note-time">{{.UpdatedAt}}</span>
+    </div>
+  </div>
+  {{- end}}
+  {{- else if not .FocusedIsKnowledge}}
+  <div class="col-empty">No linked knowledge notes</div>
+  {{- end}}
+</div>
+{{- end}}
+<div id="raw-col-body" hx-swap-oob="innerHTML">
+  {{- if not .FocusedIsKnowledge}}
+  <div class="note-card note-card-pinned"
+       data-path="{{.Focused.Path}}"
+       @click="focusNote('{{.Focused.FocusURL}}')">
+    <div class="note-title-row">
+      <div class="note-name">{{.Focused.Name}}</div>
+      <div class="note-actions">
+        {{- if .FocusedCanKnowledge}}
+        <button class="note-knowledge-btn"
+                data-path="{{.Focused.Path}}" data-focus-url="{{.Focused.FocusURL}}"
+                @click.stop="compileRaw($event)" title="Create knowledge note">
+          <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path stroke-linecap="round" d="M12 2v2"/><path stroke-linecap="round" d="M12 20v2"/><path stroke-linecap="round" d="m4.93 4.93 1.41 1.41"/><path stroke-linecap="round" d="m17.66 17.66 1.41 1.41"/><path stroke-linecap="round" d="M2 12h2"/><path stroke-linecap="round" d="M20 12h2"/><path stroke-linecap="round" d="m6.34 17.66-1.41 1.41"/><path stroke-linecap="round" d="m19.07 4.93-1.41 1.41"/></svg>
+        </button>
+        {{- end}}
+        <button class="note-read-btn"
+                @click.stop="__vaultrOpenNote($event.currentTarget)"
+                data-note-path="{{.Focused.Path}}"
+                data-note-title="{{.Focused.Name}}"
+                data-note-is-knowledge="{{.FocusedIsKnowledge}}"
+                data-note-is-index="{{.Focused.IsIndex}}"
+                data-note-can-compile="{{.Focused.CanCompile}}"
+                data-note-pinned="{{.Focused.Pinned}}" title="Open">
+          <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 7v14"/><path stroke-linecap="round" stroke-linejoin="round" d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></svg>
+          <span>Open</span>
+        </button>
+      </div>
+    </div>
+    <div class="note-meta">
+      <span class="note-dir">{{if ne .Focused.Dir "/"}}{{.Focused.Dir}}{{end}}</span>
+      <span class="note-time">{{.Focused.UpdatedAt}}</span>
+    </div>
+  </div>
+  {{- end}}
+  {{- if .LinkedRaw}}
+  {{- if not .FocusedIsKnowledge}}<div class="linked-sep"></div>{{- end}}
+  {{- range .LinkedRaw}}
+  <div class="note-card note-card-linked"
+       data-path="{{.Path}}"
+       @click="focusNote('{{.FocusURL}}')">
+    <div class="note-title-row">
+      <div class="note-name">{{.Name}}</div>
+      <button class="note-read-btn"
+              @click.stop="__vaultrOpenNote($event.currentTarget)"
+              data-note-path="{{.Path}}"
+              data-note-title="{{.Name}}"
+              data-note-is-knowledge="{{.IsKnowledge}}"
+              data-note-is-index="{{.IsIndex}}"
+              data-note-can-compile="{{.CanCompile}}"
+              data-note-pinned="{{.Pinned}}" title="Open">
+        <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 7v14"/><path stroke-linecap="round" stroke-linejoin="round" d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></svg>
+        <span>Open</span>
+      </button>
+    </div>
+    <div class="note-meta">
+      <span class="note-dir">{{if ne .Dir "/"}}{{.Dir}}{{end}}</span>
+      <span class="note-time">{{.UpdatedAt}}</span>
+    </div>
+  </div>
+  {{- end}}
+  {{- else if .FocusedIsKnowledge}}
+  <div class="col-empty">No linked raw notes</div>
+  {{- end}}
+</div>

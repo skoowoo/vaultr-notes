@@ -1,0 +1,36 @@
+project_name: vaultr
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: vaultr
+    main: ./cmd/vaultr
+    binary: vaultr
+    goos:
+      - darwin
+    goarch:
+      - arm64
+    env:
+      - CGO_ENABLED=1
+    ldflags:
+      - -s -w
+      - -X github.com/hardhacker/vaultr/internal/build.Version={{.Version}}
+      - -X github.com/hardhacker/vaultr/internal/build.Commit={{.Commit}}
+      - -X github.com/hardhacker/vaultr/internal/build.BuildDate={{.Date}}
+
+archives:
+  - id: vaultr
+    name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
+    format: tar.gz
+    files:
+      - config.example.toml
+      - skills/**/*
+      - external-skills.txt
+
+checksum:
+  disable: true
+
+release:
+  disable: true

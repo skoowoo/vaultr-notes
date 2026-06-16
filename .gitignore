@@ -1,0 +1,13 @@
+bin/
+dist/
+node_modules/
+*.env
+*.local
+config.toml
+.DS_Store
+.vscode
+.cursor
+.claude
+.deepseek
+.agents
+memory/

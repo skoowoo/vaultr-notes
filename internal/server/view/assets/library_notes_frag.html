@@ -1,0 +1,55 @@
+
+{{- range .Notes}}
+{{- if $.IsKnowledge}}
+<div class="note-card"
+     data-path="{{.Path}}"
+     @click="selectKCard('{{.Path}}', '{{.FocusURL}}')">
+  <div class="note-title-row">
+    <div class="note-name">{{if .Title}}{{.Title}}{{else}}{{.Name}}{{end}}</div>
+    <button class="note-read-btn"
+            @click.stop="__vaultrOpenNote($event.currentTarget)"
+            data-note-path="{{.Path}}"
+            data-note-title="{{if .Title}}{{.Title}}{{else}}{{.Name}}{{end}}"
+            data-note-is-knowledge="{{.IsKnowledge}}"
+            data-note-is-index="{{.IsIndex}}"
+            data-note-can-compile="{{.CanCompile}}"
+            data-note-pinned="{{.Pinned}}" title="Open">
+      <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 7v14"/><path stroke-linecap="round" stroke-linejoin="round" d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></svg>
+      <span>Open</span>
+    </button>
+  </div>
+  <div class="note-meta">
+    <span class="note-dir">{{if .Tags}}{{range .Tags}}<span class="note-tag-pill">{{.}}</span>{{end}}{{else if ne .Dir "/"}}{{.Dir}}{{end}}</span>
+    <span class="note-time">{{.UpdatedAt}}</span>
+  </div>
+</div>
+{{- else}}
+<div class="note-card"
+     @click="focusNote('{{.FocusURL}}')">
+  <div class="note-title-row">
+    <div class="note-name">{{.Name}}</div>
+    <button class="note-read-btn"
+            @click.stop="__vaultrOpenNote($event.currentTarget)"
+            data-note-path="{{.Path}}"
+            data-note-title="{{.Name}}"
+            data-note-is-knowledge="{{.IsKnowledge}}"
+            data-note-is-index="{{.IsIndex}}"
+            data-note-can-compile="{{.CanCompile}}"
+            data-note-pinned="{{.Pinned}}" title="Open">
+      <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 7v14"/><path stroke-linecap="round" stroke-linejoin="round" d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></svg>
+      <span>Open</span>
+    </button>
+  </div>
+  <div class="note-meta">
+    <span class="note-dir">{{if ne .Dir "/"}}{{.Dir}}{{end}}</span>
+    <span class="note-time">{{.UpdatedAt}}</span>
+  </div>
+</div>
+{{- end}}
+{{- end}}
+{{- if .NextNs}}
+<div class="load-sentinel"
+     hx-get="/library/notes?type={{.Type}}&before={{.NextNs}}"
+     hx-trigger="intersect once"
+     hx-swap="outerHTML"></div>
+{{- end}}

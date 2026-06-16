@@ -1,0 +1,13 @@
+# External skills to install from GitHub
+# Format: GitHubUser/RepoName:path/in/repo:skill-dir-name
+#
+#   GitHubUser/RepoName  — GitHub repository
+#   path/in/repo         — path to the skill directory inside the repo
+#                          (e.g. "skills" or "skills/in-progress/writing-beats")
+#   skill-dir-name       — directory name under ~/.vaultr/skills/ after installation
+#
+# Lines starting with '#' and blank lines are ignored.
+
+hardhackerlabs/podwise-cli:skills:podwise
+Tencent/WeChatReading:skills:weread-skills
+mattpocock/skills:skills/in-progress/writing-beats:writing-beats

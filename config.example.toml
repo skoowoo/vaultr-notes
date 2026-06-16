@@ -1,0 +1,67 @@
+[server]
+# TCP listener (HTTP). Default port is 54321; set to 0 to disable TCP.
+host = "127.0.0.1"
+port = 54321
+
+[vault]
+# Root directory of the Vault (Vaultr's personal data store).
+# Supports ~ for the home directory.
+path = "~/.vaultr/root"
+
+[log]
+level = "info"  # debug | info | warn | error
+format = "text" # text | json
+
+# ── Plugins ───────────────────────────────────────────────────────────────────
+# All plugins are opt-in. Remove or set enabled = false to disable.
+
+[plugins.git_sync]
+# Set to true to activate the git sync plugin.
+enabled = true
+
+# Git remote URL. Supports HTTPS and SSH.
+# Leave empty for local-only commits (no remote push/pull).
+# Examples:
+#   remote = "https://github.com/you/vault.git"
+#   remote = "git@github.com:you/vault.git"
+remote = ""
+
+# Branch to commit to and sync with.
+branch = "main"
+
+# Personal access token for HTTPS remotes (GitHub, GitLab, Gitea …).
+# For GitHub: Settings → Developer settings → Personal access tokens → repo scope.
+# Leave empty when using SSH or a public repo.
+auth_token = ""
+
+[plugins.compile]
+# Enabled by default. Set to false to disable.
+enabled = true
+
+# =============================================================================
+# Local agent CLI integration (Open Design–compatible adapters)
+# =============================================================================
+# Exposes GET /api/agents, POST /api/chat (SSE), POST /api/runs, GET/POST
+# /api/runs/{id}/... — see internal/agent and internal/server/handler/agent_api.go.
+# For long agent turns, increase server.write_timeout (seconds) so the SSE
+# response is not cut off mid-stream.
+
+[plugins.search]
+# Vault-absolute path prefixes to exclude from the search index.
+# Notes whose path starts with any listed prefix are silently skipped.
+# Useful for auto-generated directories or archives you don't want surfaced
+# in search results.
+# Example: exclude_prefixes = ["/_knowledge/", "/archive/"]
+exclude_prefixes = ["/_assets", "/_knowledge/_indexes"]
+
+
+[plugins.image_fetch]
+# When true, new markdown notes trigger download of remote http(s) image URLs
+# into the vault assets tree (browser-like User-Agent). Failures are logged only.
+enabled = false
+
+[plugins.wechat]
+# Poll WeChat iLink direct messages and emit wechat_message events for mate triggers.
+# Log in via Settings → Config → WeChat; token is saved here after QR login.
+enabled = false
+# token, account_id, user_id, saved_at, base_url are written automatically on login.

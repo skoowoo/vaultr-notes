@@ -1,0 +1,31 @@
+{
+  "name": "vaultr-editor-bundle",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs"
+  },
+  "dependencies": {
+    "@codemirror/commands": "^6.8.1",
+    "@codemirror/lang-markdown": "^6.3.2",
+    "@codemirror/language": "^6.11.1",
+    "@codemirror/search": "^6.7.0",
+    "@codemirror/state": "^6.5.2",
+    "@codemirror/view": "^6.36.4",
+    "@lezer/highlight": "^1.2.1",
+    "@milkdown/core": "^7.5.9",
+    "@milkdown/plugin-listener": "^7.5.9",
+    "@milkdown/preset-commonmark": "^7.5.9",
+    "@milkdown/preset-gfm": "^7.20.0",
+    "@milkdown/utils": "^7.5.9",
+    "js-yaml": "^4.1.1",
+    "lucide": "^1.18.0",
+    "remark-frontmatter": "^5.0.0",
+    "remark-wiki-link": "^2.0.1"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.4",
+    "pixelarticons": "^2.1.0"
+  }
+}
