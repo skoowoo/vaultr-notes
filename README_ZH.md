@@ -1,4 +1,4 @@
-# Vaultr：AI-native 笔记系统
+# Vaultr：最简的方式构建笔记 AI 工作流
 
 ![Vaultr Hero](./docs/assets/hero.png)
 ![Vaultr Hero](./docs/assets/hero2.png)

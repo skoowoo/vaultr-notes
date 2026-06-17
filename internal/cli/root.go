@@ -49,7 +49,6 @@ func init() {
 	rootCmd.AddCommand(newExtractCmd())
 	rootCmd.AddCommand(newTagCmd())
 	rootCmd.AddCommand(newTriggerCmd())
-	rootCmd.AddCommand(newAgentCmd())
 	rootCmd.AddCommand(newShortCmd())
 }
 

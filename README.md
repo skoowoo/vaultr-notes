@@ -1,4 +1,4 @@
-# Vaultr: AI-native personal note-taking system
+# Vaultr: The Simplest Way to Build AI Workflows Around Your Notes.
 
 [中文文档](./README_ZH.md)
 
