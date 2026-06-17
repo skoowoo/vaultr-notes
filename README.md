@@ -60,7 +60,7 @@ Vaultr is built around one core belief: **let AI organize your notes, not you.**
 
 Vaultr discourages spending energy on note maintenance — elaborate categorization, nested folder hierarchies, manual tagging, and archiving. These are low-value, repetitive chores. Taking notes should be effortless and spontaneous: just write.
 
-Concretely, Vaultr **only supports a single level of directories**. You can create simple buckets like `/reading`, `/work`, or `/ideas`, but you cannot nest subdirectories inside them. This is an intentional constraint, not a missing feature — it frees you from the mental overhead of deciding *where* every note belongs.
+Concretely, Vaultr **strongly discourages nested directories**. You can create simple buckets like `/reading`, `/work`, or `/ideas`, but nesting subdirectories inside them is not recommended — even though it's technically possible. Keeping things flat frees you from the mental overhead of deciding *where* every note belongs.
 
 #### AI compiles, you don't organize
 
@@ -78,7 +78,7 @@ Vaultr ships full-text search, but the more important capability is letting agen
 
 #### ⚠️ Things you must know before using Vaultr
 
-- **No nested directories.** Vaultr is designed around a flat, single-level directory structure. Do not create subdirectories inside your category folders (Although you can do so).
+- **Avoid nested directories.** Vaultr recommends a flat, single-level directory structure. You can technically create subdirectories inside category folders, but it is strongly discouraged.
 - **Keep filenames unique.** Vaultr links notes using Wiki Link syntax `[[stem]]` — by filename, not by path. Duplicate filenames cause ambiguous references.
 - **Underscore-prefixed directories are system-reserved.** Directories like `_knowledge/`, `_shorts/`, and `_memory/` are used internally by Vaultr. Do not use an underscore prefix for your own category directories.
 - **Vaultr does not bundle an AI Agent.** You need an agent CLI already installed on your machine (e.g. Claude Code, OpenCode, Codex). Vaultr discovers them automatically from your PATH — no extra configuration needed. See [Backing Agents](#backing-agents).

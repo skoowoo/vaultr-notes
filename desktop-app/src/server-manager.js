@@ -340,10 +340,14 @@ function register(opts = {}) {
 
   ipcMain.handle("install-cli", () => {
     return new Promise((resolve) => {
+      // Use a login shell so the user's profile (.zprofile, .bash_profile, etc.) is sourced,
+      // which brings in proxy env vars (http_proxy, https_proxy, etc.) and extended PATH —
+      // both are absent from Electron's minimal process.env when launched from the Dock.
+      const shell = process.env.SHELL || "/bin/sh";
       const child = spawn(
-        "sh",
-        ["-c", "curl -sL https://raw.githubusercontent.com/skoowoo/vaultr-notes/main/install-cli.sh | sh"],
-        { env: process.env, stdio: ["ignore", "pipe", "pipe"], windowsHide: true }
+        shell,
+        ["-l", "-i", "-c", "curl -sL https://raw.githubusercontent.com/skoowoo/vaultr-notes/main/install-cli.sh | sh"],
+        { stdio: ["ignore", "pipe", "pipe"], windowsHide: true }
       );
 
       let output = "";
