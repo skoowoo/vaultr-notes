@@ -1,3 +1,4 @@
+version: 2
 project_name: vaultr
 
 before:
@@ -5,7 +6,7 @@ before:
     - go mod tidy
 
 builds:
-  - id: vaultr
+  - id: vaultr-darwin
     main: ./cmd/vaultr
     binary: vaultr
     goos:
@@ -21,13 +22,14 @@ builds:
       - -X github.com/hardhacker/vaultr/internal/build.BuildDate={{.Date}}
 
 archives:
-  - id: vaultr
+  - id: vaultr-darwin
     name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
-    format: tar.gz
+    formats:
+      - tar.gz
     files:
       - config.example.toml
       - skills/**/*
-      - external-skills.txt
+      - install-skills.sh
 
 checksum:
   disable: true

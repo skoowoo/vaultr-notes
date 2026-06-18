@@ -7,6 +7,9 @@ CLIP_DIR := extensions/clip
 CLIP_VER := $(shell node -p "require('./$(CLIP_DIR)/manifest.json').version" 2>/dev/null || echo "0.0.0")
 CLIP_ZIP := dist/vaultr-clip-v$(CLIP_VER).zip
 
+# Per-platform goreleaser config (auto-detected from current OS).
+GORELEASER_CONFIG := .goreleaser-$(shell go env GOOS).yaml
+
 # Build-time metadata injected via ldflags.
 VERSION    := $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
 COMMIT     := $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
@@ -17,7 +20,7 @@ LDFLAGS := -s -w \
   -X $(MODULE)/internal/build.Commit=$(COMMIT) \
   -X $(MODULE)/internal/build.BuildDate=$(BUILD_DATE)
 
-.PHONY: build run serve lint test clean tidy clip-zip icons editor dist-all dist-clean dist-cli dist-cli-snapshot dist-clip dist-dmg dist-checksum
+.PHONY: build run serve lint test clean tidy clip-zip icons editor dist-all dist-clean dist-cli dist-cli-snapshot dist-clip dist-dmg dist-win-app dist-checksum
 
 ## build: compile the binary into ./bin/vaultr
 build:
@@ -65,13 +68,13 @@ dist-clean:
 	rm -rf dist/ desktop-app/dist/
 	@mkdir -p dist
 
-## dist-cli: build vaultr CLI and package as tar.gz into ./dist (via goreleaser, requires git tag)
+## dist-cli: build vaultr CLI for the current platform only (via goreleaser, requires git tag)
 dist-cli:
-	goreleaser release --clean
+	goreleaser release --clean --config $(GORELEASER_CONFIG)
 
-## dist-cli-snapshot: local test build without a git tag
+## dist-cli-snapshot: local test build without a git tag, current platform only
 dist-cli-snapshot:
-	goreleaser release --snapshot --clean
+	goreleaser release --snapshot --clean --config $(GORELEASER_CONFIG)
 
 ## dist-clip: build Clip browser extension and zip into ./dist
 dist-clip:
@@ -79,15 +82,20 @@ dist-clip:
 	cd $(CLIP_DIR) && npm ci && npm run build
 	cd $(CLIP_DIR)/dist && zip -r "$(CURDIR)/$(CLIP_ZIP)" .
 
-## dist-dmg: build Electron desktop app DMG into ./dist
+## dist-dmg: build Electron desktop app DMG into ./dist (macOS only)
 dist-dmg:
 	rm -f desktop-app/dist/*.dmg desktop-app/dist/*.zip
-	cd desktop-app && npm install && npm run dist
+	cd desktop-app && npm install && npm run dist -- --mac
 	cp desktop-app/dist/*.dmg dist/
+
+## dist-win-app: build Electron desktop app NSIS installer into ./dist (Windows only)
+dist-win-app:
+	cd desktop-app && npm install && npm run dist -- --win
+	cp desktop-app/dist/*.exe dist/ 2>/dev/null || true
 
 ## dist-checksum: generate SHA-256 checksums for all dist artifacts into dist/checksums.txt
 dist-checksum:
-	cd dist && shasum -a 256 *.tar.gz *.zip *.dmg > checksums.txt
+	cd dist && shasum -a 256 $(shell ls dist/*.tar.gz dist/*.zip dist/*.dmg dist/*.exe 2>/dev/null | xargs -n1 basename) > checksums.txt
 
 help:
 	@grep -E '^##' Makefile | sed 's/## //'

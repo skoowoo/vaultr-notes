@@ -122,6 +122,7 @@ func (m *Manager) parseExternalSkills() map[string]string {
 			continue
 		}
 		// Format: GitHubUser/RepoName:path/in/repo:skill-dir-name
+		// path/in/repo may be empty or "." for the repo root.
 		parts := strings.SplitN(line, ":", 3)
 		if len(parts) != 3 {
 			continue

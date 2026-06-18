@@ -94,9 +94,16 @@ The unit captures the author's own words or experience. Extract from **all six d
 
 Body content synthesises what the author heard or read, not their own views. Extract only:
 - `## 立场` section → `beliefs` (the author's own dated opinion; skip if section absent)
-- Unit title + tags → `preferences` as `关注 <title>（<tags>）` (compiling a topic signals genuine interest)
 - **Do not** extract people (third-party guests and case-study figures are not personal relationships)
 - **Do not** extract from body sections like `## 核心启示`, `## 关键认知`, `## 核心定义` — these synthesise others' views
+
+**Preferences from external sources — synthesize after all Class 2 units are read:**
+
+Do not write per-unit `关注 X` entries. Instead:
+1. Collect all Class 2 unit titles and tags into a pool.
+2. Group into theme clusters by overlapping tags or subject matter.
+3. For each cluster of ≥2 units, write **one synthesized preference item** describing the author's underlying orientation or taste — not a list of topics. The item should read like a trait, not a reading log. Example: units tagged `[indie-dev, startup]`, `[ai, startup]`, `[ai, llm]` → `对 AI 驱动的独立技术创业有持续投入，偏工程实践侧`.
+4. Discard single-unit clusters — one reading is not a preference.
 
 **Class 3 — No source_notes**
 

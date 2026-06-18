@@ -366,7 +366,13 @@ Each skill is a directory containing a `SKILL.md` file:
     └── SKILL.md
 ```
 
-To install a custom skill:
+Install external skills:
+
+```sh
+curl -sL https://raw.githubusercontent.com/skoowoo/vaultr-notes/main/install-skills.sh | sh
+```
+
+Install a custom skill:
 
 ```sh
 cp -r your-skill ~/.vaultr/skills/

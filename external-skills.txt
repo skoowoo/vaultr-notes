@@ -3,11 +3,16 @@
 #
 #   GitHubUser/RepoName  — GitHub repository
 #   path/in/repo         — path to the skill directory inside the repo
-#                          (e.g. "skills" or "skills/in-progress/writing-beats")
+#                          (e.g. "skills", "skills/in-progress/writing-beats",
+#                          or empty / "." for the repo root)
 #   skill-dir-name       — directory name under ~/.vaultr/skills/ after installation
+#
+# Use an empty path for repo root, e.g. user/repo::my-skill
 #
 # Lines starting with '#' and blank lines are ignored.
 
 hardhackerlabs/podwise-cli:skills:podwise
 Tencent/WeChatReading:skills:weread-skills
 mattpocock/skills:skills/in-progress/writing-beats:writing-beats
+blader/humanizer::humanizer
+op7418/Humanizer-zh::humanizer-zh

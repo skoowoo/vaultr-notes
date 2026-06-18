@@ -1,0 +1,37 @@
+version: 2
+project_name: vaultr
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: vaultr-windows
+    main: ./cmd/vaultr
+    binary: vaultr
+    goos:
+      - windows
+    goarch:
+      - amd64
+    env:
+      - CGO_ENABLED=1
+    ldflags:
+      - -s -w
+      - -X github.com/hardhacker/vaultr/internal/build.Version={{.Version}}
+      - -X github.com/hardhacker/vaultr/internal/build.Commit={{.Commit}}
+      - -X github.com/hardhacker/vaultr/internal/build.BuildDate={{.Date}}
+
+archives:
+  - id: vaultr-windows
+    name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
+    formats:
+      - zip
+    files:
+      - config.example.toml
+      - skills/**/*
+
+checksum:
+  disable: true
+
+release:
+  disable: true
