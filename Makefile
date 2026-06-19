@@ -61,7 +61,7 @@ clean:
 	rm -rf bin/
 
 ## dist-all: build CLI tar.gz, Clip extension zip, and Electron DMG into ./dist, then checksum
-dist-all: dist-clean dist-cli dist-clip dist-dmg dist-checksum
+dist-all: dist-clean dist-cli-snapshot dist-clip dist-dmg dist-checksum
 
 ## dist-clean: remove all previous dist artifacts before a fresh release build
 dist-clean:

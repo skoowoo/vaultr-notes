@@ -66,11 +66,11 @@ func Translate(e plugin.Event) []MateEvent {
 	}
 	var out []MateEvent
 	switch e.Type {
-	case plugin.EventVaultCreate:
+	case plugin.EventVaultCreate, plugin.EventFSCreate:
 		out = append(out, MateEvent{Type: MateEventNoteCreated, Path: e.Path})
-	case plugin.EventVaultWrite:
+	case plugin.EventVaultWrite, plugin.EventFSWrite:
 		out = append(out, MateEvent{Type: MateEventNoteUpdated, Path: e.Path})
-	case plugin.EventVaultDelete:
+	case plugin.EventVaultDelete, plugin.EventFSDelete:
 		out = append(out, MateEvent{Type: MateEventNoteDeleted, Path: e.Path})
 	case plugin.EventVaultShortAppend:
 		out = append(out, MateEvent{Type: MateEventShortNoteCreated, Path: e.Path, Content: e.Content})
