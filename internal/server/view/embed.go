@@ -151,3 +151,9 @@ var noteFontsHTML string
 
 //go:embed assets/note_shared.js
 var noteSharedJSBody string
+
+//go:embed assets/graph.css
+var graphCSS string
+
+//go:embed assets/graph.js
+var graphJS string

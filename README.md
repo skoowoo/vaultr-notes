@@ -20,7 +20,6 @@
 - [Personal Memory](#personal-memory)
 - [Skills](#skills)
 - [Customizing AI Behavior](#customizing-ai-behavior)
-- [CLI Usage](#cli-usage)
 - [Shortcuts](#shortcuts)
 
 ## Highlight Features
@@ -408,44 +407,6 @@ The personal memory extraction behavior is defined in `~/.vaultr/skills/vaultr-m
 #### 5. Install or Build Custom Skills
 
 Drop any skill directory into `~/.vaultr/skills/`, then enable it in **Settings → Skills**. Skills are referenced by agents via their directory name.
-
-## CLI Usage
-
-```
-AI-native personal note-taking system
-
-Usage:
-  vaultr [flags]
-  vaultr [command]
-
-Available Commands:
-  agent       Local coding agent adapters (requires running server)
-  append      Append content to a note
-  completion  Generate the autocompletion script for the specified shell
-  create      Create a note in the vault
-  delete      Delete a note
-  extract     Extract structured data from notes
-  help        Help about any command
-  info        Show server configuration and plugin status
-  init        Initialize a directory as a Vaultr vault (like git init)
-  knowledge   List, read, search, and delete knowledge notes
-  list        List notes
-  prepend     Prepend content to a note
-  read        Print a note to stdout
-  resolve     Look up vault path(s) for a note filename
-  search      Search notes
-  short       Create and manage short notes
-  start       Start a service
-  status      Show live status of the running server
-  tag         List tags, count tag usage, or delete by tag
-  trigger     Manually trigger server-side operations
-
-Flags:
-  -h, --help      help for vaultr
-  -v, --version   print version information
-
-Use "vaultr [command] --help" for more information about a command.
-```
 
 ## Shortcuts
 

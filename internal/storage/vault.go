@@ -127,12 +127,12 @@ func (g *Vault) SetShortsDir(dir string) {
 
 // ── compile plugin hooks ──────────────────────────────────────────────────────
 
-// MarkNoteAsKnowledge sets origin = plugin:compile, compile_count, and tags on the note.
+// MarkNoteAsKnowledge sets kind = 'knowledge', compile_count, and tags on the note.
 // title is optional; pass an empty string to leave the existing title unchanged.
 func (g *Vault) MarkNoteAsKnowledge(p Path, title string, compileCount int, tags []string) error {
 	g.mu.Lock()
 	defer g.mu.Unlock()
-	return dbMarkKnowledgeOrigin(g.db, p, title, compileCount, tags)
+	return dbSetKindKnowledge(g.db, p, title, compileCount, tags)
 }
 
 // MarkNoteCompiled sets compile_count = 1 on the raw note at p, marking it as
@@ -143,12 +143,12 @@ func (g *Vault) MarkNoteCompiled(p Path) error {
 	return dbSetCompileCount(g.db, p, 1)
 }
 
-// MarkNoteAsIndex sets origin = plugin:index on the note.
+// MarkNoteAsIndex sets kind = 'index' on the note.
 // title is optional; pass an empty string to leave the existing title unchanged.
 func (g *Vault) MarkNoteAsIndex(p Path, title string) error {
 	g.mu.Lock()
 	defer g.mu.Unlock()
-	return dbMarkIndexOrigin(g.db, p, title)
+	return dbSetKindIndex(g.db, p, title)
 }
 
 
@@ -212,6 +212,152 @@ func (g *Vault) GetKnowledgeIndexes(knowledge Path) ([]Path, error) {
 	g.mu.RLock()
 	defer g.mu.RUnlock()
 	return dbGetKnowledgeIndexes(g.db, knowledge)
+}
+
+// ReplaceKnowledgeLinksForNote incrementally updates knowledge_links for a
+// single source note. wikilinkNames are the raw wikilink targets extracted from
+// the note body; they are resolved against the set of compile-origin notes in
+// the DB. Unresolvable names are silently skipped.
+func (g *Vault) ReplaceKnowledgeLinksForNote(source Path, entityType string, wikilinkNames []string) error {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+
+	var targets []Path
+	if len(wikilinkNames) > 0 {
+		candidates, err := dbGetByNames(g.db, wikilinkNames)
+		if err != nil {
+			return fmt.Errorf("storage: replace knowledge links: lookup names: %w", err)
+		}
+		for _, n := range candidates {
+			if n.Kind == KindKnowledge && n.Path() != source {
+				targets = append(targets, n.Path())
+			}
+		}
+	}
+	return dbReplaceKnowledgeLinks(g.db, source, entityType, targets)
+}
+
+// GetAllKnowledgeLinks returns every directed wikilink edge between knowledge notes.
+func (g *Vault) GetAllKnowledgeLinks() ([]KnowledgeEdge, error) {
+	g.mu.RLock()
+	defer g.mu.RUnlock()
+	return dbGetAllKnowledgeLinks(g.db)
+}
+
+// GetKnowledgeLinksForIndex returns wikilink edges whose both endpoints belong
+// to the given index note's knowledge set.
+func (g *Vault) GetKnowledgeLinksForIndex(index Path) ([]KnowledgeEdge, error) {
+	g.mu.RLock()
+	defer g.mu.RUnlock()
+	return dbGetKnowledgeLinksForIndex(g.db, index)
+}
+
+// BackfillKnowledgeLinks rebuilds the knowledge_links table from the current
+// vault filesystem. It reads every knowledge note already registered in the
+// notes table, extracts wikilinks from their bodies, resolves targets to other
+// knowledge notes, and replaces the knowledge_links rows.
+// This is safe to call at any time: it only touches knowledge_links.
+func (g *Vault) BackfillKnowledgeLinks(knowledgeOutputDir string) error {
+	if knowledgeOutputDir == "" {
+		knowledgeOutputDir = "/_knowledge"
+	}
+	if !strings.HasPrefix(knowledgeOutputDir, "/") {
+		knowledgeOutputDir = "/" + knowledgeOutputDir
+	}
+	distillPrefix := knowledgeOutputDir + "/"
+
+	g.mu.Lock()
+	defer g.mu.Unlock()
+
+	// Clear existing edges.
+	if _, err := g.db.Exec(`DELETE FROM knowledge_links`); err != nil {
+		return fmt.Errorf("storage: backfill knowledge_links: clear: %w", err)
+	}
+
+	// Load all knowledge notes from DB.
+	knowledgeNotes, err := dbListAll(g.db, ListOptions{
+		OnlyKinds: []Kind{KindKnowledge},
+	})
+	if err != nil {
+		return fmt.Errorf("storage: backfill knowledge_links: list: %w", err)
+	}
+
+	// Collect all wikilink targets and entity_type from each knowledge note's body.
+	type kLink struct {
+		path          Path
+		entityType    string
+		wikilinkNames []string
+	}
+	var linksToProcess []kLink
+
+	for _, n := range knowledgeNotes {
+		slashRel := n.PathString()
+		// Only process notes under the knowledge output directory.
+		if slashRel != knowledgeOutputDir && !strings.HasPrefix(slashRel, distillPrefix) {
+			continue
+		}
+		absPath, err := g.osPath(n.Path())
+		if err != nil {
+			continue
+		}
+		data, err := os.ReadFile(absPath)
+		if err != nil {
+			continue
+		}
+		fm, body := util.ParseFrontmatter(data)
+		// Extract entity_type from frontmatter.
+		var entityType string
+		for _, e := range fm.All {
+			if e.Key == "entity_type" {
+				entityType = strings.TrimSpace(e.Value)
+				break
+			}
+		}
+		if wlNames := util.ExtractWikilinkNames(body); len(wlNames) > 0 {
+			linksToProcess = append(linksToProcess, kLink{
+				path:          n.Path(),
+				entityType:    entityType,
+				wikilinkNames: wlNames,
+			})
+		}
+	}
+
+	if len(linksToProcess) == 0 {
+		return nil
+	}
+
+	// Batch-resolve names to knowledge note paths.
+	seenName := make(map[string]bool)
+	var allNames []string
+	for _, kl := range linksToProcess {
+		for _, name := range kl.wikilinkNames {
+			if !seenName[name] {
+				seenName[name] = true
+				allNames = append(allNames, name)
+			}
+		}
+	}
+	knowledgeByName := make(map[string]Path)
+	if candidates, err := dbGetByNames(g.db, allNames); err == nil {
+		for _, n := range candidates {
+			if n.Kind == KindKnowledge {
+				knowledgeByName[n.Name] = n.Path()
+			}
+		}
+	}
+
+	for _, kl := range linksToProcess {
+		var targets []Path
+		for _, name := range kl.wikilinkNames {
+			if tp, ok := knowledgeByName[name]; ok && tp != kl.path {
+				targets = append(targets, tp)
+			}
+		}
+		if len(targets) > 0 {
+			_ = dbReplaceKnowledgeLinks(g.db, kl.path, kl.entityType, targets)
+		}
+	}
+	return nil
 }
 
 // SetNoteTitle sets the title column for the note at p.
@@ -317,8 +463,8 @@ func (g *Vault) ReadNoteStream(p Path) (io.ReadCloser, error) {
 
 // ── note write operations ─────────────────────────────────────────────────────
 
-func (g *Vault) WriteNote(p Path, data []byte, origin Origin) error {
-	return g.WriteNoteWithMeta(p, data, Note{Origin: origin})
+func (g *Vault) WriteNote(p Path, data []byte, kind Kind) error {
+	return g.WriteNoteWithMeta(p, data, Note{Kind: kind})
 }
 
 // WriteNoteWithMeta writes data to p and persists meta fields (Origin, Title)
@@ -362,7 +508,7 @@ func (g *Vault) PrependNote(p Path, incoming []byte, heading string) error {
 	} else {
 		merged = util.MdPrepend(existing, incoming)
 	}
-	isNew, modTime, err := g.writeNoteLocked(p, merged, Note{Origin: OriginAPI})
+	isNew, modTime, err := g.writeNoteLocked(p, merged, Note{})
 	g.mu.Unlock()
 	if err != nil {
 		return err
@@ -398,7 +544,7 @@ func (g *Vault) AppendNote(p Path, incoming []byte, heading string) error {
 	} else {
 		merged = util.MdAppend(existing, incoming)
 	}
-	isNew, modTime, err := g.writeNoteLocked(p, merged, Note{Origin: OriginAPI})
+	isNew, modTime, err := g.writeNoteLocked(p, merged, Note{})
 	g.mu.Unlock()
 	if err != nil {
 		return err
@@ -484,7 +630,7 @@ func (g *Vault) AppendShort(content []byte, shortsDir string) (Path, Note, error
 		merged = fm + entry
 	}
 
-	isNew, modTime, writeErr := g.writeNoteLocked(p, []byte(merged), Note{Origin: OriginShort})
+	isNew, modTime, writeErr := g.writeNoteLocked(p, []byte(merged), Note{Kind: KindShort})
 	g.mu.Unlock()
 	if writeErr != nil {
 		return "", Note{}, writeErr
@@ -574,7 +720,7 @@ func (g *Vault) ListShortEntries(opts ShortListOptions) ([]ShortEntry, error) {
 		d = g.shortsDir
 	}
 	listOpts := ListOptions{
-		OnlyOrigins: []Origin{OriginShort},
+		OnlyKinds:  []Kind{KindShort},
 		SortByTime: true,
 		After:      opts.After,
 		Before:     opts.Before,
@@ -707,14 +853,21 @@ func (g *Vault) CountNotes() (int, error) {
 func (g *Vault) CountKnowledgeNotes() (int, error) {
 	g.mu.RLock()
 	defer g.mu.RUnlock()
-	return dbCountByOrigin(g.db, string(PluginOrigin("compile")), "")
+	return dbCountByKind(g.db, string(KindKnowledge), "")
 }
 
 // CountRawNotes returns the number of non-knowledge notes in the vault.
 func (g *Vault) CountRawNotes() (int, error) {
 	g.mu.RLock()
 	defer g.mu.RUnlock()
-	return dbCountByOrigin(g.db, "", string(PluginOrigin("compile")))
+	return dbCountByKind(g.db, "", string(KindKnowledge))
+}
+
+// CountShortDays returns the number of short daily aggregation files (one per calendar day).
+func (g *Vault) CountShortDays() (int, error) {
+	g.mu.RLock()
+	defer g.mu.RUnlock()
+	return dbCountByKind(g.db, string(KindShort), "")
 }
 
 // ListAllNotes returns every note in the vault regardless of directory.
@@ -729,8 +882,8 @@ func (g *Vault) ListAllNotes(opts ListOptions) ([]Note, error) {
 }
 
 func checkListOpts(opts ListOptions) error {
-	if len(opts.OnlyOrigins) > 0 && len(opts.ExcludeOrigins) > 0 {
-		return fmt.Errorf("storage: OnlyOrigins and ExcludeOrigins cannot both be set")
+	if len(opts.OnlyKinds) > 0 && len(opts.ExcludeKinds) > 0 {
+		return fmt.Errorf("storage: OnlyKinds and ExcludeKinds cannot both be set")
 	}
 	return nil
 }
@@ -823,17 +976,17 @@ func dirHasUnderscoreSegment(dir string) bool {
 }
 
 // ListRecentShortNotes returns metadata for the most recently created short
-// notes (origin "short"), ordered by created_at descending.
+// notes (kind "short"), ordered by created_at descending.
 // When limit <= 0, a default of 7 is used.
 func (g *Vault) ListRecentShortNotes(limit int) ([]Note, error) {
 	g.mu.RLock()
 	defer g.mu.RUnlock()
-	return dbListRecentByOriginByCreatedDesc(g.db, OriginShort, limit)
+	return dbListRecentByKindByCreatedDesc(g.db, KindShort, limit)
 }
 
-// ErrShortDailyWrongOrigin means a note exists at the expected short path but
-// metadata origin is not "short".
-var ErrShortDailyWrongOrigin = errors.New("storage: note at short path does not have short origin")
+// ErrShortDailyWrongKind means a note exists at the expected short path but
+// metadata kind is not "short".
+var ErrShortDailyWrongKind = errors.New("storage: note at short path does not have short kind")
 
 // ShortDailyVaultPath returns the vault-absolute path for the aggregated short file
 // for local calendar date day under shortsDir (vault-relative without leading slash;
@@ -864,8 +1017,8 @@ func (g *Vault) GetShortDailyNote(shortsDir string, day time.Time) (Note, error)
 	if err != nil {
 		return Note{}, err
 	}
-	if n.Origin != OriginShort {
-		return Note{}, ErrShortDailyWrongOrigin
+	if n.Kind != KindShort {
+		return Note{}, ErrShortDailyWrongKind
 	}
 	return n, nil
 }
@@ -911,7 +1064,7 @@ func (g *Vault) ScanAndRegister() (int, error) {
 			Name:      name,
 			Size:      info.Size(),
 			UpdatedAt: info.ModTime(),
-			Origin:    OriginFS,
+			Kind:      "",
 		}); dbErr != nil {
 			return fmt.Errorf("storage: register %q: %w", slashRel, dbErr)
 		}
@@ -955,6 +1108,9 @@ func (g *Vault) ScanAndRegisterFull(knowledgeOutputDir string) (int, error) {
 	if _, err := g.db.Exec(`DELETE FROM index_deps`); err != nil {
 		return 0, fmt.Errorf("storage: clear index_deps: %w", err)
 	}
+	if _, err := g.db.Exec(`DELETE FROM knowledge_links`); err != nil {
+		return 0, fmt.Errorf("storage: clear knowledge_links: %w", err)
+	}
 
 	// kDep records a knowledge note's source_notes list for post-walk dep resolution.
 	type kDep struct {
@@ -969,6 +1125,14 @@ func (g *Vault) ScanAndRegisterFull(knowledgeOutputDir string) (int, error) {
 		body []byte
 	}
 	var indexDepsToRecord []iDep
+
+	// kLink records a knowledge note's wikilink targets for post-walk K→K edge resolution.
+	type kLink struct {
+		path          Path
+		entityType    string
+		wikilinkNames []string
+	}
+	var linksToRecord []kLink
 
 	count := 0
 	err := filepath.WalkDir(g.root, func(absPath string, d os.DirEntry, walkErr error) error {
@@ -1003,7 +1167,7 @@ func (g *Vault) ScanAndRegisterFull(knowledgeOutputDir string) (int, error) {
 			Size:      info.Size(),
 			UpdatedAt: info.ModTime(),
 			CreatedAt: info.ModTime(),
-			Origin:    OriginFS,
+			Kind:      "",
 		}
 
 		// Detect knowledge notes by path prefix and `kind: knowledge` frontmatter,
@@ -1015,7 +1179,7 @@ func (g *Vault) ScanAndRegisterFull(knowledgeOutputDir string) (int, error) {
 			if readErr == nil {
 				fm, body := util.ParseFrontmatter(data)
 				if fm.HasMeta() {
-					var kind, title, domain string
+					var kind, title, domain, entityType string
 					var compileCount int
 					var srcNotes []string
 					for _, e := range fm.All {
@@ -1032,11 +1196,13 @@ func (g *Vault) ScanAndRegisterFull(knowledgeOutputDir string) (int, error) {
 							}
 						case "source_notes":
 							srcNotes = e.List
+						case "entity_type":
+							entityType = strings.TrimSpace(e.Value)
 						}
 					}
 					switch {
 					case strings.EqualFold(kind, "knowledge"):
-						n.Origin = PluginOrigin("compile")
+						n.Kind = KindKnowledge
 						n.Title = title
 						n.CompileCount = compileCount
 						n.Tags = fm.Tags
@@ -1046,8 +1212,16 @@ func (g *Vault) ScanAndRegisterFull(knowledgeOutputDir string) (int, error) {
 								sourceNotes: srcNotes,
 							})
 						}
+						// Collect wikilink targets for K→K edge resolution after walk.
+						if wlNames := util.ExtractWikilinkNames(body); len(wlNames) > 0 {
+							linksToRecord = append(linksToRecord, kLink{
+								path:          Path(slashRel),
+								entityType:    entityType,
+								wikilinkNames: wlNames,
+							})
+						}
 					case strings.EqualFold(kind, "index"):
-						n.Origin = PluginOrigin("index")
+						n.Kind = KindIndex
 						n.Title = domain
 						n.Tags = fm.Tags
 						indexDepsToRecord = append(indexDepsToRecord, iDep{
@@ -1062,10 +1236,10 @@ func (g *Vault) ScanAndRegisterFull(knowledgeOutputDir string) (int, error) {
 		// Detect short note daily files by `kind: short` frontmatter under the
 		// configured shorts directory.
 		shortsVaultPrefix := "/" + strings.Trim(g.shortsDir, "/") + "/"
-		if n.Origin == OriginFS && strings.HasPrefix(slashRel, shortsVaultPrefix) {
+		if n.Kind == "" && strings.HasPrefix(slashRel, shortsVaultPrefix) {
 			data, readErr := os.ReadFile(absPath)
 			if readErr == nil && util.IsShortNote(data) {
-				n.Origin = OriginShort
+				n.Kind = KindShort
 			}
 		}
 
@@ -1136,6 +1310,44 @@ func (g *Vault) ScanAndRegisterFull(knowledgeOutputDir string) (int, error) {
 		}
 		if len(resolved) > 0 {
 			_ = dbReplaceIndexDeps(g.db, dep.path, resolved)
+		}
+	}
+
+	// Populate knowledge_links from wikilinks in knowledge note bodies.
+	// Only edges pointing at other knowledge notes are recorded.
+	if len(linksToRecord) > 0 {
+		// Batch-collect all referenced names (deduped).
+		seenName := make(map[string]bool)
+		var allLinkNames []string
+		for _, kl := range linksToRecord {
+			for _, name := range kl.wikilinkNames {
+				if !seenName[name] {
+					seenName[name] = true
+					allLinkNames = append(allLinkNames, name)
+				}
+			}
+		}
+		// Resolve names → knowledge note paths.
+		knowledgeByName := make(map[string]Path)
+		if len(allLinkNames) > 0 {
+			if candidates, err := dbGetByNames(g.db, allLinkNames); err == nil {
+				for _, n := range candidates {
+					if n.Kind == KindKnowledge {
+						knowledgeByName[n.Name] = n.Path()
+					}
+				}
+			}
+		}
+		for _, kl := range linksToRecord {
+			var targets []Path
+			for _, name := range kl.wikilinkNames {
+				if tp, ok := knowledgeByName[name]; ok && tp != kl.path {
+					targets = append(targets, tp)
+				}
+			}
+			if len(targets) > 0 {
+				_ = dbReplaceKnowledgeLinks(g.db, kl.path, kl.entityType, targets)
+			}
 		}
 	}
 
@@ -1229,9 +1441,6 @@ func (g *Vault) writeNoteLocked(p Path, data []byte, meta Note) (isNew bool, mod
 	meta.Name = p.Base()
 	meta.Size = info.Size()
 	meta.UpdatedAt = info.ModTime()
-	if meta.Origin == "" {
-		meta.Origin = OriginAPI
-	}
 	if fm, _ := util.ParseFrontmatter(data); len(fm.Tags) > 0 {
 		meta.Tags = fm.Tags
 	}

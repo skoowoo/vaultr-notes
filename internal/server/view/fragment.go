@@ -151,19 +151,22 @@ const noteFragHTML = `<header class="frag-cover">
       metadata
     </summary>
     <dl class="fm-grid">
-      {{- range .Frontmatter.All}}
-      <dt class="fm-key">{{.Key}}</dt>
-      <dd class="fm-val">
-        {{- if .IsList}}
-        {{- range .List}}<span class="fm-tag">{{.}}</span>{{end}}
-        {{- else if .IsURL}}
-        <span class="fm-val-text" title="{{.Value}}"><a href="{{.Value}}" target="_blank" rel="noopener noreferrer">{{.Value}}</a></span>
-        {{- else if .Value}}
-        <span class="fm-val-text" title="{{.Value}}">{{.Value}}</span>
+      {{- range $i, $v := .Frontmatter.All}}
+      <dt class="fm-key{{if ge $i 3}} fm-overflow{{end}}">{{$v.Key}}</dt>
+      <dd class="fm-val{{if ge $i 3}} fm-overflow{{end}}">
+        {{- if $v.IsList}}
+        {{- range $v.List}}<span class="fm-tag">{{.}}</span>{{end}}
+        {{- else if $v.IsURL}}
+        <span class="fm-val-text" title="{{$v.Value}}"><a href="{{$v.Value}}" target="_blank" rel="noopener noreferrer">{{$v.Value}}</a></span>
+        {{- else if $v.Value}}
+        <span class="fm-val-text" title="{{$v.Value}}">{{$v.Value}}</span>
         {{- end}}
       </dd>
       {{- end}}
     </dl>
+    {{- if gt (len .Frontmatter.All) 3}}
+    <button class="fm-toggle" onclick="fmToggleGrid(this)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m7 6 5 5 5-5"/><path d="m7 13 5 5 5-5"/></svg></button>
+    {{- end}}
   </details>
 </div>
 {{- end}}

@@ -34,4 +34,15 @@
       font-size: var(--text-xs); color: var(--cover-dir);
       white-space: pre-wrap; margin: 0;
     }
+    /* ── Frontmatter collapse ─────────────────────────────────── */
+    .fm-overflow { display: none; }
+    .fm-grid.fm-expanded .fm-overflow { display: block; }
+    .fm-toggle {
+      display: inline-flex; align-items: center;
+      margin-top: 0.15rem; padding: 2px;
+      border: none; background: transparent; cursor: pointer;
+      color: var(--cover-dir); border-radius: 3px; opacity: 0.5;
+    }
+    .fm-toggle:hover { opacity: 1; }
+    .fm-toggle svg { width: 14px; height: 14px; display: block; }
 

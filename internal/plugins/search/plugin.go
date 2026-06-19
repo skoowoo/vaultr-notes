@@ -209,7 +209,7 @@ func (p *Plugin) indexFile(pathStr string) {
 		return
 	}
 	tags := extractSearchTags(content)
-	p.indexer.Upsert(pathStr, note.Name, string(content), tags, note.UpdatedAt, originKind(note.Origin))
+	p.indexer.Upsert(pathStr, note.Name, string(content), tags, note.UpdatedAt, string(note.Kind))
 	if err := p.vault.MarkNoteIndexed(sp); err != nil {
 		p.logger.Warn("search: could not mark note indexed", "path", pathStr, "err", err)
 	}
@@ -264,16 +264,3 @@ func (p *Plugin) backfill(ctx context.Context) {
 	}
 }
 
-// originKind maps a storage Origin to the canonical index kind string.
-func originKind(origin storage.Origin) string {
-	switch origin {
-	case storage.PluginOrigin("compile"):
-		return "knowledge"
-	case storage.PluginOrigin("index"):
-		return "index"
-	case storage.OriginShort:
-		return "short"
-	default:
-		return "raw"
-	}
-}

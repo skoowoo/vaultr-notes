@@ -171,7 +171,6 @@ func (w *Watcher) syncUpsert(relPath string, info os.FileInfo) bool {
 		Name:      p.Base(),
 		Size:      info.Size(),
 		UpdatedAt: info.ModTime(),
-		Origin:    OriginFS,
 	})
 	w.g.mu.Unlock()
 

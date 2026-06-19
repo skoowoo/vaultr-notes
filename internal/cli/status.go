@@ -49,6 +49,8 @@ The server must be running. Start it with: vaultr start server`,
 func printStatus(s *client.StatusResponse) error {
 	rows := []struct{ k, v string }{
 		{"vault.notes", fmt.Sprintf("%d", s.Notes)},
+		{"vault.knowledge", fmt.Sprintf("%d", s.KnowledgeNotes)},
+		{"vault.short_days", fmt.Sprintf("%d", s.ShortDays)},
 		{"search.indexed", fmt.Sprintf("%d", s.Indexed)},
 	}
 

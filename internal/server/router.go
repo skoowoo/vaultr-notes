@@ -83,8 +83,7 @@ func newRouter(
 	// System routes
 	mux.HandleFunc("POST /healthz", h.HealthCheck)
 	mux.HandleFunc("POST /version", h.Version)
-	mux.HandleFunc("POST /api/info", h.Info)
-	mux.HandleFunc("POST /api/status", handler.NewStatus(vault, searchPlugin).Status)
+mux.HandleFunc("POST /api/status", handler.NewStatus(vault, searchPlugin).Status)
 
 	mux.HandleFunc("GET /api/config", cfgHTTP.Get)
 	mux.HandleFunc("GET /api/config/schema", cfgHTTP.Schema)
@@ -118,6 +117,9 @@ func newRouter(
 	mux.HandleFunc("GET /library/index/select", vh.LibraryIndexSelect)
 	mux.HandleFunc("GET /library/focus", vh.LibraryFocus)
 	mux.HandleFunc("GET /library/unfocus", vh.LibraryUnfocus)
+	mux.HandleFunc("GET /graph", vh.KnowledgeGraph)
+	mux.HandleFunc("GET /api/graph/data", vh.KnowledgeGraphData)
+	mux.HandleFunc("POST /api/graph/rebuild", vh.KnowledgeGraphRebuild)
 	mux.HandleFunc("GET /notes/fragment", vh.NoteFragment)
 
 	mux.Handle("POST /api/notes/resolve", handler.NewNoteResolve(vault))

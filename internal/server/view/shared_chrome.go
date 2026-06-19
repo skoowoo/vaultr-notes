@@ -112,11 +112,11 @@ const topbarCSS = `
     html.macos .lib-topbar a { -webkit-app-region: no-drag; }`
 
 // navHTML returns the complete <nav class="lib-nav">…</nav> HTML block.
-// active should be the page's own name: "home", "agent", "settings",
+// active should be the page's own name: "home", "agent", "graph", "settings",
 // or a sub-page name ("images", "shorts", "dir", "library") — sub-pages highlight their parent.
 func navHTML(active string) string {
 	// sub-pages of Home highlight the Home nav item
-	if active == "images" || active == "shorts" || active == "dir" || active == "library" || active == "folders" {
+	if active == "images" || active == "shorts" || active == "dir" || active == "library" || active == "folders" || active == "graph" {
 		active = "home"
 	}
 	cls := func(page string) string {

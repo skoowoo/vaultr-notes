@@ -133,7 +133,7 @@ func (vh *ViewHandler) loadStreamGroups(before time.Time, limit int) ([]shortsSt
 // highlighted as selected (typically today's month or the ?from= param value).
 func (vh *ViewHandler) loadMonthsWithEntries(activeYM string) []shortsMonthItem {
 	notes, _ := vh.vault.ListAllNotes(storage.ListOptions{
-		OnlyOrigins: []storage.Origin{storage.OriginShort},
+		OnlyKinds: []storage.Kind{storage.KindShort},
 	})
 
 	monthSet := make(map[string]bool)
@@ -249,7 +249,7 @@ func (vh *ViewHandler) shortsDatesForMonth(year, month int) ([]string, error) {
 	start := time.Date(year, time.Month(month), 1, 0, 0, 0, 0, time.Local)
 	end := start.AddDate(0, 1, 0)
 	notes, err := vh.vault.ListAllNotes(storage.ListOptions{
-		OnlyOrigins: []storage.Origin{storage.OriginShort},
+		OnlyKinds: []storage.Kind{storage.KindShort},
 		SortByTime: true,
 		After:      start,
 		Before:     end,

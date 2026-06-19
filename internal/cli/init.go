@@ -16,6 +16,7 @@ import (
 var (
 	vaultInitLinkImagesOnly bool
 	vaultInitReindex        bool
+	vaultInitRebuildGraph   bool
 )
 
 func newInitCmd() *cobra.Command {
@@ -39,6 +40,8 @@ directory and search indexing behaviour.`,
 		"only rebuild image–note associations (requires an existing .vaultr/ in the vault)")
 	cmd.Flags().BoolVar(&vaultInitReindex, "reindex", false,
 		"delete and rebuild the full-text search index from scratch (requires an existing .vaultr/ in the vault)")
+	cmd.Flags().BoolVar(&vaultInitRebuildGraph, "rebuild-graph", false,
+		"rebuild the knowledge graph link index from scratch (requires an existing .vaultr/ in the vault)")
 	return cmd
 }
 
@@ -89,6 +92,19 @@ func runVaultInit(_ *cobra.Command, args []string) error {
 		}
 		defer vault.Close()
 		return runReindex(root, vault)
+	}
+
+	if vaultInitRebuildGraph {
+		if !initd {
+			fmt.Fprintf(os.Stderr, "Not a Vaultr vault (missing %s); run vaultr init first.\n", filepath.Join(root, ".vaultr"))
+			return fmt.Errorf("vault not initialized")
+		}
+		vault, err := storage.New(root)
+		if err != nil {
+			return fmt.Errorf("open vault: %w", err)
+		}
+		defer vault.Close()
+		return runRebuildGraph(vault)
 	}
 
 	if initd {
@@ -151,6 +167,16 @@ func runLinkImagesWork(vault *storage.Vault) error {
 		return fmt.Errorf("link images: %w", err)
 	}
 	fmt.Println("Done.")
+	return nil
+}
+
+func runRebuildGraph(vault *storage.Vault) error {
+	cfg := config.MustLoad("")
+	fmt.Println("Rebuilding knowledge graph link index...")
+	if err := vault.BackfillKnowledgeLinks(cfg.Vault.KnowledgeDir); err != nil {
+		return fmt.Errorf("rebuild graph: %w", err)
+	}
+	fmt.Println("Rebuild complete.")
 	return nil
 }
 

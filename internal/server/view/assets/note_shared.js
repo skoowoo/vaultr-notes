@@ -1,3 +1,14 @@
+var fmIconDown = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m7 6 5 5 5-5"/><path d="m7 13 5 5 5-5"/></svg>';
+var fmIconUp   = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m7 11 5-5 5 5"/><path d="m7 18 5-5 5 5"/></svg>';
+
+window.fmToggleGrid = function(btn) {
+  var details = btn.closest('details');
+  var grid = details && details.querySelector('.fm-grid');
+  if (!grid) return;
+  var expanded = grid.classList.toggle('fm-expanded');
+  btn.innerHTML = expanded ? fmIconUp : fmIconDown;
+};
+
 (function () {
   document.addEventListener('click', function (e) {
     var a = e.target.closest ? e.target.closest('a') : null;

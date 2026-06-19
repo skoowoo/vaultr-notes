@@ -18,7 +18,6 @@
 - [个人记忆（Memory）](#个人记忆memory)
 - [Skills](#skills)
 - [自定义 AI 行为](#自定义-ai-行为)
-- [CLI 用法](#cli-用法)
 - [快捷键](#快捷键)
 
 ## 它能做什么
@@ -404,44 +403,6 @@ Vaultr 的每一层 AI 输出都可以自定义：
 #### 5. 安装或编写自定义 Skill
 
 将任意 skill 目录放入 `~/.vaultr/skills/`，然后在**设置 → Skills** 中启用即可。Agent 通过目录名来引用 skill。
-
-## CLI 用法
-
-```
-AI-native personal note-taking system
-
-Usage:
-  vaultr [flags]
-  vaultr [command]
-
-Available Commands:
-  agent       Local coding agent adapters (requires running server)
-  append      Append content to a note
-  completion  Generate the autocompletion script for the specified shell
-  create      Create a note in the vault
-  delete      Delete a note
-  extract     Extract structured data from notes
-  help        Help about any command
-  info        Show server configuration and plugin status
-  init        Initialize a directory as a Vaultr vault (like git init)
-  knowledge   List, read, search, and delete knowledge notes
-  list        List notes
-  prepend     Prepend content to a note
-  read        Print a note to stdout
-  resolve     Look up vault path(s) for a note filename
-  search      Search notes
-  short       Create and manage short notes
-  start       Start a service
-  status      Show live status of the running server
-  tag         List tags, count tag usage, or delete by tag
-  trigger     Manually trigger server-side operations
-
-Flags:
-  -h, --help      help for vaultr
-  -v, --version   print version information
-
-Use "vaultr [command] --help" for more information about a command.
-```
 
 ## 快捷键
 

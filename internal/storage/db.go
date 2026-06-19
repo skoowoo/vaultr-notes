@@ -10,7 +10,7 @@ import (
 	_ "modernc.org/sqlite" // pure-Go SQLite driver
 )
 
-const currentDBVersion = 19
+const currentDBVersion = 23
 
 // schema is the notes table DDL.
 //
@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS notes (
     created_at    INTEGER NOT NULL,
     updated_at    INTEGER NOT NULL,
     indexed       INTEGER NOT NULL DEFAULT 0,
-    origin        TEXT    NOT NULL DEFAULT 'api',
+    kind          TEXT    NOT NULL DEFAULT '',
     title         TEXT    NOT NULL DEFAULT '',
     pinned        INTEGER NOT NULL DEFAULT 0,
     compile_count INTEGER NOT NULL DEFAULT 0,
@@ -73,6 +73,22 @@ CREATE TABLE IF NOT EXISTS index_deps (
     knowledge_name  TEXT    NOT NULL,
     created_at      INTEGER NOT NULL,
     UNIQUE(index_dir, index_name, knowledge_dir, knowledge_name)
+);
+`
+
+// knowledgeLinksSchema creates the knowledge_links join table.
+// Each row records a directed wikilink edge from one knowledge note to another.
+// source → target means the source note's body contains [[target]] (or [[target|…]]).
+const knowledgeLinksSchema = `
+CREATE TABLE IF NOT EXISTS knowledge_links (
+    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+    source_dir          TEXT    NOT NULL,
+    source_name         TEXT    NOT NULL,
+    target_dir          TEXT    NOT NULL,
+    target_name         TEXT    NOT NULL,
+    source_entity_type  TEXT    NOT NULL DEFAULT '',
+    created_at          INTEGER NOT NULL,
+    UNIQUE(source_dir, source_name, target_dir, target_name)
 );
 `
 
@@ -122,6 +138,13 @@ func openDB(vaultRoot string) (*sql.DB, error) {
 			{imagesSchema, "create images table"},
 			{knowledgeDepsSchema, "create knowledge_deps table"},
 			{indexDepsSchema, "create index_deps table"},
+			{knowledgeLinksSchema, "create knowledge_links table"},
+			{`CREATE INDEX IF NOT EXISTS idx_kl_source ON knowledge_links(source_dir, source_name)`, "create idx_kl_source"},
+			{`CREATE INDEX IF NOT EXISTS idx_kl_target ON knowledge_links(target_dir, target_name)`, "create idx_kl_target"},
+			{`CREATE INDEX IF NOT EXISTS idx_kd_knowledge ON knowledge_deps(knowledge_dir, knowledge_name)`, "create idx_kd_knowledge"},
+			{`CREATE INDEX IF NOT EXISTS idx_kd_source ON knowledge_deps(source_dir, source_name)`, "create idx_kd_source"},
+			{`CREATE INDEX IF NOT EXISTS idx_id_index ON index_deps(index_dir, index_name)`, "create idx_id_index"},
+			{`CREATE INDEX IF NOT EXISTS idx_id_knowledge ON index_deps(knowledge_dir, knowledge_name)`, "create idx_id_knowledge"},
 		} {
 			if _, err := db.Exec(step.ddl); err != nil {
 				db.Close()
@@ -133,6 +156,30 @@ func openDB(vaultRoot string) (*sql.DB, error) {
 			if !strings.Contains(altErr.Error(), "duplicate column name") {
 				db.Close()
 				return nil, fmt.Errorf("storage: add tags column: %w", altErr)
+			}
+		}
+		// Add source_entity_type column if missing (version 21).
+		if _, altErr := db.Exec(`ALTER TABLE knowledge_links ADD COLUMN source_entity_type TEXT NOT NULL DEFAULT ''`); altErr != nil {
+			if !strings.Contains(altErr.Error(), "duplicate column name") {
+				db.Close()
+				return nil, fmt.Errorf("storage: add source_entity_type column: %w", altErr)
+			}
+		}
+		// Version 23: rename origin column to kind and migrate legacy values.
+		if _, altErr := db.Exec(`ALTER TABLE notes ADD COLUMN kind TEXT NOT NULL DEFAULT ''`); altErr != nil {
+			if !strings.Contains(altErr.Error(), "duplicate column name") {
+				db.Close()
+				return nil, fmt.Errorf("storage: add kind column: %w", altErr)
+			}
+		}
+		for _, mig := range []struct{ where, kind string }{
+			{"origin = 'plugin:compile'", "knowledge"},
+			{"origin = 'plugin:index'", "index"},
+			{"origin = 'short'", "short"},
+		} {
+			if _, err := db.Exec(`UPDATE notes SET kind = ? WHERE ` + mig.where, mig.kind); err != nil {
+				db.Close()
+				return nil, fmt.Errorf("storage: migrate kind (%s): %w", mig.kind, err)
 			}
 		}
 		if _, err := db.Exec(fmt.Sprintf("PRAGMA user_version = %d", currentDBVersion)); err != nil {
@@ -163,20 +210,20 @@ func dbListByDir(db *sql.DB, dir string, opts ListOptions) ([]Note, error) {
 	if opts.OnlyUnindexed {
 		where = append(where, "indexed = 0")
 	}
-	if len(opts.OnlyOrigins) > 0 {
-		placeholders := strings.Repeat("?,", len(opts.OnlyOrigins))
+	if len(opts.OnlyKinds) > 0 {
+		placeholders := strings.Repeat("?,", len(opts.OnlyKinds))
 		placeholders = placeholders[:len(placeholders)-1]
-		where = append(where, "origin IN ("+placeholders+")")
-		for _, o := range opts.OnlyOrigins {
-			args = append(args, string(o))
+		where = append(where, "kind IN ("+placeholders+")")
+		for _, k := range opts.OnlyKinds {
+			args = append(args, string(k))
 		}
 	}
-	if len(opts.ExcludeOrigins) > 0 {
-		placeholders := strings.Repeat("?,", len(opts.ExcludeOrigins))
+	if len(opts.ExcludeKinds) > 0 {
+		placeholders := strings.Repeat("?,", len(opts.ExcludeKinds))
 		placeholders = placeholders[:len(placeholders)-1]
-		where = append(where, "origin NOT IN ("+placeholders+")")
-		for _, o := range opts.ExcludeOrigins {
-			args = append(args, string(o))
+		where = append(where, "kind NOT IN ("+placeholders+")")
+		for _, k := range opts.ExcludeKinds {
+			args = append(args, string(k))
 		}
 	}
 	if !opts.After.IsZero() {
@@ -189,7 +236,7 @@ func dbListByDir(db *sql.DB, dir string, opts ListOptions) ([]Note, error) {
 	}
 
 	query := fmt.Sprintf(`
-		SELECT dir, name, size, created_at, updated_at, indexed, origin, title, pinned, compile_count, tags
+		SELECT dir, name, size, created_at, updated_at, indexed, kind, title, pinned, compile_count, tags
 		FROM notes
 		WHERE %s
 		ORDER BY %s`, strings.Join(where, " AND "), orderBy)
@@ -223,20 +270,20 @@ func dbListAll(db *sql.DB, opts ListOptions) ([]Note, error) {
 	if opts.OnlyUnindexed {
 		where = append(where, "indexed = 0")
 	}
-	if len(opts.OnlyOrigins) > 0 {
-		placeholders := strings.Repeat("?,", len(opts.OnlyOrigins))
+	if len(opts.OnlyKinds) > 0 {
+		placeholders := strings.Repeat("?,", len(opts.OnlyKinds))
 		placeholders = placeholders[:len(placeholders)-1]
-		where = append(where, "origin IN ("+placeholders+")")
-		for _, o := range opts.OnlyOrigins {
-			args = append(args, string(o))
+		where = append(where, "kind IN ("+placeholders+")")
+		for _, k := range opts.OnlyKinds {
+			args = append(args, string(k))
 		}
 	}
-	if len(opts.ExcludeOrigins) > 0 {
-		placeholders := strings.Repeat("?,", len(opts.ExcludeOrigins))
+	if len(opts.ExcludeKinds) > 0 {
+		placeholders := strings.Repeat("?,", len(opts.ExcludeKinds))
 		placeholders = placeholders[:len(placeholders)-1]
-		where = append(where, "origin NOT IN ("+placeholders+")")
-		for _, o := range opts.ExcludeOrigins {
-			args = append(args, string(o))
+		where = append(where, "kind NOT IN ("+placeholders+")")
+		for _, k := range opts.ExcludeKinds {
+			args = append(args, string(k))
 		}
 	}
 	if !opts.After.IsZero() {
@@ -254,7 +301,7 @@ func dbListAll(db *sql.DB, opts ListOptions) ([]Note, error) {
 	}
 
 	query := fmt.Sprintf(`
-		SELECT dir, name, size, created_at, updated_at, indexed, origin, title, pinned, compile_count, tags
+		SELECT dir, name, size, created_at, updated_at, indexed, kind, title, pinned, compile_count, tags
 		FROM notes %s
 		ORDER BY %s`, whereClause, orderBy)
 
@@ -272,20 +319,20 @@ func dbListAll(db *sql.DB, opts ListOptions) ([]Note, error) {
 	return dbScan_(rows)
 }
 
-// dbListRecentByOriginByCreatedDesc returns up to limit notes with the given
-// origin, ordered by created_at descending (newest first).
-func dbListRecentByOriginByCreatedDesc(db *sql.DB, origin Origin, limit int) ([]Note, error) {
+// dbListRecentByKindByCreatedDesc returns up to limit notes with the given
+// kind, ordered by created_at descending (newest first).
+func dbListRecentByKindByCreatedDesc(db *sql.DB, kind Kind, limit int) ([]Note, error) {
 	if limit <= 0 {
 		limit = 7
 	}
 	rows, err := db.Query(`
-		SELECT dir, name, size, created_at, updated_at, indexed, origin, title, pinned, compile_count, tags
+		SELECT dir, name, size, created_at, updated_at, indexed, kind, title, pinned, compile_count, tags
 		FROM notes
-		WHERE origin = ?
+		WHERE kind = ?
 		ORDER BY created_at DESC
-		LIMIT ?`, string(origin), limit)
+		LIMIT ?`, string(kind), limit)
 	if err != nil {
-		return nil, fmt.Errorf("storage: list recent notes by origin %q: %w", origin, err)
+		return nil, fmt.Errorf("storage: list recent notes by kind %q: %w", kind, err)
 	}
 	defer rows.Close()
 	return dbScan_(rows)
@@ -298,9 +345,9 @@ func dbGet(db *sql.DB, p Path) (Note, error) {
 	var indexed, pinned int
 	var tagsRaw string
 	err := db.QueryRow(`
-		SELECT dir, name, size, created_at, updated_at, indexed, origin, title, pinned, compile_count, tags
+		SELECT dir, name, size, created_at, updated_at, indexed, kind, title, pinned, compile_count, tags
 		FROM notes WHERE dir = ? AND name = ?`, p.Dir(), p.Base()).
-		Scan(&n.Dir, &n.Name, &size, &createdNs, &updNs, &indexed, &n.Origin, &n.Title, &pinned, &n.CompileCount, &tagsRaw)
+		Scan(&n.Dir, &n.Name, &size, &createdNs, &updNs, &indexed, &n.Kind, &n.Title, &pinned, &n.CompileCount, &tagsRaw)
 	if errors.Is(err, sql.ErrNoRows) {
 		return Note{}, ErrMetadataNotFound
 	}
@@ -329,7 +376,7 @@ func dbGetByNames(db *sql.DB, names []string) ([]Note, error) {
 		args[i] = n
 	}
 	rows, err := db.Query(`
-		SELECT dir, name, size, created_at, updated_at, indexed, origin, title, pinned, compile_count, tags
+		SELECT dir, name, size, created_at, updated_at, indexed, kind, title, pinned, compile_count, tags
 		FROM notes WHERE name IN (`+placeholders+`) ORDER BY updated_at DESC`, args...)
 	if err != nil {
 		return nil, fmt.Errorf("storage: notes by names: %w", err)
@@ -352,7 +399,7 @@ func dbGetByPaths(db *sql.DB, paths []Path) ([]Note, error) {
 		args = append(args, p.Dir(), p.Base())
 	}
 	rows, err := db.Query(`
-		SELECT dir, name, size, created_at, updated_at, indexed, origin, title, pinned, compile_count, tags
+		SELECT dir, name, size, created_at, updated_at, indexed, kind, title, pinned, compile_count, tags
 		FROM notes WHERE `+strings.Join(clauses, " OR ")+`
 		ORDER BY updated_at DESC`, args...)
 	if err != nil {
@@ -365,7 +412,7 @@ func dbGetByPaths(db *sql.DB, paths []Path) ([]Note, error) {
 // dbGetByName returns every row whose name column equals the given filename
 func dbGetByName(db *sql.DB, name string) ([]Note, error) {
 	rows, err := db.Query(`
-		SELECT dir, name, size, created_at, updated_at, indexed, origin, title, pinned, compile_count, tags
+		SELECT dir, name, size, created_at, updated_at, indexed, kind, title, pinned, compile_count, tags
 		FROM notes
 		WHERE name = ?
 		ORDER BY updated_at DESC, dir ASC`, name)
@@ -385,7 +432,7 @@ func dbScan_(rows *sql.Rows) ([]Note, error) {
 		var createdNs, updNs int64
 		var indexed, pinned int
 		var tagsRaw string
-		if err := rows.Scan(&n.Dir, &n.Name, &n.Size, &createdNs, &updNs, &indexed, &n.Origin, &n.Title, &pinned, &n.CompileCount, &tagsRaw); err != nil {
+		if err := rows.Scan(&n.Dir, &n.Name, &n.Size, &createdNs, &updNs, &indexed, &n.Kind, &n.Title, &pinned, &n.CompileCount, &tagsRaw); err != nil {
 			return nil, fmt.Errorf("storage: scan note: %w", err)
 		}
 		n.CreatedAt = time.Unix(0, createdNs)
@@ -407,12 +454,8 @@ func dbUpsert(db *sql.DB, n Note) error {
 	if !n.UpdatedAt.IsZero() {
 		updNs = n.UpdatedAt.UnixNano()
 	}
-	origin := n.Origin
-	if origin == "" {
-		origin = OriginAPI
-	}
 	_, err := db.Exec(`
-		INSERT INTO notes(dir, name, size, created_at, updated_at, indexed, origin, title, tags)
+		INSERT INTO notes(dir, name, size, created_at, updated_at, indexed, kind, title, tags)
 		VALUES (?, ?, ?, ?, ?, 0, ?, ?, ?)
 		ON CONFLICT(dir, name) DO UPDATE SET
 		    size        = excluded.size,
@@ -420,7 +463,7 @@ func dbUpsert(db *sql.DB, n Note) error {
 		    indexed     = CASE WHEN excluded.updated_at > notes.updated_at THEN 0 ELSE notes.indexed END,
 		    title       = CASE WHEN excluded.title != '' THEN excluded.title ELSE notes.title END,
 		    tags        = excluded.tags`,
-		n.Dir, n.Name, n.Size, now, updNs, origin, n.Title, joinTags(n.Tags),
+		n.Dir, n.Name, n.Size, now, updNs, string(n.Kind), n.Title, joinTags(n.Tags),
 	)
 	return err
 }
@@ -464,14 +507,14 @@ func dbCount(db *sql.DB) (int, error) {
 	return n, err
 }
 
-func dbCountByOrigin(db *sql.DB, onlyOrigin, excludeOrigin string) (int, error) {
+func dbCountByKind(db *sql.DB, onlyKind, excludeKind string) (int, error) {
 	var n int
 	var err error
 	switch {
-	case onlyOrigin != "":
-		err = db.QueryRow(`SELECT COUNT(*) FROM notes WHERE origin = ?`, onlyOrigin).Scan(&n)
-	case excludeOrigin != "":
-		err = db.QueryRow(`SELECT COUNT(*) FROM notes WHERE origin != ?`, excludeOrigin).Scan(&n)
+	case onlyKind != "":
+		err = db.QueryRow(`SELECT COUNT(*) FROM notes WHERE kind = ?`, onlyKind).Scan(&n)
+	case excludeKind != "":
+		err = db.QueryRow(`SELECT COUNT(*) FROM notes WHERE kind != ?`, excludeKind).Scan(&n)
 	default:
 		err = db.QueryRow(`SELECT COUNT(*) FROM notes`).Scan(&n)
 	}
@@ -494,28 +537,24 @@ func dbClearAll(db *sql.DB) error {
 // dbInsertFull inserts a note row with all fields explicitly set.
 // Uses ON CONFLICT DO UPDATE to preserve user-set fields (pinned) across vault rescans.
 func dbInsertFull(db *sql.DB, n Note) error {
-	origin := n.Origin
-	if origin == "" {
-		origin = OriginFS
-	}
 	createdNs := n.UpdatedAt.UnixNano()
 	if !n.CreatedAt.IsZero() {
 		createdNs = n.CreatedAt.UnixNano()
 	}
 	updNs := n.UpdatedAt.UnixNano()
 	_, err := db.Exec(`
-		INSERT INTO notes(dir, name, size, created_at, updated_at, indexed, origin, title, compile_count, tags)
+		INSERT INTO notes(dir, name, size, created_at, updated_at, indexed, kind, title, compile_count, tags)
 		VALUES (?, ?, ?, ?, ?, 0, ?, ?, ?, ?)
 		ON CONFLICT(dir, name) DO UPDATE SET
 		    size          = excluded.size,
 		    created_at    = excluded.created_at,
 		    updated_at    = excluded.updated_at,
 		    indexed       = 0,
-		    origin        = excluded.origin,
+		    kind          = excluded.kind,
 		    title         = excluded.title,
 		    compile_count = excluded.compile_count,
 		    tags          = excluded.tags`,
-		n.Dir, n.Name, n.Size, createdNs, updNs, string(origin), n.Title, n.CompileCount, joinTags(n.Tags),
+		n.Dir, n.Name, n.Size, createdNs, updNs, string(n.Kind), n.Title, n.CompileCount, joinTags(n.Tags),
 	)
 	return err
 }
@@ -533,7 +572,7 @@ func dbSetPinned(db *sql.DB, p Path, pinned bool) error {
 // dbListPinned returns all notes where pinned = 1, ordered by updated_at DESC.
 func dbListPinned(db *sql.DB) ([]Note, error) {
 	rows, err := db.Query(`
-		SELECT dir, name, size, created_at, updated_at, indexed, origin, title, pinned, compile_count, tags
+		SELECT dir, name, size, created_at, updated_at, indexed, kind, title, pinned, compile_count, tags
 		FROM notes WHERE pinned = 1
 		ORDER BY updated_at DESC`)
 	if err != nil {
@@ -555,42 +594,42 @@ func dbSetCompileCount(db *sql.DB, p Path, count int) error {
 	return err
 }
 
-// dbMarkKnowledgeOrigin sets origin = 'plugin:compile', compile_count, tags, and optionally title for the note at p.
+// dbSetKindKnowledge sets kind = 'knowledge', compile_count, tags, and optionally title for the note at p.
 // title may be empty to leave the column unchanged.
-func dbMarkKnowledgeOrigin(db *sql.DB, p Path, title string, compileCount int, tags []string) error {
+func dbSetKindKnowledge(db *sql.DB, p Path, title string, compileCount int, tags []string) error {
 	if title != "" {
 		_, err := db.Exec(
-			`UPDATE notes SET origin = ?, title = ?, compile_count = ?, tags = ? WHERE dir = ? AND name = ?`,
-			string(PluginOrigin("compile")), title, compileCount, joinTags(tags), p.Dir(), p.Base(),
+			`UPDATE notes SET kind = ?, title = ?, compile_count = ?, tags = ? WHERE dir = ? AND name = ?`,
+			string(KindKnowledge), title, compileCount, joinTags(tags), p.Dir(), p.Base(),
 		)
 		return err
 	}
 	_, err := db.Exec(
-		`UPDATE notes SET origin = ?, compile_count = ?, tags = ? WHERE dir = ? AND name = ?`,
-		string(PluginOrigin("compile")), compileCount, joinTags(tags), p.Dir(), p.Base(),
+		`UPDATE notes SET kind = ?, compile_count = ?, tags = ? WHERE dir = ? AND name = ?`,
+		string(KindKnowledge), compileCount, joinTags(tags), p.Dir(), p.Base(),
 	)
 	return err
 }
 
-// dbMarkIndexOrigin sets origin = 'plugin:index' and optionally title for the note at p.
+// dbSetKindIndex sets kind = 'index' and optionally title for the note at p.
 // title may be empty to leave the column unchanged.
-func dbMarkIndexOrigin(db *sql.DB, p Path, title string) error {
+func dbSetKindIndex(db *sql.DB, p Path, title string) error {
 	if title != "" {
 		_, err := db.Exec(
-			`UPDATE notes SET origin = ?, title = ? WHERE dir = ? AND name = ?`,
-			string(PluginOrigin("index")), title, p.Dir(), p.Base(),
+			`UPDATE notes SET kind = ?, title = ? WHERE dir = ? AND name = ?`,
+			string(KindIndex), title, p.Dir(), p.Base(),
 		)
 		return err
 	}
 	_, err := db.Exec(
-		`UPDATE notes SET origin = ? WHERE dir = ? AND name = ?`,
-		string(PluginOrigin("index")), p.Dir(), p.Base(),
+		`UPDATE notes SET kind = ? WHERE dir = ? AND name = ?`,
+		string(KindIndex), p.Dir(), p.Base(),
 	)
 	return err
 }
 
 // dbUpsertKnowledgeNote inserts or updates a compile-plugin knowledge note, always
-// overwriting origin, title, size, and updated_at on conflict.
+// overwriting kind, title, size, and updated_at on conflict.
 func dbUpsertKnowledgeNote(db *sql.DB, n Note) error {
 	now := time.Now().UnixNano()
 	updNs := now
@@ -598,16 +637,16 @@ func dbUpsertKnowledgeNote(db *sql.DB, n Note) error {
 		updNs = n.UpdatedAt.UnixNano()
 	}
 	_, err := db.Exec(`
-		INSERT INTO notes(dir, name, size, created_at, updated_at, indexed, origin, title, tags)
+		INSERT INTO notes(dir, name, size, created_at, updated_at, indexed, kind, title, tags)
 		VALUES (?, ?, ?, ?, ?, 0, ?, ?, ?)
 		ON CONFLICT(dir, name) DO UPDATE SET
 		    size       = excluded.size,
 		    updated_at = excluded.updated_at,
 		    indexed    = 0,
-		    origin     = excluded.origin,
+		    kind       = excluded.kind,
 		    title      = excluded.title,
 		    tags       = excluded.tags`,
-		n.Dir, n.Name, n.Size, now, updNs, string(n.Origin), n.Title, joinTags(n.Tags),
+		n.Dir, n.Name, n.Size, now, updNs, string(n.Kind), n.Title, joinTags(n.Tags),
 	)
 	return err
 }
@@ -875,6 +914,111 @@ func dbScanPaths(rows *sql.Rows) ([]Path, error) {
 		}
 	}
 	return paths, rows.Err()
+}
+
+// ── knowledge_links DB helpers ────────────────────────────────────────────────
+
+// dbReplaceKnowledgeLinks replaces, within a single transaction, all outgoing
+// wikilink edges for the given source knowledge note.
+// entityType is the source note's frontmatter entity_type (may be empty).
+// Passing an empty targets slice clears all existing edges from source.
+func dbReplaceKnowledgeLinks(db *sql.DB, source Path, entityType string, targets []Path) error {
+	tx, err := db.Begin()
+	if err != nil {
+		return fmt.Errorf("storage: knowledge_links replace: begin tx: %w", err)
+	}
+	defer tx.Rollback() //nolint:errcheck
+
+	if _, err := tx.Exec(
+		`DELETE FROM knowledge_links WHERE source_dir = ? AND source_name = ?`,
+		source.Dir(), source.Base(),
+	); err != nil {
+		return fmt.Errorf("storage: knowledge_links replace: delete: %w", err)
+	}
+
+	now := time.Now().UnixNano()
+	if len(targets) == 0 && entityType != "" {
+		// Leaf node: no outgoing links but has an entity_type. Insert a self-loop
+		// so the entity_type survives in the DB; graph API filters self-loops from edges.
+		if _, err := tx.Exec(`
+			INSERT INTO knowledge_links(source_dir, source_name, target_dir, target_name, source_entity_type, created_at)
+			VALUES (?, ?, ?, ?, ?, ?)
+			ON CONFLICT(source_dir, source_name, target_dir, target_name) DO NOTHING`,
+			source.Dir(), source.Base(), source.Dir(), source.Base(), entityType, now,
+		); err != nil {
+			return fmt.Errorf("storage: knowledge_links replace: insert self-loop: %w", err)
+		}
+	}
+	for _, t := range targets {
+		if _, err := tx.Exec(`
+			INSERT INTO knowledge_links(source_dir, source_name, target_dir, target_name, source_entity_type, created_at)
+			VALUES (?, ?, ?, ?, ?, ?)
+			ON CONFLICT(source_dir, source_name, target_dir, target_name) DO NOTHING`,
+			source.Dir(), source.Base(), t.Dir(), t.Base(), entityType, now,
+		); err != nil {
+			return fmt.Errorf("storage: knowledge_links replace: insert (%s/%s): %w", t.Dir(), t.Base(), err)
+		}
+	}
+	return tx.Commit()
+}
+
+// KnowledgeEdge is a directed edge between two knowledge notes.
+type KnowledgeEdge struct {
+	Source           Path
+	Target           Path
+	SourceEntityType string
+}
+
+// dbGetAllKnowledgeLinks returns every directed wikilink edge between knowledge notes.
+func dbGetAllKnowledgeLinks(db *sql.DB) ([]KnowledgeEdge, error) {
+	rows, err := db.Query(`
+		SELECT source_dir, source_name, target_dir, target_name, source_entity_type
+		FROM knowledge_links
+		ORDER BY source_dir, source_name, target_dir, target_name`)
+	if err != nil {
+		return nil, fmt.Errorf("storage: knowledge_links get all: %w", err)
+	}
+	defer rows.Close()
+	return dbScanEdges(rows)
+}
+
+// dbGetKnowledgeLinksForIndex returns all wikilink edges where both source and
+// target are listed under the given index note in index_deps.
+func dbGetKnowledgeLinksForIndex(db *sql.DB, index Path) ([]KnowledgeEdge, error) {
+	rows, err := db.Query(`
+		SELECT kl.source_dir, kl.source_name, kl.target_dir, kl.target_name, kl.source_entity_type
+		FROM knowledge_links kl
+		JOIN index_deps id1
+		  ON id1.index_dir = ? AND id1.index_name = ?
+		 AND id1.knowledge_dir = kl.source_dir AND id1.knowledge_name = kl.source_name
+		JOIN index_deps id2
+		  ON id2.index_dir = ? AND id2.index_name = ?
+		 AND id2.knowledge_dir = kl.target_dir AND id2.knowledge_name = kl.target_name
+		ORDER BY kl.source_dir, kl.source_name, kl.target_dir, kl.target_name`,
+		index.Dir(), index.Base(), index.Dir(), index.Base())
+	if err != nil {
+		return nil, fmt.Errorf("storage: knowledge_links for index: %w", err)
+	}
+	defer rows.Close()
+	return dbScanEdges(rows)
+}
+
+// dbScanEdges reads edge rows (source_dir, source_name, target_dir, target_name, source_entity_type)
+// into a []KnowledgeEdge slice.
+func dbScanEdges(rows *sql.Rows) ([]KnowledgeEdge, error) {
+	var edges []KnowledgeEdge
+	for rows.Next() {
+		var sDir, sName, tDir, tName, entityType string
+		if err := rows.Scan(&sDir, &sName, &tDir, &tName, &entityType); err != nil {
+			return nil, fmt.Errorf("storage: scan edge: %w", err)
+		}
+		sp, sok := ParsePath(sDir + "/" + sName)
+		tp, tok := ParsePath(tDir + "/" + tName)
+		if sok && tok {
+			edges = append(edges, KnowledgeEdge{Source: sp, Target: tp, SourceEntityType: entityType})
+		}
+	}
+	return edges, rows.Err()
 }
 
 // dbImageScan reads all rows from an images query result into an []Image slice.

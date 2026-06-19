@@ -38,7 +38,7 @@ func (vh *ViewHandler) Home(w http.ResponseWriter, r *http.Request) {
 	recentShorts, err := vh.vault.ListAllNotes(storage.ListOptions{
 		SortByTime:  true,
 		Limit:       homeRecentShortsLimit,
-		OnlyOrigins: []storage.Origin{storage.OriginShort},
+		OnlyKinds:  []storage.Kind{storage.KindShort},
 	})
 	if err != nil {
 		http.Error(w, "home: list recent shorts: "+err.Error(), http.StatusInternalServerError)
@@ -48,7 +48,7 @@ func (vh *ViewHandler) Home(w http.ResponseWriter, r *http.Request) {
 	recentKnowledge, err := vh.vault.ListAllNotes(storage.ListOptions{
 		SortByTime:  true,
 		Limit:       homeRecentLimit,
-		OnlyOrigins: []storage.Origin{storage.PluginOrigin("compile")},
+		OnlyKinds:  []storage.Kind{storage.KindKnowledge},
 	})
 	if err != nil {
 		http.Error(w, "home: list recent knowledge: "+err.Error(), http.StatusInternalServerError)
@@ -58,7 +58,7 @@ func (vh *ViewHandler) Home(w http.ResponseWriter, r *http.Request) {
 	recentRaw, err := vh.vault.ListAllNotes(storage.ListOptions{
 		SortByTime:     true,
 		Limit:          homeRecentLimit,
-		ExcludeOrigins: []storage.Origin{storage.OriginShort, storage.PluginOrigin("compile"), storage.PluginOrigin("index")},
+		ExcludeKinds: []storage.Kind{storage.KindShort, storage.KindKnowledge, storage.KindIndex},
 	})
 	if err != nil {
 		http.Error(w, "home: list recent raw: "+err.Error(), http.StatusInternalServerError)
@@ -207,7 +207,7 @@ func (vh *ViewHandler) HomeRefresh(w http.ResponseWriter, r *http.Request) {
 	recentShorts, err := vh.vault.ListAllNotes(storage.ListOptions{
 		SortByTime:  true,
 		Limit:       homeRecentShortsLimit,
-		OnlyOrigins: []storage.Origin{storage.OriginShort},
+		OnlyKinds:  []storage.Kind{storage.KindShort},
 	})
 	if err != nil {
 		http.Error(w, "home/refresh: list recent shorts: "+err.Error(), http.StatusInternalServerError)
@@ -217,7 +217,7 @@ func (vh *ViewHandler) HomeRefresh(w http.ResponseWriter, r *http.Request) {
 	recentKnowledge, err := vh.vault.ListAllNotes(storage.ListOptions{
 		SortByTime:  true,
 		Limit:       homeRecentLimit,
-		OnlyOrigins: []storage.Origin{storage.PluginOrigin("compile")},
+		OnlyKinds:  []storage.Kind{storage.KindKnowledge},
 	})
 	if err != nil {
 		http.Error(w, "home/refresh: list recent knowledge: "+err.Error(), http.StatusInternalServerError)
@@ -227,7 +227,7 @@ func (vh *ViewHandler) HomeRefresh(w http.ResponseWriter, r *http.Request) {
 	recentRaw, err := vh.vault.ListAllNotes(storage.ListOptions{
 		SortByTime:     true,
 		Limit:          homeRecentLimit,
-		ExcludeOrigins: []storage.Origin{storage.OriginShort, storage.PluginOrigin("compile"), storage.PluginOrigin("index")},
+		ExcludeKinds: []storage.Kind{storage.KindShort, storage.KindKnowledge, storage.KindIndex},
 	})
 	if err != nil {
 		http.Error(w, "home/refresh: list recent raw: "+err.Error(), http.StatusInternalServerError)

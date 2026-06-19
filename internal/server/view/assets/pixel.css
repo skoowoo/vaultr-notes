@@ -819,3 +819,67 @@
       stroke-linecap: butt;
       stroke-linejoin: miter;
     }
+
+    /* ── Graph page ─────────────────────────────────────────────── */
+    /* Zoom controls container — d1 hard shadow (small floating panel) */
+    html[data-pixel="on"] .graph-zoom-controls {
+      box-shadow: var(--px-d1) var(--px-shadow);
+    }
+    /* Zoom buttons — inset press, no translate (same tier as lib-action-btn) */
+    html[data-pixel="on"] .graph-zoom-btn { transition: none; }
+    html[data-pixel="on"] .graph-zoom-btn:hover {
+      box-shadow: inset 2px 2px 0 rgba(255,255,255,0.08);
+    }
+    html[data-theme="light"][data-pixel="on"] .graph-zoom-btn:hover {
+      box-shadow: inset 2px 2px 0 rgba(0,0,0,0.07);
+    }
+    html[data-pixel="on"] .graph-zoom-btn svg {
+      stroke-linecap: butt;
+      stroke-linejoin: miter;
+    }
+
+    /* Index sidebar items — flat nav rows, inset press hover (same as tags-col .tag-card) */
+    html[data-pixel="on"] .graph-index-item { transition: none; }
+    html[data-pixel="on"] .graph-index-item:hover {
+      box-shadow: inset 2px 2px 0 rgba(255,255,255,0.08);
+    }
+    html[data-theme="light"][data-pixel="on"] .graph-index-item:hover {
+      box-shadow: inset 2px 2px 0 rgba(0,0,0,0.07);
+    }
+    html[data-pixel="on"] .graph-index-item.active {
+      box-shadow: var(--px-d1) var(--px-shadow);
+    }
+
+    /* Node panel close button — inset press, no translate */
+    html[data-pixel="on"] .graph-node-panel-close { transition: none; }
+    html[data-pixel="on"] .graph-node-panel-close:hover {
+      box-shadow: inset 2px 2px 0 rgba(255,255,255,0.08);
+    }
+    html[data-pixel="on"] .graph-node-panel-close svg {
+      stroke-linecap: butt;
+      stroke-linejoin: miter;
+    }
+
+    /* Node cards — d2 shadow + translate on hover (same tier as tag-card) */
+    html[data-pixel="on"] .graph-node-card {
+      box-shadow: var(--px-d2) var(--px-shadow);
+      transition: none;
+    }
+    html[data-pixel="on"] .graph-node-card:hover {
+      box-shadow: none;
+      transform: translate(3px, 3px);
+    }
+
+
+    /* Index head title & node section labels — pixel font */
+    html[data-pixel="on"] .graph-index-head-title {
+      font-family: "Press Start 2P", monospace;
+      font-size: 0.40rem;
+      letter-spacing: 0.01em;
+    }
+    html[data-pixel="on"] .graph-node-section-label {
+      font-family: "Press Start 2P", monospace;
+      font-size: 0.34rem;
+      letter-spacing: 0.01em;
+      text-transform: none;
+    }

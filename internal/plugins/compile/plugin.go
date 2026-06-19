@@ -137,15 +137,16 @@ func (p *Plugin) handleKnowledgeDirNote(vaultPath string) {
 	}
 	switch strings.ToLower(fm.Kind) {
 	case "knowledge":
-		p.handleKnowledgeNoteUpdate(sp, fm)
+		p.handleKnowledgeNoteUpdate(sp, fm, body)
 	case "index":
 		p.handleIndexNoteUpdate(sp, fm, body)
 	}
 }
 
-// handleKnowledgeNoteUpdate syncs title, origin, and compile_count to the DB
-// and updates knowledge_deps from the source_notes list in the frontmatter.
-func (p *Plugin) handleKnowledgeNoteUpdate(sp storage.Path, fm util.Frontmatter) {
+// handleKnowledgeNoteUpdate syncs title, origin, and compile_count to the DB,
+// updates knowledge_deps from the source_notes list in the frontmatter, and
+// incrementally updates knowledge_links from wikilinks in the note body.
+func (p *Plugin) handleKnowledgeNoteUpdate(sp storage.Path, fm util.Frontmatter, body []byte) {
 	var kfm knowledgeFrontmatter
 	for _, e := range fm.All {
 		switch e.Key {
@@ -177,7 +178,10 @@ func (p *Plugin) handleKnowledgeNoteUpdate(sp storage.Path, fm util.Frontmatter)
 		"compile_count", kfm.compileCount,
 		"source_notes", kfm.sourceNotes,
 	)
-	p.syncSourceNotes(sp, kfm.sourceNotes)
+	p.syncKnowledgeDeps(sp, kfm.sourceNotes)
+	if err := p.vault.ReplaceKnowledgeLinksForNote(sp, kfm.entityType, util.ExtractWikilinkNames(body)); err != nil {
+		p.logger.Warn("compile: failed to update knowledge_links", "path", sp, "err", err)
+	}
 }
 
 // handleIndexNoteUpdate syncs domain/title to the DB and updates index_deps
@@ -200,7 +204,7 @@ func (p *Plugin) handleIndexNoteUpdate(sp storage.Path, fm util.Frontmatter, bod
 		"domain", ifm.domain,
 		"knowledge_paths", ifm.knowledgePaths,
 	)
-	p.syncKnowledgeNotes(sp, ifm.knowledgePaths)
+	p.syncIndexDeps(sp, ifm.knowledgePaths)
 }
 
 // parseIndexTablePaths extracts vault-absolute knowledge note paths from the
@@ -243,13 +247,14 @@ type indexFrontmatter struct {
 	knowledgePaths []string // extracted from the markdown table body
 }
 
-// syncSourceNotes updates the knowledge_deps table so that the knowledge note's
-// dependencies stay in sync with its frontmatter source_notes list.
+// syncKnowledgeDeps updates the knowledge_deps table so that the knowledge note's
+// dependencies stay in sync with its frontmatter source_notes list, and marks
+// each resolved source note as compiled.
 //
 // Entries containing "/" are treated as vault paths and looked up directly;
 // plain filenames are batch-looked up by name. Filename lookups that return
 // multiple matches are skipped as ambiguous.
-func (p *Plugin) syncSourceNotes(knowledgePath storage.Path, sourceNotes []string) {
+func (p *Plugin) syncKnowledgeDeps(knowledgePath storage.Path, sourceNotes []string) {
 	var resolved []storage.Path
 	var names []string
 
@@ -304,13 +309,13 @@ func (p *Plugin) syncSourceNotes(knowledgePath storage.Path, sourceNotes []strin
 	}
 }
 
-// syncKnowledgeNotes updates the index_deps table so that the index note's listed
+// syncIndexDeps updates the index_deps table so that the index note's listed
 // knowledge notes stay in sync with its table body.
 //
 // Entries containing "/" are treated as vault paths and looked up directly;
 // plain filenames are batch-looked up by name. Filename lookups that return
 // multiple matches are skipped as ambiguous.
-func (p *Plugin) syncKnowledgeNotes(indexPath storage.Path, knowledgePaths []string) {
+func (p *Plugin) syncIndexDeps(indexPath storage.Path, knowledgePaths []string) {
 	var resolved []storage.Path
 	var names []string
 

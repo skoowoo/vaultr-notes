@@ -87,38 +87,20 @@ func applyListTimeFilters(opts *storage.ListOptions, latest int, start, end stri
 	return nil
 }
 
-// kindOrigins returns the origins associated with a kind.
-// For "raw", it returns the origins to exclude (everything that is not raw).
-// For all other kinds, it returns the single origin to match.
-func kindOrigins(kind string) ([]storage.Origin, error) {
-	switch kind {
-	case "":
-		return nil, nil
-	case "raw":
-		return []storage.Origin{storage.OriginShort, storage.PluginOrigin("compile"), storage.PluginOrigin("index")}, nil
-	case "short":
-		return []storage.Origin{storage.OriginShort}, nil
-	case "knowledge":
-		return []storage.Origin{storage.PluginOrigin("compile")}, nil
-	case "index":
-		return []storage.Origin{storage.PluginOrigin("index")}, nil
-	default:
-		return nil, fmt.Errorf("unknown kind %q: must be raw, short, knowledge, or index", kind)
-	}
-}
-
 func applyKindFilter(opts *storage.ListOptions, kind string) error {
-	origins, err := kindOrigins(kind)
-	if err != nil {
-		return err
-	}
 	switch kind {
-	case "raw":
-		opts.ExcludeOrigins = origins // origins = [short, plugin:compile, plugin:index]
 	case "":
 		// no filter
+	case "raw":
+		opts.ExcludeKinds = []storage.Kind{storage.KindShort, storage.KindKnowledge, storage.KindIndex}
+	case "short":
+		opts.OnlyKinds = []storage.Kind{storage.KindShort}
+	case "knowledge":
+		opts.OnlyKinds = []storage.Kind{storage.KindKnowledge}
+	case "index":
+		opts.OnlyKinds = []storage.Kind{storage.KindIndex}
 	default:
-		opts.OnlyOrigins = origins
+		return fmt.Errorf("unknown kind %q: must be raw, short, knowledge, or index", kind)
 	}
 	return nil
 }
@@ -153,17 +135,11 @@ func runListDir(dir string, opts storage.ListOptions, kind string, table bool) e
 	return printNotes(notes, table)
 }
 
-func noteKind(origin storage.Origin) string {
-	switch origin {
-	case storage.OriginShort:
-		return "short"
-	case storage.PluginOrigin("compile"):
-		return "knowledge"
-	case storage.PluginOrigin("index"):
-		return "index"
-	default:
+func noteKind(k storage.Kind) string {
+	if k == "" {
 		return "raw"
 	}
+	return string(k)
 }
 
 func printNotes(notes []storage.Note, table bool) error {
@@ -175,7 +151,7 @@ func printNotes(notes []storage.Note, table bool) error {
 			Size:      util.FormatSize(n.Size),
 			UpdatedAt: util.FormatTime(n.UpdatedAt),
 			Indexed:   n.Indexed,
-			Kind:      noteKind(n.Origin),
+			Kind:      noteKind(n.Kind),
 		}
 	}
 	if table {

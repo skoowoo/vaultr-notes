@@ -47,7 +47,7 @@ func (gh *VaultHandler) Write(w http.ResponseWriter, r *http.Request) {
 	case req.Prepend:
 		err = gh.vault.PrependNote(p, data, req.Section)
 	default:
-		err = gh.vault.WriteNote(p, data, storage.OriginAPI)
+		err = gh.vault.WriteNote(p, data, "")
 	}
 	if err != nil {
 		writeVaultError(w, err)

@@ -131,24 +131,24 @@ func newKnowledgeDeleteCmd() *cobra.Command {
 	}
 }
 
-var knowledgeOrigins = []storage.Origin{
-	storage.PluginOrigin("compile"),
-	storage.PluginOrigin("index"),
+var knowledgeKinds = []storage.Kind{
+	storage.KindKnowledge,
+	storage.KindIndex,
 }
 
 func runKnowledgeListAll(opts storage.ListOptions, kind string, table bool) error {
-	origins, err := knowledgeKindOrigins(kind)
+	kinds, err := resolveKnowledgeKinds(kind)
 	if err != nil {
 		return err
 	}
-	if len(origins) == 0 {
+	if len(kinds) == 0 {
 		return printNotes(nil, table)
 	}
 	c, err := openClient()
 	if err != nil {
 		return err
 	}
-	opts.OnlyOrigins = origins
+	opts.OnlyKinds = kinds
 	notes, err := c.ListAllNotes(opts)
 	if err != nil {
 		return err
@@ -157,18 +157,18 @@ func runKnowledgeListAll(opts storage.ListOptions, kind string, table bool) erro
 }
 
 func runKnowledgeListDir(dir string, opts storage.ListOptions, kind string, table bool) error {
-	origins, err := knowledgeKindOrigins(kind)
+	kinds, err := resolveKnowledgeKinds(kind)
 	if err != nil {
 		return err
 	}
-	if len(origins) == 0 {
+	if len(kinds) == 0 {
 		return printNotes(nil, table)
 	}
 	c, err := openClient()
 	if err != nil {
 		return err
 	}
-	opts.OnlyOrigins = origins
+	opts.OnlyKinds = kinds
 	notes, err := c.ListDir(dir, opts)
 	if err != nil {
 		return err
@@ -176,22 +176,19 @@ func runKnowledgeListDir(dir string, opts storage.ListOptions, kind string, tabl
 	return printNotes(notes, table)
 }
 
-// knowledgeKindOrigins returns the subset of knowledgeOrigins that match kind.
-// Empty kind returns all knowledgeOrigins. Unknown kind returns an error.
-func knowledgeKindOrigins(kind string) ([]storage.Origin, error) {
-	if kind == "" {
-		return knowledgeOrigins, nil
+// resolveKnowledgeKinds returns the Kind slice for the given kind filter.
+// Empty kind returns all knowledge-subsystem kinds. Unknown kind returns an error.
+func resolveKnowledgeKinds(kind string) ([]storage.Kind, error) {
+	switch kind {
+	case "":
+		return knowledgeKinds, nil
+	case "knowledge":
+		return []storage.Kind{storage.KindKnowledge}, nil
+	case "index":
+		return []storage.Kind{storage.KindIndex}, nil
+	default:
+		return nil, fmt.Errorf("unknown kind %q: must be knowledge or index", kind)
 	}
-	if _, err := kindOrigins(kind); err != nil {
-		return nil, err
-	}
-	var result []storage.Origin
-	for _, o := range knowledgeOrigins {
-		if noteKind(o) == kind {
-			result = append(result, o)
-		}
-	}
-	return result, nil
 }
 
 func sortAndLimit(notes []storage.Note, limit int) []storage.Note {
@@ -235,8 +232,8 @@ func runKnowledgeListIndexes(table bool) error {
 		return err
 	}
 	notes, err := c.ListAllNotes(storage.ListOptions{
-		SortByTime:  true,
-		OnlyOrigins: []storage.Origin{storage.PluginOrigin("index")},
+		SortByTime: true,
+		OnlyKinds:  []storage.Kind{storage.KindIndex},
 	})
 	if err != nil {
 		return err
@@ -284,7 +281,7 @@ func runKnowledgeDelete(path string) error {
 	if err != nil {
 		return err
 	}
-	if note.Origin != storage.PluginOrigin("compile") {
+	if note.Kind != storage.KindKnowledge {
 		return fmt.Errorf("%q is not a knowledge note", note.PathString())
 	}
 	if err := c.DeleteNote(path); err != nil {

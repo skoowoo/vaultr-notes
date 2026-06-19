@@ -200,17 +200,32 @@ export const frontmatterView = $view(frontmatterSchema.node, () => {
       } else if (data != null && typeof data === 'object' && !Array.isArray(data)) {
         const entries = Object.entries(data);
         if (entries.length > 0) {
-          for (const [k, v] of entries) {
+          for (const [i, [k, v]] of entries.entries()) {
             const dt = document.createElement('dt');
-            dt.className = 'fm-key';
+            dt.className = i >= 3 ? 'fm-key fm-overflow' : 'fm-key';
             dt.textContent = k;
             const dd = document.createElement('dd');
-            dd.className = 'fm-val';
+            dd.className = i >= 3 ? 'fm-val fm-overflow' : 'fm-val';
             renderValueInto(dd, v);
             dl.appendChild(dt);
             dl.appendChild(dd);
           }
           card.appendChild(dl);
+          if (entries.length > 3) {
+            const svgDown = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m7 6 5 5 5-5"/><path d="m7 13 5 5 5-5"/></svg>';
+            const svgUp   = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m7 11 5-5 5 5"/><path d="m7 18 5-5 5 5"/></svg>';
+            const toggle = document.createElement('button');
+            toggle.type = 'button';
+            toggle.className = 'fm-toggle';
+            toggle.innerHTML = svgDown;
+            toggle.addEventListener('click', e => {
+              e.preventDefault();
+              e.stopPropagation();
+              const expanded = dl.classList.toggle('fm-expanded');
+              toggle.innerHTML = expanded ? svgUp : svgDown;
+            });
+            card.appendChild(toggle);
+          }
         }
       } else if (rawTrim.length > 0) {
         const dt = document.createElement('dt');

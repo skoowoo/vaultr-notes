@@ -20,10 +20,10 @@ type listRequest struct {
 	End   string `json:"end"`
 	// Latest limits results to notes updated within the last N days.
 	Latest int `json:"latest"`
-	// Origins, when non-empty, filters results to notes whose origin is in the set (e.g. ["api"], ["plugin:compile","plugin:index"]).
-	Origins []string `json:"origins"`
-	// ExcludeOrigins excludes notes whose origin is in the set. Mutually exclusive with Origins.
-	ExcludeOrigins []string `json:"exclude_origins"`
+	// Kinds, when non-empty, filters results to notes whose kind is in the set (e.g. ["knowledge"], ["index"]).
+	Kinds []string `json:"kinds"`
+	// ExcludeKinds excludes notes whose kind is in the set. Mutually exclusive with Kinds.
+	ExcludeKinds []string `json:"exclude_kinds"`
 }
 
 // List handles POST /api/vault/list.
@@ -34,8 +34,8 @@ type listRequest struct {
 //	all             — true: return every note in the vault (path ignored)
 //	sort            — "time" to sort by updated_at DESC
 //	limit           — maximum number of notes to return
-//	origins         — if set, only notes whose origin is in the list (e.g. ["plugin:compile","plugin:index"])
-//	exclude_origins — if set, exclude notes whose origin is in the list; mutually exclusive with origins
+//	kinds         — if set, only notes whose kind is in the list (e.g. ["knowledge","index"])
+//	exclude_kinds — if set, exclude notes whose kind is in the list; mutually exclusive with kinds
 func (gh *VaultHandler) List(w http.ResponseWriter, r *http.Request) {
 	var req listRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -43,23 +43,23 @@ func (gh *VaultHandler) List(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if len(req.Origins) > 0 && len(req.ExcludeOrigins) > 0 {
-		http.Error(w, `cannot set both "origins" and "exclude_origins"`, http.StatusBadRequest)
+	if len(req.Kinds) > 0 && len(req.ExcludeKinds) > 0 {
+		http.Error(w, `cannot set both "kinds" and "exclude_kinds"`, http.StatusBadRequest)
 		return
 	}
-	onlyOrigins := make([]storage.Origin, len(req.Origins))
-	for i, o := range req.Origins {
-		onlyOrigins[i] = storage.Origin(o)
+	onlyKinds := make([]storage.Kind, len(req.Kinds))
+	for i, k := range req.Kinds {
+		onlyKinds[i] = storage.Kind(k)
 	}
-	excludeOrigins := make([]storage.Origin, len(req.ExcludeOrigins))
-	for i, o := range req.ExcludeOrigins {
-		excludeOrigins[i] = storage.Origin(o)
+	excludeKinds := make([]storage.Kind, len(req.ExcludeKinds))
+	for i, k := range req.ExcludeKinds {
+		excludeKinds[i] = storage.Kind(k)
 	}
 	opts := storage.ListOptions{
-		SortByTime:     req.Sort == "time",
-		Limit:          req.Limit,
-		OnlyOrigins:    onlyOrigins,
-		ExcludeOrigins: excludeOrigins,
+		SortByTime:   req.Sort == "time",
+		Limit:        req.Limit,
+		OnlyKinds:    onlyKinds,
+		ExcludeKinds: excludeKinds,
 	}
 	if req.Latest > 0 {
 		opts.After = time.Now().AddDate(0, 0, -req.Latest)

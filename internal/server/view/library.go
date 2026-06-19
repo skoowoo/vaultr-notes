@@ -277,7 +277,7 @@ func (vh *ViewHandler) LibraryFocus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	isKnowledge := meta.Origin == storage.PluginOrigin("compile")
+	isKnowledge := meta.Kind == storage.KindKnowledge
 	var linkedKnowledge, linkedRaw []noteItem
 
 	if isKnowledge {
@@ -409,8 +409,8 @@ func (vh *ViewHandler) LibraryIndexSelect(w http.ResponseWriter, r *http.Request
 
 // noteToItem converts a storage.Note to a noteItem for template rendering.
 func noteToItem(n storage.Note) noteItem {
-	isKnowledge := n.Origin == storage.PluginOrigin("compile")
-	isIndex := n.Origin == storage.PluginOrigin("index")
+	isKnowledge := n.Kind == storage.KindKnowledge
+	isIndex := n.Kind == storage.KindIndex
 	q := url.Values{}
 	q.Set("path", n.PathString())
 	var tags []string
@@ -425,7 +425,7 @@ func noteToItem(n storage.Note) noteItem {
 		UpdatedAt:   formatRelativeTime(n.UpdatedAt),
 		Pinned:      n.Pinned,
 		IsKnowledge: isKnowledge,
-		IsShort:     n.Origin == storage.OriginShort,
+		IsShort:     n.Kind == storage.KindShort,
 		IsIndex:     isIndex,
 		CanCompile:  !isKnowledge && !isIndex && n.CompileCount == 0,
 		IsCompiled:  !isKnowledge && !isIndex && n.CompileCount > 0,
@@ -483,8 +483,8 @@ func pathsToJSON(paths []string) string {
 
 func (vh *ViewHandler) listIndexItems() []noteItem {
 	notes, err := vh.vault.ListAllNotes(storage.ListOptions{
-		OnlyOrigins: []storage.Origin{storage.PluginOrigin("index")},
-		SortByTime:  true,
+		OnlyKinds:  []storage.Kind{storage.KindIndex},
+		SortByTime: true,
 	})
 	if err != nil {
 		return nil
@@ -510,11 +510,11 @@ func (vh *ViewHandler) listNoteItems(noteType string, beforeNs int64, limit int)
 		opts.Before = time.Unix(0, beforeNs)
 	}
 	if noteType == "knowledge" {
-		opts.OnlyOrigins = []storage.Origin{storage.PluginOrigin("compile")}
+		opts.OnlyKinds = []storage.Kind{storage.KindKnowledge}
 	} else {
-		opts.ExcludeOrigins = []storage.Origin{
-			storage.PluginOrigin("compile"),
-			storage.PluginOrigin("index"),
+		opts.ExcludeKinds = []storage.Kind{
+			storage.KindKnowledge,
+			storage.KindIndex,
 		}
 	}
 

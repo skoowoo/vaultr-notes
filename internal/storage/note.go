@@ -74,27 +74,23 @@ func (p Path) IsRoot() bool {
 	return p == "/"
 }
 
-// Origin identifies who created a note.
+// Kind classifies what a note is.
 //
-// Built-in origins:
-//   - OriginAPI — created through the Vaultr HTTP API (normal path)
-//   - OriginFS  — detected by the filesystem watcher or the initial vault scan
-//
-// Plugin origins are constructed with PluginOrigin; their string form is
-// "plugin:<name>" (e.g. "plugin:compile").
-type Origin string
+// Empty string ("") means an ordinary user note (created via API or filesystem scan).
+// Named kinds are set by specific subsystems:
+//   - KindShort     — short daily aggregation file
+//   - KindKnowledge — knowledge note produced by the compile plugin
+//   - KindIndex     — index note produced by the compile plugin
+type Kind string
 
 const (
-	OriginAPI   Origin = "api"
-	OriginFS    Origin = "fs"
-	OriginShort Origin = "short"
+	KindShort     Kind = "short"
+	KindKnowledge Kind = "knowledge"
+	KindIndex     Kind = "index"
 
 	// ShortDir is the default vault directory for short notes.
 	ShortDir = "_shorts"
 )
-
-// PluginOrigin returns the origin value for a named plugin.
-func PluginOrigin(name string) Origin { return Origin("plugin:" + name) }
 
 // Note is the metadata for a single markdown file inside a Vault.
 // It never carries content; use Vault.ReadNote for that.
@@ -104,12 +100,12 @@ type Note struct {
 	Size       int64     `json:"size,omitempty"`
 	CreatedAt  time.Time `json:"created_at,omitempty"`
 	UpdatedAt  time.Time `json:"updated_at"`
-	Indexed      bool      `json:"indexed,omitempty"`
-	Pinned       bool      `json:"pinned,omitempty"`
-	CompileCount int       `json:"compile_count,omitempty"`
-	Origin     Origin    `json:"origin,omitempty"`
-	Title      string    `json:"title,omitempty"` // human-readable title; set by plugins (e.g. compile), empty for raw notes
-	Tags       []string  `json:"tags,omitempty"`  // frontmatter tags
+	Indexed      bool     `json:"indexed,omitempty"`
+	Pinned       bool     `json:"pinned,omitempty"`
+	CompileCount int      `json:"compile_count,omitempty"`
+	Kind         Kind     `json:"kind,omitempty"`
+	Title        string   `json:"title,omitempty"` // human-readable title; set by plugins (e.g. compile), empty for raw notes
+	Tags         []string `json:"tags,omitempty"`  // frontmatter tags
 }
 
 // Path returns the Note's full vault-absolute path as a Path object.
@@ -149,13 +145,13 @@ type ListOptions struct {
 	// OnlyUnindexed filters the list to include only notes where indexed = 0.
 	OnlyUnindexed bool
 
-	// OnlyOrigins, when non-empty, filters results to notes whose origin is in the set.
-	// It cannot be set together with ExcludeOrigins.
-	OnlyOrigins []Origin
+	// OnlyKinds, when non-empty, filters results to notes whose kind is in the set.
+	// It cannot be set together with ExcludeKinds.
+	OnlyKinds []Kind
 
-	// ExcludeOrigins, when non-empty, excludes notes whose origin is in the set.
-	// It cannot be set together with OnlyOrigins.
-	ExcludeOrigins []Origin
+	// ExcludeKinds, when non-empty, excludes notes whose kind is in the set.
+	// It cannot be set together with OnlyKinds.
+	ExcludeKinds []Kind
 
 	// After and Before filter notes by updated_at. Zero values are ignored.
 	// After is inclusive (updated_at >= After), Before is exclusive (updated_at < Before).

@@ -138,19 +138,19 @@ func (c *Client) listNotes(body map[string]any, label string, opts storage.ListO
 	if !opts.Before.IsZero() {
 		body["end"] = opts.Before.Format(time.DateOnly)
 	}
-	if len(opts.OnlyOrigins) > 0 {
-		strs := make([]string, len(opts.OnlyOrigins))
-		for i, o := range opts.OnlyOrigins {
-			strs[i] = string(o)
+	if len(opts.OnlyKinds) > 0 {
+		strs := make([]string, len(opts.OnlyKinds))
+		for i, k := range opts.OnlyKinds {
+			strs[i] = string(k)
 		}
-		body["origins"] = strs
+		body["kinds"] = strs
 	}
-	if len(opts.ExcludeOrigins) > 0 {
-		strs := make([]string, len(opts.ExcludeOrigins))
-		for i, o := range opts.ExcludeOrigins {
-			strs[i] = string(o)
+	if len(opts.ExcludeKinds) > 0 {
+		strs := make([]string, len(opts.ExcludeKinds))
+		for i, k := range opts.ExcludeKinds {
+			strs[i] = string(k)
 		}
-		body["exclude_origins"] = strs
+		body["exclude_kinds"] = strs
 	}
 	resp, err := c.postJSON(c.baseURL+"/api/vault/list", body)
 	if err != nil {
@@ -359,29 +359,6 @@ func (c *Client) CreateShort(content, dir string) (storage.Note, error) {
 	return note, nil
 }
 
-// ── Git sync ──────────────────────────────────────────────────────────────────
-
-// TriggerGitSync sends POST /api/git/sync to request an immediate sync.
-// Returns an error if the plugin is not enabled or the server is unreachable.
-func (c *Client) TriggerGitSync() error {
-	req, err := http.NewRequest(http.MethodPost, c.baseURL+"/api/git/sync", nil)
-	if err != nil {
-		return err
-	}
-	resp, err := c.do(req)
-	if err != nil {
-		return wrapConnErr(err)
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusAccepted {
-		body, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("git sync: %s", statusMsg(resp.StatusCode, body))
-	}
-	io.Copy(io.Discard, resp.Body) //nolint:errcheck
-	return nil
-}
-
-
 // ── Search ────────────────────────────────────────────────────────────────────
 
 // SearchResult mirrors search.SearchResult for JSON decoding.
@@ -520,8 +497,10 @@ func (c *Client) TagDelete(tag string) (*TagDeleteResponse, error) {
 
 // StatusResponse mirrors handler.StatusResponse for JSON decoding.
 type StatusResponse struct {
-	Notes   int    `json:"notes"`
-	Indexed uint64 `json:"indexed"`
+	Notes          int    `json:"notes"`
+	Indexed        uint64 `json:"indexed"`
+	KnowledgeNotes int    `json:"knowledge_notes"`
+	ShortDays      int    `json:"short_days"`
 }
 
 // Status fetches live vault and index counts from POST /api/status.
@@ -538,72 +517,6 @@ func (c *Client) Status() (*StatusResponse, error) {
 	var out StatusResponse
 	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
 		return nil, fmt.Errorf("status: decode response: %w", err)
-	}
-	return &out, nil
-}
-
-// ── Info ──────────────────────────────────────────────────────────────────────
-
-// InfoResponse mirrors handler.InfoResponse for JSON decoding.
-type InfoResponse struct {
-	Vault   InfoVault   `json:"vault"`
-	Server  InfoServer  `json:"server"`
-	Plugins InfoPlugins `json:"plugins"`
-}
-
-type InfoVault struct {
-	Path string `json:"path"`
-}
-
-type InfoServer struct {
-	Addr string `json:"addr"`
-	TLS  bool   `json:"tls"`
-}
-
-type InfoPlugins struct {
-	Search     InfoSearchPlugin     `json:"search"`
-	GitSync    InfoGitSyncPlugin    `json:"git_sync"`
-	Compile    InfoCompilePlugin    `json:"compile"`
-	ImageFetch InfoImageFetchPlugin `json:"image_fetch"`
-}
-
-type InfoSearchPlugin struct {
-	Enabled  bool `json:"enabled"`
-	UseJieba bool `json:"use_jieba"`
-}
-
-type InfoGitSyncPlugin struct {
-	Enabled      bool   `json:"enabled"`
-	Remote       string `json:"remote,omitempty"`
-	Branch       string `json:"branch,omitempty"`
-	AutoCommit   bool   `json:"auto_commit,omitempty"`
-	SyncInterval string `json:"sync_interval,omitempty"`
-}
-
-type InfoCompilePlugin struct {
-	Enabled bool `json:"enabled"`
-}
-
-// InfoImageFetchPlugin mirrors handler.ImageFetchPluginInfo.
-type InfoImageFetchPlugin struct {
-	Enabled   bool   `json:"enabled"`
-	AssetsDir string `json:"assets_dir,omitempty"`
-}
-
-// Info fetches server info from POST /api/info.
-func (c *Client) Info() (*InfoResponse, error) {
-	resp, err := c.postJSON(c.baseURL+"/api/info", nil)
-	if err != nil {
-		return nil, wrapConnErr(err)
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("info: %s", statusMsg(resp.StatusCode, body))
-	}
-	var out InfoResponse
-	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
-		return nil, fmt.Errorf("info: decode response: %w", err)
 	}
 	return &out, nil
 }
@@ -900,65 +813,6 @@ func (l Link) Format() string {
 	return b.String()
 }
 
-// FormatTable returns server info as a key-value table string, matching the
-// output of `vaultr info --table`.
-func (info *InfoResponse) FormatTable() string {
-	protocol := "http"
-	if info.Server.TLS {
-		protocol = "https"
-	}
-	rows := []struct{ k, v string }{
-		{"server.addr", fmt.Sprintf("%s://%s", protocol, info.Server.Addr)},
-		{"server.tls", fmt.Sprintf("%v", info.Server.TLS)},
-		{"vault.path", info.Vault.Path},
-		{"plugin.search", enabledStr(info.Plugins.Search.Enabled)},
-		{"plugin.search.jieba", enabledStr(info.Plugins.Search.UseJieba)},
-		{"plugin.git_sync", enabledStr(info.Plugins.GitSync.Enabled)},
-	}
-	gs := info.Plugins.GitSync
-	if gs.Enabled {
-		if gs.Remote != "" {
-			rows = append(rows, struct{ k, v string }{"plugin.git_sync.remote", gs.Remote})
-		}
-		rows = append(rows,
-			struct{ k, v string }{"plugin.git_sync.branch", gs.Branch},
-			struct{ k, v string }{"plugin.git_sync.auto_commit", fmt.Sprintf("%v", gs.AutoCommit)},
-		)
-		if gs.SyncInterval != "" {
-			rows = append(rows, struct{ k, v string }{"plugin.git_sync.sync_interval", gs.SyncInterval})
-		}
-	}
-	rows = append(rows, struct{ k, v string }{"plugin.compile", enabledStr(info.Plugins.Compile.Enabled)})
-	rows = append(rows, struct{ k, v string }{"plugin.image_fetch", enabledStr(info.Plugins.ImageFetch.Enabled)})
-	if info.Plugins.ImageFetch.Enabled {
-		ad := strings.TrimSpace(info.Plugins.ImageFetch.AssetsDir)
-		if ad == "" {
-			ad = "_assets"
-		}
-		rows = append(rows, struct{ k, v string }{"plugin.image_fetch.assets_dir", ad})
-	}
-	colW := 0
-	for _, r := range rows {
-		if len(r.k) > colW {
-			colW = len(r.k)
-		}
-	}
-	var sb strings.Builder
-	for i, r := range rows {
-		if i > 0 {
-			sb.WriteByte('\n')
-		}
-		fmt.Fprintf(&sb, "%-*s  %s", colW, r.k, r.v)
-	}
-	return sb.String()
-}
-
-func enabledStr(v bool) string {
-	if v {
-		return "enabled"
-	}
-	return "disabled"
-}
 
 // ── Link parsing ──────────────────────────────────────────────────────────────
 

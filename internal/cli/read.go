@@ -74,8 +74,6 @@ func runScopedRead(arg string, wantKnowledge bool) error {
 	if err != nil {
 		return err
 	}
-	knowledgeOrigin := storage.PluginOrigin("compile")
-
 	if strings.Contains(arg, "/") {
 		p := arg
 		if !strings.HasPrefix(p, "/") {
@@ -85,7 +83,7 @@ func runScopedRead(arg string, wantKnowledge bool) error {
 		if err != nil {
 			return err
 		}
-		isKnowledge := note.Origin == knowledgeOrigin
+		isKnowledge := note.Kind == storage.KindKnowledge
 		if wantKnowledge && !isKnowledge {
 			return fmt.Errorf("%q is not a knowledge note", note.PathString())
 		}
@@ -102,7 +100,7 @@ func runScopedRead(arg string, wantKnowledge bool) error {
 	}
 	var picks []storage.Note
 	for _, n := range resp.Matches {
-		if (n.Origin == knowledgeOrigin) == wantKnowledge {
+		if (n.Kind == storage.KindKnowledge) == wantKnowledge {
 			picks = append(picks, n)
 		}
 	}

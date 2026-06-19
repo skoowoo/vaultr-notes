@@ -26,6 +26,15 @@ const topbarIconReload = svgReload + `<svg class="lib-ai-px" fill="currentColor"
 const topbarIconPanel = svgPanel + `<svg class="lib-ai-px" fill="currentColor" viewBox="0 0 24 24"><path d="M4 2h16v2H4zm0 18h16v2H4zM2 4h2v16H2zm18 0h2v16h-2zm-6 0h2v16h-2z"/></svg>`
 const topbarIconSearch = svgSearch + `<svg class="lib-ai-px" fill="currentColor" viewBox="0 0 24 24"><path d="M22 22h-2v-2h2v2Zm-2-2h-2v-2h2v2Zm-6-2H6v-2h8v2Zm4 0h-2v-2h2v2ZM6 16H4v-2h2v2Zm10 0h-2v-2h2v2ZM4 14H2V6h2v8Zm14 0h-2V6h2v8ZM6 6H4V4h2v2Zm10 0h-2V4h2v2Zm-2-2H6V2h8v2Z"/></svg>`
 
+// svgGraph is the Lucide "Network" icon used for the Knowledge Graph nav item.
+const svgGraph = `<svg fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24">
+        <rect x="16" y="16" width="6" height="6" rx="1"/>
+        <rect x="2" y="16" width="6" height="6" rx="1"/>
+        <rect x="9" y="2" width="6" height="6" rx="1"/>
+        <path stroke-linecap="round" stroke-linejoin="round" d="M5 16v-3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3"/>
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 12V8"/>
+      </svg>`
+
 // svgShort is the Lucide "Zap" icon used in shortTriggerButton.
 const svgShort = `<svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></svg>`
 
