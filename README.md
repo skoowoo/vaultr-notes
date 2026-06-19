@@ -25,27 +25,27 @@
 ## Highlight Features
 
 #### 📝 Full-Featured Note System
-- **Built-in WYSIWYG editor** — write in rich text or raw Markdown, switch anytime
-- **Wikilinks and wiki images** — fully Obsidian-compatible
-- **Shorts** — a daily capture stream for quick notes, accessible from anywhere.
-- **Instant search** inspired by Raycast — find anything as you type
-- **Clip browser extension** — save any webpage as Markdown with one click
+- **Built-in WYSIWYG editor**: write in rich text or raw Markdown, switch anytime
+- **Wikilinks and wiki images**: fully Obsidian-compatible
+- **Shorts**: a daily capture stream for quick notes, accessible from anywhere
+- **Instant search** inspired by Raycast: find anything as you type
+- **Clip browser extension**: save any webpage as Markdown with one click
 - Can also be self-hosted on a remote server
 
 #### 🤖 Event-Driven Multi-Agent System
 - **16 agent CLIs** supported out of the box
-- **Event-triggered automation** — agents run tasks automatically when notes change, messages arrive, or schedules fire
-- **WeChat integration** — chat with agents directly from WeChat
+- **Event-triggered automation**: agents run tasks automatically when notes change, messages arrive, or schedules fire
+- **WeChat integration**: chat with agents directly from WeChat
 
 #### 🧠 Note AI Compiler
 - Compiles your notes into **structured knowledge points** automatically
 
 #### 🪞 Personal Memory
-- Automatically extracts **personal memories** from your notes — identity, preferences, goals, beliefs, people, and current state — into structured files that stay fresh over time
-- Lets your AI agents truly **know you** — every conversation carries memory, no more starting from scratch
+- Automatically extracts **personal memories** from your notes (identity, preferences, goals, beliefs, people, and current state) into structured files that stay current
+- Lets your AI agents truly **know you**: every conversation carries memory instead of starting cold
 
 #### 🔒 Local-First, Fully Offline
-- All your data lives on your own machine — Markdown files, SQLite metadata, full-text index
+- All your data lives on your own machine: Markdown files, SQLite metadata, full-text index
 - The desktop app bundles every dependency: no CDN, no cloud account, no internet required
 
 #### 🌐 Multiple Access Channels
@@ -57,9 +57,9 @@ Vaultr is built around one core belief: **let AI organize your notes, not you.**
 
 #### Write freely, don't manage
 
-Vaultr discourages spending energy on note maintenance — elaborate categorization, nested folder hierarchies, manual tagging, and archiving. These are low-value, repetitive chores. Taking notes should be effortless and spontaneous: just write.
+Vaultr discourages spending energy on note maintenance: elaborate categorization, nested folder hierarchies, manual tagging, and archiving. These are low-value, repetitive chores. Taking notes should be effortless and spontaneous: just write.
 
-Concretely, Vaultr **strongly discourages nested directories**. You can create simple buckets like `/reading`, `/work`, or `/ideas`, but nesting subdirectories inside them is not recommended — even though it's technically possible. Keeping things flat frees you from the mental overhead of deciding *where* every note belongs.
+Concretely, Vaultr **strongly discourages nested directories**. You can create simple buckets like `/reading`, `/work`, or `/ideas`, but nesting subdirectories inside them is not recommended, though it's technically possible. Keeping things flat frees you from the mental overhead of deciding *where* every note belongs.
 
 #### AI compiles, you don't organize
 
@@ -78,9 +78,9 @@ Vaultr ships full-text search, but the more important capability is letting agen
 #### ⚠️ Things you must know before using Vaultr
 
 - **Avoid nested directories.** Vaultr recommends a flat, single-level directory structure. You can technically create subdirectories inside category folders, but it is strongly discouraged.
-- **Keep filenames unique.** Vaultr links notes using Wiki Link syntax `[[stem]]` — by filename, not by path. Duplicate filenames cause ambiguous references.
+- **Keep filenames unique.** Vaultr links notes using Wiki Link syntax `[[stem]]`, by filename rather than path. Duplicate filenames cause ambiguous references.
 - **Underscore-prefixed directories are system-reserved.** Directories like `_knowledge/`, `_shorts/`, and `_memory/` are used internally by Vaultr. Do not use an underscore prefix for your own category directories.
-- **Vaultr does not bundle an AI Agent.** You need an agent CLI already installed on your machine (e.g. Claude Code, OpenCode, Codex). Vaultr discovers them automatically from your PATH — no extra configuration needed. See [Backing Agents](#backing-agents).
+- **Vaultr does not bundle an AI Agent.** You need an agent CLI already installed on your machine (e.g. Claude Code, OpenCode, Codex). Vaultr discovers them automatically from your PATH with no extra configuration needed. See [Backing Agents](#backing-agents).
 
 ## Architecture
 
@@ -105,9 +105,9 @@ Vaultr ships full-text search, but the more important capability is letting agen
 └──────────────┘  └──────────────┘  └──────────────┘  └──────────────┘
 ```
 
-**Vaultr Server** is a single, self-contained Go binary — no dependencies. It embeds SQLite and Bleve directly, so the entire server is just one executable you drop anywhere and run.
+**Vaultr Server** is a single, self-contained Go binary with no external dependencies. It embeds SQLite and Bleve directly, so the entire server is just one executable you drop anywhere and run.
 
-Because it's a plain HTTP server, it deploys equally well on your local machine or a remote cloud instance. Run it on a home server, or a container — all clients (desktop app, CLI, WeChat bridge) connect to it over the network exactly the same way.
+Because it's a plain HTTP server, it deploys equally well on your local machine or a remote cloud instance. Run it on a home server or a container; all clients (desktop app, CLI, WeChat bridge) connect over the network the same way.
 
 ## Installation
 
@@ -140,7 +140,7 @@ curl -sL https://raw.githubusercontent.com/skoowoo/vaultr-notes/main/install-cli
 
 ## Migrating from Obsidian
 
-> Vaultr and Obsidian can run side by side on the same vault — you don't have to choose one over the other. If you prefer Obsidian as your primary editor, you can use Vaultr purely as an automated multi-agent layer on top of your existing vault. Everything Vaultr creates or modifies is plain Markdown, fully readable in Obsidian without any changes.
+> Vaultr and Obsidian can run side by side on the same vault; you don't have to choose one over the other. If you prefer Obsidian as your primary editor, you can use Vaultr purely as an automated multi-agent layer on top of your existing vault. Everything Vaultr creates or modifies is plain Markdown, fully readable in Obsidian without any changes.
 
 To get started, point `vaultr init` at your existing vault directory:
 
@@ -182,12 +182,12 @@ Press `⌘F` (`Ctrl+F`) to open the find & replace panel. If the editor is in WY
 
 Select any text in WYSIWYG mode and a floating toolbar appears above the selection:
 
-- **Inline format toggles** — Bold, Italic, Strikethrough, Inline code
-- **Block format toggles** — H1–H4, Blockquote, Bullet list, Ordered list (shown when the selection spans block-level content)
-- **Word count** — displays the word count of the selection
-- **Copy as Markdown** — copies the raw Markdown of the selection to the clipboard
-- **⚡ Save as Short** — appends the selection to today's Short Notes, with a `[[source]]` backlink to the current note
-- **Dismiss** — collapses the selection and hides the toolbar
+- **Inline format toggles**: Bold, Italic, Strikethrough, Inline code
+- **Block format toggles**: H1-H4, Blockquote, Bullet list, Ordered list (shown when the selection spans block-level content)
+- **Word count**: displays the word count of the selection
+- **Copy as Markdown**: copies the raw Markdown of the selection to the clipboard
+- **⚡ Save as Short**: appends the selection to today's Short Notes, with a `[[source]]` backlink to the current note
+- **Dismiss**: collapses the selection and hides the toolbar
 
 ## Shorts
 
@@ -213,7 +213,7 @@ Mate Bots are custom AI agents you define in **Settings → Mate Bots**. Each ma
 
 #### 🔔 Event Triggers
 
-The real power of mates is event-driven automation. Add one or more triggers to a mate and it runs automatically whenever a matching event fires. Vaultr ships with these built-in events:
+Add one or more triggers to a mate and it runs automatically whenever a matching event fires. Vaultr ships with these built-in events:
 
 | Event                | When it fires                            |
 | -------------------- | ---------------------------------------- |
@@ -229,7 +229,7 @@ The real power of mates is event-driven automation. Add one or more triggers to 
 
 #### Backing Agents
 
-> **Vaultr automatically discovers available agent CLIs from your local `PATH` — no extra configuration needed.** If you already use Claude Code for coding, Gemini CLI for research, or Copilot in your terminal, Vaultr finds them at startup and makes them instantly available as backing agents for your mates. Your daily tools, your existing habits — Vaultr just connects them.
+> **Vaultr automatically discovers available agent CLIs from your local `PATH` with no extra configuration needed.** If you already use Claude Code for coding, Gemini CLI for research, or Copilot in your terminal, Vaultr finds them at startup and makes them instantly available as backing agents for your mates. Your daily tools, your existing habits: Vaultr just connects them.
 
 Vaultr integrates **16 agent CLIs** out of the box:
 

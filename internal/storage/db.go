@@ -111,7 +111,7 @@ CREATE TABLE IF NOT EXISTS images (
 `
 
 // openDB opens (or creates) the SQLite database at <vaultRoot>/.vaultr/meta.db
-// and applies the schema when the database is newly created.
+// and applies the full schema on every open (all DDL uses IF NOT EXISTS).
 func openDB(vaultRoot string) (*sql.DB, error) {
 	dbPath := vaultDBPath(vaultRoot)
 	db, err := sql.Open("sqlite", dbPath)
@@ -130,61 +130,31 @@ func openDB(vaultRoot string) (*sql.DB, error) {
 	db.QueryRow("PRAGMA user_version").Scan(&version) //nolint:errcheck
 
 	if version < currentDBVersion {
-		for _, step := range []struct {
-			ddl string
-			msg string
-		}{
-			{schema, "apply schema"},
-			{imagesSchema, "create images table"},
-			{knowledgeDepsSchema, "create knowledge_deps table"},
-			{indexDepsSchema, "create index_deps table"},
-			{knowledgeLinksSchema, "create knowledge_links table"},
-			{`CREATE INDEX IF NOT EXISTS idx_kl_source ON knowledge_links(source_dir, source_name)`, "create idx_kl_source"},
-			{`CREATE INDEX IF NOT EXISTS idx_kl_target ON knowledge_links(target_dir, target_name)`, "create idx_kl_target"},
-			{`CREATE INDEX IF NOT EXISTS idx_kd_knowledge ON knowledge_deps(knowledge_dir, knowledge_name)`, "create idx_kd_knowledge"},
-			{`CREATE INDEX IF NOT EXISTS idx_kd_source ON knowledge_deps(source_dir, source_name)`, "create idx_kd_source"},
-			{`CREATE INDEX IF NOT EXISTS idx_id_index ON index_deps(index_dir, index_name)`, "create idx_id_index"},
-			{`CREATE INDEX IF NOT EXISTS idx_id_knowledge ON index_deps(knowledge_dir, knowledge_name)`, "create idx_id_knowledge"},
-		} {
-			if _, err := db.Exec(step.ddl); err != nil {
-				db.Close()
-				return nil, fmt.Errorf("storage: %s: %w", step.msg, err)
-			}
-		}
-		// Add tags column if missing (no-op for new databases where schema already includes it).
-		if _, altErr := db.Exec(`ALTER TABLE notes ADD COLUMN tags TEXT NOT NULL DEFAULT ''`); altErr != nil {
-			if !strings.Contains(altErr.Error(), "duplicate column name") {
-				db.Close()
-				return nil, fmt.Errorf("storage: add tags column: %w", altErr)
-			}
-		}
-		// Add source_entity_type column if missing (version 21).
-		if _, altErr := db.Exec(`ALTER TABLE knowledge_links ADD COLUMN source_entity_type TEXT NOT NULL DEFAULT ''`); altErr != nil {
-			if !strings.Contains(altErr.Error(), "duplicate column name") {
-				db.Close()
-				return nil, fmt.Errorf("storage: add source_entity_type column: %w", altErr)
-			}
-		}
-		// Version 23: rename origin column to kind and migrate legacy values.
-		if _, altErr := db.Exec(`ALTER TABLE notes ADD COLUMN kind TEXT NOT NULL DEFAULT ''`); altErr != nil {
-			if !strings.Contains(altErr.Error(), "duplicate column name") {
-				db.Close()
-				return nil, fmt.Errorf("storage: add kind column: %w", altErr)
-			}
-		}
-		for _, mig := range []struct{ where, kind string }{
-			{"origin = 'plugin:compile'", "knowledge"},
-			{"origin = 'plugin:index'", "index"},
-			{"origin = 'short'", "short"},
-		} {
-			if _, err := db.Exec(`UPDATE notes SET kind = ? WHERE ` + mig.where, mig.kind); err != nil {
-				db.Close()
-				return nil, fmt.Errorf("storage: migrate kind (%s): %w", mig.kind, err)
-			}
-		}
 		if _, err := db.Exec(fmt.Sprintf("PRAGMA user_version = %d", currentDBVersion)); err != nil {
 			db.Close()
 			return nil, fmt.Errorf("storage: set schema version: %w", err)
+		}
+	}
+
+	for _, step := range []struct {
+		ddl string
+		msg string
+	}{
+		{schema, "apply schema"},
+		{imagesSchema, "create images table"},
+		{knowledgeDepsSchema, "create knowledge_deps table"},
+		{indexDepsSchema, "create index_deps table"},
+		{knowledgeLinksSchema, "create knowledge_links table"},
+		{`CREATE INDEX IF NOT EXISTS idx_kl_source ON knowledge_links(source_dir, source_name)`, "create idx_kl_source"},
+		{`CREATE INDEX IF NOT EXISTS idx_kl_target ON knowledge_links(target_dir, target_name)`, "create idx_kl_target"},
+		{`CREATE INDEX IF NOT EXISTS idx_kd_knowledge ON knowledge_deps(knowledge_dir, knowledge_name)`, "create idx_kd_knowledge"},
+		{`CREATE INDEX IF NOT EXISTS idx_kd_source ON knowledge_deps(source_dir, source_name)`, "create idx_kd_source"},
+		{`CREATE INDEX IF NOT EXISTS idx_id_index ON index_deps(index_dir, index_name)`, "create idx_id_index"},
+		{`CREATE INDEX IF NOT EXISTS idx_id_knowledge ON index_deps(knowledge_dir, knowledge_name)`, "create idx_id_knowledge"},
+	} {
+		if _, err := db.Exec(step.ddl); err != nil {
+			db.Close()
+			return nil, fmt.Errorf("storage: %s: %w", step.msg, err)
 		}
 	}
 
