@@ -1,73 +1,65 @@
-    /* ── Short note dialog (scoped to #short-dialog — avoids clashing with home sidebar) */
+    /* ── Short note dialog — full-screen Zen mode */
     #short-dialog.short-overlay {
       position: fixed; inset: 0; z-index: 8500;
-      display: flex; align-items: center; justify-content: center;
-      padding: 1.5rem;
-      background: var(--overlay-bg);
-      animation: short-bg-in 100ms ease both;
+      display: flex; align-items: flex-start; justify-content: center;
+      padding-top: 28vh;
+      background: var(--bg);
+      animation: short-fade-in 300ms ease both;
     }
-    #short-dialog .short-card {
-      background: var(--card-bg);
-      border: 1px solid var(--card-bd);
-      border-radius: var(--radius-lg);
-      padding: 0.75rem 0.875rem 0.75rem;
-      max-width: 680px; width: 100%;
-      box-shadow: 0 12px 40px rgba(0,0,0,0.36);
-      animation: short-card-in 140ms cubic-bezier(0.16,1,0.3,1) both;
-      display: flex; flex-direction: column; gap: 0.5rem;
+    #short-dialog.is-closing {
+      animation: short-fade-out 280ms ease both;
     }
-    #short-dialog .short-header {
-      display: flex; align-items: center; justify-content: space-between;
+    #short-dialog.is-closing .short-zen-wrap {
+      animation: short-zen-out 280ms ease both;
     }
-    #short-dialog .short-title {
-      font-size: var(--text-xs); font-weight: 600; color: var(--muted);
-      letter-spacing: 0.01em;
+    #short-dialog .short-zen-wrap {
+      --zen-pad: 2.5rem;
+      position: relative;
+      width: min(680px, 100%);
+      padding: 0 var(--zen-pad);
+      animation: short-zen-in 420ms cubic-bezier(0.16,1,0.3,1) both;
     }
-    #short-dialog .short-close-btn {
-      display: flex; align-items: center; justify-content: center;
-      width: 20px; height: 20px; border-radius: var(--radius-xs);
-      border: none; background: transparent; color: var(--muted);
-      cursor: pointer; transition: color 100ms, background 100ms; padding: 0;
-      opacity: 0.5;
+    #short-dialog .short-zen-placeholder {
+      position: absolute; top: 0; left: var(--zen-pad);
+      pointer-events: none; user-select: none;
     }
-    #short-dialog .short-close-btn:hover { color: var(--fg); background: var(--nav-act); opacity: 1; }
-    #short-dialog .short-close-btn svg { width: 11px; height: 11px; }
+    #short-dialog .short-ph-main {
+      color: var(--muted); opacity: 0.28;
+      font-size: 1.2rem; font-family: inherit; line-height: 1.9;
+    }
+    #short-dialog .short-ph-hint {
+      color: var(--muted); opacity: 0.22;
+      font-size: 0.72rem; font-family: inherit; line-height: 1.6;
+      margin-top: 0.6rem;
+    }
+    #short-dialog .short-fade-top {
+      position: absolute; top: 0; left: 0; right: 0;
+      height: 8rem; pointer-events: none; z-index: 2;
+      background: linear-gradient(to bottom, var(--bg) 0%, transparent 100%);
+      opacity: 0; transition: opacity 250ms;
+    }
+    #short-dialog .short-fade-top.is-visible { opacity: 1; }
+    #short-dialog .short-save-confirm {
+      position: absolute; top: 0; left: var(--zen-pad);
+      color: var(--muted); opacity: 0;
+      font-size: 0.9rem; font-family: inherit; line-height: 1.9;
+      pointer-events: none; user-select: none;
+      transition: opacity 420ms;
+    }
+    #short-dialog .short-save-confirm.is-visible { opacity: 0.42; }
     #short-dialog .short-textarea {
-      width: 100%; min-height: 240px; max-height: 520px;
+      position: relative;
+      width: 100%; min-height: 260px;
       background: transparent; color: var(--fg);
-      border: none; border-radius: 0;
-      padding: 0; font-size: var(--text-body); font-family: inherit;
-      line-height: 1.82; resize: none; outline: none;
+      border: none; outline: none; resize: none;
+      font-size: 1.2rem; font-family: inherit; line-height: 1.9;
+      caret-color: var(--accent);
       box-sizing: border-box;
+      transition: opacity 380ms;
     }
-    #short-dialog .short-textarea::placeholder { color: var(--muted); opacity: 0.38; }
-    #short-dialog .short-footer {
-      display: flex; align-items: center; justify-content: space-between;
-      border-top: 1px solid var(--hr); padding-top: 0.5rem; margin-top: 0.1rem;
-    }
-    #short-dialog .short-charcount {
-      font-size: var(--text-xs); color: var(--muted); opacity: 0.35;
-      font-variant-numeric: tabular-nums;
-    }
-    #short-dialog .short-actions { display: flex; align-items: center; gap: 0.4rem; }
-    #short-dialog .short-kbd-hint { font-size: var(--text-xs); color: var(--muted); opacity: 0.28; }
-    #short-dialog .short-btn {
-      height: var(--action-btn-sz); padding: 0 0.75rem; border-radius: var(--radius-sm);
-      font-size: var(--text-sm); font-weight: 600; cursor: pointer;
-      font-family: inherit;
-      transition: background 120ms, border-color 120ms, color 120ms;
-    }
-    #short-dialog .short-btn-cancel {
-      background: transparent; color: var(--muted); border: 1px solid var(--card-bd);
-    }
-    #short-dialog .short-btn-cancel:hover { color: var(--fg); background: var(--card-hov); border-color: var(--muted); }
-    #short-dialog .short-btn-save { background: var(--accent); color: #fff; border: none; }
-    #short-dialog .short-btn-save:hover:not(:disabled) { background: var(--accent-hov); }
-    #short-dialog .short-btn-save:active:not(:disabled) { background: var(--accent-hov); }
-    #short-dialog .short-btn-save:disabled { opacity: 0.3; cursor: not-allowed; }
+    #short-dialog .short-textarea.is-saved { opacity: 0; }
 
-    @keyframes short-bg-in  { from { opacity: 0; } to { opacity: 1; } }
-    @keyframes short-card-in {
-      from { opacity: 0; transform: translateY(6px) scale(0.98); }
-      to   { opacity: 1; transform: translateY(0)    scale(1); }
-    }
+    @keyframes short-fade-in  { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes short-fade-out { from { opacity: 1; } to { opacity: 0; } }
+    @keyframes short-zen-in  { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes short-zen-out { from { opacity: 1; transform: translateY(0);    } to { opacity: 0; transform: translateY(8px); } }

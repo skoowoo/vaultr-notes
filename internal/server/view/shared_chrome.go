@@ -25,6 +25,18 @@ const navCSS = `
     .nav-spacer { flex: 1; }
     .lib-nav, .nav-item { user-select: none; }
     .nav-item-wrap { position: relative; display: flex; align-items: center; justify-content: center; }
+    .nav-compose-btn {
+      display: flex; align-items: center; justify-content: center;
+      width: 30px; height: 30px; border-radius: 50%;
+      background: var(--nav-act);
+      border: none;
+      color: rgba(255,255,255,0.38); cursor: pointer; padding: 0;
+      transition: color 120ms, background 120ms;
+      user-select: none;
+    }
+    .nav-compose-btn:hover { background: var(--accent); color: var(--canvas); }
+    html[data-theme="light"] .nav-compose-btn { color: #9ca3af; }
+    .nav-compose-btn svg { width: 17px; height: 17px; flex-shrink: 0; }
     @property --_nb-a { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
     .nav-run-badge {
       display: none; position: absolute; top: -4px; right: -4px;
@@ -58,6 +70,9 @@ const svgAgent = `<svg fill="none" stroke="currentColor" stroke-width="1.7" view
         <path stroke-linecap="round" stroke-linejoin="round" d="M16 3.128a4 4 0 0 1 0 7.744"/>
         <path stroke-linecap="round" stroke-linejoin="round" d="M22 21v-2a4 4 0 0 0-3-3.87"/>
       </svg>`
+
+// svgCompose is the Lucide "Plus" icon used for the quick new-note button.
+const svgCompose = `<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14M5 12h14"/></svg>`
 
 // svgSettings is the Lucide "Settings" icon used for the Settings nav item.
 const svgSettings = `<svg fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24">
@@ -135,6 +150,11 @@ func navHTML(active string) string {
         <span class="nav-run-badge" id="_nav-agent-badge"></span>
       </span>
     </a>
+    <button type="button" class="nav-compose-btn" title="New note (Ctrl+N)"
+            style="margin-top:0.75rem"
+            onclick="window.__vaultrDrawer && void window.__vaultrDrawer.openNewInDrawer('','')">
+      ` + svgCompose + `
+    </button>
     <div class="nav-spacer"></div>
     <button type="button" ` + cls("settings") + ` title="Settings" @click="$store.settingsModal.open = true; $el.blur()">
       ` + svgSettings + `

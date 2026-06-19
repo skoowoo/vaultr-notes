@@ -9,7 +9,7 @@
 - [设计](#设计)
 - [架构](#架构)
 - [安装](#安装)
-- [从 Obsidian 迁移](#从-obsidian-迁移)
+- [Obsidian 兼容](#obsidian-兼容)
 - [编辑器](#编辑器)
 - [Shorts 速记流](#shorts-速记流)
 - [Mate Bots](#mate-bots)
@@ -136,11 +136,18 @@ Vaultr 提供全文搜索，但更重要的是让 agent 替你检索。当你需
 curl -sL https://raw.githubusercontent.com/skoowoo/vaultr-notes/main/install-cli.sh | sh
 ```
 
-## 从 Obsidian 迁移
+## Obsidian 兼容
 
-> Vaultr 和 Obsidian 可以共存，无需二选一。如果你习惯用 Obsidian 写笔记，完全可以只把 Vaultr 当做跑在同一个 vault 上的 AI Agent 自动化层——Vaultr 生成和修改的所有笔记都是兼容 Obsidian 的，在 Obsidian 里打开没有任何异样。
+Vaultr 与 Obsidian **完全兼容**，二者可以在**同一个 vault 上同时并存**——不需要迁移，也不必二选一。
 
-把 `vaultr init` 指向你的 vault 目录就行：
+- **同一份笔记，两个工具共用。** Vaultr 直接读写你现有的 Markdown 文件和目录结构。继续用 Obsidian 当主编辑器，完全没问题。
+- **原生 Obsidian 语法。** Wikilink（`[[笔记名]]`）、别名（`[[页面|别名]]`）、Wiki 图片（`![[图片.png]]`）开箱即用。
+- **无需格式转换。** Vaultr 创建或修改的内容都是标准 Markdown，在 Obsidian 里打开毫无异样。
+- **Vaultr 做 AI 补充。** 把你的 Obsidian vault 交给 Vaultr，让它负责 AI 能力：笔记编译、个人记忆、事件驱动的 Agent、微信接入、全文搜索。你照常用 Obsidian 写作，Vaultr 在上面跑自动化。
+
+#### 用现有 vault 开始使用
+
+把 `vaultr init` 指向你的 Obsidian vault 目录：
 
 ```sh
 # 在当前目录初始化
@@ -150,7 +157,7 @@ vaultr init
 vaultr init /path/to/your/obsidian-vault
 ```
 
-跑完之后，Vaultr 会在目录里创建 `.vaultr/` 文件夹、扫描所有 Markdown 文件、建好全文搜索索引。如果 `.vaultr/` 已经存在，命令什么都不会动，放心跑。
+跑完之后，Vaultr 会在目录里创建 `.vaultr/` 文件夹、扫描所有 Markdown 文件、建好全文搜索索引。如果 `.vaultr/` 已经存在，命令什么都不会动。你的 Obsidian vault 本身不会被改动。
 
 然后打开 **Vaultr App** 完成最后一步：
 
@@ -158,7 +165,7 @@ vaultr init /path/to/your/obsidian-vault
 2. **Vault** 那里选你的 vault 目录
 3. 保存
 
-笔记就出现了。
+笔记会出现在 Vaultr 里——Obsidian 照旧可以读写同一个 vault。
 
 ## 编辑器
 

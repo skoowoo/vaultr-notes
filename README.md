@@ -11,7 +11,7 @@
 - [Design](#design)
 - [Architecture](#architecture)
 - [Installation](#installation)
-- [Migrating from Obsidian](#migrating-from-obsidian)
+- [Obsidian Compatibility](#obsidian-compatibility)
 - [Editor](#editor)
 - [Shorts](#shorts)
 - [Mate Bots](#mate-bots)
@@ -138,11 +138,18 @@ Run the following command to install the Vaultr server and CLI:
 curl -sL https://raw.githubusercontent.com/skoowoo/vaultr-notes/main/install-cli.sh | sh
 ```
 
-## Migrating from Obsidian
+## Obsidian Compatibility
 
-> Vaultr and Obsidian can run side by side on the same vault; you don't have to choose one over the other. If you prefer Obsidian as your primary editor, you can use Vaultr purely as an automated multi-agent layer on top of your existing vault. Everything Vaultr creates or modifies is plain Markdown, fully readable in Obsidian without any changes.
+Vaultr is **fully compatible with Obsidian**. Both tools can work on the same vault at the same time, no migration required, no need to pick one over the other.
 
-To get started, point `vaultr init` at your existing vault directory:
+- **Same vault, same files.** Vaultr reads and writes plain Markdown in your existing directory structure. Keep using Obsidian as your primary editor if you prefer.
+- **Obsidian-native syntax.** Wikilinks (`[[Note]]`), aliases (`[[Page|Alias]]`), and wiki images (`![[image.png]]`) all work out of the box.
+- **No format conversion.** Everything Vaultr creates or modifies stays standard Markdown — open it in Obsidian and it looks exactly as you'd expect.
+- **Vaultr as your AI layer.** Point Vaultr at your Obsidian vault and let it handle the AI side: note compilation, personal memory, event-driven agents, WeChat, and search. You write in Obsidian; Vaultr runs the automation on top.
+
+#### Get started with an existing vault
+
+Point `vaultr init` at your Obsidian vault directory:
 
 ```sh
 # Initialize the current directory
@@ -152,7 +159,7 @@ vaultr init
 vaultr init /path/to/your/obsidian-vault
 ```
 
-This creates a `.vaultr/` folder inside the directory, scans all Markdown files, registers them in the metadata database, and builds the full-text search index. If `.vaultr/` already exists the command exits safely without changing anything.
+This creates a `.vaultr/` folder inside the directory, scans all Markdown files, registers them in the metadata database, and builds the full-text search index. If `.vaultr/` already exists the command exits safely without changing anything. Your Obsidian vault is otherwise untouched.
 
 After running `vaultr init`, open the **Vaultr desktop app** and complete the setup:
 
@@ -160,7 +167,7 @@ After running `vaultr init`, open the **Vaultr desktop app** and complete the se
 2. Under **Vault**, click the path field and select your vault directory
 3. Save config
 
-Your notes will now be available in the app.
+Your notes will now be available in Vaultr — while Obsidian continues to work on the same vault as before.
 
 ## Editor
 

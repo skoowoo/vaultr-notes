@@ -1,20 +1,12 @@
 
   <div id="short-dialog" class="short-overlay" style="display:none" role="dialog" aria-modal="true" aria-label="New short note">
-    <div class="short-card">
-      <div class="short-header">
-        <span class="short-title">New Short</span>
-        <button class="short-close-btn" id="short-close-btn" title="Close" type="button">
-          <svg fill="none" stroke="currentColor" stroke-width="2.1" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M18 6 6 18"/><path stroke-linecap="round" stroke-linejoin="round" d="m6 6 12 12"/></svg>
-        </button>
+    <div class="short-zen-wrap">
+      <div class="short-zen-placeholder" id="short-placeholder" aria-hidden="true">
+        <div class="short-ph-main">Write a short note…</div>
+        <div class="short-ph-hint" id="short-ph-hint"></div>
       </div>
-      <textarea id="short-textarea" class="short-textarea" placeholder="Write a short note..." rows="6"></textarea>
-      <div class="short-footer">
-        <span class="short-charcount" id="short-charcount">0 chars</span>
-        <div class="short-actions">
-          <span class="short-kbd-hint" id="short-kbd-hint"></span>
-          <button class="short-btn short-btn-cancel" id="short-cancel-btn" type="button">Cancel</button>
-          <button class="short-btn short-btn-save"   id="short-save-btn"   type="button" disabled>Save</button>
-        </div>
-      </div>
+      <textarea id="short-textarea" class="short-textarea" spellcheck="false"></textarea>
+      <div class="short-save-confirm" id="short-save-confirm" aria-hidden="true">✓ Saved</div>
+      <div class="short-fade-top" id="short-fade-top" aria-hidden="true"></div>
     </div>
   </div>

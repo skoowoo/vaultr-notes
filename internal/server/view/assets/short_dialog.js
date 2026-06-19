@@ -1,35 +1,55 @@
 
   (function() {
-    var overlay   = document.getElementById('short-dialog');
-    var textarea  = document.getElementById('short-textarea');
-    var saveBtn   = document.getElementById('short-save-btn');
-    var cancelBtn = document.getElementById('short-cancel-btn');
-    var closeBtn  = document.getElementById('short-close-btn');
-    var charEl    = document.getElementById('short-charcount');
-    var hintEl    = document.getElementById('short-kbd-hint');
+    var overlay     = document.getElementById('short-dialog');
+    var textarea    = document.getElementById('short-textarea');
+    var placeholder = document.getElementById('short-placeholder');
+    var phHint      = document.getElementById('short-ph-hint');
+    var fadeTop      = document.getElementById('short-fade-top');
+    var saveConfirm  = document.getElementById('short-save-confirm');
     if (!overlay) return;
 
     var isMac = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
-    if (hintEl) hintEl.textContent = isMac ? '⌘+Return to save' : 'Ctrl+Enter to save';
+    if (phHint) phHint.textContent = isMac ? '⌘↵ save  ·  esc exit' : 'Ctrl+Enter save  ·  Esc exit';
 
-    function updateCount() {
-      var n = textarea.value.length;
-      charEl.textContent = n === 1 ? '1 char' : n + ' chars';
-      saveBtn.disabled = n === 0;
+    var saving = false;
+    var isOpen = false;
+
+    function updatePlaceholder() {
+      if (placeholder) placeholder.style.display = textarea.value.length === 0 ? '' : 'none';
+    }
+
+    function setTrafficLights(visible) {
+      if (window.vaultrDesktop && window.vaultrDesktop.setWindowButtonVisibility) {
+        window.vaultrDesktop.setWindowButtonVisibility(visible);
+      }
     }
 
     function openShort() {
+      isOpen = true;
+      overlay.classList.remove('is-closing');
       overlay.style.display = 'flex';
+      setTrafficLights(false);
       if (window.__vaultrEscPush) window.__vaultrEscPush('short', tryClose);
       setTimeout(function() { textarea.focus(); }, 30);
-      updateCount();
+      updatePlaceholder();
     }
 
     function closeShort() {
+      isOpen = false;
       if (window.__vaultrEscPop) window.__vaultrEscPop('short');
-      overlay.style.display = 'none';
-      textarea.value = '';
-      updateCount();
+      overlay.classList.add('is-closing');
+      setTimeout(function() {
+        setTrafficLights(true);
+        overlay.classList.remove('is-closing');
+        overlay.style.display = 'none';
+        textarea.classList.remove('is-saved');
+        if (saveConfirm) saveConfirm.classList.remove('is-visible');
+        textarea.value = '';
+        textarea.scrollTop = 0;
+        if (fadeTop) fadeTop.classList.remove('is-visible');
+        saving = false;
+        updatePlaceholder();
+      }, 280);
     }
 
     async function tryClose() {
@@ -45,10 +65,8 @@
 
     async function saveShort() {
       var content = textarea.value.trim();
-      if (!content || saveBtn.disabled) return;
-      var prevLabel = saveBtn.textContent;
-      saveBtn.disabled = true;
-      saveBtn.textContent = 'Saving…';
+      if (!content || saving) return;
+      saving = true;
       try {
         var resp = await fetch('/api/vault/shorts', {
           method: 'POST',
@@ -59,19 +77,28 @@
           var msg = await resp.text();
           throw new Error(msg || 'Save failed');
         }
+        textarea.classList.add('is-saved');
+        if (placeholder) placeholder.style.display = 'none';
+        if (saveConfirm) saveConfirm.classList.add('is-visible');
+        textarea.value = '';
+        await new Promise(function(r) { setTimeout(r, 1400); });
         closeShort();
         if (window.__vaultrAfterVaultMutation) await window.__vaultrAfterVaultMutation();
       } catch (err) {
-        saveBtn.disabled = false;
-        saveBtn.textContent = prevLabel;
+        saving = false;
+        textarea.classList.remove('is-saved');
+        if (saveConfirm) saveConfirm.classList.remove('is-visible');
         window.showError('Failed to save: ' + (err && err.message ? err.message : String(err)), 'Save failed');
       }
     }
 
-    textarea.addEventListener('input', updateCount);
-    closeBtn.addEventListener('click', tryClose);
-    cancelBtn.addEventListener('click', tryClose);
-    saveBtn.addEventListener('click', saveShort);
+    textarea.addEventListener('input', updatePlaceholder);
+    textarea.addEventListener('scroll', function() {
+      if (fadeTop) fadeTop.classList.toggle('is-visible', textarea.scrollTop > 8);
+    });
+    overlay.addEventListener('click', function(e) {
+      if (e.target !== textarea) textarea.focus();
+    });
 
     textarea.addEventListener('keydown', function(e) {
       if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
@@ -92,7 +119,6 @@
     });
 
     window.__vaultrHotkeys.register('short', '.', function() {
-      var isOpen = overlay.style.display !== 'none';
       if (isOpen) { tryClose(); } else { openShort(); }
     });
 
