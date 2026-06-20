@@ -198,3 +198,36 @@ func navHTML(active string) string {
   });
   </script>`
 }
+
+// topbarActionsHTML returns the shared right-side action button group used on
+// every page: drawer toggle → short note → search → reload.
+//
+//   - reloadClick: JS expression for the reload @click (e.g. "refresh()", "window.location.reload()")
+//   - reloadTitle: tooltip text (e.g. "Refresh", "Refresh home")
+//   - reloadExtraClass: Alpine :class value for the reload button; pass "" for none (graph passes "loading && 'spinning'")
+//   - searchExtraDetail: extra detail object for the open-search CustomEvent; pass "" for none (graph passes "{ mode: 'knowledge' }")
+func topbarActionsHTML(reloadClick, reloadTitle, reloadExtraClass, searchExtraDetail string) string {
+	const macCheck = `/Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent)`
+
+	reloadClassAttr := ""
+	if reloadExtraClass != "" {
+		reloadClassAttr = ` :class="` + reloadExtraClass + `"`
+	}
+
+	searchEvent := "new CustomEvent('open-search')"
+	if searchExtraDetail != "" {
+		searchEvent = "new CustomEvent('open-search', { detail: " + searchExtraDetail + " })"
+	}
+
+	return `    <div class="lib-topbar-actions">
+      <button type="button" class="lib-action-btn"
+              :class="{ 'is-active': drawerOpen }"
+              :title="` + macCheck + ` ? 'Reading drawer (⌘E)' : 'Reading drawer (Ctrl+E)'"
+              @click="drawerOpen = !drawerOpen">` + topbarIconPanel + `</button>
+      ` + shortTriggerButton + `
+      <button type="button" class="lib-action-btn"` + reloadClassAttr + ` title="` + reloadTitle + `" @click="` + reloadClick + `">` + topbarIconReload + `</button>
+      <button type="button" class="lib-action-btn"
+              :title="` + macCheck + ` ? 'Search (⌘K)' : 'Search (Ctrl+K)'"
+              @click="window.dispatchEvent(` + searchEvent + `)">` + topbarIconSearch + `</button>
+    </div>`
+}

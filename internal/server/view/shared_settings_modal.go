@@ -702,13 +702,13 @@ func settingsModalHTML() string {
           <button class="settings-sidebar-item"
                   :class="{active: tab === 'mates'}"
                   @click="tab = 'mates'">
-            <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M12 8V4H8"/>
-              <rect width="16" height="12" x="4" y="8" rx="2"/>
-              <path stroke-linecap="round" stroke-linejoin="round" d="M2 14h2"/>
-              <path stroke-linecap="round" stroke-linejoin="round" d="M20 14h2"/>
-              <path stroke-linecap="round" stroke-linejoin="round" d="M15 13v2"/>
-              <path stroke-linecap="round" stroke-linejoin="round" d="M9 13v2"/>
+            <svg fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+              <path d="M12 6V2H8"/>
+              <path d="M15 11v2"/>
+              <path d="M2 12h2"/>
+              <path d="M20 12h2"/>
+              <path d="M20 16a2 2 0 0 1-2 2H8.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 4 20.286V8a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2z"/>
+              <path d="M9 11v2"/>
             </svg>
             Mate Bots
           </button>

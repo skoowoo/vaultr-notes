@@ -42,17 +42,7 @@ var agentChatHTML = `<!DOCTYPE html>
 
   <header class="lib-topbar">
     <div class="lib-topbar-spacer"></div>
-    <div class="lib-topbar-actions">
-      ` + shortTriggerButton + `
-      <button type="button" class="lib-action-btn" title="Refresh" @click="refreshPage()">` + topbarIconReload + `</button>
-      <button type="button" class="lib-action-btn"
-              :class="{ 'is-active': drawerOpen }"
-              :title="isMac ? 'Reading drawer (⌘E)' : 'Reading drawer (Ctrl+E)'"
-              @click="drawerOpen = !drawerOpen">` + topbarIconPanel + `</button>
-      <button type="button" class="lib-action-btn"
-              :title="isMac ? 'Search (⌘K)' : 'Search (Ctrl+K)'"
-              @click="window.dispatchEvent(new CustomEvent('open-search'))">` + topbarIconSearch + `</button>
-    </div>
+` + topbarActionsHTML("refreshPage()", "Refresh", "", "") + `
   </header>
 
   <div class="chat-body">

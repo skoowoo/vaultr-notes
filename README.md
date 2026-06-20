@@ -198,16 +198,16 @@ Select any text in WYSIWYG mode and a floating toolbar appears above the selecti
 
 ## Shorts
 
-Shorts is a lightweight daily capture stream — a rolling feed of timestamped quick notes stored under `/_shorts/` in your vault, one Markdown file per day.
+Shorts is a lightweight daily capture stream, a rolling feed of timestamped quick notes stored under `/_shorts/` in your vault, one Markdown file per day.
 
 #### ⚡ Capturing
 
-| Method            | How                                             |
-| ----------------- | ----------------------------------------------- |
-| Quick Note dialog | Press `⌘.` (`Ctrl+.`) from anywhere in the app  |
-| From the editor   | Select any passage → click **⚡** in the toolbar |
+| Method          | How                                                                                 |
+| --------------- | ----------------------------------------------------------------------------------- |
+| Quick Note      | Press `⌘.` (`Ctrl+.`) to open a full-screen Zen editor; `⌘↵` to save, `Esc` to exit |
+| From the editor | Select any passage → click **⚡** in the toolbar                                     |
 
-When saving from the editor, Vaultr automatically appends a `[[source note]]` backlink so you can always trace a Short back to its origin.
+The Quick Note editor is distraction-free: no toolbar, no buttons, just you and the text. When saving from the editor, Vaultr automatically appends a `[[source note]]` backlink so you can always trace a Short back to its origin.
 
 #### 📅 Viewing
 

@@ -77,29 +77,34 @@
               <path stroke-linecap="round" d="M15 5.764v15"/>
               <path stroke-linecap="round" d="M9 3.236v15"/>
             </svg>
-            <span class="home-nav-title">Knowledge</span>
+            <span class="home-nav-title">Library</span>
           </button>
           <button type="button" class="home-nav-btn" onclick="location.href='/graph'">
-            <svg class="home-nav-icon" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24">
-              <rect x="16" y="16" width="6" height="6" rx="1"/>
-              <rect x="2" y="16" width="6" height="6" rx="1"/>
-              <rect x="9" y="2" width="6" height="6" rx="1"/>
-              <path stroke-linecap="round" stroke-linejoin="round" d="M5 16v-3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3"/>
-              <path stroke-linecap="round" stroke-linejoin="round" d="M12 12V8"/>
+            <svg class="home-nav-icon" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+              <circle cx="12" cy="4.5" r="2.5"/>
+              <path d="m10.2 6.3-3.9 3.9"/>
+              <circle cx="4.5" cy="12" r="2.5"/>
+              <path d="M7 12h10"/>
+              <circle cx="19.5" cy="12" r="2.5"/>
+              <path d="m13.8 17.7 3.9-3.9"/>
+              <circle cx="12" cy="19.5" r="2.5"/>
             </svg>
             <span class="home-nav-title">Graph</span>
           </button>
           <button type="button" class="home-nav-btn" onclick="location.href='/shorts'">
-            <svg class="home-nav-icon" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/>
+            <svg class="home-nav-icon" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+              <path d="M12.67 19a2 2 0 0 0 1.416-.588l6.154-6.172a6 6 0 0 0-8.49-8.49L5.586 9.914A2 2 0 0 0 5 11.328V18a1 1 0 0 0 1 1z"/>
+              <path d="M16 8 2 22"/>
+              <path d="M17.5 15H9"/>
             </svg>
             <span class="home-nav-title">Shorts</span>
           </button>
           <button type="button" class="home-nav-btn" onclick="location.href='/images'">
-            <svg class="home-nav-icon" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24">
-              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-              <circle cx="9" cy="9" r="2"/>
-              <path stroke-linecap="round" stroke-linejoin="round" d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>
+            <svg class="home-nav-icon" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+              <path d="M18 22H4a2 2 0 0 1-2-2V6"/>
+              <path d="m22 13-1.296-1.296a2.41 2.41 0 0 0-3.408 0L11 18"/>
+              <circle cx="12" cy="8" r="2"/>
+              <rect width="16" height="16" x="6" y="2" rx="2"/>
             </svg>
             <span class="home-nav-title">Images</span>
           </button>
@@ -108,7 +113,7 @@
         <!-- ── Pinned ──────────────────────────────────────────── -->
         <div>
           <div class="s-head">
-            <span class="s-label">Pinned Notes</span>
+            <span class="s-label"><svg class="s-label-icon" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v3.76z"/></svg>Pinned Notes</span>
             <span class="s-count" id="home-pinned-count">{{len .PinnedNotes}}</span>
           </div>
           <div class="card-grid" id="home-pinned-grid">
@@ -130,7 +135,7 @@
                   {{if .IsKnowledge}}<span class="card-ai">k</span>{{end}}
                   {{if .IsShort}}<span class="card-short">s</span>{{end}}
                   {{if .IsIndex}}<span class="card-index">i</span>{{end}}
-                  {{if .IsCompiled}}<span class="card-compiled"><svg fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" width="9" height="9"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg></span>{{end}}
+                  {{if .IsCompiled}}<span class="card-compiled"><svg fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" width="9" height="9"><path d="M20 6 9 17l-5-5"/></svg></span>{{end}}
                 </div>
               </div>
             </div>
@@ -144,32 +149,18 @@
         <!-- ── Folders ───────────────────────────────────────── -->
         <div>
           <div class="s-head">
-            <a class="s-label-nav" href="/folders">Folders<svg class="s-label-nav-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m9 18 6-6-6-6"/></svg></a>
+            <a class="s-label-nav" href="/folders"><svg class="s-label-icon" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"/></svg>Folders<svg class="s-label-nav-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m9 18 6-6-6-6"/></svg></a>
             <span class="s-count" id="home-folders-count">{{len .Folders}}</span>
           </div>
-          <div class="card-grid" id="home-folders-grid">
+          <div class="card-grid card-grid--folder" id="home-folders-grid">
             {{range .Folders}}
             <div class="folder-card" data-fc="{{folderColorIdx .Dir}}" onclick="location.href='/dir?path='+encodeURIComponent('{{.Dir}}')">
-              <!-- background watermark icon — smooth (default) -->
-              <svg class="folder-card-watermark" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/>
-              </svg>
-              <!-- background watermark icon — pixel mode (hidden by default) -->
-              <svg class="folder-card-watermark folder-card-watermark-px" fill="currentColor" viewBox="0 0 24 24" shape-rendering="crispEdges" style="display:none">
-                <rect x="0" y="0" width="11" height="3"/>
-                <rect x="0" y="3" width="24" height="18"/>
-              </svg>
               <div class="folder-card-inner">
-                <div class="folder-card-top">
-                  <div class="folder-card-badge">
-                    <svg class="folder-card-icon" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/>
-                    </svg>
-                    <span class="folder-card-label">Folder</span>
-                  </div>
+                <svg class="folder-card-icon" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/>
+                </svg>
+                <div class="folder-card-body">
                   <span class="folder-card-name">{{folderLabel .Dir}}</span>
-                </div>
-                <div class="folder-card-foot">
                   <span class="folder-card-count">{{.Count}} notes</span>
                 </div>
               </div>
@@ -184,7 +175,7 @@
         <!-- ── Recent Raw ─────────────────────────────────────── -->
         <div>
           <div class="s-head">
-            <span class="s-label">Notes</span>
+            <span class="s-label"><svg class="s-label-icon" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>Notes</span>
             <span class="s-count">{{len .RecentRaw}}</span>
           </div>
           <div class="card-grid" id="home-recent-raw-grid">
@@ -202,7 +193,7 @@
                 <div class="card-foot">
                   <span class="card-meta">{{.UpdatedAt}}</span>
                   {{if .IsIndex}}<span class="card-index">i</span>{{end}}
-                  {{if .IsCompiled}}<span class="card-compiled"><svg fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" width="9" height="9"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg></span>{{end}}
+                  {{if .IsCompiled}}<span class="card-compiled"><svg fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" width="9" height="9"><path d="M20 6 9 17l-5-5"/></svg></span>{{end}}
                 </div>
               </div>
             </div>
@@ -216,7 +207,7 @@
         <!-- ── Recent Shorts ──────────────────────────────────── -->
         <div>
           <div class="s-head">
-            <a class="s-label-nav" href="/shorts">Shorts<svg class="s-label-nav-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m9 18 6-6-6-6"/></svg></a>
+            <a class="s-label-nav" href="/shorts"><svg class="s-label-icon" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M16 14h.01"/><path d="M8 18h.01"/><path d="M12 18h.01"/><path d="M16 18h.01"/></svg>Shorts<svg class="s-label-nav-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m9 18 6-6-6-6"/></svg></a>
             <span class="s-count">{{len .RecentShorts}}</span>
           </div>
           <div class="card-grid" id="home-recent-shorts-grid">
@@ -233,7 +224,6 @@
                 <span class="card-title">{{label .}}</span>
                 <div class="card-foot">
                   <span class="card-meta">{{.UpdatedAt}}</span>
-                  {{if .IsShort}}<span class="card-short">s</span>{{end}}
                 </div>
               </div>
             </div>
@@ -247,7 +237,7 @@
         <!-- ── Recent Knowledge ───────────────────────────────── -->
         <div>
           <div class="s-head">
-            <a class="s-label-nav" href="/library">Knowledge<svg class="s-label-nav-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m9 18 6-6-6-6"/></svg></a>
+            <a class="s-label-nav" href="/library"><svg class="s-label-icon" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M10.5 3 8 9l4 13 4-13-2.5-6"/><path d="M17 3a2 2 0 0 1 1.6.8l3 4a2 2 0 0 1 .013 2.382l-7.99 10.986a2 2 0 0 1-3.247 0l-7.99-10.986A2 2 0 0 1 2.4 7.8l2.998-3.997A2 2 0 0 1 7 3z"/><path d="M2 9h20"/></svg>Knowledge<svg class="s-label-nav-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m9 18 6-6-6-6"/></svg></a>
             <span class="s-count">{{len .RecentKnowledge}}</span>
           </div>
           <div class="card-grid" id="home-recent-knowledge-grid">
@@ -264,8 +254,7 @@
                 <span class="card-title">{{label .}}</span>
                 <div class="card-foot">
                   <span class="card-meta">{{.UpdatedAt}}</span>
-                  <span class="card-ai">k</span>
-                  {{if .IsCompiled}}<span class="card-compiled"><svg fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" width="9" height="9"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg></span>{{end}}
+                  {{if .IsCompiled}}<span class="card-compiled"><svg fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" width="9" height="9"><path d="M20 6 9 17l-5-5"/></svg></span>{{end}}
                 </div>
               </div>
             </div>

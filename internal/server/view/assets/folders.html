@@ -21,27 +21,19 @@
                 <span class="s-label">All Folders</span>
                 <span class="s-count">{{.TotalCount}}</span>
               </div>
-              <div class="card-grid">
+              <div class="card-grid card-grid--folder">
                 {{range .Folders}}
                 <div class="folder-card"
                      data-fc="{{folderColorIdx .Dir}}"
                      {{if .IsSystem}}data-system{{end}}
                      data-dir="{{.Dir}}"
                      onclick="location.href='/dir?path='+encodeURIComponent(this.dataset.dir)+'&from=folders'">
-                  <svg class="folder-card-watermark" fill="currentColor" viewBox="0 0 24 24"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>
-                  <svg class="folder-card-watermark folder-card-watermark-px" fill="currentColor" viewBox="0 0 24 24" shape-rendering="crispEdges" style="display:none">
-                    <rect x="0" y="0" width="11" height="3"/>
-                    <rect x="0" y="3" width="24" height="18"/>
-                  </svg>
                   <div class="folder-card-inner">
-                    <div class="folder-card-top">
-                      <div class="folder-card-badge">
-                        <svg class="folder-card-icon" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>
-                        <span class="folder-card-label">Folder</span>
-                      </div>
+                    <svg class="folder-card-icon" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/>
+                    </svg>
+                    <div class="folder-card-body">
                       <span class="folder-card-name">{{.Label}}</span>
-                    </div>
-                    <div class="folder-card-foot">
                       <span class="folder-card-count">{{.Count}} notes</span>
                     </div>
                   </div>

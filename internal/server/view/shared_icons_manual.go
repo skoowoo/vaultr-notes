@@ -26,17 +26,11 @@ const topbarIconReload = svgReload + `<svg class="lib-ai-px" fill="currentColor"
 const topbarIconPanel = svgPanel + `<svg class="lib-ai-px" fill="currentColor" viewBox="0 0 24 24"><path d="M4 2h16v2H4zm0 18h16v2H4zM2 4h2v16H2zm18 0h2v16h-2zm-6 0h2v16h-2z"/></svg>`
 const topbarIconSearch = svgSearch + `<svg class="lib-ai-px" fill="currentColor" viewBox="0 0 24 24"><path d="M22 22h-2v-2h2v2Zm-2-2h-2v-2h2v2Zm-6-2H6v-2h8v2Zm4 0h-2v-2h2v2ZM6 16H4v-2h2v2Zm10 0h-2v-2h2v2ZM4 14H2V6h2v8Zm14 0h-2V6h2v8ZM6 6H4V4h2v2Zm10 0h-2V4h2v2Zm-2-2H6V2h8v2Z"/></svg>`
 
-// svgGraph is the Lucide "Network" icon used for the Knowledge Graph nav item.
-const svgGraph = `<svg fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24">
-        <rect x="16" y="16" width="6" height="6" rx="1"/>
-        <rect x="2" y="16" width="6" height="6" rx="1"/>
-        <rect x="9" y="2" width="6" height="6" rx="1"/>
-        <path stroke-linecap="round" stroke-linejoin="round" d="M5 16v-3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3"/>
-        <path stroke-linecap="round" stroke-linejoin="round" d="M12 12V8"/>
-      </svg>`
+// svgGraph is the Lucide "Waypoints" icon used for the Knowledge Graph nav item.
+const svgGraph = `<svg fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="4.5" r="2.5"/><path d="m10.2 6.3-3.9 3.9"/><circle cx="4.5" cy="12" r="2.5"/><path d="M7 12h10"/><circle cx="19.5" cy="12" r="2.5"/><path d="m13.8 17.7 3.9-3.9"/><circle cx="12" cy="19.5" r="2.5"/></svg>`
 
-// svgShort is the Lucide "Zap" icon used in shortTriggerButton.
-const svgShort = `<svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></svg>`
+// svgShort is the Lucide "Feather" icon used in shortTriggerButton.
+const svgShort = `<svg fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M12.67 19a2 2 0 0 0 1.416-.588l6.154-6.172a6 6 0 0 0-8.49-8.49L5.586 9.914A2 2 0 0 0 5 11.328V18a1 1 0 0 0 1 1z"/><path d="M16 8 2 22"/><path d="M17.5 15H9"/></svg>`
 
 // topbarIconShort bundles the smooth short-note icon with its pixel-art variant (svgPxZap).
 const topbarIconShort = svgShort + `<svg class="lib-ai-px" fill="currentColor" viewBox="0 0 24 24"><path d="M4 13h8v6h2v2h-2v2h-2v-8H2v-4h2v2Zm12 6h-2v-2h2v2Zm2-2h-2v-2h2v2Zm2-2h-2v-2h2v2Zm-6-6h8v4h-2v-2h-8V5h-2V3h2V1h2v8Zm-8 2H4V9h2v2Zm2-2H6V7h2v2Zm2-2H8V5h2v2Z"/></svg>`

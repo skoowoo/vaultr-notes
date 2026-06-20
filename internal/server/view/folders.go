@@ -112,16 +112,7 @@ var foldersPageHTML = `<!DOCTYPE html>
       <a href="/home" class="lib-back-btn" title="Back to Home">` + topbarIconBack + `<span class="lib-back-label">back</span></a>
     </div>
     <div class="lib-topbar-spacer"></div>
-    <div class="lib-topbar-actions">
-      ` + shortTriggerButton + `
-      <button type="button" class="lib-action-btn"
-              :class="{ 'is-active': drawerOpen }"
-              :title="/Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent) ? 'Reading drawer (⌘E)' : 'Reading drawer (Ctrl+E)'"
-              @click="drawerOpen = !drawerOpen">` + topbarIconPanel + `</button>
-      <button type="button" class="lib-action-btn"
-              :title="/Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent) ? 'Search (⌘K)' : 'Search (Ctrl+K)'"
-              @click="window.dispatchEvent(new CustomEvent('open-search'))">` + topbarIconSearch + `</button>
-    </div>
+` + topbarActionsHTML("window.location.reload()", "Refresh", "", "") + `
   </header>
 
   <div class="lib-body">

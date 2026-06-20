@@ -153,19 +153,7 @@ var homePageHTML = `<!DOCTYPE html>
 ` + searchOnlyOverlayHTML + confirmDialogHTML + infoDialogHTML + shortDialogHTML + settingsModalHTML() + `
   <header class="lib-topbar">
     <div class="lib-topbar-spacer"></div>
-    <div class="lib-topbar-actions">
-      ` + shortTriggerButton + `
-      <button type="button" class="lib-action-btn" title="Refresh home" @click="refresh()">` + topbarIconReload + `</button>
-      <button type="button" class="lib-action-btn"
-              :class="{ 'is-active': drawerOpen }"
-              :title="/Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent) ? 'Reading drawer (⌘E)' : 'Reading drawer (Ctrl+E)'"
-              @click="drawerOpen = !drawerOpen">
-        ` + topbarIconPanel + `
-      </button>
-      <button type="button" class="lib-action-btn"
-              :title="/Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent) ? 'Search (⌘K)' : 'Search (Ctrl+K)'"
-              @click="window.dispatchEvent(new CustomEvent('open-search'))">` + topbarIconSearch + `</button>
-    </div>
+` + topbarActionsHTML("refresh()", "Refresh home", "", "") + `
   </header>
 
   <div class="lib-body">
@@ -286,7 +274,7 @@ var homeRefreshTemplate = template.Must(template.New("home-refresh").Funcs(homeT
         {{if .IsKnowledge}}<span class="card-ai">k</span>{{end}}
         {{if .IsShort}}<span class="card-short">s</span>{{end}}
         {{if .IsIndex}}<span class="card-index">i</span>{{end}}
-        {{if .IsCompiled}}<span class="card-compiled"><svg fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" width="9" height="9"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg></span>{{end}}
+        {{if .IsCompiled}}<span class="card-compiled"><svg fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" width="9" height="9"><path d="M20 6 9 17l-5-5"/></svg></span>{{end}}
       </div>
     </div>
   </div>
@@ -294,27 +282,15 @@ var homeRefreshTemplate = template.Must(template.New("home-refresh").Funcs(homeT
   {{if not .PinnedNotes}}<div class="grid-empty">No pinned notes</div>{{end}}
 </div>
 <span id="home-folders-count" class="s-count" hx-swap-oob="true">{{len .Folders}}</span>
-<div id="home-folders-grid" class="card-grid" hx-swap-oob="true">
+<div id="home-folders-grid" class="card-grid card-grid--folder" hx-swap-oob="true">
   {{range .Folders}}
   <div class="folder-card" data-fc="{{folderColorIdx .Dir}}" onclick="location.href='/dir?path='+encodeURIComponent('{{.Dir}}')">
-    <svg class="folder-card-watermark" fill="currentColor" viewBox="0 0 24 24">
-      <path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/>
-    </svg>
-    <svg class="folder-card-watermark folder-card-watermark-px" fill="currentColor" viewBox="0 0 24 24" shape-rendering="crispEdges" style="display:none">
-      <rect x="0" y="0" width="11" height="3"/>
-      <rect x="0" y="3" width="24" height="18"/>
-    </svg>
     <div class="folder-card-inner">
-      <div class="folder-card-top">
-        <div class="folder-card-badge">
-          <svg class="folder-card-icon" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/>
-          </svg>
-          <span class="folder-card-label">Folder</span>
-        </div>
+      <svg class="folder-card-icon" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/>
+      </svg>
+      <div class="folder-card-body">
         <span class="folder-card-name">{{folderLabel .Dir}}</span>
-      </div>
-      <div class="folder-card-foot">
         <span class="folder-card-count">{{.Count}} notes</span>
       </div>
     </div>
@@ -336,7 +312,6 @@ var homeRefreshTemplate = template.Must(template.New("home-refresh").Funcs(homeT
       <span class="card-title">{{label .}}</span>
       <div class="card-foot">
         <span class="card-meta">{{.UpdatedAt}}</span>
-        {{if .IsShort}}<span class="card-short">s</span>{{end}}
       </div>
     </div>
   </div>
@@ -358,7 +333,7 @@ var homeRefreshTemplate = template.Must(template.New("home-refresh").Funcs(homeT
       <div class="card-foot">
         <span class="card-meta">{{.UpdatedAt}}</span>
         {{if .IsIndex}}<span class="card-index">i</span>{{end}}
-        {{if .IsCompiled}}<span class="card-compiled"><svg fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" width="9" height="9"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg></span>{{end}}
+        {{if .IsCompiled}}<span class="card-compiled"><svg fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" width="9" height="9"><path d="M20 6 9 17l-5-5"/></svg></span>{{end}}
       </div>
     </div>
   </div>
@@ -379,8 +354,7 @@ var homeRefreshTemplate = template.Must(template.New("home-refresh").Funcs(homeT
       <span class="card-title">{{label .}}</span>
       <div class="card-foot">
         <span class="card-meta">{{.UpdatedAt}}</span>
-        <span class="card-ai">k</span>
-        {{if .IsCompiled}}<span class="card-compiled"><svg fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" width="9" height="9"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg></span>{{end}}
+        {{if .IsCompiled}}<span class="card-compiled"><svg fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" width="9" height="9"><path d="M20 6 9 17l-5-5"/></svg></span>{{end}}
       </div>
     </div>
   </div>

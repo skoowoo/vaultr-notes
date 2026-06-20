@@ -2,7 +2,7 @@ import { $prose } from '@milkdown/utils';
 import { Plugin, PluginKey, TextSelection } from '@milkdown/prose/state';
 import { lift, toggleMark as pmToggleMark, setBlockType, wrapIn } from '@milkdown/prose/commands';
 import { wrapInList } from '@milkdown/prose/schema-list';
-import { Zap, Check, Copy, X, RemoveFormatting, List, ListOrdered, TextQuote } from 'lucide';
+import { Feather, Check, Copy, X, RemoveFormatting, List, ListOrdered, TextQuote } from 'lucide';
 
 const TOOLTIP_KEY = new PluginKey('vaultr-format-tooltip');
 
@@ -20,7 +20,7 @@ function lucideSvg(iconData) {
   );
 }
 
-const SVG_ZAP          = lucideSvg(Zap);
+const SVG_FEATHER      = lucideSvg(Feather);
 const SVG_CHECK        = lucideSvg(Check);
 const SVG_COPY         = lucideSvg(Copy);
 const SVG_X            = lucideSvg(X);
@@ -448,7 +448,7 @@ export const tooltipPlugin = $prose(() => new Plugin({
       const shortBtn = document.createElement('button');
       shortBtn.className = 'mdt-short';
       shortBtn.title = 'Save as short note';
-      shortBtn.innerHTML = SVG_ZAP;
+      shortBtn.innerHTML = SVG_FEATHER;
       shortBtn.addEventListener('mousedown', async e => {
         e.preventDefault();
         const md = window.__vaultrGetSelectionMd?.();
