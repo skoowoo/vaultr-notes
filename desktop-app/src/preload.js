@@ -23,4 +23,9 @@ contextBridge.exposeInMainWorld("vaultrDesktop", {
   },
   pickFolder: (opts) => ipcRenderer.invoke("pick-folder", opts),
   installCli: () => ipcRenderer.invoke("install-cli"),
+  mateNotify: {
+    getSettings: ()           => ipcRenderer.invoke("mate-notify:get-settings"),
+    setSettings: (settings)   => ipcRenderer.invoke("mate-notify:set-settings", settings),
+    previewSound: (sound)     => ipcRenderer.invoke("mate-notify:preview-sound", sound),
+  },
 });

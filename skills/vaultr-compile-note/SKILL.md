@@ -96,6 +96,8 @@ For each unit in the manifest, check its `operation` and read the corresponding 
 - **`create`** → read `references/create.md` and follow it completely.
 - **`update`** → read `references/update.md` and follow it completely.
 
+`references/extract.md` documents partial-read commands (`vaultr extract outline / section / segment / …`). Use them at any step when reading the full note is not necessary.
+
 Complete one unit fully before moving to the next. After all units are done, confirm in prose: which were created, which updated, and what changed in each.
 
 ---

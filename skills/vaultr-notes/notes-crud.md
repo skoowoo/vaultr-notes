@@ -32,6 +32,37 @@ vaultr read today.md             # bare filename — resolves to most recently u
 
 If multiple notes share the same name, use the full vault path to be unambiguous.
 
+## Preview / partial read (save tokens)
+
+Before reading a note in full, use `vaultr extract` to inspect only what you need.
+
+**Decide whether to read the whole note:**
+```bash
+vaultr extract outline today.md          # heading structure — see if the note is relevant
+vaultr extract segment today.md --head 20  # first 20 lines — quick content preview
+vaultr extract tag today.md              # front-matter tags only
+```
+
+**Read only the part you need:**
+```bash
+vaultr extract section today.md "Goals"         # extract a named section (case-insensitive)
+vaultr extract section today.md "## meeting notes"
+vaultr extract segment today.md --start 10 --end 30   # specific line range
+vaultr extract segment today.md --tail 15        # last 15 lines
+```
+
+**Extract specific content types:**
+```bash
+vaultr extract code today.md     # all fenced code blocks
+vaultr extract list today.md     # all bullet/numbered lists
+vaultr extract link today.md     # all links
+```
+
+**Recommended workflow for unknown or long notes:**
+1. `vaultr extract outline <note>` — scan the structure
+2. `vaultr extract section <note> "<heading>"` — read only the relevant section(s)
+3. `vaultr read <note>` — fall back to full read only when the above isn't enough
+
 ## Create a note
 
 ```bash

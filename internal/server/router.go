@@ -44,8 +44,34 @@ func newRouter(
 	ah := handler.NewAgentAPI(logger, cfg, vault, agentHub, mateStore, agentCache)
 
 	// Wire mate runner → agent API so trigger runs use the same execution path.
+	notifBus := mate.NewNotificationBus()
 	if mateRunner != nil {
 		mateRunner.SetRunFunc(ah.FireTriggerRun)
+		mateRunner.SetRunStartHook(func(m *mate.Mate, convID, prompt string, ev mate.MateEvent) {
+			if ev.Type == mate.MateEventWechatMessage {
+				return
+			}
+			notifBus.Push(mate.RunNotification{
+				Type:      "run_start",
+				MateID:    m.ID,
+				MateName:  m.Name,
+				ConvID:    convID,
+				EventType: string(ev.Type),
+			})
+		})
+		mateRunner.SetRunDoneHook(func(m *mate.Mate, result mate.RunResult) {
+			if result.EventType == mate.MateEventWechatMessage {
+				return
+			}
+			notifBus.Push(mate.RunNotification{
+				Type:        "run_done",
+				MateID:      m.ID,
+				MateName:    m.Name,
+				Success:     result.Success,
+				DurationSec: result.Duration.Seconds(),
+				LastMessage: result.LastMessage,
+			})
+		})
 	}
 
 	mux.HandleFunc("GET /api/agents", ah.AgentsGET)
@@ -67,6 +93,8 @@ func newRouter(
 
 		mh := handler.NewMateAPI(logger, mateStore)
 		mux.HandleFunc("GET /api/mate-events", mh.MateEventsGET)
+		mux.HandleFunc("GET /api/mate/run-notifications", notifBus.StreamSSE)
+
 		mux.HandleFunc("GET /api/mates", mh.MatesGET)
 		mux.HandleFunc("POST /api/mates/reorder", mh.MatesReorderPOST)
 		mux.HandleFunc("POST /api/mates", mh.MatesPOST)

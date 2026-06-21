@@ -1,4 +1,4 @@
-const { app, BaseWindow, WebContentsView, shell, ipcMain, nativeImage, Menu, dialog } = require("electron");
+const { app, BaseWindow, WebContentsView, shell, ipcMain, nativeImage, Menu, dialog, Notification } = require("electron");
 
 app.setName("Vaultr");
 
@@ -6,11 +6,12 @@ const path = require("node:path");
 const fs = require("node:fs");
 const http = require("node:http");
 const https = require("node:https");
-const { getAutoStart, setAutoStart, setServerUrl, registerConfigIpcHandlers } = require("./config");
+const { getAutoStart, setAutoStart, setServerUrl, getMateNotifySettings, registerConfigIpcHandlers } = require("./config");
 
 require("./server-manager").register({
   onRestartDone:  () => resetToStartScreen(),
   onServerStopped: () => resetToStartScreen(),
+  onBeforeStop:   () => stopMateNotifications(),
   getAutoStart:   () => getAutoStart(),
   setAutoStart:   (v) => setAutoStart(v),
 });
@@ -58,6 +59,126 @@ let activeSection = null;
 // Track the most-recently applied theme background so detached views can be
 // pre-synced before they are made visible (prevents flash-of-wrong-theme).
 let currentViewBgColor = '#0f0f0f';
+
+// ── Mate run notifications (direct SSE from main process) ─────────────────────
+
+/** @type {import("node:http").ClientRequest | null} */
+let mateNotifReq = null;
+let mateNotifReconnectTimer = null;
+let mateNotifWatchdogTimer = null;
+const MATE_NOTIF_WATCHDOG_MS = 45_000;
+
+function stopMateNotifications() {
+  if (mateNotifReconnectTimer) {
+    clearTimeout(mateNotifReconnectTimer);
+    mateNotifReconnectTimer = null;
+  }
+  if (mateNotifWatchdogTimer) {
+    clearTimeout(mateNotifWatchdogTimer);
+    mateNotifWatchdogTimer = null;
+  }
+  if (mateNotifReq) {
+    try { mateNotifReq.destroy(); } catch (_) {}
+    mateNotifReq = null;
+  }
+}
+
+function scheduleMateNotifReconnect(url) {
+  mateNotifReconnectTimer = setTimeout(() => {
+    mateNotifReconnectTimer = null;
+    if (serverUrl === url) startMateNotifications(url);
+  }, 5000);
+}
+
+function resetMateNotifWatchdog(url) {
+  if (mateNotifWatchdogTimer) clearTimeout(mateNotifWatchdogTimer);
+  mateNotifWatchdogTimer = setTimeout(() => {
+    mateNotifWatchdogTimer = null;
+    if (serverUrl === url) startMateNotifications(url);
+  }, MATE_NOTIF_WATCHDOG_MS);
+}
+
+/**
+ * Play a sound by name or path.
+ * Accepts: "beep" (system alert), "none"/falsy (silence),
+ *          macOS system sound name (e.g. "Glass", "Ping"),
+ *          or an absolute file path to a .aiff/.wav/.mp3.
+ */
+function playSound(sound) {
+  if (!sound || sound === "none") return;
+  if (sound === "beep") { shell.beep(); return; }
+  if (process.platform === "darwin") {
+    const { spawn } = require("node:child_process");
+    const soundPath = sound.startsWith("/")
+      ? sound
+      : `/System/Library/Sounds/${sound}.aiff`;
+    const child = spawn("/usr/bin/afplay", [soundPath], { stdio: "ignore" });
+    child.on("error", () => shell.beep()); // fall back if afplay is unavailable
+    child.unref();
+  } else {
+    shell.beep();
+  }
+}
+
+function showMateNotification(type, payload) {
+  const settings = getMateNotifySettings();
+  const name = payload.mateName || "Mate";
+  const isDone = type === "run_done";
+
+  if (settings.textEnabled && Notification.isSupported()) {
+    const title = name;
+    const status = isDone ? (payload.success ? "Finished" : "Failed") : "Started";
+    const msg = (payload.lastMessage || "").trim().slice(0, 100);
+    const body = msg ? `${status} — ${msg}` : status;
+    new Notification({ title, body, silent: true }).show();
+  }
+
+  if (settings.soundEnabled) {
+    playSound(isDone ? settings.doneSound : settings.startSound);
+  }
+}
+
+function startMateNotifications(url) {
+  stopMateNotifications();
+  if (!url) return;
+
+  let parsed;
+  try { parsed = new URL("/api/mate/run-notifications", url); } catch { return; }
+  const mod = parsed.protocol === "https:" ? https : http;
+
+  let buffer = "";
+  const req = mod.request(parsed, (res) => {
+    if (res.statusCode !== 200) {
+      res.resume();
+      scheduleMateNotifReconnect(url);
+      return;
+    }
+    resetMateNotifWatchdog(url);
+    res.on("data", (chunk) => {
+      resetMateNotifWatchdog(url);
+      buffer += chunk.toString();
+      const blocks = buffer.split("\n\n");
+      buffer = blocks.pop(); // keep the incomplete trailing fragment
+      for (const block of blocks) {
+        if (!block.trim()) continue;
+        const evMatch   = block.match(/^event: (.+)$/m);
+        const dataMatch = block.match(/^data: (.+)$/m);
+        if (!dataMatch) continue;
+        const type = evMatch?.[1]?.trim() || "";
+        try {
+          showMateNotification(type, JSON.parse(dataMatch[1].trim()));
+        } catch { /* ignore malformed events */ }
+      }
+    });
+    res.on("end",   () => scheduleMateNotifReconnect(url));
+    res.on("error", () => scheduleMateNotifReconnect(url));
+  });
+  req.on("error", () => scheduleMateNotifReconnect(url));
+  req.end();
+  mateNotifReq = req;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 function getContentBounds() {
   const [w, h] = win.getContentSize();
@@ -121,6 +242,7 @@ function resetToStartScreen() {
   if (!serverUrl) return; // already reset, guard against concurrent did-fail-load calls
   serverUrl = null;
   agentCache = null;
+  stopMateNotifications();
 
   if (activeSection && views[activeSection]) {
     try { win.contentView.removeChildView(views[activeSection]); } catch { }
@@ -230,9 +352,7 @@ function createWindow() {
   // After switching away and back, refresh section views that are safe to reload
   // (external vault changes while the app was in the background).
   let windowHadBlur = false;
-  win.on("blur", () => {
-    windowHadBlur = true;
-  });
+  win.on("blur", () => { windowHadBlur = true; });
   win.on("focus", () => {
     if (!windowHadBlur) return;
     windowHadBlur = false;
@@ -267,6 +387,7 @@ registerConfigIpcHandlers(ipcMain);
 ipcMain.handle("set-server-url", (_event, url) => {
   agentCache = null;
   setServerUrl(url);
+  startMateNotifications(url);
   if (win) {
     if (Object.keys(views).length === 0) {
       // First successful connection — create all section views
@@ -466,6 +587,10 @@ ipcMain.handle("draft:delete", (_e, id) => {
   fs.rmSync(getDraftPath(id), { force: true });
 });
 
+
+ipcMain.handle("mate-notify:preview-sound", (_e, sound) => {
+  playSound(sound);
+});
 
 ipcMain.handle("pick-folder", async (_event, opts = {}) => {
   const result = await dialog.showOpenDialog(win, {

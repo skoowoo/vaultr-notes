@@ -17,6 +17,7 @@ const (
 	MateEventScheduled        MateEventType = "scheduled"
 	MateEventWechatMessage    MateEventType = "wechat_message"
 	MateEventCompileRequested MateEventType = "compile_requested"
+	MateEventAgentRunCompleted MateEventType = "agent_run_completed"
 )
 
 // EventDef describes a built-in mate event for display in the UI.
@@ -35,6 +36,7 @@ var BuiltinEvents = []EventDef{
 	{MateEventScheduled, "Scheduled", "Fires on a configured interval or daily time"},
 	{MateEventWechatMessage, "WeChat Message", "Fires when a WeChat direct message is received"},
 	{MateEventCompileRequested, "Compile Requested", "Fires when the user manually triggers knowledge compilation for a note — path carries the note to compile"},
+	{MateEventAgentRunCompleted, "Agent Run Completed", "Fires when another mate agent run succeeds — use source mate names to filter"},
 }
 
 // EventLabel returns the display label for a mate event type.
@@ -50,6 +52,8 @@ func EventLabel(t MateEventType) string {
 // MateEvent is the enriched semantic event passed to trigger matching and prompt rendering.
 type MateEvent struct {
 	Type         MateEventType
+	// Path holds the vault path for note/compile events.
+	// For agent_run_completed it carries the source mate name; PathPrefixes then filters by mate name.
 	Path         string
 	Content      string    // populated for short_note_created and wechat_message
 	FiredAt      time.Time // populated for scheduled: when the trigger fired
@@ -57,6 +61,9 @@ type MateEvent struct {
 
 	// Reply is propagated from plugin.Event; invoked after the trigger agent run finishes.
 	Reply plugin.ReplyFunc
+
+	// SourceMateID is set for agent_run_completed to prevent the source mate from triggering itself.
+	SourceMateID string
 }
 
 // Translate converts a low-level plugin.Event to the matching set of MateEvents.

@@ -18,9 +18,10 @@ Knowledge notes are auto-generated and are read-only (except for explicit delete
 
 1. `vaultr knowledge list-indexes --table` — identify relevant domains
 2. `vaultr knowledge read <index-path>` — read the domain index to find matching knowledge units
-3. `vaultr knowledge read <unit-path>` — read the knowledge unit; usually sufficient
-4. If more detail is needed: follow the source links inside the knowledge unit to read the original raw notes directly (`vaultr read <source-path>`)
-5. Last resort only: `vaultr search "X"` — use when source links are absent or the above steps don't cover the question
+3. `vaultr extract outline <unit-path>` — preview the knowledge unit's structure before reading in full
+4. `vaultr extract section <unit-path> "<heading>"` — read only the relevant section if the outline is sufficient to pinpoint it; otherwise `vaultr knowledge read <unit-path>`
+5. If more detail is needed: follow the source links inside the knowledge unit; use `vaultr extract outline <source-path>` first, then `vaultr read <source-path>` for full content
+6. Last resort only: `vaultr search "X"` — use when source links are absent or the above steps don't cover the question
 
 If the domain is unclear, skip steps 1–2 and go straight to `vaultr knowledge search "X"`.
 

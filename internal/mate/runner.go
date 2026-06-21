@@ -11,16 +11,33 @@ import (
 	"github.com/hardhacker/vaultr/internal/plugin"
 )
 
+// RunResult carries the outcome of a completed trigger agent run.
+type RunResult struct {
+	Success     bool
+	Duration    time.Duration
+	LastMessage string
+	EventType   MateEventType // the MateEvent type that triggered this run
+}
+
+// RunStartHook is called just before a trigger run is dispatched to fn.
+type RunStartHook func(m *Mate, convID, prompt string, ev MateEvent)
+
+// RunDoneHook is called when a trigger run reaches a terminal state.
+type RunDoneHook func(m *Mate, result RunResult)
+
 // RunFunc is called by the Runner to fire a background agent run.
-type RunFunc func(ctx context.Context, m *Mate, convID, prompt string, ev MateEvent)
+// onDone must be called exactly once when the run reaches a terminal state.
+type RunFunc func(ctx context.Context, m *Mate, convID, prompt string, ev MateEvent, onDone func(RunResult))
 
 // Runner implements plugin.Plugin and fires mate triggers in response to vault events
 // and configured schedules.
 type Runner struct {
-	store  *Store
-	runFn  atomic.Value // stores RunFunc
-	logger *slog.Logger
-	sem    chan struct{} // concurrency limiter
+	store     *Store
+	runFn     atomic.Value // stores RunFunc
+	startHook atomic.Value // stores RunStartHook
+	doneHook  atomic.Value // stores RunDoneHook
+	logger    *slog.Logger
+	sem       chan struct{} // concurrency limiter
 }
 
 // NewRunner creates a Runner. Call SetRunFunc before the vault watcher fires events.
@@ -35,6 +52,16 @@ func NewRunner(store *Store, logger *slog.Logger) *Runner {
 // SetRunFunc wires in the function that fires an agent run for a trigger match.
 func (r *Runner) SetRunFunc(fn RunFunc) {
 	r.runFn.Store(fn)
+}
+
+// SetRunStartHook registers a hook called just before each trigger run is dispatched.
+func (r *Runner) SetRunStartHook(fn RunStartHook) {
+	r.startHook.Store(fn)
+}
+
+// SetRunDoneHook registers a hook called when a trigger run reaches a terminal state.
+func (r *Runner) SetRunDoneHook(fn RunDoneHook) {
+	r.doneHook.Store(fn)
 }
 
 func (r *Runner) Name() string { return "mate_runner" }
@@ -52,6 +79,10 @@ func (r *Runner) Notify(e plugin.Event) {
 	if len(mateEvents) == 0 {
 		return
 	}
+	r.dispatchMateEvents(mateEvents)
+}
+
+func (r *Runner) dispatchMateEvents(mateEvents []MateEvent) {
 	triggers, err := r.store.ListAllEnabledTriggers()
 	if err != nil {
 		r.logger.Warn("mate_runner: list triggers", "err", err)
@@ -63,6 +94,9 @@ func (r *Runner) Notify(e plugin.Event) {
 		}
 		matched, ok := matchMateEvent(t.EventTypes, mateEvents)
 		if !ok {
+			continue
+		}
+		if matched.SourceMateID != "" && t.MateID == matched.SourceMateID {
 			continue
 		}
 		if !matchPathPrefixes(t.PathPrefixes, matched) {
@@ -174,7 +208,33 @@ func (r *Runner) fireTrigger(t MateTrigger, me MateEvent) {
 			fields = append(fields, "path", ev.Path)
 		}
 		r.logger.Info("mate_runner: trigger fired", fields...)
-		fn(context.Background(), m, convID, prompt, ev)
+
+		if sh, _ := r.startHook.Load().(RunStartHook); sh != nil {
+			sh(m, convID, prompt, ev)
+		}
+
+		start := time.Now()
+		dh, _ := r.doneHook.Load().(RunDoneHook)
+		onDone := func(result RunResult) {
+			result.Duration = time.Since(start)
+			result.EventType = ev.Type
+			if dh != nil {
+				dh(m, result)
+			}
+			if result.Success {
+				// Notify other mates that this run succeeded.
+				// Path carries the source mate name; PathPrefixes on agent_run_completed triggers filters by mate name.
+				// SourceMateID prevents the same mate from triggering itself.
+				r.dispatchMateEvents([]MateEvent{{
+					Type:         MateEventAgentRunCompleted,
+					Path:         m.Name,
+					Content:      result.LastMessage,
+					FiredAt:      time.Now(),
+					SourceMateID: m.ID,
+				}})
+			}
+		}
+		fn(context.Background(), m, convID, prompt, ev, onDone)
 	}(t, me)
 }
 
@@ -224,12 +284,12 @@ func renderPrompt(tmpl string, me MateEvent) string {
 	name := path.Base(me.Path)
 	name = strings.TrimSuffix(name, ".md")
 	r := tmpl
-	r = strings.ReplaceAll(r, "{{.Path}}", me.Path)
-	r = strings.ReplaceAll(r, "{{.Name}}", name)
-	r = strings.ReplaceAll(r, "{{.Content}}", me.Content)
-	r = strings.ReplaceAll(r, "{{.WechatUserID}}", me.WechatUserID)
-	r = strings.ReplaceAll(r, "{{.Now}}", fired.Format(time.RFC3339))
-	r = strings.ReplaceAll(r, "{{.Date}}", fired.Format("2006-01-02"))
-	r = strings.ReplaceAll(r, "{{.Time}}", fired.Format("15:04"))
+	r = strings.ReplaceAll(r, "{Path}", me.Path)
+	r = strings.ReplaceAll(r, "{Name}", name)
+	r = strings.ReplaceAll(r, "{Content}", me.Content)
+	r = strings.ReplaceAll(r, "{WechatUserID}", me.WechatUserID)
+	r = strings.ReplaceAll(r, "{Now}", fired.Format(time.RFC3339))
+	r = strings.ReplaceAll(r, "{Date}", fired.Format("2006-01-02"))
+	r = strings.ReplaceAll(r, "{Time}", fired.Format("15:04"))
 	return r
 }

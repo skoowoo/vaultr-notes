@@ -47,6 +47,8 @@ If all units are already indexed, report and stop.
 
 For each unindexed unit, read its YAML front matter and first non-heading paragraph. Build an internal list:
 
+`references/extract.md` documents partial-read commands — `vaultr extract tag` retrieves front-matter tags directly; `vaultr extract segment --head N` retrieves the opening lines. Use them instead of a full `vaultr read` when only these fragments are needed.
+
 ```
 title          | entity_type | tags          | summary (≤80 chars)                              | vault-absolute path
 Vertical Agent | concept     | [ai, agent]   | AI product focused on a specific vertical domain | /_knowledge/Vertical Agent.md

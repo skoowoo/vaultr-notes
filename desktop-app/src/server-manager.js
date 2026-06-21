@@ -214,12 +214,13 @@ function startVaultrServerDetached() {
  * @param {{
  *   onRestartDone?: () => void,
  *   onServerStopped?: () => void,
+ *   onBeforeStop?: () => void,
  *   getAutoStart?: () => boolean,
  *   setAutoStart?: (v: boolean) => void,
  * }} [opts]
  */
 function register(opts = {}) {
-  const { onRestartDone, onServerStopped, getAutoStart, setAutoStart } = opts;
+  const { onRestartDone, onServerStopped, onBeforeStop, getAutoStart, setAutoStart } = opts;
 
   /** Schedule a UI-transition callback after the current IPC promise resolves. */
   function deferUiTransition(fn) {
@@ -328,6 +329,11 @@ function register(opts = {}) {
       return { ok: false, reason: "no_pid", error: "No managed server process found" };
     }
 
+    // Close any persistent connections to the server (e.g. SSE streams) before
+    // sending SIGTERM so the server's graceful-shutdown doesn't stall waiting
+    // for long-lived connections to drain.
+    if (onBeforeStop) onBeforeStop();
+
     diagLog("stop-server: stopping managed server pid", pid);
     await killProcess(pid);
     managedServerChildPid = 0;
@@ -384,6 +390,9 @@ function register(opts = {}) {
     if (!pid) {
       return { ok: false, reason: "no_pid", error: "No valid PID file — server was not started by the desktop app" };
     }
+
+    // Close persistent connections before SIGTERM for the same reason as stop.
+    if (onBeforeStop) onBeforeStop();
 
     if (isProcessAlive(pid)) {
       diagLog("restart-server: stopping pid", pid);

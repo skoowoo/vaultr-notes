@@ -45,8 +45,31 @@ function setAutoStart(v) {
   saveConfig(c);
 }
 
+const DEFAULT_MATE_NOTIFY = {
+  textEnabled: true,
+  soundEnabled: true,
+  startSound: "beep",
+  doneSound: "beep",
+};
+
+function getMateNotifySettings() {
+  const c = loadConfig();
+  return { ...DEFAULT_MATE_NOTIFY, ...(c.mateNotify || {}) };
+}
+
+function setMateNotifySettings(settings) {
+  const c = loadConfig();
+  c.mateNotify = { ...getMateNotifySettings(), ...settings };
+  saveConfig(c);
+}
+
 function registerConfigIpcHandlers(ipcMain) {
   ipcMain.handle("get-server-url", () => getServerUrl());
+  ipcMain.handle("mate-notify:get-settings", () => getMateNotifySettings());
+  ipcMain.handle("mate-notify:set-settings", (_e, settings) => {
+    setMateNotifySettings(settings);
+    return getMateNotifySettings();
+  });
 }
 
 module.exports = {
@@ -55,5 +78,7 @@ module.exports = {
   setServerUrl,
   getAutoStart,
   setAutoStart,
+  getMateNotifySettings,
+  setMateNotifySettings,
   registerConfigIpcHandlers,
 };

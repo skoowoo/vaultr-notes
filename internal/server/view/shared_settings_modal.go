@@ -391,6 +391,20 @@ const settingsModalCSS = `
 
     /* ── Shortcuts pane ───────────────────────────────────────── */
     .shortcuts-pane { flex: 1; overflow-y: auto; padding: 1.75rem 1.5rem 3rem; }
+    .notifications-pane { flex: 1; overflow-y: auto; padding: 1.75rem 1.5rem 3rem; }
+    .notif-row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 0.35rem; }
+    .notif-saved { font-size: var(--text-xs); color: var(--s-ok); margin: 0; font-weight: 500; }
+    .notif-sound-row { display: flex; align-items: center; gap: 0.5rem; max-width: 280px; }
+    .notif-play-btn {
+      flex-shrink: 0; width: 32px; height: 32px; padding: 0;
+      display: flex; align-items: center; justify-content: center;
+      background: var(--bg); border: 1px solid var(--card-bd);
+      border-radius: var(--radius-md); cursor: pointer; color: var(--muted);
+      transition: color 120ms, background 120ms, border-color 120ms;
+    }
+    .notif-play-btn:hover:not(:disabled) { color: var(--fg); background: var(--card-hov); border-color: var(--muted); }
+    .notif-play-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+    .notif-play-btn svg { width: 13px; height: 13px; }
     .shortcuts-fields { max-width: 640px; }
     .shortcuts-list { display: flex; flex-direction: column; }
     .shortcuts-row {
@@ -460,14 +474,18 @@ const settingsModalCSS = `
     .mate-form-title { font-size: var(--text-base); font-weight: 600; color: var(--fg); }
     .mate-form { display: flex; flex-direction: column; }
     .mate-form-section {
-      padding: 1.65rem 0 1.5rem; border-top: 1px solid var(--hr);
+      padding: 1.65rem 0 1.5rem;
       display: flex; flex-direction: column; gap: 1.25rem;
     }
-    .mate-form-section:first-child { padding-top: 0; border-top: none; }
+    .mate-form-section:first-child { padding-top: 0; }
     .mate-form-section-triggers { gap: 1rem; }
     .mate-form-section-title {
-      font-size: var(--text-2xs); font-weight: 600; letter-spacing: 0.07em;
-      text-transform: uppercase; color: var(--muted); margin: 0;
+      font-size: var(--text-xs); font-weight: 700; letter-spacing: 0.05em;
+      text-transform: uppercase; color: var(--fg); margin: 0;
+      display: flex; align-items: center; gap: 0.6rem; white-space: nowrap;
+    }
+    .mate-form-section-title::after {
+      content: ''; flex: 1; height: 1px; background: var(--hr);
     }
     .mate-trigger-section-top { display: flex; flex-direction: column; gap: 0.4rem; }
     .mate-section-desc { font-size: var(--text-sm); color: var(--muted); line-height: 1.5; margin: 0; }
@@ -481,10 +499,11 @@ const settingsModalCSS = `
       font-family: inherit; transition: border-color 150ms;
     }
     .mate-form-input:focus, .mate-form-select:focus, .mate-form-textarea:focus { border-color: var(--fg); }
-    .mate-form-textarea { resize: vertical; min-height: 80px; line-height: 1.55; }
+    .mate-form-textarea { resize: vertical; overflow: hidden; line-height: 1.55; }
     .mate-trigger-section-hdr {
       display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;
     }
+    .mate-trigger-section-hdr .mate-form-section-title { flex: 1; }
     .mate-trigger-add {
       font-size: var(--text-sm); font-weight: 600; color: var(--muted);
       background: none; border: none; cursor: pointer; padding: 0.15rem 0;
@@ -534,7 +553,7 @@ const settingsModalCSS = `
     .mate-block-label { margin-bottom: 0.65rem; }
     .mate-block-title { display: block; font-size: var(--text-sm); font-weight: 600; color: var(--fg); }
     .mate-block-hint { display: block; font-size: var(--text-xs); color: var(--muted); line-height: 1.5; margin-top: 0.2rem; }
-    .mate-prompt-textarea { min-height: 120px; font-family: var(--font-mono); font-size: var(--text-sm); }
+    .mate-prompt-textarea { font-family: var(--font-mono); font-size: var(--text-sm); }
     .mate-schedule-presets { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.65rem; }
     .mate-schedule-preset {
       height: 28px; padding: 0 0.65rem; border-radius: var(--radius-sm);
@@ -647,7 +666,16 @@ const settingsModalCSS = `
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 260px;
       transition: color 100ms, opacity 100ms;
     }
-    .skill-repo-link:hover { color: var(--link); opacity: 1; }`
+    .skill-repo-link:hover { color: var(--link); opacity: 1; }
+
+    /* ── Placeholder text ────────────────────────────────────── */
+    .mate-form-input::placeholder,
+    .mate-form-textarea::placeholder,
+    .cfg-input::placeholder,
+    .cfg-textarea::placeholder,
+    .settings-input::placeholder {
+      color: var(--muted); opacity: 0.38; font-style: italic;
+    }`
 
 // settingsModalHTML returns the settings modal DOM. Include once per page that has navHTML.
 func settingsModalHTML() string {
@@ -759,6 +787,16 @@ func settingsModalHTML() string {
               <rect width="20" height="16" x="2" y="4" rx="2"/>
             </svg>
             Shortcuts
+          </button>
+          <button class="settings-sidebar-item"
+                  x-show="isElectron"
+                  :class="{active: tab === 'notifications'}"
+                  @click="tab = 'notifications'">
+            <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/>
+              <path stroke-linecap="round" stroke-linejoin="round" d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>
+            </svg>
+            Notifications
           </button>
         </nav>
 
@@ -1054,7 +1092,107 @@ func settingsModalHTML() string {
                 </template>
               </div>
             </div>
-          </div>
+          </div><!-- .shortcuts-pane -->
+
+          <!-- Notifications tab -->
+          <div class="notifications-pane" x-show="tab === 'notifications'">
+            <div class="cfg-loader" x-show="!isElectron">Available in the desktop app only.</div>
+            <template x-if="isElectron">
+              <div class="settings-fields">
+
+                <div>
+                  <div class="notif-row">
+                    <label class="settings-field-label" style="margin:0">Text Notifications</label>
+                    <label class="cfg-toggle">
+                      <input type="checkbox" :checked="notifySettings.textEnabled"
+                             @change="notifySettings.textEnabled = $event.target.checked; saveNotifySettings()">
+                      <span class="cfg-toggle-pill"></span>
+                    </label>
+                  </div>
+                  <p class="settings-field-desc">Show a system notification when a mate agent run starts or finishes.</p>
+                </div>
+
+                <div>
+                  <div class="notif-row">
+                    <label class="settings-field-label" style="margin:0">Sound</label>
+                    <label class="cfg-toggle">
+                      <input type="checkbox" :checked="notifySettings.soundEnabled"
+                             @change="notifySettings.soundEnabled = $event.target.checked; saveNotifySettings()">
+                      <span class="cfg-toggle-pill"></span>
+                    </label>
+                  </div>
+                  <p class="settings-field-desc">Play a sound when a run starts or finishes.</p>
+                </div>
+
+                <template x-if="notifySettings.soundEnabled">
+                  <div class="settings-fields" style="gap:1.25rem">
+
+                    <div>
+                      <label class="settings-field-label">Start Sound</label>
+                      <div class="notif-sound-row">
+                        <div class="cselect" x-data="{ csOpen: false }" @click.outside="csOpen = false" style="flex:1;min-width:0">
+                          <button type="button" class="cselect-btn" :class="{open: csOpen}" @click="csOpen = !csOpen" @keydown.escape="csOpen = false">
+                            <span class="cselect-btn-text" x-text="notifySoundLabel(notifySettings.startSound)"></span>
+                            <svg fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                          </button>
+                          <div class="cselect-dropdown" x-show="csOpen">
+                            <button type="button" class="cselect-option" :class="notifySettings.startSound==='beep'?'sel':''" @click="notifySettings.startSound='beep'; saveNotifySettings(); csOpen=false"><span class="cselect-option-dot"></span><span>System beep</span></button>
+                            <button type="button" class="cselect-option" :class="notifySettings.startSound==='none'?'sel':''" @click="notifySettings.startSound='none'; saveNotifySettings(); csOpen=false"><span class="cselect-option-dot"></span><span>None</span></button>
+                            <button type="button" class="cselect-option" :class="notifySettings.startSound==='Glass'?'sel':''" @click="notifySettings.startSound='Glass'; saveNotifySettings(); csOpen=false"><span class="cselect-option-dot"></span><span>Glass</span></button>
+                            <button type="button" class="cselect-option" :class="notifySettings.startSound==='Ping'?'sel':''" @click="notifySettings.startSound='Ping'; saveNotifySettings(); csOpen=false"><span class="cselect-option-dot"></span><span>Ping</span></button>
+                            <button type="button" class="cselect-option" :class="notifySettings.startSound==='Pop'?'sel':''" @click="notifySettings.startSound='Pop'; saveNotifySettings(); csOpen=false"><span class="cselect-option-dot"></span><span>Pop</span></button>
+                            <button type="button" class="cselect-option" :class="notifySettings.startSound==='Tink'?'sel':''" @click="notifySettings.startSound='Tink'; saveNotifySettings(); csOpen=false"><span class="cselect-option-dot"></span><span>Tink</span></button>
+                            <button type="button" class="cselect-option" :class="notifySettings.startSound==='Hero'?'sel':''" @click="notifySettings.startSound='Hero'; saveNotifySettings(); csOpen=false"><span class="cselect-option-dot"></span><span>Hero</span></button>
+                            <button type="button" class="cselect-option" :class="notifySettings.startSound==='Purr'?'sel':''" @click="notifySettings.startSound='Purr'; saveNotifySettings(); csOpen=false"><span class="cselect-option-dot"></span><span>Purr</span></button>
+                            <button type="button" class="cselect-option" :class="notifySettings.startSound==='Submarine'?'sel':''" @click="notifySettings.startSound='Submarine'; saveNotifySettings(); csOpen=false"><span class="cselect-option-dot"></span><span>Submarine</span></button>
+                          </div>
+                        </div>
+                        <button type="button" class="notif-play-btn" title="Preview sound"
+                                :disabled="notifySettings.startSound === 'none'"
+                                @click="window.vaultrDesktop?.mateNotify?.previewSound(notifySettings.startSound)">
+                          <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 4v16l13-8z"/></svg>
+                        </button>
+                      </div>
+                      <p class="settings-field-desc">Sound played when an agent run begins.</p>
+                    </div>
+
+                    <div>
+                      <label class="settings-field-label">Done Sound</label>
+                      <div class="notif-sound-row">
+                        <div class="cselect" x-data="{ csOpen: false }" @click.outside="csOpen = false" style="flex:1;min-width:0">
+                          <button type="button" class="cselect-btn" :class="{open: csOpen}" @click="csOpen = !csOpen" @keydown.escape="csOpen = false">
+                            <span class="cselect-btn-text" x-text="notifySoundLabel(notifySettings.doneSound)"></span>
+                            <svg fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                          </button>
+                          <div class="cselect-dropdown" x-show="csOpen">
+                            <button type="button" class="cselect-option" :class="notifySettings.doneSound==='beep'?'sel':''" @click="notifySettings.doneSound='beep'; saveNotifySettings(); csOpen=false"><span class="cselect-option-dot"></span><span>System beep</span></button>
+                            <button type="button" class="cselect-option" :class="notifySettings.doneSound==='none'?'sel':''" @click="notifySettings.doneSound='none'; saveNotifySettings(); csOpen=false"><span class="cselect-option-dot"></span><span>None</span></button>
+                            <button type="button" class="cselect-option" :class="notifySettings.doneSound==='Glass'?'sel':''" @click="notifySettings.doneSound='Glass'; saveNotifySettings(); csOpen=false"><span class="cselect-option-dot"></span><span>Glass</span></button>
+                            <button type="button" class="cselect-option" :class="notifySettings.doneSound==='Ping'?'sel':''" @click="notifySettings.doneSound='Ping'; saveNotifySettings(); csOpen=false"><span class="cselect-option-dot"></span><span>Ping</span></button>
+                            <button type="button" class="cselect-option" :class="notifySettings.doneSound==='Pop'?'sel':''" @click="notifySettings.doneSound='Pop'; saveNotifySettings(); csOpen=false"><span class="cselect-option-dot"></span><span>Pop</span></button>
+                            <button type="button" class="cselect-option" :class="notifySettings.doneSound==='Tink'?'sel':''" @click="notifySettings.doneSound='Tink'; saveNotifySettings(); csOpen=false"><span class="cselect-option-dot"></span><span>Tink</span></button>
+                            <button type="button" class="cselect-option" :class="notifySettings.doneSound==='Hero'?'sel':''" @click="notifySettings.doneSound='Hero'; saveNotifySettings(); csOpen=false"><span class="cselect-option-dot"></span><span>Hero</span></button>
+                            <button type="button" class="cselect-option" :class="notifySettings.doneSound==='Purr'?'sel':''" @click="notifySettings.doneSound='Purr'; saveNotifySettings(); csOpen=false"><span class="cselect-option-dot"></span><span>Purr</span></button>
+                            <button type="button" class="cselect-option" :class="notifySettings.doneSound==='Submarine'?'sel':''" @click="notifySettings.doneSound='Submarine'; saveNotifySettings(); csOpen=false"><span class="cselect-option-dot"></span><span>Submarine</span></button>
+                          </div>
+                        </div>
+                        <button type="button" class="notif-play-btn" title="Preview sound"
+                                :disabled="notifySettings.doneSound === 'none'"
+                                @click="window.vaultrDesktop?.mateNotify?.previewSound(notifySettings.doneSound)">
+                          <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 4v16l13-8z"/></svg>
+                        </button>
+                      </div>
+                      <p class="settings-field-desc">Sound played when an agent run completes.</p>
+                    </div>
+
+                  </div>
+                </template>
+
+                <p class="notif-saved" x-show="notifySaveOk">Saved</p>
+
+              </div>
+            </template>
+          </div><!-- .notifications-pane -->
 
           <!-- Mates tab -->
           <div class="mates-pane" x-show="tab === 'mates'">
@@ -1112,7 +1250,6 @@ func settingsModalHTML() string {
               <div class="mate-form-wrap">
                 <div class="mate-form-header">
 ` + mateBackBtnHTML("mateFormMode = null", "Mate Bots") + `
-                  <span class="mate-form-title" x-text="mateFormMode === 'create' ? 'New Mate' : 'Edit Mate'"></span>
                 </div>
                 <div class="mate-form">
                   <section class="mate-form-section">
@@ -1173,7 +1310,7 @@ func settingsModalHTML() string {
                     </div>
                     <div>
                       <label class="mate-form-label">System Prompt</label>
-                      <textarea class="mate-form-textarea" x-model="mateDraft.systemPrompt" rows="5"
+                      <textarea class="mate-form-textarea" x-model="mateDraft.systemPrompt" rows="1"
                                 placeholder="Instructions prepended to every message…"></textarea>
                     </div>
                   </section>
@@ -1201,7 +1338,7 @@ func settingsModalHTML() string {
                             <div class="mate-trigger-block mate-trigger-events">
                               <div class="mate-block-label">
                                 <span class="mate-block-title">Event</span>
-                                <span class="mate-block-hint" x-text="isScheduledTrigger(t) ? 'Scheduled triggers run on a timer — choose one schedule below' : (isWechatTrigger(t) ? 'WeChat DM trigger — use Content and WechatUserID in the prompt' : (isCompileTrigger(t) ? 'Fires when the user manually triggers compilation via the API — Path carries the note' : 'Vault event that activates this trigger'))"></span>
+                                <span class="mate-block-hint" x-text="isScheduledTrigger(t) ? 'Scheduled triggers run on a timer — choose one schedule below' : (isWechatTrigger(t) ? 'WeChat DM trigger — use Content and WechatUserID in the prompt' : (isCompileTrigger(t) ? 'Fires when the user manually triggers compilation via the API — Path carries the note' : (isAgentRunCompletedTrigger(t) ? 'Fires when another mate agent run succeeds — filter by source mate names below' : 'Vault event that activates this trigger')))"></span>
                               </div>
 ` + cselectHTML(
 		`(mateEventDefs.find(function(d){return d.type===(t.eventTypes[0]||'');}) || {label: 'Select event…'}).label`,
@@ -1227,17 +1364,30 @@ func settingsModalHTML() string {
                                        placeholder="every 1h  or  daily 09:00">
                               </div>
                             </template>
-                            <template x-if="!isScheduledTrigger(t) && !isWechatTrigger(t)">
+                            <template x-if="!isScheduledTrigger(t) && !isWechatTrigger(t) && !isAgentRunCompletedTrigger(t)">
                               <div class="mate-trigger-block mate-trigger-paths">
                                 <div class="mate-block-label">
                                   <span class="mate-block-title">Path Prefixes <span style="font-weight:400;opacity:0.6;">(optional)</span></span>
                                   <span class="mate-block-hint">Only fire when the event path starts with one of these prefixes. Leave empty to match all paths. One prefix per line, e.g. <code style="font-size:var(--text-2xs);padding:0 3px;background:var(--code-bg);border-radius:2px;">/journal/</code></span>
                                 </div>
                                 <textarea class="mate-form-textarea"
-                                          rows="3"
+                                          rows="2"
                                           :value="(t.pathPrefixes || []).join('\n')"
                                           @change="t.pathPrefixes = $event.target.value.split('\n').map(function(s){return s.trim();}).filter(Boolean)"
                                           placeholder="/journal/&#10;/projects/work/"></textarea>
+                              </div>
+                            </template>
+                            <template x-if="isAgentRunCompletedTrigger(t)">
+                              <div class="mate-trigger-block mate-trigger-paths">
+                                <div class="mate-block-label">
+                                  <span class="mate-block-title">Source Mates <span style="font-weight:400;opacity:0.6;">(optional)</span></span>
+                                  <span class="mate-block-hint">Only fire when the run was completed by one of these mates. Leave empty to fire on any mate. One mate name per line.</span>
+                                </div>
+                                <textarea class="mate-form-textarea"
+                                          rows="2"
+                                          :value="(t.pathPrefixes || []).join('\n')"
+                                          @change="t.pathPrefixes = $event.target.value.split('\n').map(function(s){return s.trim();}).filter(Boolean)"
+                                          placeholder="Summarizer&#10;Compiler"></textarea>
                               </div>
                             </template>
                             <div class="mate-trigger-block mate-trigger-prompt">
@@ -1256,7 +1406,7 @@ func settingsModalHTML() string {
                                   </template>
                                 </div>
                               </div>
-                              <textarea class="mate-form-textarea mate-prompt-textarea" x-model="t.prompt" rows="5"
+                              <textarea class="mate-form-textarea mate-prompt-textarea" x-model="t.prompt" rows="2"
                                         @focus="mateActivePromptIdx = ti"
                                         :placeholder="matePromptPlaceholder(t)"></textarea>
                             </div>
@@ -1446,22 +1596,27 @@ const settingsCtrlJS = `
       mateSaveError: '',
       mateEventDefs: [],
       matePromptVarsVault: [
-        { token: '\x7b\x7b.Path\x7d\x7d', desc: 'Full vault path of the affected note' },
-        { token: '\x7b\x7b.Name\x7d\x7d', desc: 'Filename without extension' },
-        { token: '\x7b\x7b.Content\x7d\x7d', desc: 'Appended short-note text (short_note_created only)' },
+        { token: '{Path}', desc: 'Full vault path of the affected note' },
+        { token: '{Name}', desc: 'Filename without extension' },
+        { token: '{Content}', desc: 'Appended short-note text (short_note_created only)' },
       ],
       matePromptVarsCompile: [
-        { token: '\x7b\x7b.Path\x7d\x7d', desc: 'Vault path of the note to compile' },
-        { token: '\x7b\x7b.Name\x7d\x7d', desc: 'Filename without extension' },
+        { token: '{Path}', desc: 'Vault path of the note to compile' },
+        { token: '{Name}', desc: 'Filename without extension' },
       ],
       matePromptVarsWechat: [
-        { token: '\x7b\x7b.Content\x7d\x7d', desc: 'Incoming WeChat DM text' },
-        { token: '\x7b\x7b.WechatUserID\x7d\x7d', desc: 'Sender WeChat user ID' },
+        { token: '{Content}', desc: 'Incoming WeChat DM text' },
+        { token: '{WechatUserID}', desc: 'Sender WeChat user ID' },
       ],
       matePromptVarsScheduled: [
-        { token: '\x7b\x7b.Now\x7d\x7d', desc: 'Trigger time (RFC3339)' },
-        { token: '\x7b\x7b.Date\x7d\x7d', desc: 'Date YYYY-MM-DD' },
-        { token: '\x7b\x7b.Time\x7d\x7d', desc: 'Time HH:MM' },
+        { token: '{Now}', desc: 'Trigger time (RFC3339)' },
+        { token: '{Date}', desc: 'Date YYYY-MM-DD' },
+        { token: '{Time}', desc: 'Time HH:MM' },
+      ],
+      matePromptVarsAgentRunCompleted: [
+        { token: '{Name}', desc: 'Name of the mate whose run just succeeded' },
+        { token: '{Content}', desc: 'Last assistant message from the completed run' },
+        { token: '{Now}', desc: 'Trigger time (RFC3339)' },
       ],
       mateSchedulePresets: [
         { label: 'Every hour', value: 'every 1h' },
@@ -1475,6 +1630,9 @@ const settingsCtrlJS = `
       skillsLoading: false,
       skillsError: '',
       skillsToggling: {},
+
+      notifySettings: { textEnabled: true, soundEnabled: true, startSound: 'beep', doneSound: 'beep' },
+      notifySaveOk: false,
 
       get sortedSkillsList() {
         return [...this.skillsList].sort(function(a, b) {
@@ -1633,6 +1791,7 @@ const settingsCtrlJS = `
               }
               if (val === 'skills') this.loadSkills();
               if (val === 'agents') { if (!this.agentsLoaded) this.loadAgents(); }
+              if (val === 'notifications') this.loadNotifySettings();
             });
           }
           await Promise.all([this.loadConfig(), this.loadServerStatus()]);
@@ -1665,19 +1824,26 @@ const settingsCtrlJS = `
       },
 
       async loadAgents(force = false) {
+        // Reuse the in-flight promise so a concurrent openMateEdit call doesn't
+        // issue a second request while the first is still pending.
+        if (!force && this._agentsLoadPromise) return this._agentsLoadPromise;
         this.agentsLoading = true;
         this.agentsError = '';
-        try {
-          const url = force ? '/api/agents?force=true' : '/api/agents';
-          const r = await fetch(url);
-          if (!r.ok) throw new Error('HTTP ' + r.status);
-          const d = await r.json();
-          this.agents = d.agents || [];
-          this.agentsFromCache = d.fromCache || false;
-          this.agentsCachedAt = d.fetchedAt || 0;
-          this.agentsLoaded = true;
-        } catch (e) { this.agentsError = e.message; }
-        finally { this.agentsLoading = false; }
+        const p = (async () => {
+          try {
+            const url = force ? '/api/agents?force=true' : '/api/agents';
+            const r = await fetch(url);
+            if (!r.ok) throw new Error('HTTP ' + r.status);
+            const d = await r.json();
+            this.agents = d.agents || [];
+            this.agentsFromCache = d.fromCache || false;
+            this.agentsCachedAt = d.fetchedAt || 0;
+            this.agentsLoaded = true;
+          } catch (e) { this.agentsError = e.message; }
+          finally { this.agentsLoading = false; this._agentsLoadPromise = null; }
+        })();
+        this._agentsLoadPromise = p;
+        return p;
       },
 
       get sortedAgents() {
@@ -1824,19 +1990,22 @@ const settingsCtrlJS = `
       isScheduledTrigger(t) { return (t.eventTypes || []).indexOf('scheduled') >= 0; },
       isWechatTrigger(t) { return (t.eventTypes || []).indexOf('wechat_message') >= 0; },
       isCompileTrigger(t) { return (t.eventTypes || []).indexOf('compile_requested') >= 0; },
+      isAgentRunCompletedTrigger(t) { return (t.eventTypes || []).indexOf('agent_run_completed') >= 0; },
 
       matePromptVarsForTrigger(t) {
         if (this.isScheduledTrigger(t)) return this.matePromptVarsScheduled;
         if (this.isWechatTrigger(t)) return this.matePromptVarsWechat;
         if (this.isCompileTrigger(t)) return this.matePromptVarsCompile;
+        if (this.isAgentRunCompletedTrigger(t)) return this.matePromptVarsAgentRunCompleted;
         return this.matePromptVarsVault;
       },
 
       matePromptPlaceholder(t) {
-        if (this.isScheduledTrigger(t)) return 'Review my vault and write a daily digest. Time: \x7b\x7b.Now\x7d\x7d';
-        if (this.isWechatTrigger(t)) return 'Reply to this WeChat message:\n\n\x7b\x7b.Content\x7d\x7d';
-        if (this.isCompileTrigger(t)) return 'Compile \x7b\x7b.Path\x7d\x7d into knowledge units.';
-        return 'Summarize the key points in \x7b\x7b.Path\x7d\x7d';
+        if (this.isScheduledTrigger(t)) return 'Review my vault and write a daily digest. Time: {Now}';
+        if (this.isWechatTrigger(t)) return 'Reply to this WeChat message:\n\n{Content}';
+        if (this.isCompileTrigger(t)) return 'Compile {Path} into knowledge units.';
+        if (this.isAgentRunCompletedTrigger(t)) return '{Name} just finished — review its output and take action.';
+        return 'Summarize the key points in {Path}';
       },
 
       setMateET(trigger, et) {
@@ -2060,6 +2229,35 @@ const settingsCtrlJS = `
           defaultPath: currentVal || undefined,
         });
         if (!result.canceled && result.path) this.setVal(key, result.path);
+      },
+
+      notifySoundLabel(v) {
+        const m = { beep: 'System beep', none: 'None', Glass: 'Glass', Ping: 'Ping', Pop: 'Pop', Tink: 'Tink', Hero: 'Hero', Purr: 'Purr', Submarine: 'Submarine' };
+        return m[v] || v;
+      },
+
+      async loadNotifySettings() {
+        if (!window.vaultrDesktop?.mateNotify) return;
+        try {
+          this.notifySettings = await window.vaultrDesktop.mateNotify.getSettings();
+        } catch(_) {}
+      },
+
+      async saveNotifySettings() {
+        if (!window.vaultrDesktop?.mateNotify) return;
+        try {
+          // Spread to a plain object so Electron's contextBridge Structured Clone
+          // doesn't silently drop the Alpine.js reactive Proxy wrapper.
+          const snap = {
+            textEnabled: this.notifySettings.textEnabled,
+            soundEnabled: this.notifySettings.soundEnabled,
+            startSound:   this.notifySettings.startSound,
+            doneSound:    this.notifySettings.doneSound,
+          };
+          this.notifySettings = await window.vaultrDesktop.mateNotify.setSettings(snap);
+          this.notifySaveOk = true;
+          setTimeout(() => { this.notifySaveOk = false; }, 1500);
+        } catch(e) { console.error('[notify] saveNotifySettings error:', e); }
       },
     };
   }

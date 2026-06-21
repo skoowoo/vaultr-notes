@@ -236,7 +236,8 @@ func (a *AgentAPI) RunByRefGET(w http.ResponseWriter, r *http.Request) {
 // FireTriggerRun is called by the mate runner to launch a background agent run.
 // Messages are appended to the mate's active chat conversation; each run uses a fresh agent session.
 // When ev.Reply is set it is invoked once after the run reaches a terminal state.
-func (a *AgentAPI) FireTriggerRun(ctx context.Context, m *mate.Mate, convID, prompt string, ev mate.MateEvent) {
+// onDone is called exactly once when the run reaches a terminal state.
+func (a *AgentAPI) FireTriggerRun(ctx context.Context, m *mate.Mate, convID, prompt string, ev mate.MateEvent, onDone func(mate.RunResult)) {
 	meta := map[string]string{
 		"mateId": m.ID, "conversationId": convID,
 	}
@@ -258,10 +259,15 @@ func (a *AgentAPI) FireTriggerRun(ctx context.Context, m *mate.Mate, convID, pro
 		TriggerEvent:   string(ev.Type),
 		eventReply:     ev.Reply,
 	}
-	go a.executeChat(ctx, run, body)
+	go func() {
+		result := a.executeChat(ctx, run, body)
+		if onDone != nil {
+			onDone(result)
+		}
+	}()
 }
 
-func (a *AgentAPI) executeChat(ctx context.Context, run *agent.Run, body chatBody) {
+func (a *AgentAPI) executeChat(ctx context.Context, run *agent.Run, body chatBody) mate.RunResult {
 	// When mateId is provided, mate config in DB is authoritative for agent/model.
 	// cwd and systemPrompt can still be overridden by the caller.
 	if body.MateID != "" && a.store != nil {
@@ -323,7 +329,7 @@ func (a *AgentAPI) executeChat(ctx context.Context, run *agent.Run, body chatBod
 		if assistantMsgID != "" && a.store != nil {
 			_ = a.store.UpdateMessageDone(assistantMsgID, "", "failed")
 		}
-		return
+		return mate.RunResult{Success: false}
 	}
 
 	var sessionID string
@@ -345,7 +351,7 @@ func (a *AgentAPI) executeChat(ctx context.Context, run *agent.Run, body chatBod
 		if assistantMsgID != "" && a.store != nil {
 			_ = a.store.UpdateMessageDone(assistantMsgID, "", "failed")
 		}
-		return
+		return mate.RunResult{Success: false}
 	}
 	if body.Message == "" && len(body.ImagePaths) == 0 {
 		a.logger.Warn("agent aborted",
@@ -358,7 +364,7 @@ func (a *AgentAPI) executeChat(ctx context.Context, run *agent.Run, body chatBod
 		if assistantMsgID != "" && a.store != nil {
 			_ = a.store.UpdateMessageDone(assistantMsgID, "", "failed")
 		}
-		return
+		return mate.RunResult{Success: false}
 	}
 
 	safeModel := pickModel(def, body.Model)
@@ -391,7 +397,7 @@ func (a *AgentAPI) executeChat(ctx context.Context, run *agent.Run, body chatBod
 		if assistantMsgID != "" && a.store != nil {
 			_ = a.store.UpdateMessageDone(assistantMsgID, "", "failed")
 		}
-		return
+		return mate.RunResult{Success: false}
 	}
 
 	argCtx := agent.BuildArgsContext{
@@ -411,7 +417,7 @@ func (a *AgentAPI) executeChat(ctx context.Context, run *agent.Run, body chatBod
 		if assistantMsgID != "" && a.store != nil {
 			_ = a.store.UpdateMessageDone(assistantMsgID, "", "failed")
 		}
-		return
+		return mate.RunResult{Success: false}
 	}
 	if e := agent.CheckWindowsDirectExeCommandLineBudget(def, bin, argv); e != nil {
 		a.logger.Warn("agent aborted",
@@ -424,7 +430,7 @@ func (a *AgentAPI) executeChat(ctx context.Context, run *agent.Run, body chatBod
 		if assistantMsgID != "" && a.store != nil {
 			_ = a.store.UpdateMessageDone(assistantMsgID, "", "failed")
 		}
-		return
+		return mate.RunResult{Success: false}
 	}
 
 	env := agent.SpawnEnvForAgent(def.ID, agent.ShellEnv(), envCfg)
@@ -514,7 +520,7 @@ func (a *AgentAPI) executeChat(ctx context.Context, run *agent.Run, body chatBod
 			}
 			a.hub.Finish(run, "failed", map[string]any{})
 			a.invokeEventReply(ctx, body, textAcc.String(), "failed")
-			return
+			return mate.RunResult{Success: false, LastMessage: textAcc.String()}
 		}
 	}
 	st := "succeeded"
@@ -538,6 +544,7 @@ func (a *AgentAPI) executeChat(ctx context.Context, run *agent.Run, body chatBod
 		slog.Int("exitCode", code))
 	a.hub.Finish(run, st, map[string]any{"exitCode": code})
 	a.invokeEventReply(ctx, body, textAcc.String(), st)
+	return mate.RunResult{Success: st == "succeeded", LastMessage: textAcc.String()}
 }
 
 // resolveTriggerSession returns an ephemeral agent session for a one-shot trigger run.
