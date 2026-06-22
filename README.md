@@ -16,6 +16,7 @@
 - [Shorts](#shorts)
 - [Mate Bots](#mate-bots)
 - [WeChat](#wechat)
+- [Discord](#discord)
 - [Note AI Compiler](#note-ai-compiler)
 - [Personal Memory](#personal-memory)
 - [Skills](#skills)
@@ -35,7 +36,7 @@
 #### 🤖 Event-Driven Multi-Agent System
 - **16 agent CLIs** supported out of the box
 - **Event-triggered automation**: agents run tasks automatically when notes change, messages arrive, or schedules fire
-- **WeChat integration**: chat with agents directly from WeChat
+- **WeChat & Discord integration**: chat with agents directly from WeChat or Discord DMs
 
 #### 🧠 Note AI Compiler
 - Compiles your notes into **structured knowledge points** automatically
@@ -49,7 +50,7 @@
 - The desktop app bundles every dependency: no CDN, no cloud account, no internet required
 
 #### 🌐 Multiple Access Channels
-- Available via **CLI**, **desktop app**, and **WeChat**
+- Available via **CLI**, **desktop app**, **WeChat**, and **Discord**
 
 ## Design
 
