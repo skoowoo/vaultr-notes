@@ -1304,7 +1304,7 @@ func settingsModalHTML() string {
 	) + `
                       </div>
                     </div>
-                    <div>
+                    <div style="display:none">
                       <label class="mate-form-label">Working Directory <span style="font-weight:400;text-transform:none;letter-spacing:0;">(vault root if blank)</span></label>
                       <input class="mate-form-input" type="text" x-model="mateDraft.cwd" placeholder="/absolute/path or leave blank">
                     </div>
@@ -1322,9 +1322,6 @@ func settingsModalHTML() string {
                       </div>
                       <p class="mate-section-desc">Automatically run this mate on vault events or on a schedule. Each trigger sends a prompt template to the agent.</p>
                     </div>
-                    <template x-if="mateTriggers.length === 0">
-                      <div class="mate-triggers-empty">No triggers — mate responds only to manual chat.</div>
-                    </template>
                     <div class="mate-trigger-list">
                       <template x-for="(t, ti) in mateTriggers" :key="ti">
                         <div class="mate-trigger-card">

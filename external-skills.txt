@@ -16,3 +16,4 @@ Tencent/WeChatReading:skills:weread-skills
 mattpocock/skills:skills/in-progress/writing-beats:writing-beats
 blader/humanizer::humanizer
 op7418/Humanizer-zh::humanizer-zh
+vm0-ai/vm0-skills:hackernews:hackernews

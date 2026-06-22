@@ -289,7 +289,7 @@
       grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
     }
 
-    /* ── folder cards (square, compact, centered layout) ─────────── */
+    /* ── folder cards ─────────────────────────────────────────────── */
     .folder-card {
       position: relative;
       width: 100%;
@@ -304,35 +304,33 @@
       justify-self: start;
       cursor: pointer;
     }
-    .folder-card:hover { border-color: rgba(255,255,255,.2); background: var(--surface-soft); }
-    html[data-theme="light"] .folder-card:hover { border-color: rgba(0,0,0,.18); background: var(--surface-soft); }
+    .folder-card { background: var(--bg); }
+    .folder-card:hover { border-color: rgba(255,255,255,.18); background: var(--surface-soft); }
+    html[data-theme="light"] .folder-card:hover { border-color: rgba(0,0,0,.14); background: var(--surface-soft); }
     .folder-card-inner {
       display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-      gap: 8px; height: 100%; padding: 10px;
-      text-align: center;
+      align-items: flex-start; justify-content: space-between;
+      height: 100%; padding: 12px;
     }
     .folder-card-icon {
-      width: 20px; height: 20px;
-      flex-shrink: 0; transition: opacity 120ms;
+      width: 24px; height: 24px;
+      flex-shrink: 0; transition: opacity 120ms, color 120ms, transform 120ms;
     }
     .folder-card-body {
-      display: flex; flex-direction: column; gap: 2px;
+      display: flex; flex-direction: column; gap: 4px;
       min-width: 0; width: 100%;
     }
     .folder-card-name {
       font-size: var(--text-sm); font-weight: 500; color: var(--fg);
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-      line-height: 1.3;
+      line-height: 1.4;
     }
     .folder-card-count {
-      font-size: var(--text-2xs); color: var(--muted); opacity: .4;
-      font-variant-numeric: tabular-nums;
+      font-size: var(--text-xs); font-weight: var(--fw-regular); line-height: 1.4;
+      color: var(--muted); opacity: .65; font-variant-numeric: tabular-nums;
     }
-
-    /* ── folder icon: muted chrome, accent on hover ───────────────── */
-    .folder-card .folder-card-icon { color: var(--muted); opacity: 0.7; }
-    .folder-card:hover .folder-card-icon { color: var(--accent); opacity: 0.9; }
+    .folder-card .folder-card-icon { color: var(--muted); opacity: 0.55; }
+    .folder-card:hover .folder-card-icon { opacity: 1; transform: scale(1.06); }
     /* ── Pinned card bookmark watermark ──────────────────────── */
     .card-pin-mark {
       position: absolute; right: 10px; top: -3px;
@@ -343,10 +341,7 @@
       width: 10px; height: 12px;
       right: 11px; top: 0;
     }
-    .card[data-pi="0"] .card-pin-mark { color: var(--p0); }
-    .card[data-pi="1"] .card-pin-mark { color: var(--p1); }
-    .card[data-pi="2"] .card-pin-mark { color: var(--p2); }
-    .card[data-pi="3"] .card-pin-mark { color: var(--p3); }
+    .card-pin-mark { color: var(--accent); }
 
     /* ── Short note content in drawer ──────────────────────────── */
     .short-day-mount {
