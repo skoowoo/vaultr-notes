@@ -24,6 +24,7 @@ type PluginsConfig struct {
 	Compile    CompileConfig    `mapstructure:"compile" json:"compile" toml:"compile"`
 	ImageFetch ImageFetchConfig `mapstructure:"image_fetch" json:"image_fetch" toml:"image_fetch"`
 	Wechat     WechatConfig     `mapstructure:"wechat" json:"wechat" toml:"wechat"`
+	Discord    DiscordConfig    `mapstructure:"discord" json:"discord" toml:"discord"`
 }
 
 // SearchConfig holds settings for the full-text search plugin.
@@ -60,6 +61,29 @@ type ImageFetchConfig struct {
 	// stored under a YYYYMM subfolder, mirroring POST /api/vault/upload-image.
 	// Default: "_assets".
 	AssetsDir string `mapstructure:"assets_dir" json:"assets_dir" toml:"assets_dir"`
+}
+
+// DiscordConfig configures the Discord Bot bridge plugin.
+type DiscordConfig struct {
+	// Enabled must be true for the plugin to start (opt-in).
+	Enabled bool `mapstructure:"enabled" json:"enabled" toml:"enabled"`
+
+	// BotToken is the Discord Bot token from the Developer Portal (sensitive).
+	BotToken string `mapstructure:"bot_token" json:"bot_token" toml:"bot_token"`
+
+	// UserID is the owner's Discord user ID used for proactive DM push.
+	// Obtain by enabling Developer Mode in Discord → right-click your avatar → Copy User ID.
+	UserID string `mapstructure:"user_id" json:"user_id" toml:"user_id"`
+
+	// ProxyURL is an optional HTTP/SOCKS5 proxy for routing Discord API and
+	// WebSocket traffic. Useful in regions where discord.com is not directly
+	// reachable. Example: "socks5://127.0.0.1:1080" or "http://127.0.0.1:7890".
+	ProxyURL string `mapstructure:"proxy_url" json:"proxy_url" toml:"proxy_url"`
+}
+
+// DiscordConnected reports whether a bot token is configured.
+func (c *Config) DiscordConnected() bool {
+	return c != nil && c.Plugins.Discord.BotToken != ""
 }
 
 // WechatConfig configures the WeChat iLink bridge plugin.
@@ -336,4 +360,6 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("plugins.image_fetch.assets_dir", "_assets")
 
 	v.SetDefault("plugins.wechat.enabled", false)
+
+	v.SetDefault("plugins.discord.enabled", false)
 }

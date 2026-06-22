@@ -168,7 +168,8 @@ func (r *Runner) handleWechatSessionReset(mateID string, ev MateEvent) {
 }
 
 func (r *Runner) fireTrigger(t MateTrigger, me MateEvent) {
-	if me.Type == MateEventWechatMessage && isWechatSessionCommand(me.Content) {
+	isChat := me.Type == MateEventWechatMessage || me.Type == MateEventDiscordMessage
+	if isChat && isWechatSessionCommand(me.Content) {
 		go r.handleWechatSessionReset(t.MateID, me)
 		return
 	}
@@ -288,6 +289,8 @@ func renderPrompt(tmpl string, me MateEvent) string {
 	r = strings.ReplaceAll(r, "{Name}", name)
 	r = strings.ReplaceAll(r, "{Content}", me.Content)
 	r = strings.ReplaceAll(r, "{WechatUserID}", me.WechatUserID)
+	r = strings.ReplaceAll(r, "{DiscordChannelID}", me.DiscordChannelID)
+	r = strings.ReplaceAll(r, "{DiscordUserID}", me.DiscordUserID)
 	r = strings.ReplaceAll(r, "{Now}", fired.Format(time.RFC3339))
 	r = strings.ReplaceAll(r, "{Date}", fired.Format("2006-01-02"))
 	r = strings.ReplaceAll(r, "{Time}", fired.Format("15:04"))

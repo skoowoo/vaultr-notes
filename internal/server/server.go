@@ -21,6 +21,7 @@ import (
 	"github.com/hardhacker/vaultr/internal/plugins/gitsync"
 	"github.com/hardhacker/vaultr/internal/plugins/imgfetch"
 	"github.com/hardhacker/vaultr/internal/plugins/search"
+	discordplugin "github.com/hardhacker/vaultr/internal/plugins/discord"
 	wechatplugin "github.com/hardhacker/vaultr/internal/plugins/wechat"
 	"github.com/hardhacker/vaultr/internal/skills"
 	"github.com/hardhacker/vaultr/internal/storage"
@@ -100,6 +101,13 @@ func New(cfg *config.Config, cfgFileLoaded string, logger *slog.Logger, vault *s
 		wp.SetDispatch(mgr.Dispatch)
 		mgr.Register(wp)
 		logger.Info("wechat plugin registered")
+	}
+
+	if cfg.Plugins.Discord.Enabled {
+		dp := discordplugin.New(cfg.Plugins.Discord, logger)
+		dp.SetDispatch(mgr.Dispatch)
+		mgr.Register(dp)
+		logger.Info("discord plugin registered")
 	}
 
 	vault.SetShortsDir(cfg.Vault.ShortsDir)

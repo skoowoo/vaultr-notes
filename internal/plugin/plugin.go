@@ -44,6 +44,15 @@ const (
 	// Not subject to vault deduplication.
 	EventWechatNotify EventType = "wechat_notify"
 
+	// EventDiscordMessage is emitted when the Discord bridge receives a DM.
+	// Not subject to vault deduplication.
+	EventDiscordMessage EventType = "discord_message"
+
+	// EventDiscordNotify triggers the Discord plugin to proactively send Content to DiscordUserID.
+	// If DiscordUserID is empty the plugin uses the configured owner's user ID.
+	// Not subject to vault deduplication.
+	EventDiscordNotify EventType = "discord_notify"
+
 	// EventCompileRequested is emitted when the user manually requests compilation
 	// of a vault note via the compile API. Path carries the vault-absolute note
 	// path. Handled by a mate agent; not subject to vault deduplication.
@@ -62,6 +71,19 @@ type Event struct {
 	// For EventWechatMessage: the sender's user ID.
 	// For EventWechatNotify: the target user ID (empty = logged-in owner).
 	WechatUserID string
+
+	// DiscordChannelID is the Discord channel ID (DM channel) associated with the event.
+	// For EventDiscordMessage: the channel the message arrived in.
+	// For EventDiscordNotify: unused (plugin opens a DM channel from DiscordUserID).
+	DiscordChannelID string
+
+	// DiscordUserID is the Discord user ID associated with the event.
+	// For EventDiscordMessage: the sender's user ID.
+	// For EventDiscordNotify: the target user ID (empty = configured owner).
+	DiscordUserID string
+
+	// DiscordMessageID is the original Discord message ID, used to reply-link the response.
+	DiscordMessageID string
 
 	// Reply is an optional callback invoked after a matched mate trigger run completes.
 	Reply ReplyFunc

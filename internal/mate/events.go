@@ -16,6 +16,7 @@ const (
 	MateEventShortNoteCreated MateEventType = "short_note_created"
 	MateEventScheduled        MateEventType = "scheduled"
 	MateEventWechatMessage    MateEventType = "wechat_message"
+	MateEventDiscordMessage   MateEventType = "discord_message"
 	MateEventCompileRequested MateEventType = "compile_requested"
 	MateEventAgentRunCompleted MateEventType = "agent_run_completed"
 )
@@ -35,6 +36,7 @@ var BuiltinEvents = []EventDef{
 	{MateEventShortNoteCreated, "Short Note Created", "Fires each time a short note entry is appended"},
 	{MateEventScheduled, "Scheduled", "Fires on a configured interval or daily time"},
 	{MateEventWechatMessage, "WeChat Message", "Fires when a WeChat direct message is received"},
+	{MateEventDiscordMessage, "Discord Message", "Fires when a Discord DM is received"},
 	{MateEventCompileRequested, "Compile Requested", "Fires when the user manually triggers knowledge compilation for a note — path carries the note to compile"},
 	{MateEventAgentRunCompleted, "Agent Run Completed", "Fires when another mate agent run succeeds — use source mate names to filter"},
 }
@@ -58,6 +60,11 @@ type MateEvent struct {
 	Content      string    // populated for short_note_created and wechat_message
 	FiredAt      time.Time // populated for scheduled: when the trigger fired
 	WechatUserID string    // populated for wechat_message
+
+	// Discord fields — populated for discord_message.
+	DiscordChannelID string
+	DiscordUserID    string
+	DiscordMessageID string
 
 	// Reply is propagated from plugin.Event; invoked after the trigger agent run finishes.
 	Reply plugin.ReplyFunc
@@ -88,6 +95,16 @@ func Translate(e plugin.Event) []MateEvent {
 			Content:      e.Content,
 			WechatUserID: e.WechatUserID,
 			Reply:        e.Reply,
+		})
+	case plugin.EventDiscordMessage:
+		out = append(out, MateEvent{
+			Type:             MateEventDiscordMessage,
+			Path:             e.Path,
+			Content:          e.Content,
+			DiscordChannelID: e.DiscordChannelID,
+			DiscordUserID:    e.DiscordUserID,
+			DiscordMessageID: e.DiscordMessageID,
+			Reply:            e.Reply,
 		})
 	case plugin.EventCompileRequested:
 		out = append(out, MateEvent{

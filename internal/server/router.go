@@ -48,7 +48,7 @@ func newRouter(
 	if mateRunner != nil {
 		mateRunner.SetRunFunc(ah.FireTriggerRun)
 		mateRunner.SetRunStartHook(func(m *mate.Mate, convID, prompt string, ev mate.MateEvent) {
-			if ev.Type == mate.MateEventWechatMessage {
+			if ev.Type == mate.MateEventWechatMessage || ev.Type == mate.MateEventDiscordMessage {
 				return
 			}
 			notifBus.Push(mate.RunNotification{
@@ -60,7 +60,7 @@ func newRouter(
 			})
 		})
 		mateRunner.SetRunDoneHook(func(m *mate.Mate, result mate.RunResult) {
-			if result.EventType == mate.MateEventWechatMessage {
+			if result.EventType == mate.MateEventWechatMessage || result.EventType == mate.MateEventDiscordMessage {
 				return
 			}
 			notifBus.Push(mate.RunNotification{

@@ -230,6 +230,7 @@ Add one or more triggers to a mate and it runs automatically whenever a matching
 | `short_note_created` | A short-note entry is appended           |
 | `scheduled`          | On a configured interval or daily time   |
 | `wechat_message`     | A WeChat direct message is received      |
+| `discord_message`    | A Discord DM is received                 |
 | `compile_requested`  | A note compilation is manually triggered |
 
 <img src="./docs/assets/trigger.png" width="600" alt="Event Triggers">
@@ -289,6 +290,34 @@ The WeChat iLink bridge begins polling for new DMs.
 6. Save the mate agent
 
 From this point on, every WeChat DM fires the trigger and the mate agent replies automatically.
+
+## Discord
+
+Vaultr can receive Discord DMs and route them to a mate agent automatically.
+
+#### Step 1 — Configure Discord in Server Config
+
+1. Create a Bot at the [Discord Developer Portal](https://discord.com/developers/applications)
+2. Under **Bot → Privileged Gateway Intents**, enable **Message Content Intent**
+3. Copy the Bot token
+4. Open **Settings → Server → Config → Discord**
+5. Paste the token into **Bot token**, fill in your **Owner user ID** (Developer Mode → right-click your avatar → Copy User ID), and set **enabled** to true
+6. Click **Save all** and restart the server — the Bot's status dot turns green when connected
+
+To send proactive DMs (e.g. from a scheduled trigger), the Bot must share at least one server with you.
+
+If `discord.com` is not directly reachable, set **Proxy URL** to your local proxy (e.g. `http://127.0.0.1:7890`).
+
+#### Step 2 — Create a Mate agent with a `discord_message` Trigger
+
+1. Open **Settings → Mate Bots** and click **New Mate**
+2. Fill in a name, pick an agent and model
+3. Under **Triggers**, click **+ Add trigger**
+4. Set the **Event** to `discord_message`
+5. Write a prompt template — available variables: `{Content}`, `{DiscordChannelID}`, `{DiscordUserID}`
+6. Save the mate agent
+
+From this point on, every Discord DM fires the trigger and the mate agent replies automatically.
 
 ## Note AI Compiler
 
@@ -401,7 +430,7 @@ Every layer of AI output in Vaultr is customizable:
 In **Settings → Mate Bots**, each mate exposes two customization points:
 
 - **System Prompt** — mate-specific instructions. Appended to the global system prompt (joined with `---`).
-- **Trigger Prompt template** — the user message sent to the agent when a trigger fires. Supports variables: `{{.Path}}`, `{{.Name}}`, `{{.Content}}` for vault events; `{{.Now}}`, `{{.Date}}`, `{{.Time}}` for scheduled triggers; `{{.Content}}`, `{{.WechatUserID}}` for WeChat triggers.
+- **Trigger Prompt template** — the user message sent to the agent when a trigger fires. Supports variables: `{Path}`, `{Name}`, `{Content}` for vault events; `{Now}`, `{Date}`, `{Time}` for scheduled triggers; `{Content}`, `{WechatUserID}` for WeChat triggers; `{Content}`, `{DiscordChannelID}`, `{DiscordUserID}` for Discord triggers.
 
 #### 3. Rewrite the Compile Skill
 

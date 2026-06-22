@@ -228,6 +228,7 @@ Mate 最有意思的地方是事件驱动：配好触发器，你什么都不用
 | `short_note_created` | 加了一条速记                 |
 | `scheduled`          | 按你设定的时间或间隔定时触发 |
 | `wechat_message`     | 收到微信私信                 |
+| `discord_message`    | 收到 Discord 私信            |
 | `compile_requested`  | 手动触发了笔记编译           |
 
 <img src="./docs/assets/trigger.png" width="600" alt="Event Triggers">
@@ -285,6 +286,34 @@ Mate 最有意思的地方是事件驱动：配好触发器，你什么都不用
 6. 保存
 
 之后每条微信私信都会触发这个 mate，自动帮你回复。
+
+## Discord
+
+想在 Discord 私信里和 agent 聊，配两步就行。
+
+#### 第一步：配置 Discord
+
+1. 在 [Discord Developer Portal](https://discord.com/developers/applications) 创建一个 Bot
+2. **Bot → Privileged Gateway Intents** 里开启 **Message Content Intent**
+3. 复制 Bot token
+4. 打开 **Settings → Server → Config → Discord**
+5. 填入 **Bot token** 和你的 **Owner user ID**（开启开发者模式 → 右键头像 → 复制用户 ID），把 **enabled** 打开
+6. **Save all** 后重启服务，Bot 头像变绿说明连上了
+
+Bot 要能给你发主动消息（如定时推送），需要和你在同一个服务器里。
+
+访问不通时，在 **Proxy URL** 填本地代理地址（如 `http://127.0.0.1:7890`）。
+
+#### 第二步：创建一个 `discord_message` 触发的 Mate Bot
+
+1. **Settings → Mate Bots** → **New Mate**
+2. 起名，选 agent 和模型
+3. **Triggers** 下点 **+ Add trigger**
+4. **Event** 选 `discord_message`
+5. Prompt 模板可用变量：`{Content}`、`{DiscordChannelID}`、`{DiscordUserID}`
+6. 保存
+
+之后每条 Discord 私信都会触发这个 mate，自动帮你回复。
 
 ## 笔记 AI 编译器
 
@@ -397,7 +426,7 @@ Vaultr 的每一层 AI 输出都可以自定义：
 在**设置 → Mate Bots** 中，每个 Mate 有两个自定义点：
 
 - **System Prompt** — Mate 专属指令，附加在全局 system prompt 之后（用 `---` 分隔）。
-- **Trigger Prompt 模板** — Trigger 触发时发送给 agent 的用户消息，支持变量：vault 事件用 `{{.Path}}`、`{{.Name}}`、`{{.Content}}`；定时触发用 `{{.Now}}`、`{{.Date}}`、`{{.Time}}`；微信消息用 `{{.Content}}`、`{{.WechatUserID}}`。
+- **Trigger Prompt 模板** — Trigger 触发时发送给 agent 的用户消息，支持变量：vault 事件用 `{Path}`、`{Name}`、`{Content}`；定时触发用 `{Now}`、`{Date}`、`{Time}`；微信消息用 `{Content}`、`{WechatUserID}`；Discord 消息用 `{Content}`、`{DiscordChannelID}`、`{DiscordUserID}`。
 
 #### 3. 重写知识编译 Skill
 

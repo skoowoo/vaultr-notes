@@ -88,6 +88,18 @@ func buildConfigSchema() []SchemaField {
 
 		{Key: "plugins.wechat.enabled", Type: "bool", Section: "plugins.wechat", Label: "WeChat bridge enabled",
 			Description: "When true, poll WeChat iLink for direct messages and emit wechat_message mate events.", Default: false},
+
+		{Key: "plugins.discord.enabled", Type: "bool", Section: "plugins.discord", Label: "Discord bridge enabled",
+			Description: "When true, connect to Discord Gateway and emit discord_message mate events for incoming DMs.", Default: false},
+		{Key: "plugins.discord.bot_token", Type: "string", Section: "plugins.discord", Label: "Bot token",
+			Description: "Discord Bot token from the Developer Portal. Obtain under Bot → Reset Token.",
+			Sensitive: true, Default: ""},
+		{Key: "plugins.discord.user_id", Type: "string", Section: "plugins.discord", Label: "Owner user ID",
+			Description: "Your Discord user ID for proactive DM push. Enable Developer Mode → right-click your avatar → Copy User ID.",
+			Default: ""},
+		{Key: "plugins.discord.proxy_url", Type: "string", Section: "plugins.discord", Label: "Proxy URL",
+			Description: "Optional HTTP/SOCKS5 proxy for Discord API and WebSocket traffic (e.g. http://127.0.0.1:7890).",
+			Default: ""},
 	}
 }
 

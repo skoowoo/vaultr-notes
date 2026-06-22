@@ -1044,6 +1044,25 @@ func settingsModalHTML() string {
                         <p class="cfg-wechat-err" x-show="wechatAuthError" x-text="wechatAuthError"></p>
                         <p class="cfg-wechat-ok" x-show="wechatLoginOk">Connected — restart the server to start the bridge.</p>
                       </div>
+
+                      <div class="cfg-wechat-auth" x-show="section === 'plugins.discord'">
+                        <div class="cfg-wechat-auth-head">
+                          <span class="cfg-wechat-auth-title">Discord Bot status</span>
+                          <span class="cfg-wechat-badge"
+                                :class="{ connected: !!getVal('plugins.discord.bot_token') }"
+                                x-text="getVal('plugins.discord.bot_token') ? 'Token set' : 'Not configured'"></span>
+                        </div>
+                        <p class="cfg-wechat-meta">
+                          Paste your Bot token above, then restart the server. Create a mate with a
+                          <code>discord_message</code> trigger to handle replies. The bot must share a server
+                          with you before it can send proactive DMs.
+                        </p>
+                        <template x-if="getVal('plugins.discord.user_id')">
+                          <p class="cfg-wechat-meta">
+                            Owner ID: <code x-text="getVal('plugins.discord.user_id')"></code>
+                          </p>
+                        </template>
+                      </div>
                     </div>
                   </section>
                 </template>
@@ -1686,6 +1705,7 @@ const settingsCtrlJS = `
           'plugins.compile': 'Compile',
           'plugins.image_fetch': 'Image Fetch',
           'plugins.wechat': 'WeChat',
+          'plugins.discord': 'Discord',
         };
         return m[s] || s;
       },
@@ -1699,6 +1719,7 @@ const settingsCtrlJS = `
           'plugins.compile': 'AI knowledge compilation and related options.',
           'plugins.image_fetch': 'Fetching and storing remote images.',
           'plugins.wechat': 'WeChat iLink bridge — poll DMs and emit wechat_message mate events.',
+          'plugins.discord': 'Discord Bot bridge — receive DMs and emit discord_message mate events.',
           'server.listen': 'HTTP listen address and port.',
           'server': 'HTTP listen address and port.',
         };

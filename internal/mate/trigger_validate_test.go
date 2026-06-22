@@ -42,7 +42,7 @@ func TestValidateTriggerScheduleWithoutEvent(t *testing.T) {
 
 func TestRenderPromptScheduled(t *testing.T) {
 	fired := time.Date(2026, 5, 23, 9, 15, 0, 0, time.UTC)
-	got := renderPrompt("Run digest at {{.Now}} on {{.Date}} {{.Time}}", MateEvent{
+	got := renderPrompt("Run digest at {Now} on {Date} {Time}", MateEvent{
 		Type:    MateEventScheduled,
 		FiredAt: fired,
 	})

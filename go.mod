@@ -4,10 +4,12 @@ go 1.26.1
 
 require (
 	github.com/blevesearch/bleve/v2 v2.5.7
+	github.com/bwmarrin/discordgo v0.29.0
 	github.com/fsnotify/fsnotify v1.9.0
 	github.com/go-git/go-git/v5 v5.17.2
 	github.com/go-viper/mapstructure/v2 v2.4.0
 	github.com/google/uuid v1.6.0
+	github.com/gorilla/websocket v1.4.2
 	github.com/mattn/go-runewidth v0.0.21
 	github.com/pelletier/go-toml/v2 v2.2.4
 	github.com/skip2/go-qrcode v0.0.0-20200617195104-da1b6568686e

@@ -45,7 +45,7 @@ func TestTranslateWechatMessage(t *testing.T) {
 }
 
 func TestRenderPromptWechatUserID(t *testing.T) {
-	got := renderPrompt("from {{.WechatUserID}}: {{.Content}}", MateEvent{
+	got := renderPrompt("from {WechatUserID}: {Content}", MateEvent{
 		Type:         MateEventWechatMessage,
 		WechatUserID: "wx-abc",
 		Content:      "hi",
