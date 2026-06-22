@@ -54,7 +54,7 @@
 
 ## Design
 
-Vaultr is built around one core belief: **let AI organize your notes, not you.**
+Vaultr has one core idea: **let AI organize your notes, not you.**
 
 #### Write freely, don't manage
 
@@ -66,7 +66,7 @@ Concretely, Vaultr **strongly discourages nested directories**. You can create s
 
 What turns raw notes into useful knowledge? Vaultr's answer: hand it off to AI.
 
-- You write short notes, journal entries, clip web pages — raw input, no curation needed
+- You write short notes, journal entries, clip web pages. No curation needed.
 - AI agents automatically **compile these notes into structured knowledge units**, stored in the knowledge base
 - The knowledge base is further distilled into **personal memory**, giving every conversation context
 
@@ -74,7 +74,7 @@ The entire pipeline runs automatically. You don't need to be involved in any org
 
 #### AI retrieves, you don't browse
 
-Vaultr ships full-text search, but the more important capability is letting agents retrieve on your behalf. When you need something, ask an agent directly — it searches your notes and knowledge base and surfaces the answer. No manual browsing required.
+Vaultr ships full-text search, but the more important capability is letting agents retrieve on your behalf. When you need something, ask an agent directly. It searches your notes and knowledge base and surfaces the answer.
 
 #### ⚠️ Things you must know before using Vaultr
 
@@ -212,8 +212,8 @@ The Quick Note editor is distraction-free: no toolbar, no buttons, just you and 
 
 #### 📅 Viewing
 
-- **Stream** — a chronological feed grouped by date; today's entries appear at the top; scroll down to load older entries
-- **Calendar** — a month grid marking which days have entries; click any date to jump to that day's notes
+- **Stream**: a chronological feed grouped by date; today's entries appear at the top; scroll down to load older entries
+- **Calendar**: a month grid marking which days have entries; click any date to jump to that day's notes
 
 ## Mate Bots
 
@@ -238,7 +238,7 @@ Add one or more triggers to a mate and it runs automatically whenever a matching
 
 #### Backing Agents
 
-> **Vaultr automatically discovers available agent CLIs from your local `PATH` with no extra configuration needed.** If you already use Claude Code for coding, Gemini CLI for research, or Copilot in your terminal, Vaultr finds them at startup and makes them instantly available as backing agents for your mates. Your daily tools, your existing habits: Vaultr just connects them.
+> **Vaultr automatically discovers available agent CLIs from your local `PATH` with no extra configuration needed.** If you already use Claude Code, Gemini CLI, or Copilot in your terminal, Vaultr finds them at startup and makes them available as backing agents for your mates.
 
 Vaultr integrates **16 agent CLIs** out of the box:
 
@@ -266,7 +266,7 @@ Vaultr integrates **16 agent CLIs** out of the box:
 
 Vaultr can receive WeChat direct messages and route them to a mate agent automatically. Setup has two steps.
 
-#### Step 1 — Connect WeChat in Server Config
+#### Step 1: Connect WeChat in Server Config
 
 1. Open **Settings → Server → Config → WeChat**
 2. Click **Scan QR to log in** — a QR code appears
@@ -275,7 +275,7 @@ Vaultr can receive WeChat direct messages and route them to a mate agent automat
 
 The WeChat iLink bridge begins polling for new DMs.
 
-#### Step 2 — Create a Mate agent with a `wechat_message` Trigger
+#### Step 2: Create a Mate agent with a `wechat_message` trigger
 
 1. Open **Settings → Mate Bots** and click **New Mate**
 2. Fill in a name, pick an agent and model
@@ -294,31 +294,31 @@ From this point on, every WeChat DM fires the trigger and the mate agent replies
 
 ## Discord
 
-Vaultr can receive Discord DMs and route them to a mate agent automatically.
+Same idea as WeChat, but Discord. The bot connects over the Gateway and replies to DMs.
 
-#### Step 1 — Configure Discord in Server Config
+#### Step 1: Configure Discord in Server Config
 
 1. Create a Bot at the [Discord Developer Portal](https://discord.com/developers/applications)
 2. Under **Bot → Privileged Gateway Intents**, enable **Message Content Intent**
 3. Copy the Bot token
 4. Open **Settings → Server → Config → Discord**
 5. Paste the token into **Bot token**, fill in your **Owner user ID** (Developer Mode → right-click your avatar → Copy User ID), and set **enabled** to true
-6. Click **Save all** and restart the server — the Bot's status dot turns green when connected
+6. Click **Save all** and restart the server. The Bot's status dot turns green once connected.
 
 To send proactive DMs (e.g. from a scheduled trigger), the Bot must share at least one server with you.
 
 If `discord.com` is not directly reachable, set **Proxy URL** to your local proxy (e.g. `http://127.0.0.1:7890`).
 
-#### Step 2 — Create a Mate agent with a `discord_message` Trigger
+#### Step 2: Create a Mate agent with a `discord_message` trigger
 
 1. Open **Settings → Mate Bots** and click **New Mate**
 2. Fill in a name, pick an agent and model
 3. Under **Triggers**, click **+ Add trigger**
 4. Set the **Event** to `discord_message`
-5. Write a prompt template — available variables: `{Content}`, `{DiscordChannelID}`, `{DiscordUserID}`
+5. Write a prompt template. Available variables: `{Content}`, `{DiscordChannelID}`, `{DiscordUserID}`
 6. Save the mate agent
 
-From this point on, every Discord DM fires the trigger and the mate agent replies automatically.
+Done. Every incoming DM now triggers the mate agent and gets a reply.
 
 ## Note AI Compiler
 
@@ -431,7 +431,7 @@ Every layer of AI output in Vaultr is customizable:
 In **Settings → Mate Bots**, each mate exposes two customization points:
 
 - **System Prompt** — mate-specific instructions. Appended to the global system prompt (joined with `---`).
-- **Trigger Prompt template** — the user message sent to the agent when a trigger fires. Supports variables: `{Path}`, `{Name}`, `{Content}` for vault events; `{Now}`, `{Date}`, `{Time}` for scheduled triggers; `{Content}`, `{WechatUserID}` for WeChat triggers; `{Content}`, `{DiscordChannelID}`, `{DiscordUserID}` for Discord triggers.
+- **Trigger Prompt template**: the user message sent to the agent when a trigger fires. Supports variables: `{Path}`, `{Name}`, `{Content}` for vault events; `{Now}`, `{Date}`, `{Time}` for scheduled triggers; `{Content}`, `{WechatUserID}` for WeChat triggers; `{Content}`, `{DiscordChannelID}`, `{DiscordUserID}` for Discord triggers.
 
 #### 3. Rewrite the Compile Skill
 
