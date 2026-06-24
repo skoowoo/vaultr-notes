@@ -52,11 +52,6 @@ func Validate(cfg *Config) error {
 		}
 	}
 
-	ad := strings.TrimSpace(cfg.Plugins.ImageFetch.AssetsDir)
-	if strings.Contains(ad, "..") {
-		add("plugins.image_fetch.assets_dir", `must not contain ".."`)
-	}
-
 	if len(errs) != 0 {
 		return ValidationError{Errors: errs}
 	}

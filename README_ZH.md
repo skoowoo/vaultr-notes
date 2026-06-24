@@ -32,7 +32,7 @@
 - 支持自部署到远程服务器
 
 #### 🤖 事件驱动的多 Agent 系统
-- **集成了 16 个 agent**，直接复用你本地的 Agent
+- **集成了 15 个 agent**，直接复用你本地的 Agent
 - **事件触发自动化**，笔记一创建、消息一来，agent 自动跑起来
 - **微信 & Discord 直连**，直接在微信或 Discord 私信里和 agent 对话
 
@@ -236,14 +236,13 @@ Mate 最有意思的地方是事件驱动：配好触发器，你什么都不用
 
 #### 底层 Agent
 
-> **Vaultr 直接从本地 `PATH` 发现可用的 agent CLI，不用任何额外配置。** 你已经在用 Claude Code 写代码？用 Gemini CLI 做研究？在终端里跑 Copilot？Vaultr 启动时自动找到它们，直接拿来用。你的工具，你的习惯，Vaultr 不折腾你。
+> **Vaultr 直接从本地 `PATH` 发现可用的 agent CLI，不用任何额外配置。** 你已经在用 Claude Code 写代码？在终端里跑 Codex 或 Copilot？Vaultr 启动时自动找到它们，直接拿来用。你的工具，你的习惯，Vaultr 不折腾你。
 
-开箱集成 **16 个 agent CLI**：
+开箱集成 **15 个 agent CLI**：
 
 - Claude Code
 - OpenCode
 - Codex CLI
-- Gemini CLI
 - Cursor Agent
 - Hermes
 - GitHub Copilot CLI

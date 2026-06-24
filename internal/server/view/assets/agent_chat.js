@@ -387,13 +387,27 @@
             break;
           }
           case 'text_replace': {
-            // cursor-agent reformatted mid-stream: replace all existing text segments
-            // rather than appending, so the client never shows duplicated content.
+            // cursor-agent reformatted mid-stream: update last text segment in-place
+            // (avoids a DOM remove+create flash) and remove any earlier text segments.
             var newText = data.text || '';
-            for (var ri = segs.length - 1; ri >= 0; ri--) {
-              if (segs[ri].type === 'text') segs.splice(ri, 1);
+            var lastTi = -1;
+            for (var rti = segs.length - 1; rti >= 0; rti--) {
+              if (segs[rti].type === 'text') { lastTi = rti; break; }
             }
-            if (newText) segs.push({ type: 'text', content: newText });
+            if (lastTi >= 0) {
+              for (var rti = lastTi - 1; rti >= 0; rti--) {
+                if (segs[rti].type === 'text') { segs.splice(rti, 1); lastTi--; }
+              }
+              segs[lastTi].content = newText;
+            } else if (newText) {
+              segs.push({ type: 'text', content: newText });
+            }
+            break;
+          }
+          case 'thinking_start': {
+            if (!last || last.type !== 'thinking') {
+              segs.push({ type: 'thinking', content: '', open: false });
+            }
             break;
           }
           case 'thinking_delta': {
@@ -463,6 +477,9 @@
           var name = target.endsWith('.md') ? target : target + '.md';
           return '[' + display + '](/notes?name=' + encodeURIComponent(name) + ')';
         });
+        // Escape lone ~ to prevent casual tildes in LLM output from triggering
+        // GFM strikethrough. Double-tilde (~~text~~) is preserved intentionally.
+        processed = processed.replace(/(?<!~)~(?!~)/g, '\\~');
         var html;
         if (typeof marked === 'undefined') {
           html = processed.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -477,8 +494,16 @@
           }
         }
         if (useCache) {
-          // Evict when large to avoid accumulating many near-identical streaming entries.
-          if (this._mdCache.size >= 300) this._mdCache.clear();
+          if (this._mdCache.size >= 300) {
+            // Evict oldest 50 entries (Map preserves insertion order) instead of
+            // clearing all at once to avoid re-rendering every visible message.
+            var iter = this._mdCache.keys();
+            for (var ei = 0; ei < 50; ei++) {
+              var nxt = iter.next();
+              if (nxt.done) break;
+              this._mdCache.delete(nxt.value);
+            }
+          }
           this._mdCache.set(text, html);
         }
         return html;
@@ -661,9 +686,22 @@
                       }
                       if (existingIdx >= 0) {
                         var ex = self.messages[existingIdx];
+                        var prevStatus = ex.status;
                         ex.content = nm.content;
                         ex.status = nm.status;
-                        ex.segments = nm.segments;
+                        // If the message was already terminal in memory with rich live-streamed
+                        // segments (thinking, tool_use, etc.), preserve them — DB only stores
+                        // final text, so blindly replacing would wipe all streaming artifacts.
+                        // Only replace segments when the message was still running (just completed)
+                        // or when there are no rich segments to preserve.
+                        var hasRichSegs = (ex.segments || []).some(function(s) { return s.type !== 'text'; });
+                        if (prevStatus !== 'running' && hasRichSegs) {
+                          var richSegs = (ex.segments || []).filter(function(s) { return s.type !== 'text'; });
+                          var dbTextSegs = (nm.segments || []).filter(function(s) { return s.type === 'text'; });
+                          ex.segments = richSegs.concat(dbTextSegs);
+                        } else {
+                          ex.segments = nm.segments;
+                        }
                         ex.completedAt = nm.completedAt;
                         ex._fmtTime = nm._fmtTime;
                         if (nm.triggerEvent) ex.triggerEvent = nm.triggerEvent;
@@ -733,6 +771,14 @@
             });
         }
         self._runPollerTimer = setTimeout(poll, 3000);
+      },
+
+      isLastThinkingInMsg(msg, j) {
+        var segs = msg.segments || [];
+        for (var k = segs.length - 1; k >= 0; k--) {
+          if (segs[k].type === 'thinking') return k === j;
+        }
+        return false;
       },
 
       destroy() {

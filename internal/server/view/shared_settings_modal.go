@@ -1703,7 +1703,6 @@ const settingsCtrlJS = `
           'server': 'Server', 'vault': 'Vault', 'agent': 'Agent',
           'plugins.search': 'Search', 'plugins.git_sync': 'Git Sync',
           'plugins.compile': 'Compile',
-          'plugins.image_fetch': 'Image Fetch',
           'plugins.wechat': 'WeChat',
           'plugins.discord': 'Discord',
         };
@@ -1717,7 +1716,6 @@ const settingsCtrlJS = `
           'plugins.search': 'Indexing and search quality.',
           'plugins.git_sync': 'Automatic git push/pull for the vault.',
           'plugins.compile': 'AI knowledge compilation and related options.',
-          'plugins.image_fetch': 'Fetching and storing remote images.',
           'plugins.wechat': 'WeChat iLink bridge — poll DMs and emit wechat_message mate events.',
           'plugins.discord': 'Discord Bot bridge — receive DMs and emit discord_message mate events.',
           'server.listen': 'HTTP listen address and port.',

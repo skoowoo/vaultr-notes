@@ -333,6 +333,11 @@
       border:1.5px solid currentColor; border-top-color:transparent;
       animation: seg-spin 0.7s linear infinite;
     }
+    /* Static dot shown when a tool started but the run ended without a result */
+    .seg-tool-icon-done {
+      flex-shrink:0; width:7px; height:7px; border-radius:50%;
+      background: currentColor; opacity: 0.3;
+    }
 
     /* Status label breathes while running */
     .seg-status.is-running { animation: seg-blink 1.8s ease-in-out infinite; }

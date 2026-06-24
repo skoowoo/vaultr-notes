@@ -19,7 +19,6 @@ import (
 	"github.com/hardhacker/vaultr/internal/plugin"
 	"github.com/hardhacker/vaultr/internal/plugins/compile"
 	"github.com/hardhacker/vaultr/internal/plugins/gitsync"
-	"github.com/hardhacker/vaultr/internal/plugins/imgfetch"
 	"github.com/hardhacker/vaultr/internal/plugins/search"
 	discordplugin "github.com/hardhacker/vaultr/internal/plugins/discord"
 	wechatplugin "github.com/hardhacker/vaultr/internal/plugins/wechat"
@@ -74,11 +73,6 @@ func New(cfg *config.Config, cfgFileLoaded string, logger *slog.Logger, vault *s
 			compilePlugin = dp
 			logger.Info("compile plugin registered", "knowledge_dir", cfg.Vault.KnowledgeDir)
 		}
-	}
-
-	if cfg.Plugins.ImageFetch.Enabled {
-		mgr.Register(imgfetch.New(cfg.Plugins.ImageFetch, vault, logger))
-		logger.Info("image_fetch plugin registered", "assets_dir", cfg.Plugins.ImageFetch.AssetsDir)
 	}
 
 	// Mate runner: fires agent runs on vault events matching trigger configs.

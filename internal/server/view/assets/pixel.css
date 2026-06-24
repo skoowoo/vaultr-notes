@@ -20,19 +20,10 @@
     /* ── Top bar ────────────────────────────────────────────────── */
     /* Status counter — pixel HUD readout */
     html[data-pixel="on"] .lib-status {
-      font-family: "Press Start 2P", monospace;
-      font-size: 0.38rem;
-      letter-spacing: 0.01em;
       border: 1px solid var(--hr);
       padding: 0 7px;
       height: 22px;
     }
-    /* Square up topbar action button SVG strokes (same rule as nav icons) */
-    html[data-pixel="on"] .lib-action-btn svg {
-      stroke-linecap: butt;
-      stroke-linejoin: miter;
-    }
-    html[data-pixel="on"] .lib-action-btn svg rect { rx: 0; ry: 0; }
     /* Back button — inset press (same tier as lib-action-btn) */
     html[data-pixel="on"] .lib-back-btn { transition: none; }
     html[data-pixel="on"] .lib-back-btn:hover {
@@ -47,11 +38,6 @@
     html[data-pixel="on"] .nav-item.active {
       box-shadow: var(--px-d2) var(--px-shadow);
     }
-    html[data-pixel="on"] .nav-item svg {
-      stroke-linecap: butt;
-      stroke-linejoin: miter;
-    }
-    html[data-pixel="on"] .nav-item svg rect { rx: 0; ry: 0; }
 
     /* ── d3 containers (shadow only on hover, no translate) ──────── */
     /* Home note cards */
@@ -74,16 +60,6 @@
       box-shadow: var(--px-d2) var(--px-shadow);
       transform: translate(2px, 2px);
     }
-    html[data-pixel="on"] .folder-card-icon {
-      stroke-linecap: butt;
-      stroke-linejoin: miter;
-    }
-    /* swap watermark to pixel-rect version */
-    html[data-pixel="on"] .folder-card-watermark:not(.folder-card-watermark-px) { display: none !important; }
-    html[data-pixel="on"] .folder-card-watermark-px { display: block !important; }
-    /* swap pinned bookmark to pixel version */
-    html[data-pixel="on"] .card-pin-mark:not(.card-pin-mark-px) { display: none !important; }
-    html[data-pixel="on"] .card-pin-mark-px { display: block !important; }
     /* Library note cards */
     html[data-pixel="on"] .note-card {
       box-shadow: var(--px-d3) var(--px-shadow);
@@ -164,10 +140,6 @@
       transform: translate(3px, 3px);
       opacity: 1;
     }
-    html[data-pixel="on"] .home-nav-icon {
-      stroke-linecap: butt;
-      stroke-linejoin: miter;
-    }
     /* Settings / save / discard buttons — Tier B: d2 shadow + pixel font */
     html[data-pixel="on"] .settings-apply-btn,
     html[data-pixel="on"] .cfg-save-btn,
@@ -175,9 +147,6 @@
     html[data-pixel="on"] .agents-toolbar-btn {
       box-shadow: var(--px-d2) var(--px-shadow);
       transition: none;
-      font-family: "Press Start 2P", monospace;
-      font-size: 0.44rem;
-      letter-spacing: 0.01em;
     }
     html[data-pixel="on"] .settings-apply-btn:hover:not(:disabled),
     html[data-pixel="on"] .cfg-save-btn:hover:not(:disabled),
@@ -197,9 +166,6 @@
     html[data-pixel="on"] .mate-act-btn {
       box-shadow: var(--px-d1) var(--px-shadow);
       transition: none;
-      font-family: "Press Start 2P", monospace;
-      font-size: 0.40rem;
-      letter-spacing: 0.01em;
     }
     html[data-pixel="on"] .mate-act-btn:hover {
       box-shadow: none;
@@ -210,9 +176,6 @@
     html[data-pixel="on"] .mate-cancel-btn {
       box-shadow: var(--px-d2) var(--px-shadow);
       transition: none;
-      font-family: "Press Start 2P", monospace;
-      font-size: 0.44rem;
-      letter-spacing: 0.01em;
     }
     html[data-pixel="on"] .mate-save-btn:hover:not(:disabled),
     html[data-pixel="on"] .mate-cancel-btn:hover {
@@ -282,10 +245,6 @@
       box-shadow: none;
       transform: translate(2px, 2px);
     }
-    html[data-pixel="on"] .cal-nav-btn svg {
-      stroke-linecap: butt;
-      stroke-linejoin: miter;
-    }
     /* Shorts today-empty create button — d2 action chip */
     html[data-pixel="on"] .shorts-empty-today-btn {
       box-shadow: var(--px-d2) var(--px-shadow);
@@ -304,10 +263,6 @@
       box-shadow: none;
       transform: translate(3px, 3px);
     }
-    html[data-pixel="on"] .shorts-compose svg {
-      stroke-linecap: butt;
-      stroke-linejoin: miter;
-    }
     /* Selected calendar day — raised 3D look */
     html[data-pixel="on"] .cal-day.is-active {
       box-shadow: var(--px-d1) var(--px-shadow) !important;
@@ -319,34 +274,13 @@
     html[data-pixel="on"] .lib-action-btn.is-active {
       box-shadow: inset 2px 2px 0 rgba(255,255,255,0.08);
     }
-    /* swap topbar icons: hide smooth, show pixel variant */
-    html[data-pixel="on"] .lib-action-btn svg:not(.lib-ai-px) { display: none !important; }
-    html[data-pixel="on"] .lib-action-btn .lib-ai-px { display: inline-block !important; }
-    /* swap back button icon: hide smooth, show pixel variant */
-    html[data-pixel="on"] .lib-back-btn svg:not(.lib-ai-px) { display: none !important; }
-    html[data-pixel="on"] .lib-back-btn .lib-ai-px { display: inline-block !important; }
 
     /* ── Typography ──────────────────────────────────────────────── */
     html[data-pixel="on"] .choice-title {
       font-family: "Press Start 2P", monospace;
       font-size: 0.52rem;
     }
-    html[data-pixel="on"] .s-label,
-    html[data-pixel="on"] .s-label-nav {
-      font-family: "Press Start 2P", monospace;
-      font-size: 0.42rem;
-    }
-    html[data-pixel="on"] .s-label-nav-icon {
-      stroke-linecap: butt;
-      stroke-linejoin: miter;
-    }
     html[data-pixel="on"] .settings-sidebar-item {
-      font-family: "Press Start 2P", monospace;
-      font-size: 0.52rem;
-      letter-spacing: 0.01em;
-      line-height: 1.75;
-      padding-top: 0.52rem;
-      padding-bottom: 0.52rem;
       transition: none;
     }
     html[data-pixel="on"] .settings-sidebar-item:hover {
@@ -360,12 +294,6 @@
       box-shadow: inset 2px 2px 0 rgba(0,0,0,0.15);
     }
 
-    /* Settings modal title */
-    html[data-pixel="on"] .settings-modal-title {
-      font-family: "Press Start 2P", monospace;
-      font-size: 0.52rem;
-      letter-spacing: 0.01em;
-    }
 
     /* ── Drawer tabs ─────────────────────────────────────────────── */
     html[data-pixel="on"] .drawer-tab { transition: none; }
@@ -419,13 +347,6 @@
       box-shadow: none; transform: translate(3px, 3px);
     }
 
-    /* Sidebar header & agent name — pixel font, strip uppercase */
-    html[data-pixel="on"] .conv-sidebar-header {
-      font-family: "Press Start 2P", monospace;
-      font-size: 0.38rem;
-      text-transform: none;
-      letter-spacing: 0.01em;
-    }
     html[data-pixel="on"] .msg-agent-name {
       font-size: 0.9375rem;
     }
@@ -453,13 +374,11 @@
       box-shadow: var(--px-d2) var(--px-shadow);
       transition: none;
     }
-    /* Agent / model selects — strip native chrome, add pixel arrow + font */
+    /* Agent / model selects — strip native chrome, add pixel arrow */
     html[data-pixel="on"] .chat-select {
       -webkit-appearance: none;
       appearance: none;
       transition: none;
-      font-family: "Press Start 2P", monospace;
-      font-size: 0.4rem;
       background-color: var(--code-bg);
       background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='6' height='4' viewBox='0 0 6 4'%3E%3Crect x='0' y='0' width='2' height='2' fill='currentColor'/%3E%3Crect x='4' y='0' width='2' height='2' fill='currentColor'/%3E%3Crect x='2' y='2' width='2' height='2' fill='currentColor'/%3E%3C/svg%3E");
       background-repeat: no-repeat;
@@ -514,9 +433,6 @@
     html[data-pixel="on"] .bulk-btn {
       box-shadow: var(--px-d1) var(--px-shadow);
       transition: none;
-      font-family: "Press Start 2P", monospace;
-      font-size: 0.40rem;
-      letter-spacing: 0.01em;
     }
     html[data-pixel="on"] .toolbar-toggle:hover,
     html[data-pixel="on"] .bulk-btn-neutral:hover,
@@ -555,10 +471,7 @@
 
     /* Lightbox section labels — pixel font, strip uppercase */
     html[data-pixel="on"] .lb-section-label {
-      font-family: "Press Start 2P", monospace;
-      font-size: 0.36rem;
       text-transform: none;
-      letter-spacing: 0.01em;
       opacity: 0.6;
     }
 
@@ -579,14 +492,6 @@
     html[data-pixel="on"] .drawer-source-btn:hover {
       box-shadow: inset 2px 2px 0 rgba(255,255,255,0.08);
     }
-    html[data-pixel="on"] .frag-close-btn svg,
-    html[data-pixel="on"] .frag-pin-btn svg,
-    html[data-pixel="on"] .frag-unpin-btn svg,
-    html[data-pixel="on"] .drawer-source-btn svg,
-    html[data-pixel="on"] .drawer-compile-btn svg {
-      stroke-linecap: butt;
-      stroke-linejoin: miter;
-    }
     /* Drawer more button — d1 small icon button (same tier as drawer-source-btn) */
     html[data-pixel="on"] .drawer-more-btn {
       box-shadow: var(--px-d1) var(--px-shadow);
@@ -596,10 +501,6 @@
     html[data-pixel="on"] .drawer-more-btn.active {
       box-shadow: none;
       transform: translate(2px, 2px);
-    }
-    html[data-pixel="on"] .drawer-more-btn svg {
-      stroke-linecap: butt;
-      stroke-linejoin: miter;
     }
     /* More menu panel — hard pixel shadow, no radius (radius zeroed by global rule) */
     html[data-pixel="on"] .drawer-more-menu {
@@ -611,14 +512,10 @@
       box-shadow: inset 1px 1px 0 rgba(0,0,0,0.12);
     }
 
-    /* Drawer publish / discard buttons — Tier B: d2 shadow + pixel font */
     html[data-pixel="on"] .drawer-publish-btn,
     html[data-pixel="on"] .drawer-discard-btn {
       box-shadow: var(--px-d2) var(--px-shadow);
       transition: none;
-      font-family: "Press Start 2P", monospace;
-      font-size: 0.44rem;
-      letter-spacing: 0.01em;
     }
     html[data-pixel="on"] .drawer-publish-btn:hover:not(:disabled),
     html[data-pixel="on"] .drawer-discard-btn:hover {
@@ -675,9 +572,6 @@
       box-shadow: none;
       transform: translate(2px, 2px);
     }
-    /* Square up search and result SVG icon strokes */
-    html[data-pixel="on"] .srch-icon { stroke-linecap: butt; stroke-linejoin: miter; }
-    html[data-pixel="on"] .sr-icon   { stroke-linecap: butt; stroke-linejoin: miter; }
     /* Result rows — instant transitions, pixel 3-D active state */
     html[data-pixel="on"] #search-results a { transition: none; }
     html[data-pixel="on"] #search-results a::before { transition: none; }
@@ -698,30 +592,15 @@
       box-shadow: var(--px-d3) var(--px-shadow);
       animation: none;
     }
-    /* Title — pixel font */
-    html[data-pixel="on"] .confirm-title {
-      font-family: "Press Start 2P", monospace;
-      font-size: 0.52rem;
-      letter-spacing: 0.01em;
-      line-height: 1.7;
-    }
     html[data-pixel="on"] .confirm-title-icon {
       display: inline-block;
       vertical-align: middle;
       margin-right: 0.45rem;
       position: relative; top: -1px;
     }
-    html[data-pixel="on"] .confirm-title-icon svg {
-      stroke-linecap: butt;
-      stroke-linejoin: miter;
-    }
-    /* Buttons — Tier B: d2 shadow + pixel font, translate on hover */
     html[data-pixel="on"] .confirm-btn {
       box-shadow: var(--px-d2) var(--px-shadow);
       transition: none;
-      font-family: "Press Start 2P", monospace;
-      font-size: 0.44rem;
-      letter-spacing: 0.01em;
     }
     html[data-pixel="on"] .confirm-btn:hover:not(:disabled) {
       box-shadow: none;
@@ -740,25 +619,14 @@
     html[data-pixel="on"] #short-dialog .short-close-btn:hover {
       box-shadow: inset 2px 2px 0 rgba(255,255,255,0.08);
     }
-    /* Action buttons — d2 pixel shadow + pixel font, translate on hover */
     html[data-pixel="on"] #short-dialog .short-btn {
       box-shadow: var(--px-d2) var(--px-shadow);
       transition: none;
-      font-family: "Press Start 2P", monospace;
-      font-size: 0.40rem;
-      letter-spacing: 0.01em;
     }
     html[data-pixel="on"] #short-dialog .short-btn:hover:not(:disabled) {
       box-shadow: none;
       transform: translate(3px, 3px);
       opacity: 1;
-    }
-    /* Footer meta text */
-    html[data-pixel="on"] #short-dialog .short-charcount,
-    html[data-pixel="on"] #short-dialog .short-kbd-hint {
-      font-family: "Press Start 2P", monospace;
-      font-size: 0.34rem;
-      letter-spacing: 0.01em;
     }
 
     /* ── Info dialog ─────────────────────────────────────────────── */
@@ -767,20 +635,9 @@
       box-shadow: var(--px-d3) var(--px-shadow);
       animation: none;
     }
-    /* Title — Tier A: matches .confirm-title */
-    html[data-pixel="on"] .info-title {
-      font-family: "Press Start 2P", monospace;
-      font-size: 0.52rem;
-      letter-spacing: 0.01em;
-      line-height: 1.7;
-    }
-    /* Close button — Tier B: d2 shadow + pixel font, translate on hover */
     html[data-pixel="on"] .info-btn-close {
       box-shadow: var(--px-d2) var(--px-shadow);
       transition: none;
-      font-family: "Press Start 2P", monospace;
-      font-size: 0.44rem;
-      letter-spacing: 0.01em;
     }
     html[data-pixel="on"] .info-btn-close:hover {
       box-shadow: none;
@@ -812,13 +669,6 @@
     html[data-pixel="on"] .drawer-compile-btn.success {
       box-shadow: inset 1px 1px 0 rgba(0,0,0,0.15);
     }
-    html[data-pixel="on"] .drawer-source-btn svg,
-    html[data-pixel="on"] .frag-pin-btn svg,
-    html[data-pixel="on"] .frag-unpin-btn svg,
-    html[data-pixel="on"] .drawer-compile-btn svg {
-      stroke-linecap: butt;
-      stroke-linejoin: miter;
-    }
 
     /* ── Graph page ─────────────────────────────────────────────── */
     /* Zoom controls container — d1 hard shadow (small floating panel) */
@@ -832,10 +682,6 @@
     }
     html[data-theme="light"][data-pixel="on"] .graph-zoom-btn:hover {
       box-shadow: inset 2px 2px 0 rgba(0,0,0,0.07);
-    }
-    html[data-pixel="on"] .graph-zoom-btn svg {
-      stroke-linecap: butt;
-      stroke-linejoin: miter;
     }
 
     /* Index sidebar items — flat nav rows, inset press hover (same as tags-col .tag-card) */
@@ -855,10 +701,6 @@
     html[data-pixel="on"] .graph-node-panel-close:hover {
       box-shadow: inset 2px 2px 0 rgba(255,255,255,0.08);
     }
-    html[data-pixel="on"] .graph-node-panel-close svg {
-      stroke-linecap: butt;
-      stroke-linejoin: miter;
-    }
 
     /* Node cards — d2 shadow + translate on hover (same tier as tag-card) */
     html[data-pixel="on"] .graph-node-card {
@@ -871,15 +713,3 @@
     }
 
 
-    /* Index head title & node section labels — pixel font */
-    html[data-pixel="on"] .graph-index-head-title {
-      font-family: "Press Start 2P", monospace;
-      font-size: 0.40rem;
-      letter-spacing: 0.01em;
-    }
-    html[data-pixel="on"] .graph-node-section-label {
-      font-family: "Press Start 2P", monospace;
-      font-size: 0.34rem;
-      letter-spacing: 0.01em;
-      text-transform: none;
-    }

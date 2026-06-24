@@ -34,7 +34,7 @@
 - Can also be self-hosted on a remote server
 
 #### 🤖 Event-Driven Multi-Agent System
-- **16 agent CLIs** supported out of the box
+- **15 agent CLIs** supported out of the box
 - **Event-triggered automation**: agents run tasks automatically when notes change, messages arrive, or schedules fire
 - **WeChat & Discord integration**: chat with agents directly from WeChat or Discord DMs
 
@@ -238,14 +238,13 @@ Add one or more triggers to a mate and it runs automatically whenever a matching
 
 #### Backing Agents
 
-> **Vaultr automatically discovers available agent CLIs from your local `PATH` with no extra configuration needed.** If you already use Claude Code, Gemini CLI, or Copilot in your terminal, Vaultr finds them at startup and makes them available as backing agents for your mates.
+> **Vaultr automatically discovers available agent CLIs from your local `PATH` with no extra configuration needed.** If you already use Claude Code, Codex, or Copilot in your terminal, Vaultr finds them at startup and makes them available as backing agents for your mates.
 
-Vaultr integrates **16 agent CLIs** out of the box:
+Vaultr integrates **15 agent CLIs** out of the box:
 
 - Claude Code
 - OpenCode
 - Codex CLI
-- Gemini CLI
 - Cursor Agent
 - Hermes
 - GitHub Copilot CLI

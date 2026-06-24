@@ -93,10 +93,10 @@
                       <template x-if="seg.type === 'text'">
                         <div class="prose" x-html="renderMarkdown(seg.content)"></div>
                       </template>
-                      <template x-if="seg.type === 'thinking'">
+                      <template x-if="seg.type === 'thinking' && seg.content">
                         <div class="seg-thinking">
                           <button class="seg-thinking-toggle"
-                                  :class="{'open': seg.open, 'is-streaming': msg.status === 'running'}"
+                                  :class="{'open': seg.open, 'is-streaming': msg.status === 'running' && isLastThinkingInMsg(msg, j)}"
                                   @click="seg.open = !seg.open" type="button">
                             <svg fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
                               <path stroke-linecap="round" stroke-linejoin="round" d="M9 18l6-6-6-6"/>
@@ -110,7 +110,7 @@
                         <div>
                           <template x-if="seg.results.length === 0">
                             <div class="seg-tool-use">
-                              <span class="seg-tool-spinner"></span>
+                              <span :class="msg.status === 'running' ? 'seg-tool-spinner' : 'seg-tool-icon-done'"></span>
                               <span x-text="seg.name"></span>
                             </div>
                           </template>
@@ -148,8 +148,8 @@
                           <pre class="seg-tool-result-content" x-show="seg.open" x-text="seg.content"></pre>
                         </div>
                       </template>
-                      <template x-if="seg.type === 'status'">
-                        <div class="seg-status" :class="{'is-running': msg.status === 'running'}" x-text="seg.label"></div>
+                      <template x-if="seg.type === 'status' && msg.status === 'running'">
+                        <div class="seg-status is-running" x-text="seg.label"></div>
                       </template>
                       <template x-if="seg.type === 'console'">
                         <pre class="seg-console" x-text="seg.content"></pre>
@@ -161,10 +161,10 @@
                   </template>
                 </div>
                 <div class="msg-footer">
-                  <template x-if="msg.status === 'running'">
+                  <template x-if="msg.status === 'running' && !msg.segments.some(function(s){ return (s.type==='text' && s.content) || s.type==='status'; })">
                     <span class="msg-thinking-label">Thinking<span class="thinking-dots"><span></span><span></span><span></span></span></span>
                   </template>
-                  <template x-if="msg.status === 'succeeded'">
+                  <template x-if="msg.status !== 'running' && msg.segments.some(function(s){ return s.type==='text' && s.content; })">
                     <button class="msg-copy-btn" type="button" title="Copy reply"
                             :class="msg.copied ? 'copied' : ''"
                             @click="copyMateText(msg)">

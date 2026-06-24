@@ -73,14 +73,6 @@ func applySecretMask(m map[string]any, reveal bool) map[string]bool {
 	}
 	plugs, _ := m["plugins"].(map[string]any)
 	if plugs != nil {
-		if g, ok := plugs["git_sync"].(map[string]any); ok {
-			if s, ok := g["auth_token"].(string); ok && s != "" {
-				sec["plugins.git_sync.auth_token"] = true
-				if !reveal {
-					g["auth_token"] = nil
-				}
-			}
-		}
 		if wx, ok := plugs["wechat"].(map[string]any); ok {
 			if s, ok := wx["token"].(string); ok && s != "" {
 				sec["plugins.wechat.token"] = true

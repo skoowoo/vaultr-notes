@@ -7,7 +7,6 @@ func TestSupportsNativeSession(t *testing.T) {
 		"claude":       true,
 		"codex":        true,
 		"devin":        true,
-		"gemini":       true,
 		"opencode":     true,
 		"hermes":       true,
 		"kimi":         true,

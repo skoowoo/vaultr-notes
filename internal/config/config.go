@@ -19,12 +19,11 @@ type Config struct {
 
 // PluginsConfig groups all optional plugin configurations.
 type PluginsConfig struct {
-	Search     SearchConfig     `mapstructure:"search" json:"search" toml:"search"`
-	GitSync    GitSyncConfig    `mapstructure:"git_sync" json:"git_sync" toml:"git_sync"`
-	Compile    CompileConfig    `mapstructure:"compile" json:"compile" toml:"compile"`
-	ImageFetch ImageFetchConfig `mapstructure:"image_fetch" json:"image_fetch" toml:"image_fetch"`
-	Wechat     WechatConfig     `mapstructure:"wechat" json:"wechat" toml:"wechat"`
-	Discord    DiscordConfig    `mapstructure:"discord" json:"discord" toml:"discord"`
+	Search  SearchConfig  `mapstructure:"search" json:"search" toml:"search"`
+	GitSync GitSyncConfig `mapstructure:"git_sync" json:"git_sync" toml:"git_sync"`
+	Compile CompileConfig `mapstructure:"compile" json:"compile" toml:"compile"`
+	Wechat  WechatConfig  `mapstructure:"wechat" json:"wechat" toml:"wechat"`
+	Discord DiscordConfig `mapstructure:"discord" json:"discord" toml:"discord"`
 }
 
 // SearchConfig holds settings for the full-text search plugin.
@@ -49,18 +48,6 @@ type SearchConfig struct {
 type CompileConfig struct {
 	// Enabled must be true for the plugin to start (opt-in).
 	Enabled bool `mapstructure:"enabled" json:"enabled" toml:"enabled"`
-}
-
-// ImageFetchConfig configures automatic download of remote images referenced in
-// newly created markdown notes into a vault assets directory.
-type ImageFetchConfig struct {
-	// Enabled must be true for the plugin to run.
-	Enabled bool `mapstructure:"enabled" json:"enabled" toml:"enabled"`
-
-	// AssetsDir is a vault-relative directory (no leading slash) where files are
-	// stored under a YYYYMM subfolder, mirroring POST /api/vault/upload-image.
-	// Default: "_assets".
-	AssetsDir string `mapstructure:"assets_dir" json:"assets_dir" toml:"assets_dir"`
 }
 
 // DiscordConfig configures the Discord Bot bridge plugin.
@@ -355,9 +342,6 @@ func setDefaults(v *viper.Viper) {
 
 	// compile plugin defaults (enabled by default)
 	v.SetDefault("plugins.compile.enabled", true)
-
-	v.SetDefault("plugins.image_fetch.enabled", false)
-	v.SetDefault("plugins.image_fetch.assets_dir", "_assets")
 
 	v.SetDefault("plugins.wechat.enabled", false)
 

@@ -7,14 +7,13 @@ import (
 // supportsNativeSession lists agents whose CLI or wire protocol can resume
 // multi-turn context by session id without replaying host message history.
 // Mechanisms:
-//   - CLI flags: claude, codex, gemini, opencode, cursor-agent, qwen, qoder, copilot, deepseek
+//   - CLI flags: claude, codex, opencode, cursor-agent, qwen, qoder, copilot, deepseek
 //   - ACP session/load|resume|prompt: devin, hermes, kimi, kiro, kilo, vibe
 //   - Pi RPC prompt/switch_session (+ --session/--continue on CLI): pi
 var supportsNativeSession = map[string]struct{}{
 	"claude":       {},
 	"codex":        {},
 	"devin":        {},
-	"gemini":       {},
 	"opencode":     {},
 	"hermes":       {},
 	"kimi":         {},
@@ -102,18 +101,6 @@ func definitions() []*AgentDef {
 			StreamFormat: StreamACPJSONRPC,
 			build:        buildDevin,
 			fetchModels:  fetchDevinModels,
-		},
-		{
-			ID: "gemini", Name: "Gemini CLI", Bin: "gemini",
-			VersionArgs: []string{"--version"},
-			FallbackModels: []ModelOption{
-				DefaultModelOption,
-				{ID: "gemini-2.5-pro", Label: "gemini-2.5-pro"},
-				{ID: "gemini-2.5-flash", Label: "gemini-2.5-flash"},
-			},
-			StaticEnv: map[string]string{"GEMINI_CLI_TRUST_WORKSPACE": "true"},
-			StreamFormat: StreamJSONEvent, EventParser: "gemini", PromptViaStdin: true,
-			build: buildGemini,
 		},
 		{
 			ID: "opencode", Name: "OpenCode", Bin: "opencode",

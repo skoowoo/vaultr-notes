@@ -435,7 +435,6 @@ func (a *AgentAPI) executeChat(ctx context.Context, run *agent.Run, body chatBod
 
 	env := agent.SpawnEnvForAgent(def.ID, agent.ShellEnv(), envCfg)
 	for k, v := range def.StaticEnv {
-		// overlay static env keys (e.g. GEMINI_CLI_TRUST_WORKSPACE)
 		env = mergeEnvKey(env, k, v)
 	}
 	// Keep $PWD in sync with cmd.Dir. Some agents (e.g. opencode) use $PWD

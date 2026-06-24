@@ -119,17 +119,6 @@ func buildDevin(_ *AgentDef, _ BuildArgsContext) []string {
 	}
 }
 
-func buildGemini(_ *AgentDef, c BuildArgsContext) []string {
-	args := []string{"--output-format", "stream-json", "--yolo"}
-	if c.SessionID != "" {
-		args = append(args, "--resume", c.SessionID)
-	}
-	if c.Model != "" && c.Model != "default" {
-		args = append(args, "--model", c.Model)
-	}
-	return args
-}
-
 func buildOpenCode(_ *AgentDef, c BuildArgsContext) []string {
 	args := []string{"run", "--format", "json", "--dangerously-skip-permissions"}
 	if c.Cwd != "" {

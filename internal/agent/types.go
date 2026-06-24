@@ -70,7 +70,7 @@ type AgentDef struct {
 	PromptViaStdin bool `json:"promptViaStdin,omitempty"`
 	// MaxPromptArgBytes: when prompt must be argv, refuse oversized payloads.
 	MaxPromptArgBytes int `json:"maxPromptArgBytes,omitempty"`
-	// StaticEnv merged into spawn env (e.g. GEMINI_CLI_TRUST_WORKSPACE).
+	// StaticEnv merged into spawn env for agents that need extra environment variables.
 	StaticEnv map[string]string `json:"-"`
 	// SupportsImagePaths: Pi RPC reads images from disk (see stream/pi).
 	SupportsImagePaths bool `json:"supportsImagePaths,omitempty"`

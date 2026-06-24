@@ -2,8 +2,6 @@ package storage
 
 import (
 	"bytes"
-	"crypto/sha256"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -30,9 +28,6 @@ type Image struct {
 
 // wikiImageLinkRe matches Obsidian wiki-style image embeds: ![[filename.ext]] or ![[filename.ext|hint]]
 var wikiImageLinkRe = regexp.MustCompile(`!\[\[([^\]\|]+?)(?:\|[^\]]*?)?\]\]`)
-
-// mdImageURLRe captures the URL from standard markdown image syntax: ![alt](url)
-var mdImageURLRe = regexp.MustCompile(`!\[[^\]]*\]\((https?://[^)\s]+)\)`)
 
 // imageExtensions is the set of recognised image file extensions (lowercase, with dot).
 var imageExtensions = map[string]bool{
@@ -63,18 +58,6 @@ func (g *Vault) RegisterImage(img Image) error {
 	g.mu.Lock()
 	defer g.mu.Unlock()
 	return dbImageUpsert(g.db, img)
-}
-
-// RegisterImageWithLinkedNote upserts image metadata and sets linked_notes by
-// image filename (unique). noteStem is the linking note's stem (without ".md"),
-// matching the convention used in BuildImageNoteLinks.
-func (g *Vault) RegisterImageWithLinkedNote(img Image, noteStem string) error {
-	g.mu.Lock()
-	defer g.mu.Unlock()
-	if err := dbImageUpsert(g.db, img); err != nil {
-		return err
-	}
-	return dbImageSetLinkedNotes(g.db, img.Name, noteStem)
 }
 
 // DeleteImageMeta removes the metadata row for the image at (dir, name).
@@ -197,22 +180,14 @@ func (g *Vault) CountImages() (int, error) {
 }
 
 // BuildImageNoteLinks walks all markdown notes in a single pass, finds every
-// ![[image.ext]] wiki embed and every ![alt](https://...) remote image URL,
-// and writes the note→image associations back to the DB.
-//
-// Remote URL associations use the URL fingerprint (first 12 hex chars of
-// SHA-256) embedded in filenames by the imgfetch plugin. This lets vaultr init
-// reconstruct links even after the DB is wiped, as long as the image files
-// retain their fingerprinted names.
+// ![[image.ext]] wiki embed, and writes the note→image associations back to the DB.
 //
 // The function holds the write lock only during the DB update phase, not during
 // the filesystem walk, so it does not block concurrent reads.
 func (g *Vault) BuildImageNoteLinks() error {
 	// Phase 1: walk all .md files (no lock held — read-only).
 	// links: imageName → []noteBasename (from ![[]] embeds)
-	// urlSigs: url-sha256-12chars → []noteBasename (from remote image URLs)
 	links := make(map[string][]string)
-	urlSigs := make(map[string][]string)
 
 	err := filepath.WalkDir(g.root, func(absPath string, d os.DirEntry, walkErr error) error {
 		if walkErr != nil {
@@ -235,7 +210,6 @@ func (g *Vault) BuildImageNoteLinks() error {
 
 		noteName := strings.TrimSuffix(d.Name(), ".md")
 
-		// Match ![[img.ext]] wiki embeds.
 		if bytes.Contains(data, []byte("![[")) {
 			for _, m := range wikiImageLinkRe.FindAllSubmatch(data, -1) {
 				if len(m) < 2 {
@@ -249,48 +223,10 @@ func (g *Vault) BuildImageNoteLinks() error {
 			}
 		}
 
-		// Match ![alt](https://...) remote image URLs; compute URL fingerprint.
-		if bytes.Contains(data, []byte("https://")) || bytes.Contains(data, []byte("http://")) {
-			for _, m := range mdImageURLRe.FindAllSubmatch(data, -1) {
-				if len(m) < 2 {
-					continue
-				}
-				rawURL := strings.TrimSpace(string(m[1]))
-				h := sha256.Sum256([]byte(rawURL))
-				sig := hex.EncodeToString(h[:])[:12]
-				urlSigs[sig] = appendUniqueStr(urlSigs[sig], noteName)
-			}
-		}
-
 		return nil
 	})
 	if err != nil {
 		return fmt.Errorf("storage: walk notes for image links: %w", err)
-	}
-
-	// Phase 1.5: walk image files; match filenames containing a URL fingerprint
-	// to the notes that referenced that URL. This reconstructs imgfetch links.
-	if len(urlSigs) > 0 {
-		_ = filepath.WalkDir(g.root, func(absPath string, d os.DirEntry, walkErr error) error {
-			if walkErr != nil || d.IsDir() {
-				if d != nil && d.IsDir() && strings.HasPrefix(d.Name(), ".") {
-					return filepath.SkipDir
-				}
-				return nil
-			}
-			if !IsImagePath(d.Name()) {
-				return nil
-			}
-			name := d.Name()
-			for sig, noteNames := range urlSigs {
-				if strings.Contains(name, sig) {
-					for _, n := range noteNames {
-						links[name] = appendUniqueStr(links[name], n)
-					}
-				}
-			}
-			return nil
-		})
 	}
 
 	// Phase 2: write results to DB (exclusive lock).

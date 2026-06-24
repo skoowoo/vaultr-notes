@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-// JSONEventStream parses json-event-stream (Codex / Gemini / OpenCode / cursor-agent).
+// JSONEventStream parses json-event-stream (Codex / OpenCode / cursor-agent).
 type JSONEventStream struct {
 	kind   string
 	buffer string
@@ -82,8 +82,6 @@ func (j *JSONEventStream) dispatch(obj map[string]any, raw string) bool {
 	switch j.kind {
 	case "opencode":
 		return j.openCode(obj, raw)
-	case "gemini":
-		return j.gemini(obj)
 	case "cursor-agent":
 		return j.cursor(obj)
 	case "codex":
@@ -130,33 +128,6 @@ func (j *JSONEventStream) openCode(obj map[string]any, raw string) bool {
 		return true
 	case "error":
 		j.on(map[string]any{"type": "error", "message": extractErr(obj["error"], obj["message"], "OpenCode error"), "raw": raw})
-		return true
-	}
-	return false
-}
-
-func (j *JSONEventStream) gemini(obj map[string]any) bool {
-	typ, _ := obj["type"].(string)
-	switch typ {
-	case "init":
-		j.on(map[string]any{"type": "status", "label": "initializing", "model": obj["model"]})
-		sid := toString(obj["session_id"])
-		if sid == "" {
-			sid = toString(obj["sessionId"])
-		}
-		if sid != "" {
-			j.on(sessionAgentEvent(sid))
-		}
-		return true
-	case "message":
-		if obj["role"] == "assistant" {
-			if c, ok := obj["content"].(string); ok && c != "" {
-				j.on(map[string]any{"type": "text_delta", "delta": c})
-			}
-		}
-		return true
-	case "result":
-		j.on(map[string]any{"type": "usage", "usage": obj["stats"]})
 		return true
 	}
 	return false

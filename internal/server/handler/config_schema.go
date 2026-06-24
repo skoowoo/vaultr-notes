@@ -80,11 +80,6 @@ func buildConfigSchema() []SchemaField {
 			Description: "Pull/push interval; empty or 0 disables periodic remote sync.", Default: "24h"},
 {Key: "plugins.compile.enabled", Type: "bool", Section: "plugins.compile", Label: "Compile enabled",
 			Description: "When true, automated LLM knowledge compilation can run.", Default: false},
-		{Key: "plugins.image_fetch.enabled", Type: "bool", Section: "plugins.image_fetch", Label: "Image fetch enabled",
-			Description: "When true, new notes trigger download of remote http(s) image URLs into assets.", Default: false},
-		{Key: "plugins.image_fetch.assets_dir", Type: "string", Section: "plugins.image_fetch", Label: "Assets directory",
-			Description: "Vault-relative folder (no leading slash); files go under YYYYMM subfolders. Default _assets.",
-			Default:     "_assets"},
 
 		{Key: "plugins.wechat.enabled", Type: "bool", Section: "plugins.wechat", Label: "WeChat bridge enabled",
 			Description: "When true, poll WeChat iLink for direct messages and emit wechat_message mate events.", Default: false},
