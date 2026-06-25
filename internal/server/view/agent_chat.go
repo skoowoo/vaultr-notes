@@ -25,11 +25,10 @@ func (vh *ViewHandler) AgentChat(w http.ResponseWriter, r *http.Request) {
 // ── template ──────────────────────────────────────────────────────────────────
 
 var agentChatHTML = `<!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en" data-theme="neo">
 ` + headHTML(headOpts{title: "Mates — Vaultr", withFonts: true, withTW: true, withAlpine: true, withHTMX: true}) + `  <style>
-    :root{` + appTokensDark + `}
-    html[data-theme="light"] {` + appTokensLight + `}
-` + navCSS + pixelCSS + topbarCSS + agentChatCSS + searchOverlayStyles + confirmDialogCSS + shortDialogCSS + drawerCSS + noteSharedCSS + noteEditorCSS + settingsModalCSS + `
+` + appTokensCSS + `
+` + navCSS + neoCSS + topbarCSS + agentChatCSS + searchOverlayStyles + confirmDialogCSS + shortDialogCSS + drawerCSS + noteSharedCSS + noteEditorCSS + settingsModalCSS + `
   </style>
   <script src="/static/vendor/marked.min.js"></script>
   <script src="/static/vendor/dompurify.min.js"></script>
@@ -52,7 +51,7 @@ var agentChatHTML = `<!DOCTYPE html>
 
   <script>
   document.addEventListener('alpine:init', () => {
-` + themeStoreScript + `
+` + alpineStoresScript + `
   });
 
 ` + keysJS + drawerScript + searchOverlayScript + confirmDialogJS + shortDialogJS + settingsCtrlJS + agentChatJS + `

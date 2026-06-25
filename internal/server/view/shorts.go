@@ -443,11 +443,10 @@ var shortsCalendarTemplate = template.Must(template.New("shorts-calendar").Parse
 var shortsStreamTemplate = template.Must(template.New("shorts-stream").Parse(shortsStreamHTML))
 
 var shortsPageHTML = `<!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en" data-theme="neo">
 ` + headHTML(headOpts{title: "Shorts — Vaultr", withFonts: true, withTW: true, withAlpine: true, withHTMX: true}) + `  <style>
-    :root {` + appTokensDark + `}
-    html[data-theme="light"] {` + appTokensLight + `}
-` + infoDialogCSS + navCSS + pixelCSS + topbarCSS + shortsCSS + drawerCSS + noteSharedCSS + noteEditorCSS + searchOverlayStyles + shortDialogCSS + settingsModalCSS + `
+` + appTokensCSS + `
+` + infoDialogCSS + navCSS + neoCSS + topbarCSS + shortsCSS + drawerCSS + noteSharedCSS + noteEditorCSS + searchOverlayStyles + shortDialogCSS + settingsModalCSS + `
   </style>
 </head>
 <body x-data="shortsCtrl()">
@@ -469,7 +468,7 @@ var shortsPageHTML = `<!DOCTYPE html>
 
   <script>
   document.addEventListener('alpine:init', () => {
-` + themeStoreScript + `
+` + alpineStoresScript + `
   });
 
 ` + keysJS + drawerScript + searchOverlayScript + infoDialogJS + shortDialogJS + settingsCtrlJS + shortsJS + `

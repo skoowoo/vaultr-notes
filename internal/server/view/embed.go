@@ -11,8 +11,8 @@ var infoDialogHTML string
 //go:embed assets/info_dialog.js
 var infoDialogJS string
 
-//go:embed assets/pixel.css
-var pixelCSS string
+//go:embed assets/neo.css
+var neoCSS string
 
 //go:embed assets/short_dialog.css
 var shortDialogCSS string

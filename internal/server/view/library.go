@@ -552,16 +552,10 @@ var focusOOBTemplate = template.Must(template.New("focusoob").Parse(libraryFocus
 var unfocusOOBTemplate = template.Must(template.New("unfocusoob").Parse(libraryUnfocusOOBHTML))
 
 var libraryPageHTML = `<!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en" data-theme="neo">
 ` + headHTML(headOpts{title: "Library — Vaultr", withFonts: true, withTW: true, withAlpine: true, withHTMX: true}) + `  <style>
-    /* ── Design System Tokens ───────────────────────────────────── */
-    :root {` + appTokensDark + `
-      --cnt-bg:rgba(244,244,245,0.07); --cnt-tx:rgba(244,244,245,0.38);
-    }
-    html[data-theme="light"] {` + appTokensLight + `
-      --cnt-bg:rgba(17,17,17,0.07); --cnt-tx:rgba(17,17,17,0.42);
-    }
-` + navCSS + pixelCSS + topbarCSS + libraryCSS + drawerCSS + noteSharedCSS + noteEditorCSS + searchOverlayStyles + confirmDialogCSS + shortDialogCSS + settingsModalCSS + `
+` + appTokensCSS + `
+` + navCSS + neoCSS + topbarCSS + libraryCSS + drawerCSS + noteSharedCSS + noteEditorCSS + searchOverlayStyles + confirmDialogCSS + shortDialogCSS + settingsModalCSS + `
   </style>
   <script>
   (function(){
@@ -594,7 +588,7 @@ var libraryPageHTML = `<!DOCTYPE html>
 
   <script>
   document.addEventListener('alpine:init', () => {
-` + themeStoreScript + `
+` + alpineStoresScript + `
   });
 
 ` + keysJS + drawerScript + searchOverlayScript + confirmDialogJS + shortDialogJS + settingsCtrlJS + libraryJS + `

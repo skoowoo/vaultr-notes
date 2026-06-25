@@ -56,7 +56,6 @@
       lightbox: null,
       selectMode: false,
       selectedCount: 0,
-      get dark() { return Alpine.store('theme').dark; },
       init() {
         this.initDrawer();
         _lbOpen = (data) => { this.lightbox = data; };

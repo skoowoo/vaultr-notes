@@ -13,34 +13,34 @@ const searchOverlayStyles = `
       color: var(--fg);
       caret-color: var(--link);
       font-size: var(--text-body);
-      font-family: var(--font-sans);
+      font-family: var(--font-ui);
       letter-spacing: 0;
     }
     .srch-input::placeholder { color: var(--srch-ph); }
     .srch-kbd {
       color: var(--srch-kbd-fg);
       border-color: var(--srch-kbd-bd);
-      font-family: var(--font-sans);
+      font-family: var(--font-ui);
       font-size: var(--text-2xs);
       letter-spacing: 0.03em;
       line-height: 1;
     }
     .srch-btn {
-      color: var(--srch-btn-fg);
+      color: var(--muted);
       border-color: var(--srch-panel-bd);
       transition: color 150ms, border-color 150ms, background 150ms;
-      font-family: var(--font-sans);
+      font-family: var(--font-ui);
     }
     .srch-btn:hover {
-      color: var(--srch-btn-fh);
-      border-color: var(--srch-btn-bh);
-      background: var(--srch-btn-bgh);
+      color: var(--fg);
+      border-color: var(--hr);
+      background: var(--card-bg);
     }
     .srch-shortcut {
-      font-family: var(--font-sans);
+      font-family: var(--font-ui);
       font-size: var(--text-2xs);
       letter-spacing: 0.04em;
-      color: var(--srch-btn-fg);
+      color: var(--muted);
     }
     #search-results a {
       transition: background 100ms;
@@ -81,20 +81,20 @@ const searchOverlayStyles = `
       color: var(--sr-em);
       font-size: var(--text-sm);
       font-style: italic;
-      font-family: var(--font-sans);
+      font-family: var(--font-ui);
     }
     .srch-footer {
       border-color: var(--hr) !important;
     }
     .srch-hint {
       font-size: var(--text-xs);
-      font-family: var(--font-sans);
+      font-family: var(--font-ui);
       color: var(--sr-tm);
       letter-spacing: 0.01em;
     }
     .srch-hint kbd {
       display: inline-flex; align-items: center; justify-content: center;
-      font-family: var(--font-sans);
+      font-family: var(--font-ui);
       font-size: var(--text-2xs);
       color: var(--srch-kbd-fg);
       border: 1px solid var(--srch-kbd-bd);
@@ -152,7 +152,7 @@ const searchOverlayStyles = `
     .srch-icon-area.has-mode .srch-icon { color: var(--link); }
     .srch-mode-chip {
       font-size: var(--text-2xs);
-      font-family: var(--font-sans);
+      font-family: var(--font-ui);
       font-weight: 600;
       color: var(--link);
       letter-spacing: 0.06em;
@@ -169,7 +169,7 @@ const searchOverlayStyles = `
     .srch-mode-menu { border-color: var(--hr) !important; }
     .srch-mode-item {
       color: var(--fg);
-      font-family: var(--font-sans);
+      font-family: var(--font-ui);
       transition: background 100ms;
     }
     .srch-mode-item.is-active { background: var(--srch-av); }

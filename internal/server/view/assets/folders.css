@@ -4,7 +4,7 @@
     body {
       display: flex; flex-direction: column; height: 100vh; overflow: hidden;
       background: var(--bg); color: var(--fg);
-      font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-family: var(--font-ui);
       -webkit-font-smoothing: antialiased;
     }
     .lib-body { flex: 1; display: flex; min-height: 0; overflow: hidden; }
@@ -31,12 +31,12 @@
     /* ── hero ────────────────────────────────────────────── */
     .home-hero { width: 100%; max-width: 100%; }
     .home-hero-title {
-      font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+      font-family: var(--font-ui);
       font-size: clamp(1rem, 2vw, 1.5rem);
       font-weight: 600; color: var(--fg);
       margin: 0; letter-spacing: -0.03em; line-height: 1.1;
     }
-    html[data-pixel="on"] .home-hero-title {
+    html[data-theme="neo"] .home-hero-title {
       font-family: "Press Start 2P", monospace;
       font-size: clamp(0.75rem, 1.6vw, 1.05rem);
       font-weight: 400; letter-spacing: 0.02em; line-height: 1.4;
@@ -76,17 +76,16 @@
     /* ── folder cards ────────────────────────────────────── */
     .folder-card {
       position: relative; width: 100%; max-width: 150px;
-      aspect-ratio: 1 / 1; height: auto; border: 1px solid var(--card-bd);
+      aspect-ratio: 4 / 3; height: auto; border: 1px solid var(--card-bd);
       border-radius: var(--radius-lg); background: var(--bg);
-      overflow: hidden; transition: border-color 120ms, background 120ms;
+      overflow: hidden; transition: box-shadow 120ms;
       justify-self: start; cursor: pointer;
     }
     .folder-card { background: var(--bg); }
-    .folder-card:hover { border-color: rgba(255,255,255,.18); background: var(--surface-soft); }
-    html[data-theme="light"] .folder-card:hover { border-color: rgba(0,0,0,.14); background: var(--surface-soft); }
+    .folder-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,.3); }
     .folder-card-inner {
       display: flex; flex-direction: column;
-      align-items: flex-start; justify-content: space-between;
+      align-items: flex-start; justify-content: flex-start; gap: 8px;
       height: 100%; padding: 12px;
     }
     .folder-card-icon {

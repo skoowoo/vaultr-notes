@@ -21,7 +21,6 @@
       selectedTag: '',
       selectedIndex: '',
       selectedFocus: '',
-      get dark() { return Alpine.store('theme').dark; },
       refresh() { doLibraryRefresh(); },
 
       init() {

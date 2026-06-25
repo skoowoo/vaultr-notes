@@ -11,7 +11,7 @@ const svgPxBack = `<svg fill="currentColor" viewBox="0 0 24 24"><path d="M14 4h2
 const svgBack = `<svg fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m15 18-6-6 6-6"/></svg>`
 
 // topbarIconBack bundles the smooth back chevron (shown by default) with the pixel variant
-// (class lib-ai-px, hidden by default). pixelCSS swaps them when html[data-pixel="on"] is active.
+// (class lib-ai-px, hidden by default). neo.css swaps them when html[data-theme=\"neo\"] is active.
 const topbarIconBack = svgBack + `<svg class="lib-ai-px" fill="currentColor" viewBox="0 0 24 24"><path d="M14 4h2v2h-2zM12 6h2v2h-2zM10 8h2v2h-2zM8 10h2v4H8zM10 14h2v2h-2zM12 16h2v2h-2zM14 18h2v2h-2z"/></svg>`
 
 // Smooth (non-pixel) variants of the three shared topbar action icons — Lucide icons.
@@ -20,8 +20,8 @@ const svgPanel = `<svg fill="none" stroke="currentColor" stroke-width="1.7" view
 const svgSearch = `<svg fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path stroke-linecap="round" stroke-linejoin="round" d="m21 21-4.34-4.34"/></svg>`
 
 // topbarIconReload / topbarIconPanel / topbarIconSearch bundle a smooth icon (shown by
-// default) and a pixel icon (class lib-ai-px, hidden by default).  pixelCSS swaps them
-// when html[data-pixel="on"] is active.
+// default) and a pixel icon (class lib-ai-px, hidden by default).  neoCSS swaps them
+// when html[data-theme="neo"] is active.
 const topbarIconReload = svgReload + `<svg class="lib-ai-px" fill="currentColor" viewBox="0 0 24 24"><path d="M16 4h2v6h-2zm-2-2h2v2h-2zm0 2h2v8h-2zM4 8H2v5h2z"/><path d="M4 6h16v2H4zm4 14H6v-6h2zm2 2H8v-2h2zm0-2H8v-8h2zm10-4h2v-5h-2z"/><path d="M20 18H4v-2h16z"/></svg>`
 const topbarIconPanel = svgPanel + `<svg class="lib-ai-px" fill="currentColor" viewBox="0 0 24 24"><path d="M4 2h16v2H4zm0 18h16v2H4zM2 4h2v16H2zm18 0h2v16h-2zm-6 0h2v16h-2z"/></svg>`
 const topbarIconSearch = svgSearch + `<svg class="lib-ai-px" fill="currentColor" viewBox="0 0 24 24"><path d="M22 22h-2v-2h2v2Zm-2-2h-2v-2h2v2Zm-6-2H6v-2h8v2Zm4 0h-2v-2h2v2ZM6 16H4v-2h2v2Zm10 0h-2v-2h2v2ZM4 14H2V6h2v8Zm14 0h-2V6h2v8ZM6 6H4V4h2v2Zm10 0h-2V4h2v2Zm-2-2H6V2h8v2Z"/></svg>`

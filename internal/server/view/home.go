@@ -130,11 +130,10 @@ var homeTemplateFuncs = template.FuncMap{
 }
 
 var homePageHTML = `<!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en" data-theme="neo">
 ` + headHTML(headOpts{title: "Home — Vaultr", withFonts: true, withTW: true, withAlpine: true, withHTMX: true}) + `  <style>
-    :root {` + appTokensDark + `}
-    html[data-theme="light"] {` + appTokensLight + `}
-` + infoDialogCSS + navCSS + pixelCSS + topbarCSS + homeCSS + drawerCSS + noteSharedCSS + noteEditorCSS + searchOverlayStyles + confirmDialogCSS + shortDialogCSS + settingsModalCSS + `
+` + appTokensCSS + `
+` + infoDialogCSS + navCSS + neoCSS + topbarCSS + homeCSS + drawerCSS + noteSharedCSS + noteEditorCSS + searchOverlayStyles + confirmDialogCSS + shortDialogCSS + settingsModalCSS + `
   </style>
   <script>
   /* Apply hero background synchronously before first paint to avoid flash */
@@ -164,7 +163,7 @@ var homePageHTML = `<!DOCTYPE html>
 
   <script>
   document.addEventListener('alpine:init', () => {
-` + themeStoreScript + `
+` + alpineStoresScript + `
   });
 
 ` + keysJS + drawerScript + searchOverlayScript + confirmDialogJS + infoDialogJS + shortDialogJS + settingsCtrlJS + homeJS + `

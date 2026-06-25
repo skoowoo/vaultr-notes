@@ -217,11 +217,10 @@ var dirNotesFragTemplate = template.Must(template.New("dirnotesfrag").Funcs(dirT
 var dirRefreshTemplate = template.Must(template.New("dirrefresh").Funcs(dirTemplateFuncs).Parse(dirRefreshHTML))
 
 var dirPageHTML = `<!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en" data-theme="neo">
 ` + headHTML(headOpts{title: "Folder — Vaultr", withFonts: true, withTW: true, withAlpine: true, withHTMX: true}) + `  <style>
-    :root {` + appTokensDark + `}
-    html[data-theme="light"] {` + appTokensLight + `}
-` + infoDialogCSS + navCSS + pixelCSS + topbarCSS + dirCSS + drawerCSS + noteSharedCSS + noteEditorCSS + searchOverlayStyles + confirmDialogCSS + shortDialogCSS + settingsModalCSS + `
+` + appTokensCSS + `
+` + infoDialogCSS + navCSS + neoCSS + topbarCSS + dirCSS + drawerCSS + noteSharedCSS + noteEditorCSS + searchOverlayStyles + confirmDialogCSS + shortDialogCSS + settingsModalCSS + `
   </style>
   <script>
   /* Apply hero background synchronously before first paint to avoid flash */
@@ -254,7 +253,7 @@ var dirPageHTML = `<!DOCTYPE html>
 
   <script>
   document.addEventListener('alpine:init', () => {
-` + themeStoreScript + `
+` + alpineStoresScript + `
   });
 
 ` + keysJS + drawerScript + searchOverlayScript + confirmDialogJS + infoDialogJS + shortDialogJS + settingsCtrlJS + dirJS + `

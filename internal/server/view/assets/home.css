@@ -3,7 +3,7 @@
     body {
       display: flex; flex-direction: column; height: 100vh; overflow: hidden;
       background: var(--bg); color: var(--fg);
-      font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-family: var(--font-ui);
       -webkit-font-smoothing: antialiased;
     }
     .lib-body { flex: 1; display: flex; min-height: 0; overflow: hidden; }
@@ -97,7 +97,7 @@
     }
     .home-hero-title {
       font-family: "Press Start 2P", monospace;
-      font-size: clamp(0.8rem, 1.8vw, 1.2rem);
+      font-size: clamp(1.2rem, 2.2vw, 1.8rem);
       font-weight: 400;
       color: var(--fg);
       margin: 0;
@@ -165,7 +165,7 @@
     }
     .home-nav-btn {
       height: 36px; padding: 0 12px;
-      background: var(--surface-soft); border: 1px solid var(--card-bd);
+      background: var(--bg); border: 1px solid var(--card-bd);
       border-radius: 8px;
       display: inline-flex; flex-direction: row; align-items: center; gap: 7px;
       cursor: pointer; text-align: left; color: var(--fg);
@@ -173,9 +173,9 @@
       transition: background 120ms, border-color 120ms;
       font-family: inherit;
     }
-    .home-nav-btn:hover { background: var(--card-hov); border-color: var(--muted); }
+    .home-nav-btn:hover { background: var(--bg); border-color: var(--card-bd); }
     .home-nav-btn:active { opacity: 0.85; }
-    .home-nav-icon { width: 15px; height: 15px; color: var(--fg); opacity: 0.55; flex-shrink: 0; }
+    .home-nav-icon { width: 15px; height: 15px; color: currentColor; opacity: 0.55; flex-shrink: 0; }
     .home-nav-title {
       font-size: var(--text-base); font-weight: 600;
       white-space: nowrap; letter-spacing: 0;
@@ -233,8 +233,8 @@
       content-visibility: auto;
       contain-intrinsic-size: 0 var(--card-note-h);
     }
-    .card:hover { background: var(--surface-soft); border-color: rgba(255,255,255,.2); }
-    html[data-theme="light"] .card:hover { background: var(--surface-soft); border-color: rgba(0,0,0,.18); }
+    .card:hover { background: var(--surface-soft); }
+    html[data-theme="neo"] .card:hover { background: var(--bg); border-color: var(--card-bd); }
 
     .card-a {
       display: flex; flex-direction: column; justify-content: space-between;
@@ -294,7 +294,7 @@
       position: relative;
       width: 100%;
       max-width: 150px;
-      aspect-ratio: 1 / 1;
+      aspect-ratio: 4 / 3;
       height: auto;
       border: 1px solid var(--card-bd);
       border-radius: var(--radius-lg);
@@ -305,11 +305,11 @@
       cursor: pointer;
     }
     .folder-card { background: var(--bg); }
-    .folder-card:hover { border-color: rgba(255,255,255,.18); background: var(--surface-soft); }
-    html[data-theme="light"] .folder-card:hover { border-color: rgba(0,0,0,.14); background: var(--surface-soft); }
+    .folder-card:hover { background: var(--surface-soft); }
+    html[data-theme="neo"] .folder-card:hover { background: var(--bg); border-color: var(--card-bd); }
     .folder-card-inner {
       display: flex; flex-direction: column;
-      align-items: flex-start; justify-content: space-between;
+      align-items: flex-start; justify-content: flex-start; gap: 8px;
       height: 100%; padding: 12px;
     }
     .folder-card-icon {
@@ -331,6 +331,7 @@
     }
     .folder-card .folder-card-icon { color: var(--muted); opacity: 0.55; }
     .folder-card:hover .folder-card-icon { opacity: 1; transform: scale(1.06); }
+    html[data-theme="neo"] .folder-card:hover .folder-card-icon { opacity: 0.55; transform: none; }
     /* ── Pinned card bookmark watermark ──────────────────────── */
     .card-pin-mark {
       position: absolute; right: 10px; top: -3px;
@@ -381,13 +382,13 @@
       font-variant-numeric: tabular-nums;
       color: var(--muted-soft);
       opacity: 1;
-      font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-family: var(--font-sans);
     }
     .short-entry-content.short-entry-prose {
       font-size: var(--text-base);
       line-height: 1.6;
       color: var(--body);
-      font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-family: var(--font-sans);
     }
     .short-entry-prose > :first-child { margin-top: 0 !important; }
     .short-entry-prose > :last-child { margin-bottom: 0 !important; }
@@ -398,7 +399,7 @@
       font-weight: 500;
       margin: 0.55em 0 0.3em;
       letter-spacing: -0.01em;
-      color: var(--body-strong);
+      color: var(--fg);
     }
     .short-entry-prose pre, .short-entry-prose code {
       font-size: var(--text-xs);

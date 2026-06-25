@@ -86,11 +86,10 @@ var foldersTemplateFuncs = template.FuncMap{
 }
 
 var foldersPageHTML = `<!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en" data-theme="neo">
 ` + headHTML(headOpts{title: "Folders — Vaultr", withFonts: true, withTW: true, withAlpine: true, withHTMX: true}) + `  <style>
-    :root {` + appTokensDark + `}
-    html[data-theme="light"] {` + appTokensLight + `}
-` + navCSS + pixelCSS + topbarCSS + foldersCSS + drawerCSS + noteSharedCSS + noteEditorCSS + searchOverlayStyles + confirmDialogCSS + shortDialogCSS + settingsModalCSS + `
+` + appTokensCSS + `
+` + navCSS + neoCSS + topbarCSS + foldersCSS + drawerCSS + noteSharedCSS + noteEditorCSS + searchOverlayStyles + confirmDialogCSS + shortDialogCSS + settingsModalCSS + `
   </style>
   <script>
   /* Apply hero background synchronously before first paint to avoid flash */
@@ -123,7 +122,7 @@ var foldersPageHTML = `<!DOCTYPE html>
 
   <script>
   document.addEventListener('alpine:init', () => {
-` + themeStoreScript + `
+` + alpineStoresScript + `
   });
 
 ` + keysJS + drawerScript + searchOverlayScript + confirmDialogJS + shortDialogJS + settingsCtrlJS + foldersJS + `

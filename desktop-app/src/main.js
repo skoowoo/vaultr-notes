@@ -500,9 +500,8 @@ ipcMain.on("set-view-bg-color", (event, color) => {
     if (v.webContents.isDestroyed() || v.webContents === senderWc) continue;
     v.webContents.executeJavaScript(`(function(){
       try{
-        var pref=localStorage.getItem('theme')||'auto';
-        var dark=pref==='auto'?window.matchMedia('(prefers-color-scheme: dark)').matches:pref==='dark';
-        document.documentElement.setAttribute('data-theme',dark?'dark':'light');
+        var theme='neo';
+        document.documentElement.setAttribute('data-theme',theme);
       }catch(_){}
     })()`).catch(() => {});
   }

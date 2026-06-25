@@ -26,7 +26,7 @@ body {
   height: 100vh;
   background: var(--bg);
   color: var(--fg);
-  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: var(--font-ui);
   -webkit-font-smoothing: antialiased;
 }
 
@@ -171,12 +171,6 @@ body {
 
 .tag-card:hover {
   background: var(--surface-soft);
-  border-color: rgba(255, 255, 255, 0.12);
-}
-
-html[data-theme="light"] .tag-card:hover {
-  background: var(--surface-soft);
-  border-color: rgba(0, 0, 0, 0.13);
 }
 
 .tag-name {
@@ -216,12 +210,11 @@ html[data-theme="light"] .tag-card:hover {
 
 .note-card:hover {
   background: var(--surface-soft);
-  border-color: rgba(255, 255, 255, 0.11);
 }
 
-html[data-theme="light"] .note-card:hover {
-  background: var(--surface-soft);
-  border-color: rgba(0, 0, 0, 0.12);
+html[data-theme="neo"] .note-card:hover {
+  background: var(--bg);
+  border-color: var(--card-bd);
 }
 
 .note-title-row {
@@ -439,9 +432,6 @@ html[data-theme="light"] .note-card:hover {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18), 0 1px 2px rgba(0, 0, 0, 0.10);
 }
 
-html[data-theme="light"] .col-mode-tab.active {
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.10), 0 1px 2px rgba(0, 0, 0, 0.06);
-}
 
 /* ── Tag selected state ─────────────────────────────────────── */
 .tag-card {
@@ -453,10 +443,6 @@ html[data-theme="light"] .col-mode-tab.active {
   border-color: rgba(var(--accent-rgb), 0.40);
 }
 
-html[data-theme="light"] .tag-card.selected {
-  background: rgba(var(--accent-rgb), 0.07);
-  border-color: rgba(var(--accent-rgb), 0.35);
-}
 
 .tag-card.selected .tag-name {
   color: var(--link);
@@ -476,16 +462,15 @@ html[data-theme="light"] .tag-card.selected {
   border-color: rgba(var(--accent-rgb), 0.65);
 }
 
-html[data-theme="light"] .note-card-pinned,
-html[data-theme="light"] .note-card.is-open {
-  background: rgba(var(--accent-rgb), 0.10);
-  border-color: rgba(var(--accent-rgb), 0.42);
+html[data-theme="neo"] .note-card-pinned,
+html[data-theme="neo"] .note-card.is-open {
+  background: var(--bg);
+  border-color: var(--card-bd);
 }
-
-html[data-theme="light"] .note-card-pinned:hover,
-html[data-theme="light"] .note-card.is-open:hover {
-  background: rgba(var(--accent-rgb), 0.16);
-  border-color: rgba(var(--accent-rgb), 0.58);
+html[data-theme="neo"] .note-card-pinned:hover,
+html[data-theme="neo"] .note-card.is-open:hover {
+  background: var(--bg);
+  border-color: var(--card-bd);
 }
 
 .note-card-pinned .note-name,
@@ -521,7 +506,7 @@ html[data-theme="light"] .note-card.is-open:hover {
 
 .home-hero-title {
   font-family: "Press Start 2P", monospace;
-  font-size: clamp(0.8rem, 1.8vw, 1.2rem);
+  font-size: clamp(1.2rem, 2.2vw, 1.8rem);
   font-weight: 400;
   color: var(--fg);
   margin: 0;
@@ -645,10 +630,6 @@ html.macos .drawer-overlay.open {
   border-color: rgba(var(--accent-rgb), 0.40) !important;
 }
 
-html[data-theme="light"] .note-card.is-linked {
-  background: rgba(var(--accent-rgb), 0.07) !important;
-  border-color: rgba(var(--accent-rgb), 0.30) !important;
-}
 
 .note-card.is-linked .note-name {
   color: var(--link);
@@ -679,8 +660,9 @@ html[data-theme="light"] .note-card.is-linked {
   stroke-linejoin: miter;
 }
 
-html[data-theme="light"] .lib-conn-line {
-  stroke: rgba(var(--accent-rgb), 0.55);
+html[data-theme="neo"] .lib-conn-line {
+  stroke: var(--accent);
+  stroke-width: 2;
 }
 
 /* ── Left nav sidebar (index / tag col) ────────────────────── */
@@ -716,20 +698,13 @@ html[data-theme="light"] .lib-conn-line {
   border: none;
 }
 
-html[data-theme="light"] .tags-col .tag-card:hover {
-  background: rgba(0, 0, 0, 0.07);
-}
-
-/* Selected: solid coral fill — consistent across both themes.
-       Use html[data-theme] prefix to beat the earlier light-theme rule (0,3,1 > 0,3,0). */
-.tags-col .tag-card.selected,
-html[data-theme="light"] .tags-col .tag-card.selected {
+/* Selected: solid coral fill */
+.tags-col .tag-card.selected {
   background: var(--link);
   border: none;
 }
 
-.tags-col .tag-card.selected .tag-name,
-html[data-theme="light"] .tags-col .tag-card.selected .tag-name {
+.tags-col .tag-card.selected .tag-name {
   color: var(--btn-primary-fg);
   font-weight: var(--fw-semibold);
 }

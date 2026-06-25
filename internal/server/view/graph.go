@@ -180,20 +180,15 @@ func (vh *ViewHandler) KnowledgeGraphData(w http.ResponseWriter, r *http.Request
 // ─── template ──────────────────────────────────────────────────────────────────
 
 var graphPageHTML = `<!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en" data-theme="neo">
 ` + headHTML(headOpts{title: "Knowledge Graph — Vaultr", withFonts: true, withTW: true, withAlpine: true, withHTMX: true}) + `
   <script src="/static/vendor/cytoscape.min.js"></script>
   <script src="/static/vendor/layout-base.js"></script>
   <script src="/static/vendor/cose-base.js"></script>
   <script src="/static/vendor/cytoscape-fcose.min.js"></script>
   <style>
-    :root {` + appTokensDark + `
-      --cnt-bg:rgba(244,244,245,0.07); --cnt-tx:rgba(244,244,245,0.38);
-    }
-    html[data-theme="light"] {` + appTokensLight + `
-      --cnt-bg:rgba(17,17,17,0.07); --cnt-tx:rgba(17,17,17,0.42);
-    }
-` + navCSS + pixelCSS + topbarCSS + drawerCSS + noteSharedCSS + noteEditorCSS + searchOverlayStyles + confirmDialogCSS + shortDialogCSS + settingsModalCSS + graphCSS + `
+` + appTokensCSS + `
+` + navCSS + neoCSS + topbarCSS + drawerCSS + noteSharedCSS + noteEditorCSS + searchOverlayStyles + confirmDialogCSS + shortDialogCSS + settingsModalCSS + graphCSS + `
   </style>
 </head>
 <body x-data="graphCtrl()" style="margin:0;padding:0;overflow:hidden">
@@ -261,16 +256,14 @@ var graphPageHTML = `<!DOCTYPE html>
               </button>
             </div>
 
-            <!-- Node info panel -->
+            <!-- Node info panel — floating card, top-right -->
             <div class="graph-node-panel" :class="{ open: !!nodePanel }">
-              <div class="graph-node-panel-header">
-                <div class="graph-node-panel-meta">
-                  <span class="graph-node-panel-type"
-                        x-show="nodePanel && nodePanel.entityType"
-                        x-text="nodePanel ? nodePanel.entityType : ''"></span>
-                  <span class="graph-node-panel-edges"
-                        x-text="nodePanel ? (nodePanel.edgeCount + (nodePanel.edgeCount === 1 ? ' connection' : ' connections')) : ''"></span>
-                </div>
+              <div class="graph-node-panel-row">
+                <span class="graph-node-panel-type"
+                      x-show="nodePanel && nodePanel.entityType"
+                      x-text="nodePanel ? nodePanel.entityType : ''"></span>
+                <span class="graph-node-panel-edges"
+                      x-text="nodePanel ? (nodePanel.edgeCount + (nodePanel.edgeCount === 1 ? ' link' : ' links')) : ''"></span>
                 <button type="button" class="graph-node-panel-close" @click="closeNodePanel()" title="Close">
                   <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path stroke-linecap="round" d="M18 6 6 18"/>
@@ -279,32 +272,15 @@ var graphPageHTML = `<!DOCTYPE html>
                 </button>
               </div>
               <div class="graph-node-panel-title" x-text="nodePanel ? nodePanel.label : ''"></div>
-              <div class="graph-node-panel-body">
-                <template x-if="nodePanel">
-                  <div class="graph-node-panel-cards">
-                    <div class="graph-node-section-label">Knowledge Unit</div>
-                    <button type="button" class="graph-node-card is-featured"
-                            @click="openNodeInDrawer(nodePanel.path, nodePanel.label, nodePanel.entityType)">
-                      <span class="graph-node-card-name" x-text="nodePanel.label"></span>
-                      <span class="graph-node-card-path" x-text="nodePanel.path"></span>
-                    </button>
-                    <template x-if="nodePanel.connected.length > 0">
-                      <div>
-                        <div class="graph-node-section-label" style="margin-top:0.35rem">Connected</div>
-                        <div style="display:flex;flex-direction:column;gap:0.35rem">
-                          <template x-for="cn in nodePanel.connected" :key="cn.path">
-                            <button type="button" class="graph-node-card"
-                                    @click="openNodeInDrawer(cn.path, cn.label, cn.entityType)">
-                              <span class="graph-node-card-name" x-text="cn.label"></span>
-                              <span class="graph-node-card-path" x-text="cn.path"></span>
-                            </button>
-                          </template>
-                        </div>
-                      </div>
-                    </template>
-                  </div>
-                </template>
-              </div>
+              <button type="button" class="graph-node-open-btn"
+                      @click="nodePanel && openNodeInDrawer(nodePanel.path, nodePanel.label, nodePanel.entityType)">
+                Open
+                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M15 3h6v6"/>
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M10 14 21 3"/>
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                </svg>
+              </button>
             </div>
 
             <div class="graph-loading" x-show="loading" x-cloak>
@@ -336,7 +312,7 @@ var graphPageHTML = `<!DOCTYPE html>
 
   <script>
   document.addEventListener('alpine:init', () => {
-` + themeStoreScript + `
+` + alpineStoresScript + `
   });
 
 ` + keysJS + drawerScript + searchOverlayScript + confirmDialogJS + shortDialogJS + settingsCtrlJS + `

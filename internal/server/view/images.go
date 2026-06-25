@@ -169,11 +169,10 @@ func (vh *ViewHandler) ImagesGrid(w http.ResponseWriter, r *http.Request) {
 var imagesGridTemplate = template.Must(template.New("imagesgrid").Parse(imagesGridHTML))
 
 var imagesPageHTML = `<!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en" data-theme="neo">
 ` + headHTML(headOpts{title: "Images — Vaultr", withFonts: true, withTW: true, withAlpine: true, withHTMX: true}) + `  <style>
-    :root {` + appTokensDark + `}
-    html[data-theme="light"] {` + appTokensLight + `}
-` + navCSS + pixelCSS + topbarCSS + imagesCSS + drawerCSS + noteSharedCSS + noteEditorCSS + searchOverlayStyles + confirmDialogCSS + shortDialogCSS + settingsModalCSS + `
+` + appTokensCSS + `
+` + navCSS + neoCSS + topbarCSS + imagesCSS + drawerCSS + noteSharedCSS + noteEditorCSS + searchOverlayStyles + confirmDialogCSS + shortDialogCSS + settingsModalCSS + `
   </style>
 </head>
 <body x-data="imgCtrl()" :class="{ 'select-mode': selectMode }">
@@ -281,7 +280,7 @@ var imagesPageHTML = `<!DOCTYPE html>
 
   <script>
   document.addEventListener('alpine:init', () => {
-` + themeStoreScript + `
+` + alpineStoresScript + `
   });
 
 ` + keysJS + drawerScript + searchOverlayScript + confirmDialogJS + shortDialogJS + settingsCtrlJS + imagesJS + `

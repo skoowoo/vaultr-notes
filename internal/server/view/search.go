@@ -30,18 +30,11 @@ type searchResultItem struct {
 var searchFragTmpl = template.Must(template.New("searchfrag").Parse(`
 {{- if .}}
 {{- range .}}
-<a href="{{.URL}}" data-focus-url="{{.FocusURL}}" data-preview-path="{{.PreviewPath}}" data-note-is-knowledge="{{.IsKnowledge}}" data-note-is-index="{{.IsIndex}}" data-note-can-compile="{{.CanCompile}}" class="flex shrink-0 items-center gap-3 px-3.5 py-2.5 rounded-md cursor-pointer overflow-hidden">
-  <svg class="sr-icon w-[14px] h-[14px] flex-shrink-0" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24">
-    <path stroke-linecap="round" stroke-linejoin="round" d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/>
-    <path stroke-linecap="round" stroke-linejoin="round" d="M14 2v4a1 1 0 0 0 1 1h4"/>
-    <path stroke-linecap="round" d="M10 9H8"/>
-    <path stroke-linecap="round" d="M16 13H8"/>
-    <path stroke-linecap="round" d="M16 17H8"/>
-  </svg>
+<a href="{{.URL}}" data-focus-url="{{.FocusURL}}" data-preview-path="{{.PreviewPath}}" data-note-is-knowledge="{{.IsKnowledge}}" data-note-is-index="{{.IsIndex}}" data-note-can-compile="{{.CanCompile}}" class="flex shrink-0 items-center px-3 py-1.5 rounded-md cursor-pointer overflow-hidden">
   <div class="flex-1 min-w-0">
     <div class="sr-name truncate">{{.Name}}</div>
     {{- if or .DirLabel .UpdatedAt}}
-    <div class="sr-meta mt-[2px] grid grid-cols-[minmax(0,1fr)_auto] gap-x-2 items-baseline min-w-0">
+    <div class="sr-meta grid grid-cols-[minmax(0,1fr)_auto] gap-x-2 items-baseline min-w-0">
       <span class="sr-dir truncate min-w-0">{{.DirLabel}}</span>
       {{- if .UpdatedAt}}<span class="sr-time">{{.UpdatedAt}}</span>{{end}}
     </div>

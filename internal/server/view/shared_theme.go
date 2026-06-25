@@ -1,15 +1,11 @@
 package view
 
-// themeBootstrapScript is placed in <head> to apply the saved theme and pixel
-// preference before first paint, preventing flash-of-wrong-theme.
+// themeBootstrapScript is placed in <head> to apply the neo theme before first
+// paint. Hardcoded to neo — the only supported theme.
 const themeBootstrapScript = `  <script>(function(){
-  var BG_DARK='#0f0f0f',BG_LIGHT='#ffffff';
-  function syncViewBg(dark){if(window.vaultrDesktop&&window.vaultrDesktop.setViewBgColor)window.vaultrDesktop.setViewBgColor(dark?BG_DARK:BG_LIGHT);}
-  function applyTheme(pref){var d=pref==='auto'?window.matchMedia('(prefers-color-scheme: dark)').matches:pref==='dark';document.documentElement.setAttribute('data-theme',d?'dark':'light');syncViewBg(d);}
-  function applyPixel(v){document.documentElement.setAttribute('data-pixel',v==='on'?'on':'off');}
-  applyTheme(localStorage.getItem('theme')||'auto');
-  applyPixel(localStorage.getItem('pixel')||'off');
-  window.addEventListener('storage',function(e){if(e.key==='theme')applyTheme(e.newValue||'auto');if(e.key==='pixel')applyPixel(e.newValue||'off');});
+  try{if(localStorage.getItem('theme')==='pixel')localStorage.setItem('theme','neo');}catch(_){}
+  document.documentElement.setAttribute('data-theme','neo');
+  if(window.vaultrDesktop&&window.vaultrDesktop.setViewBgColor)window.vaultrDesktop.setViewBgColor('#ffffff');
 })()</script>`
 
 // electronBootstrapScript adds the 'electron' and 'macos' classes to <html>
@@ -50,41 +46,6 @@ const electronShellSafeReloadScript = `  <script>(function(){
   };
 })()</script>`
 
-// themeStoreScript is the Alpine.js store body for theme and pixel management.
+// alpineStoresScript initializes all Alpine.js global stores.
 // Wrap it inside a document.addEventListener('alpine:init', () => { … }) call.
-const themeStoreScript = `    Alpine.store('theme', {
-      pref: localStorage.getItem('theme') || 'auto',
-      get dark() {
-        if (this.pref === 'auto') return window.matchMedia('(prefers-color-scheme: dark)').matches;
-        return this.pref === 'dark';
-      },
-      set(pref) {
-        this.pref = pref;
-        localStorage.setItem('theme', pref);
-        this._apply();
-      },
-      _apply() {
-        var dark = this.dark;
-        document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
-        if (window.vaultrDesktop && window.vaultrDesktop.setViewBgColor)
-          window.vaultrDesktop.setViewBgColor(dark ? '#0f0f0f' : '#ffffff');
-      },
-      init() {
-        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
-          if (this.pref === 'auto') this._apply();
-        });
-      }
-    });
-    Alpine.store('pixel', {
-      enabled: localStorage.getItem('pixel') === 'on',
-      toggle() {
-        this.enabled = !this.enabled;
-        const v = this.enabled ? 'on' : 'off';
-        localStorage.setItem('pixel', v);
-        document.documentElement.setAttribute('data-pixel', v);
-      },
-      init() {
-        document.documentElement.setAttribute('data-pixel', this.enabled ? 'on' : 'off');
-      }
-    });
-    Alpine.store('settingsModal', { open: false });`
+const alpineStoresScript = `    Alpine.store('settingsModal', { open: false });`

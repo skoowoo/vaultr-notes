@@ -109,7 +109,6 @@
       background: var(--card-bg); border: 1px solid var(--card-bd); border-radius: var(--radius-md);
       box-shadow: 0 12px 36px rgba(0,0,0,0.35); z-index: 200;
     }
-    html[data-theme="light"] .drawer-path-ac { box-shadow: 0 12px 32px rgba(17,17,17,0.10); }
     .drawer-path-ac.open { display: block; }
     .drawer-path-ac li {
       padding: 0.4rem 0.65rem; font-size: var(--text-xs);
@@ -186,7 +185,6 @@
       border-radius: var(--radius-md);
       box-shadow: 0 8px 24px rgba(0,0,0,0.14);
     }
-    html[data-theme="light"] .drawer-more-menu { box-shadow: 0 8px 24px rgba(17,17,17,0.10); }
     .drawer-more-item {
       display: flex; align-items: center; gap: 0.45rem;
       width: 100%; padding: 0.4rem 0.55rem; border-radius: var(--radius-sm);
@@ -361,9 +359,6 @@
       border-radius: var(--radius-md);
       box-shadow: 0 4px 14px rgba(0,0,0,0.14), 0 1px 3px rgba(0,0,0,0.08);
       pointer-events: auto;
-    }
-    html[data-theme="light"] .milkdown-tooltip {
-      box-shadow: 0 4px 12px rgba(17,17,17,0.08), 0 1px 3px rgba(17,17,17,0.05);
     }
     .mdt-chip {
       display: inline-flex; align-items: center; justify-content: center;

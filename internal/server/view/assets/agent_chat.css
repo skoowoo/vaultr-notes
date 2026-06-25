@@ -5,7 +5,7 @@
     body {
       display: flex; flex-direction: column; height: 100vh;
       background: var(--bg); color: var(--fg);
-      font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-family: var(--font-ui);
       -webkit-font-smoothing: antialiased;
     }
 
@@ -84,10 +84,6 @@
       background: var(--bg); color: var(--fg);
       box-shadow: 0 1px 3px rgba(0,0,0,0.18), 0 1px 2px rgba(0,0,0,0.10);
     }
-    html[data-theme="light"] .conv-seg-btn.active {
-      box-shadow: 0 1px 3px rgba(0,0,0,0.10), 0 1px 2px rgba(0,0,0,0.06);
-    }
-
     /* ── Messages ───────────────────────────────────────────────── */
     .chat-scroll {
       flex: 1; overflow-y: auto;
@@ -255,9 +251,9 @@
       border-color: var(--link);
       box-shadow: 0 0 0 3px var(--input-focus-ring);
     }
-    html[data-pixel="on"] .chat-input-card:focus-within {
-      border-color: var(--link);
-      box-shadow: var(--px-d2) var(--px-shadow);
+    html[data-theme="neo"] .chat-input-card:focus-within {
+      border-color: var(--card-bd);
+      box-shadow: var(--px-d3) var(--px-shadow);
     }
     .chat-textarea {
       width: 100%; resize: none; border: none; outline: none;
@@ -346,7 +342,7 @@
     html.macos .drawer-overlay.open { -webkit-app-region: no-drag; }
 
     /* ── Pixel mode: let body dot-grid show through the messages area ─── */
-    html[data-pixel="on"] .chat-main { background: transparent; }
+    html[data-theme="neo"] .chat-main { background: transparent; }
 
     /* ── Run completion toast ─────────────────────────────── */
     .run-toast {
@@ -356,8 +352,7 @@
       font-size:var(--text-sm); font-weight:500;
       box-shadow:0 4px 20px rgba(0,0,0,0.18);
     }
-    .run-toast-ok  { background:rgba(34,197,94,0.10); border:1px solid rgba(34,197,94,0.28); color:#16a34a; }
-    html[data-theme="dark"] .run-toast-ok { color:#4ade80; border-color:rgba(74,222,128,0.28); background:rgba(74,222,128,0.08); }
+    .run-toast-ok  { background:var(--s-ok-bg); border:1px solid var(--s-ok-bd); color:var(--s-ok); }
     .run-toast-err { background:var(--s-err-bg); border:1px solid var(--s-err-bd); color:var(--s-err); }
     .run-toast-dismiss {
       flex-shrink:0; width:16px; height:16px; border-radius:3px; padding:0;

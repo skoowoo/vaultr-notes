@@ -17,7 +17,7 @@ const settingsModalCSS = `
       display: flex; flex-direction: column; overflow: hidden;
       box-shadow: 0 24px 64px rgba(0,0,0,0.45);
     }
-    html[data-theme="light"] .settings-modal-panel { box-shadow: 0 24px 64px rgba(0,0,0,0.18); }
+
     .settings-modal-bar {
       flex-shrink: 0; display: flex; align-items: center; justify-content: space-between;
       height: 40px; padding: 0 1rem; border-bottom: 1px solid var(--hr);
@@ -92,11 +92,11 @@ const settingsModalCSS = `
     .settings-apply-btn:disabled,
     .cfg-save-btn:disabled,
     .agents-toolbar-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-    .settings-apply-btn--danger { color: var(--s-err); border-color: rgba(217,112,112,0.25); }
-    .settings-apply-btn--danger:hover:not(:disabled) { background: rgba(217,112,112,0.06); border-color: rgba(217,112,112,0.4); }
+    .settings-apply-btn--danger { color: var(--s-err); border-color: var(--s-err-bd); }
+    .settings-apply-btn--danger:hover:not(:disabled) { background: var(--s-err-bg); border-color: var(--s-err-bd); }
     .settings-error { margin-top: 0.4rem; font-size: var(--text-xs); color: var(--s-err); }
 
-    /* ── Theme / effect segmented control ────────────────────── */
+    /* ── Effect segmented control ────────────────────────────── */
     .theme-seg {
       display: inline-flex; background: var(--surface-soft);
       border-radius: var(--radius-pill); padding: 4px; gap: 2px;
@@ -112,9 +112,6 @@ const settingsModalCSS = `
     .theme-seg-btn.active {
       background: var(--bg); color: var(--fg);
       box-shadow: 0 1px 3px rgba(0,0,0,0.18), 0 1px 2px rgba(0,0,0,0.10);
-    }
-    html[data-theme="light"] .theme-seg-btn.active {
-      box-shadow: 0 1px 3px rgba(0,0,0,0.10), 0 1px 2px rgba(0,0,0,0.06);
     }
     .theme-seg-btn svg { width: 13px; height: 13px; flex-shrink: 0; }
 
@@ -157,14 +154,14 @@ const settingsModalCSS = `
       background: transparent; overflow: hidden;
       transition: background 150ms, border-color 150ms;
     }
-    .cfg-section.is-open { background: var(--surface-soft); border-color: var(--hr); }
+    .cfg-section.is-open { background: var(--card-hov); border-color: var(--hr); }
     .cfg-section-head {
       display: flex; align-items: flex-start; justify-content: space-between;
       gap: 0.75rem; width: 100%; margin: 0; padding: 0.7rem 0.9rem;
       border: none; background: transparent; cursor: pointer;
       text-align: left; color: inherit; transition: background 120ms;
     }
-    .cfg-section-head:hover { background: var(--nav-act); }
+    .cfg-section-head:hover { background: var(--card-hov); }
     .cfg-section.is-open .cfg-section-head { border-bottom: 1px solid var(--hr); }
     .cfg-section-head-text { min-width: 0; flex: 1; }
     .cfg-section-title {
@@ -302,8 +299,7 @@ const settingsModalCSS = `
       transition: border-color 120ms, background 120ms;
       min-width: 0; overflow: hidden;
     }
-    .agent-card:hover { background: var(--surface-soft); border-color: rgba(255,255,255,0.11); }
-    html[data-theme="light"] .agent-card:hover { background: var(--surface-soft); border-color: rgba(0,0,0,0.12); }
+    .agent-card:hover { background: var(--card-hov); }
     .agent-card.unavailable { opacity: 0.48; }
     .agent-card-top {
       display: flex; align-items: center; gap: 0.6rem; min-width: 0;
@@ -431,23 +427,25 @@ const settingsModalCSS = `
     .mates-empty { font-size: var(--text-sm); color: var(--muted); padding: 1.5rem 0; }
     .mate-card {
       border: 1px solid var(--card-bd); border-radius: var(--radius-lg);
-      background: var(--bg); padding: 1rem 1.25rem;
-      display: flex; flex-direction: column; gap: 0.625rem;
+      background: var(--bg); padding: 0.875rem 1.25rem;
+      display: flex; align-items: flex-start; gap: 0.875rem;
       transition: border-color 120ms, background 120ms;
     }
-    .mate-card:hover { background: var(--surface-soft); border-color: rgba(255,255,255,0.11); }
-    html[data-theme="light"] .mate-card:hover { background: var(--surface-soft); border-color: rgba(0,0,0,0.12); }
+    .mate-card:hover { background: var(--card-hov); }
     .mate-card.disabled-card { opacity: 0.45; }
-    /* row 1: dot · name · desc · actions */
-    .mate-card-top { display: flex; align-items: center; gap: 0.65rem; min-width: 0; }
-    .mate-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
-    .mate-dot.on  { background: var(--s-ok); }
-    .mate-dot.off { background: var(--muted); opacity: 0.55; }
-    .mate-card-name { font-size: var(--text-sm); font-weight: 600; color: var(--fg); flex-shrink: 0; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .mate-card-desc { font-size: var(--text-xs); color: var(--muted); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .mate-card-actions { display: flex; gap: 0.4rem; flex-shrink: 0; }
-    /* row 2: model info + trigger badges */
-    .mate-card-meta { display: flex; align-items: center; gap: 0.4rem; padding-left: 1.1rem; min-width: 0; flex-wrap: wrap; }
+    .mate-avatar {
+      flex-shrink: 0; width: 36px; height: 36px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.875rem; font-weight: 700; color: rgba(255,255,255,0.92);
+      background: var(--muted); user-select: none;
+      border: 2px solid var(--card-bd);
+    }
+    .mate-card-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.3rem; }
+    .mate-card-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.5rem; min-width: 0; }
+    .mate-card-name { font-size: var(--text-sm); font-weight: 600; color: var(--fg); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; min-width: 0; padding-top: 0.1rem; }
+    .mate-card-desc { font-size: var(--text-xs); color: var(--muted); line-height: 1.5; }
+    .mate-card-actions { display: flex; gap: 0.3rem; flex-shrink: 0; }
+    .mate-card-tags { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.15rem; }
     .mate-badge {
       font-size: var(--text-xs); font-weight: 500; padding: 2px 8px; border-radius: var(--radius-pill);
       background: var(--code-bg); color: var(--muted);
@@ -648,8 +646,7 @@ const settingsModalCSS = `
       display: flex; align-items: center; justify-content: space-between; gap: 1rem;
       transition: border-color 120ms, background 120ms;
     }
-    .skill-card:hover { background: var(--surface-soft); }
-    html[data-theme="light"] .skill-card:hover { background: var(--surface-soft); border-color: rgba(0,0,0,0.12); }
+    .skill-card:hover { background: var(--card-hov); }
     .skill-card-left { display: flex; align-items: center; gap: 0.6rem; flex: 1; min-width: 0; }
     .skill-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
     .skill-dot.on  { background: var(--s-ok); }
@@ -700,23 +697,6 @@ func settingsModalHTML() string {
         <!-- Primary sidebar -->
         <nav class="settings-sidebar">
           <button class="settings-sidebar-item"
-                  :class="{active: tab === 'appearance'}"
-                  @click="tab = 'appearance'">
-            <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401"/>
-            </svg>
-            Appearance
-          </button>
-          <button class="settings-sidebar-item"
-                  :class="{active: tab === 'effect'}"
-                  @click="tab = 'effect'">
-            <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M13 21h8"/>
-              <path stroke-linecap="round" stroke-linejoin="round" d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/>
-            </svg>
-            Editor
-          </button>
-          <button class="settings-sidebar-item"
                   :class="{active: tab === 'server'}"
                   @click="tab = 'server'">
             <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
@@ -726,6 +706,15 @@ func settingsModalHTML() string {
               <path stroke-linecap="round" d="M6 18h.01"/>
             </svg>
             Server
+          </button>
+          <button class="settings-sidebar-item"
+                  :class="{active: tab === 'effect'}"
+                  @click="tab = 'effect'">
+            <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M13 21h8"/>
+              <path stroke-linecap="round" stroke-linejoin="round" d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/>
+            </svg>
+            Editor
           </button>
           <button class="settings-sidebar-item"
                   :class="{active: tab === 'mates'}"
@@ -773,6 +762,16 @@ func settingsModalHTML() string {
             Agents
           </button>
           <button class="settings-sidebar-item"
+                  x-show="isElectron"
+                  :class="{active: tab === 'notifications'}"
+                  @click="tab = 'notifications'">
+            <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/>
+              <path stroke-linecap="round" stroke-linejoin="round" d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>
+            </svg>
+            Notifications
+          </button>
+          <button class="settings-sidebar-item"
                   :class="{active: tab === 'shortcuts'}"
                   @click="tab = 'shortcuts'">
             <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
@@ -788,62 +787,9 @@ func settingsModalHTML() string {
             </svg>
             Shortcuts
           </button>
-          <button class="settings-sidebar-item"
-                  x-show="isElectron"
-                  :class="{active: tab === 'notifications'}"
-                  @click="tab = 'notifications'">
-            <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/>
-              <path stroke-linecap="round" stroke-linejoin="round" d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>
-            </svg>
-            Notifications
-          </button>
         </nav>
 
         <div class="settings-content">
-
-          <!-- Appearance tab -->
-          <div class="settings-pane" x-show="tab === 'appearance'">
-            <div class="settings-fields">
-              <div>
-                <label class="settings-field-label">Theme</label>
-                <div class="theme-seg">
-                  <button class="theme-seg-btn" :class="{active: themePref==='auto'}" @click="setTheme('auto')">
-                    <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" d="M12 2v2"/>
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M14.837 16.385a6 6 0 1 1-7.223-7.222c.624-.147.97.66.715 1.248a4 4 0 0 0 5.26 5.259c.589-.255 1.396.09 1.248.715"/>
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M16 12a4 4 0 0 0-4-4"/>
-                      <path stroke-linecap="round" d="m19 5-1.256 1.256"/>
-                      <path stroke-linecap="round" d="M20 12h2"/>
-                    </svg>
-                    Auto
-                  </button>
-                  <button class="theme-seg-btn" :class="{active: themePref==='light'}" @click="setTheme('light')">
-                    <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-                      <circle cx="12" cy="12" r="4"/>
-                      <path stroke-linecap="round" d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
-                    </svg>
-                    Light
-                  </button>
-                  <button class="theme-seg-btn" :class="{active: themePref==='dark'}" @click="setTheme('dark')">
-                    <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401"/>
-                    </svg>
-                    Dark
-                  </button>
-                </div>
-                <p class="settings-field-desc">Choose a color theme, or follow your system setting automatically.</p>
-              </div>
-              <div>
-                <label class="settings-field-label">Pixel Mode</label>
-                <label class="cfg-toggle">
-                  <input type="checkbox" :checked="pixelEnabled" @change="togglePixel()">
-                  <span class="cfg-toggle-pill"></span>
-                </label>
-                <p class="settings-field-desc">Apply a retro pixel-art aesthetic to the UI chrome. Note content is unaffected.</p>
-              </div>
-            </div>
-          </div>
 
           <!-- Editor tab -->
           <div class="settings-pane" x-show="tab === 'effect'">
@@ -1236,27 +1182,31 @@ func settingsModalHTML() string {
                   </template>
                   <template x-for="(m, mi) in matesList" :key="m.id">
                     <div class="mate-card" :class="m.enabled ? '' : 'disabled-card'">
-                      <div class="mate-card-top">
-                        <span class="mate-dot" :class="m.enabled ? 'on' : 'off'"
-                              :style="m.enabled && m.color ? 'background:' + m.color : ''"></span>
-                        <span class="mate-card-name" x-text="m.name"></span>
-                        <span class="mate-card-desc" x-show="m.description" x-text="m.description"></span>
-                        <div class="mate-card-actions">
-                          <button class="mate-act-btn" @click.stop="moveMate(mi, -1)" :disabled="mi === 0" type="button" title="Move up">↑</button>
-                          <button class="mate-act-btn" @click.stop="moveMate(mi, 1)" :disabled="mi === matesList.length - 1" type="button" title="Move down">↓</button>
-                          <button class="mate-act-btn" @click.stop="openMateEdit(m.id)" type="button">Edit</button>
-                          <button class="mate-act-btn del" @click.stop="deleteMate(m.id)" type="button">Delete</button>
-                        </div>
+                      <div class="mate-avatar"
+                           :style="m.color ? 'background:' + m.color : ''">
+                        <span x-text="m.name ? m.name.charAt(0).toUpperCase() : '?'"></span>
                       </div>
-                      <div class="mate-card-meta">
-                        <span class="mate-badge" x-text="m.agentId || '—'"></span>
-                        <template x-if="m.model">
-                          <span class="mate-badge" x-text="m.model"></span>
-                        </template>
-                        <template x-if="m.triggerCount > 0">
-                          <span class="mate-badge trigger"
-                                x-text="m.triggerCount + (m.triggerCount === 1 ? ' trigger' : ' triggers')"></span>
-                        </template>
+                      <div class="mate-card-body">
+                        <div class="mate-card-header">
+                          <span class="mate-card-name" x-text="m.name"></span>
+                          <div class="mate-card-actions">
+                            <button class="mate-act-btn" @click.stop="moveMate(mi, -1)" :disabled="mi === 0" type="button" title="Move up">↑</button>
+                            <button class="mate-act-btn" @click.stop="moveMate(mi, 1)" :disabled="mi === matesList.length - 1" type="button" title="Move down">↓</button>
+                            <button class="mate-act-btn" @click.stop="openMateEdit(m.id)" type="button">Edit</button>
+                            <button class="mate-act-btn del" @click.stop="deleteMate(m.id)" type="button">Delete</button>
+                          </div>
+                        </div>
+                        <p class="mate-card-desc" x-show="m.description" x-text="m.description"></p>
+                        <div class="mate-card-tags">
+                          <span class="mate-badge" x-text="m.agentId || '—'"></span>
+                          <template x-if="m.model">
+                            <span class="mate-badge" x-text="m.model"></span>
+                          </template>
+                          <template x-if="m.triggerCount > 0">
+                            <span class="mate-badge trigger"
+                                  x-text="m.triggerCount + (m.triggerCount === 1 ? ' trigger' : ' triggers')"></span>
+                          </template>
+                        </div>
                       </div>
                     </div>
                   </template>
@@ -1558,7 +1508,7 @@ const settingsCtrlJS = `
     return {
       _inited: false,
       isElectron: !!window.vaultrDesktop,
-      tab: 'appearance',
+      tab: 'server',
       serverUrl: '',
       urlSaving: false,
       urlError: '',
@@ -1656,11 +1606,6 @@ const settingsCtrlJS = `
           return rank(a) - rank(b);
         });
       },
-
-      get themePref() { return Alpine.store('theme').pref; },
-      setTheme(v) { Alpine.store('theme').set(v); },
-      get pixelEnabled() { return Alpine.store('pixel').enabled; },
-      togglePixel() { Alpine.store('pixel').toggle(); },
 
       effectPref: localStorage.getItem('vaultr-editor-effect') || 'particles',
       setEffect(key) { this.effectPref = key; localStorage.setItem('vaultr-editor-effect', key); },
