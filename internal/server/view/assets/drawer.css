@@ -27,15 +27,17 @@
     }
     .drawer-tab-bar-start {
       flex-shrink: 0; display: flex; align-items: center; padding: 0 0.35rem 0 0.5rem;
+      border-right: 2px solid var(--hr);
+      background: var(--card-bd);
     }
     .drawer-expand-btn {
       display: flex; align-items: center; justify-content: center;
       width: var(--action-btn-sz); height: var(--action-btn-sz); border-radius: var(--radius-sm);
-      border: none; background: transparent; color: var(--muted);
+      border: none; background: transparent; color: var(--canvas);
       cursor: pointer; padding: 0; flex-shrink: 0;
       transition: color 120ms, background 120ms;
     }
-    .drawer-expand-btn:hover { color: var(--fg); background: var(--card-hov); }
+    .drawer-expand-btn:hover { color: var(--canvas); background: color-mix(in srgb, var(--canvas) 15%, transparent); }
     .drawer-expand-btn:focus { outline: none; }
     .drawer-panel button:focus,
     .milkdown-tooltip button:focus { outline: none; }
@@ -116,7 +118,7 @@
       color: var(--fg); cursor: pointer; user-select: none;
       transition: background 100ms;
     }
-    .drawer-path-ac li:hover, .drawer-path-ac li[aria-selected="true"] { background: var(--nav-act); }
+    .drawer-path-ac li:hover, .drawer-path-ac li[aria-selected="true"] { background: var(--card-hov); }
     .drawer-path-ac li.path-ac-muted { color: var(--muted); cursor: default; font-style: italic; }
     .drawer-path-ac li.path-ac-muted:hover { background: transparent; }
     .drawer-publish-btn {
@@ -152,12 +154,12 @@
     .drawer-save-status .ssi-saved { display: none; }
     .drawer-save-status[data-state="pending"] .ssi-pending { display: block; }
     .drawer-save-status[data-state="saved"] .ssi-saved { display: block; }
-    .ssi-pending { animation: ssi-pulse 1.2s ease-in-out infinite; }
+    .ssi-pending { color: var(--muted); animation: ssi-pulse 1.2s ease-in-out infinite; }
     @keyframes ssi-pulse {
       0%, 100% { opacity: 0.35; transform: scale(0.85); }
       50%       { opacity: 1;    transform: scale(1); }
     }
-    .ssi-saved { animation: ssi-fadein 0.25s ease; }
+    .ssi-saved { color: var(--s-ok); animation: ssi-fadein 0.25s ease; }
     @keyframes ssi-fadein { from { opacity: 0; transform: scale(0.7); } to { opacity: 1; transform: scale(1); } }
     /* Shared tool buttons */
     .frag-close-btn {
@@ -196,16 +198,16 @@
     }
     .drawer-more-item svg { width: 13px; height: 13px; flex-shrink: 0; }
     .drawer-more-item-danger:hover { color: var(--s-err); background: var(--s-err-bg); }
-    .frag-pin-btn, .frag-unpin-btn {
+    .frag-pin-btn {
       display: flex; align-items: center; justify-content: center;
       width: var(--action-btn-sz); height: var(--action-btn-sz); border-radius: var(--radius-sm);
       border: 1px solid var(--card-bd); background: transparent;
       color: var(--muted); cursor: pointer; transition: color 120ms, background 120ms, border-color 120ms;
     }
     .frag-pin-btn:hover { color: var(--fg); background: var(--card-hov); border-color: var(--muted); }
-    .frag-unpin-btn { color: var(--link); border-color: var(--card-bd); }
-    .frag-unpin-btn:hover { background: var(--nav-act); border-color: var(--link); }
-    .frag-pin-btn svg, .frag-unpin-btn svg { width: 14px; height: 14px; }
+    .frag-pin-btn.active { color: var(--link); background: var(--nav-act); border-color: var(--link); }
+    .frag-pin-btn.active svg { fill: currentColor; }
+    .frag-pin-btn svg { width: 14px; height: 14px; }
     .drawer-compile-btn {
       display: flex; align-items: center; justify-content: center;
       width: var(--action-btn-sz); height: var(--action-btn-sz); border-radius: var(--radius-sm);
@@ -213,11 +215,11 @@
       color: var(--muted); cursor: pointer; transition: color 120ms, background 120ms, border-color 120ms;
     }
     .drawer-compile-btn:hover:not(:disabled) { color: var(--fg); background: var(--card-hov); border-color: var(--muted); }
-    .drawer-compile-btn:disabled { cursor: progress; opacity: 0.55; }
+    .drawer-compile-btn:disabled { cursor: progress; }
     .drawer-compile-btn.success { color: var(--s-ok); border-color: var(--s-ok-bd); background: var(--s-ok-bg); }
     .drawer-compile-btn svg { width: 14px; height: 14px; }
-    @keyframes drawer-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-    .drawer-compile-btn.is-compiling svg { animation: drawer-spin 1s linear infinite; }
+    @keyframes drawer-compile-pulse { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; } }
+    .drawer-compile-btn.is-compiling { animation: drawer-compile-pulse 1.2s ease-in-out infinite; }
     .drawer-source-btn {
       display: flex; align-items: center; justify-content: center;
       width: var(--action-btn-sz); height: var(--action-btn-sz); border-radius: var(--radius-sm);
@@ -225,7 +227,7 @@
       color: var(--muted); cursor: pointer; flex-shrink: 0;
       transition: color 120ms, background 120ms, border-color 120ms;
     }
-    .drawer-source-btn:hover { color: var(--fg); background: var(--nav-act); border-color: var(--muted); }
+    .drawer-source-btn:hover { color: var(--fg); background: var(--icon-hov); border-color: var(--muted); }
     .drawer-source-btn.active { color: var(--link); background: var(--nav-act); border-color: var(--link); }
     .drawer-source-btn svg { width: 14px; height: 14px; }
 
@@ -316,10 +318,16 @@
     html.macos .drawer-overlay.open { -webkit-app-region: no-drag; }
     html.macos .drawer-overlay.open .drawer-panel { -webkit-app-region: no-drag; }
     html.macos .drawer-overlay.open .drawer-tab-bar { -webkit-app-region: drag; cursor: default; }
+    html.macos .drawer-overlay.open .drawer-tab-bar-start,
     html.macos .drawer-overlay.open .drawer-expand-btn,
     html.macos .drawer-overlay.open .drawer-tab,
     html.macos .drawer-overlay.open .drawer-tab-close,
     html.macos .drawer-overlay.open .frag-close-btn { -webkit-app-region: no-drag; }
+    /* During slide-in animation, transform shifts visual position away from layout position.
+       Electron hit-tests drag regions against layout position, not transform position,
+       so the no-drag exclusion on the expand button is misaligned for the 280ms animation.
+       Suppress the drag region entirely while the panel is animating. */
+    html.macos .drawer-overlay.open.drawer-is-opening .drawer-tab-bar { -webkit-app-region: no-drag; }
 
     /* ── Drawer scrollbars ───────────────────────────────────────── */
     #drawer-edit-area,

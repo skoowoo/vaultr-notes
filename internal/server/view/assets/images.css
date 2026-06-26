@@ -188,7 +188,7 @@
       border: none; background: transparent; color: var(--muted);
       cursor: pointer; transition: color 120ms, background 120ms;
     }
-    .lb-close-btn:hover { color: var(--fg); background: var(--nav-act); }
+    .lb-close-btn:hover { color: var(--fg); background: var(--icon-hov); }
     .lb-close-btn svg { width: 14px; height: 14px; }
     .lb-delete-btn {
       flex-shrink: 0;

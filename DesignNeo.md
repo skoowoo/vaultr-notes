@@ -338,7 +338,6 @@ active:  background: var(--accent) (#eab308)；color: #111111
 ```
 边框:      2px solid #000
 阴影:      var(--px-d2) var(--px-shadow) = 3px 3px 0 #000
-transition: none  (即时反馈，无过渡动画)
 圆角:      0 (全局清零)
 ```
 
@@ -389,13 +388,9 @@ html[data-theme="neo"] .choice-title {
 
 ## 9. 动效原则 Motion Principles
 
-Neo-Brutalism 反对"润滑"，所有 transition 在 neo 主题下默认关闭：
+Neo-Brutalism 的核心动效语言是**物理位移反馈**：`transform: translate(Xpx, Ypx)` 配合 `box-shadow: none`，模拟按钮被按下的物理感。这是状态切换，而非装饰性动画。
 
-```css
-html[data-theme="neo"] [element] { transition: none; }
-```
-
-**唯一允许的动态效果：** `transform: translate(Xpx, Ypx)` 配合 `box-shadow: none`，模拟按钮被按下的物理位移。这不是"动画"，是状态切换。
+Transition 的使用由各组件按需自行决定，规范不强制开启或关闭。
 
 ---
 
@@ -438,7 +433,6 @@ html[data-theme="neo"] [element] { transition: none; }
 | `inset 2px 2px 0`（凹陷效果）作为选中/激活状态 | 黑色填充 `background: #000; color: #fff`            |
 | `inset` 对角阴影作为 hover 反馈                | `background: rgba(0,0,0,0.06)` 背景色变化           |
 | 渐变色背景                                     | 纯色平铺                                            |
-| `transition` 动画                              | 即时切换                                            |
 | 品牌黄用于 active 状态（黄底上）               | 黑色填充                                            |
 | 像素风图标变体（lib-ai-px）                    | 统一使用标准 smooth 图标                            |
 | 多个品牌色叠加使用                             | 品牌黄只做 nav 背景和 primary CTA                   |
@@ -495,6 +489,96 @@ html[data-theme="neo"] [element] { transition: none; }
 | 主题切换逻辑（Alpine store）     | `internal/server/view/shared_theme.go`                   |
 | 设置弹窗 Neo 按钮                | `internal/server/view/shared_settings_modal.go`          |
 | Electron 跨视图同步              | `desktop-app/src/main.js`                                |
+
+---
+
+## 14. CSS 分层架构 CSS Layering Architecture
+
+### 核心判断标准
+
+> **差异能否用 token 表达？**
+> - 能 → 规则写入 **base 组件 CSS**
+> - 不能 → 规则写入 **neo.css 覆盖层**
+
+Token 是主题机制的载体。把颜色、背景、字号等外观差异编码进 token，base 组件 CSS 使用 `var(--token)` 引用，token 值随主题自动切换，不需要覆盖层介入。
+
+---
+
+### Base 组件 CSS（颜色 / 外观层）
+
+以下类型的规则属于 base，即使它们的值在 Neo 主题下有"品牌风格"：
+
+| 规则类型 | 示例 |
+|----------|------|
+| Hover 背景 | `.cfg-card:hover { background: var(--card-hov); }` |
+| Icon 点击区背景 | `.lib-action-btn:hover { background: var(--icon-hov); }` |
+| 文字颜色 | `.lib-action-btn:hover { color: var(--fg); }` |
+| 字体大小 | `.home-hero-title { font-size: clamp(1.2rem, 2.2vw, 1.8rem); }` |
+| 边框颜色 | `.chip:hover { border-color: var(--card-bd); }` |
+
+只要规则的所有值都是 `var(--token)` 或主题无关的固定值（如 `0`、`100%`），它就属于 base。
+
+---
+
+### neo.css 覆盖层（结构 / 行为层）
+
+以下类型的规则无法通过 token 表达——它们改变元素的物理形状或动效行为：
+
+| 规则类型 | 示例 |
+|----------|------|
+| 全局零圆角 | `* { border-radius: 0 !important; }` |
+| 像素阴影（d1/d2/d3） | `box-shadow: var(--px-d2) var(--px-shadow)` |
+| 硬边框宽度 | `border-width: 2px !important` |
+| 禁用过渡动画 | `transition: none` |
+| 像素位移交互 | `transform: translate(3px, 3px)` on hover/press |
+| 像素字体 | `font-family: "Press Start 2P", monospace` |
+| UI 字体覆盖 | `body { font-family: var(--font-ui); }` |
+| 禁用动画 | `animation: none` |
+| 去除模糊 | `backdrop-filter: none` |
+| 自定义 SVG 图形 | pixel checkmark、pixel dropdown arrow |
+
+---
+
+### 反模式：死代码（Dead Code）
+
+如果 base 中有一条规则，而 neo.css 中有一条更高优先级的规则覆盖了它的**每一个属性**，那么 base 中的规则是死代码，永远不会生效。
+
+**识别方法**：在 neo.css 中搜索同一选择器，看它是否覆盖了 base 规则的全部属性。若是，则将 base 规则修改为正确值，并删除 neo.css 覆盖。
+
+**示例**：
+```css
+/* base — 原本错误，被 neo.css 纠正，形成死代码 */
+.settings-modal-close-btn:hover { background: var(--nav-act); }
+
+/* neo.css — 纠正覆盖 */
+html[data-theme="neo"] .settings-modal-close-btn:hover { background: var(--icon-hov); }
+```
+正确做法：直接在 base 写 `background: var(--icon-hov);`，删除 neo.css 覆盖。
+
+---
+
+### CSS 优先级陷阱
+
+neo.css 使用 `html[data-theme="neo"] .selector` 选择器，其优先级高于 base 中的 `.selector`。因此：
+
+- 修改 base 规则后，如果 neo.css 中存在相同属性的覆盖，base 的修改**不会生效**。
+- 每次修改 base 的外观属性，都应先搜索 neo.css 中是否存在同选择器的覆盖规则。
+- 若存在：先判断覆盖是否仍然必要（结构性？还是只是纠正错误 token？），再决定删除或保留。
+
+---
+
+### Token 速查：正确的 hover 背景选择
+
+| 场景 | 正确 token |
+|------|-----------|
+| Icon-only 小按钮（关闭、刷新、更多） | `--icon-hov` |
+| 可展开配置卡片 | `--card-hov` |
+| Mate / Skill / Agent 列表卡 | `--card-hov` |
+| 下拉列表行 | `--card-hov` |
+| 标签页切换（未激活） | `--icon-hov` |
+| 导航侧栏（黄色背景上） | `--nav-act`（黑色叠层，仅用于 nav） |
+
+**规则**：`--nav-act` 仅用于黄色导航背景上的元素。白色背景上的所有 hover 背景一律使用 `--icon-hov` 或 `--card-hov`，绝不使用 `--nav-act` 或 `--surface-soft`。
 
 ---
 

@@ -30,7 +30,7 @@ const settingsModalCSS = `
       border: none; background: transparent; color: var(--muted);
       cursor: pointer; transition: background 120ms, color 120ms;
     }
-    .settings-modal-close-btn:hover { background: var(--nav-act); color: var(--fg); }
+    .settings-modal-close-btn:hover { background: var(--icon-hov); color: var(--fg); }
     .settings-modal-close-btn svg { width: 15px; height: 15px; }
     .settings-modal-inner {
       flex: 1; min-height: 0; display: flex; overflow: hidden;
@@ -265,7 +265,7 @@ const settingsModalCSS = `
       border-radius: var(--radius-md); cursor: pointer; color: var(--muted);
       transition: color 120ms, background 120ms;
     }
-    .cfg-reveal-btn:hover { color: var(--fg); background: var(--surface-soft); }
+    .cfg-reveal-btn:hover { color: var(--fg); background: var(--icon-hov); }
     .cfg-reveal-btn svg { width: 13px; height: 13px; }
     .cfg-toggle { display: inline-flex; align-items: center; cursor: pointer; }
     .cfg-toggle input[type="checkbox"] { display: none; }
@@ -524,7 +524,7 @@ const settingsModalCSS = `
       border-radius: var(--radius-sm); border: 1px solid var(--card-bd); background: var(--bg);
       cursor: pointer; transition: border-color 100ms, background 100ms;
     }
-    .mate-var-chip:hover { border-color: var(--muted); background: var(--surface-soft); }
+    .mate-var-chip:hover { border-color: var(--card-bd); background: var(--card-hov); }
     .mate-var-chip code {
       font-family: var(--font-mono);
       font-size: var(--text-xs); font-weight: 600; color: var(--fg); opacity: 0.8;
@@ -559,7 +559,7 @@ const settingsModalCSS = `
       color: var(--muted); font-size: var(--text-xs); font-weight: 500;
       cursor: pointer; transition: color 100ms, border-color 100ms, background 100ms;
     }
-    .mate-schedule-preset:hover { color: var(--fg); border-color: var(--p3); background: var(--surface-soft); }
+    .mate-schedule-preset:hover { color: var(--fg); border-color: var(--card-bd); background: var(--card-hov); }
     .mate-schedule-preset.active { color: var(--p3); border-color: var(--s-ok-bd); background: var(--s-ok-bg); }
     .mate-schedule-custom-label { display: block; font-size: var(--text-xs); color: var(--muted); margin-bottom: 0.3rem; }
     .mate-color-palette { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-top: 0.35rem; }

@@ -208,7 +208,7 @@
       transition: color 120ms, background 120ms;
     }
 
-    .graph-zoom-btn:hover { color: var(--fg); background: var(--nav-act); }
+    .graph-zoom-btn:hover { color: var(--fg); background: var(--icon-hov); }
     .graph-zoom-btn svg { width: 14px; height: 14px; flex-shrink: 0; }
 
     .graph-zoom-divider {

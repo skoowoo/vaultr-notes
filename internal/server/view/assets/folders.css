@@ -31,15 +31,10 @@
     /* ── hero ────────────────────────────────────────────── */
     .home-hero { width: 100%; max-width: 100%; }
     .home-hero-title {
-      font-family: var(--font-ui);
-      font-size: clamp(1rem, 2vw, 1.5rem);
-      font-weight: 600; color: var(--fg);
-      margin: 0; letter-spacing: -0.03em; line-height: 1.1;
-    }
-    html[data-theme="neo"] .home-hero-title {
       font-family: "Press Start 2P", monospace;
-      font-size: clamp(0.75rem, 1.6vw, 1.05rem);
-      font-weight: 400; letter-spacing: 0.02em; line-height: 1.4;
+      font-size: clamp(1.2rem, 2.2vw, 1.8rem);
+      font-weight: 400; color: var(--fg);
+      margin: 0; letter-spacing: 0.02em; line-height: 1.4;
     }
     .home-hero-lede {
       margin: 0.875rem 0 0; font-size: var(--text-base);

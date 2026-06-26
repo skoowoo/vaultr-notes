@@ -62,7 +62,7 @@
       gap: 2px;
       cursor: pointer;
     }
-    .shorts-month-item:hover { background: var(--nav-act); }
+    .shorts-month-item:hover { background: var(--icon-hov); }
 
     .shorts-month-abbr {
       font-size: 10px;

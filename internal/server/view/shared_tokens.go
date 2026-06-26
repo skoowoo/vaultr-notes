@@ -34,7 +34,7 @@ package view
 // To add a future theme: add a new token block under a new data-theme value.
 const appTokensNeo = `
       /* ── Neo shadow tokens ── */
-      --px-shadow:rgba(0,0,0,1); --px-d1:2px 2px 0; --px-d2:3px 3px 0; --px-d3:4px 4px 0;
+      --px-shadow:rgba(0,0,0,1); --px-d0:1px 1px 0; --px-d1:2px 2px 0; --px-d2:3px 3px 0; --px-d3:4px 4px 0;
       /* ── Neo UI font (Space Grotesk — UI chrome only, content stays Inter) ── */
       --font-ui:"Space Grotesk",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
       /* ── Base surface ── */
@@ -108,12 +108,13 @@ const appTokensNeo = `
       --entity-type-bg:var(--p2);
       /* ── Search overlay ── */
       --srch-bg:var(--bg);
-      --srch-ic:var(--cover-dir); --srch-ph:var(--cover-dir); --srch-av:#f472b6; --srch-backdrop:var(--overlay-bg);
-      --sr-dir:var(--cover-dir); --sr-tm:var(--cover-dir); --sr-ic:var(--cover-dir); --sr-em:var(--cover-dir);
-      --srch-kbd-fg:var(--cover-dir);
+      --srch-ic:var(--cover-dir); --srch-ph:var(--cover-dir); --srch-av:var(--accent); --srch-backdrop:var(--overlay-bg);
+      --sr-dir:#6b7280; --sr-tm:#6b7280; --sr-ic:#6b7280; --sr-em:#6b7280;
+      --srch-kbd-fg:var(--fg);
       --srch-panel-bd:#000000; --srch-row-bd:#333333; --srch-kbd-bd:#000000;
       --srch-panel-shadow:4px 4px 0 rgba(0,0,0,1);
-      --srch-hover-bar:rgba(0,0,0,0.22); --srch-hover-bg:rgba(0,0,0,0.05);`
+      --srch-row-bg:var(--bg);
+      --srch-hover-bar:rgba(0,0,0,0.22); --srch-hover-bg:rgba(0,0,0,0.08);`
 
 // appTokensCSS is the single-theme CSS block — drop it inside a <style> tag.
 const appTokensCSS = `    html[data-theme="neo"] {` + appTokensNeo + `

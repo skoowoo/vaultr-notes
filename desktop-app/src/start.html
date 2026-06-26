@@ -13,6 +13,7 @@
       font-display: swap;
       src: url('../assets/fonts/space-grotesk-latin.woff2') format('woff2');
     }
+
     @font-face {
       font-family: 'Space Grotesk';
       font-style: normal;
@@ -20,34 +21,25 @@
       font-display: swap;
       src: url('../assets/fonts/space-grotesk-latin.woff2') format('woff2');
     }
-    @font-face {
-      font-family: 'JetBrains Mono';
-      font-style: normal;
-      font-weight: 400;
-      font-display: swap;
-      src: url('../assets/fonts/jetbrains-mono-400-latin.woff2') format('woff2');
-    }
-    @font-face {
-      font-family: 'Press Start 2P';
-      font-style: normal;
-      font-weight: 400;
-      font-display: swap;
-      src: url('../assets/fonts/press-start-2p-400-latin.woff2') format('woff2');
-    }
 
-    *, *::before, *::after {
+    *,
+    *::before,
+    *::after {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
     }
 
-    html, body { height: 100%; }
+    html,
+    body {
+      height: 100%;
+    }
 
     body {
       display: flex;
       align-items: center;
       justify-content: center;
-      background: #ffffff;
+      background: #111111;
       color: #111111;
       font-family: 'Space Grotesk', system-ui, -apple-system, sans-serif;
       -webkit-font-smoothing: antialiased;
@@ -56,38 +48,28 @@
 
     .shell {
       -webkit-app-region: no-drag;
-      width: min(320px, 88vw);
-      padding: 2.25rem 1.75rem 1.75rem;
+      width: min(420px, 88vw);
+      padding: 2.75rem 2.25rem 2.25rem;
       border: 2px solid #000000;
-      box-shadow: 4px 4px 0 rgba(0,0,0,1);
+      box-shadow: 6px 6px 0 #eab308;
       background: #ffffff;
     }
 
     /* Logo */
     .logo {
-      font-family: 'Press Start 2P', 'Courier New', monospace;
-      font-size: clamp(0.875rem, 3.5vw, 1.0625rem);
+      font-size: 1.25rem;
+      font-weight: 700;
       color: #111111;
-      letter-spacing: 0.05em;
-      -webkit-font-smoothing: none;
+      letter-spacing: 0.2em;
       user-select: none;
       line-height: 1;
-      margin-bottom: 0.5rem;
-    }
-
-    .tagline {
-      font-size: 0.6875rem;
-      color: #6b7280;
-      user-select: none;
-      margin-bottom: 2rem;
-      letter-spacing: 0.01em;
+      margin-bottom: 2.25rem;
     }
 
     /* URL input row */
     .url-row {
       display: flex;
-      gap: 0.5rem;
-      margin-bottom: 0.75rem;
+      margin-bottom: 1rem;
     }
 
     .url-input {
@@ -95,46 +77,18 @@
       min-width: 0;
       background: #ffffff;
       border: 2px solid #000000;
-      box-shadow: 3px 3px 0 rgba(0,0,0,1);
+      box-shadow: 3px 3px 0 rgba(0, 0, 0, 1);
       outline: none;
-      padding: 0.55rem 0.65rem;
-      font-size: 0.6875rem;
+      padding: 0.55rem 0.75rem;
+      font-size: 0.8125rem;
+      font-weight: 400;
       color: #111111;
-      font-family: 'JetBrains Mono', ui-monospace, monospace;
+      font-family: inherit;
     }
 
     .url-input::placeholder {
       color: #6b7280;
       opacity: 0.45;
-    }
-
-    .connect-btn {
-      flex-shrink: 0;
-      width: 36px;
-      background: #eab308;
-      border: 2px solid #000000;
-      box-shadow: 3px 3px 0 rgba(0,0,0,1);
-      color: #111111;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .connect-btn:hover:not(:disabled) {
-      box-shadow: none;
-      transform: translate(3px, 3px);
-    }
-
-    .connect-btn:disabled {
-      opacity: 0.35;
-      cursor: not-allowed;
-    }
-
-    .connect-btn svg {
-      width: 13px;
-      height: 13px;
-      flex-shrink: 0;
     }
 
     /* Status row */
@@ -143,6 +97,7 @@
       align-items: center;
       gap: 0.5rem;
       min-height: 1.1rem;
+      margin-top: 0.25rem;
     }
 
     .dot {
@@ -152,40 +107,113 @@
       background: #6b7280;
     }
 
-    .dot.ok    { background: #16a34a; }
-    .dot.error { background: #dc2626; }
-    .dot.pulse { background: #eab308; }
+    .dot.ok {
+      background: #16a34a;
+    }
+
+    .dot.error {
+      background: #dc2626;
+    }
+
+    .dot.pulse {
+      background: #eab308;
+    }
 
     @keyframes blink {
-      0%, 49% { opacity: 1 }
-      50%, 100% { opacity: 0 }
+
+      0%,
+      49% {
+        opacity: 1
+      }
+
+      50%,
+      100% {
+        opacity: 0
+      }
     }
 
-    .dot.pulse { animation: blink 0.85s step-start infinite; }
+    .dot.pulse {
+      animation: blink 0.85s step-start infinite;
+    }
 
     .status-txt {
-      font-size: 0.6875rem;
+      font-size: 0.625rem;
+      font-weight: 700;
       color: #6b7280;
-      font-family: 'JetBrains Mono', ui-monospace, monospace;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
     }
 
-    .status-txt.error { color: #dc2626; }
-    .status-txt.ok    { color: #16a34a; }
+    .status-txt.error {
+      color: #dc2626;
+    }
+
+    .status-txt.ok {
+      color: #16a34a;
+    }
 
     /* Hint */
     .hint {
       margin-top: 0.875rem;
-      font-size: 0.5625rem;
+      font-size: 0.625rem;
+      font-weight: 400;
       line-height: 1.7;
       color: #6b7280;
-      font-family: 'JetBrains Mono', monospace;
       border-left: 2px solid #000000;
       padding-left: 0.625rem;
       word-break: break-all;
       white-space: pre-wrap;
     }
 
-    .hint[hidden] { display: none; }
+    .hint[hidden] {
+      display: none;
+    }
+
+    /* Start server button */
+    .start-btn {
+      margin-top: 1.25rem;
+      width: 100%;
+      padding: 0.6rem 1rem;
+      background: #ec4899;
+      border: 2px solid #000000;
+      color: #ffffff;
+      font-family: inherit;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      user-select: none;
+      box-shadow: 3px 3px 0 rgba(0, 0, 0, 1);
+    }
+
+    .start-btn:hover:not(:disabled) {
+      box-shadow: 2px 2px 0 rgba(0, 0, 0, 1);
+      transform: translate(1px, 1px);
+    }
+
+    .start-btn:active:not(:disabled) {
+      box-shadow: none;
+      transform: translate(3px, 3px);
+    }
+
+    .start-btn[hidden] {
+      display: none;
+    }
+
+    .start-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .start-btn svg {
+      width: 13px;
+      height: 13px;
+      flex-shrink: 0;
+    }
 
     /* Install button */
     .install-btn {
@@ -195,24 +223,32 @@
       background: #ec4899;
       border: 2px solid #000000;
       color: #ffffff;
-      font-family: 'Space Grotesk', system-ui, -apple-system, sans-serif;
-      font-size: 0.6875rem;
-      font-weight: 600;
+      font-family: inherit;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
       gap: 0.5rem;
       user-select: none;
-      box-shadow: 3px 3px 0 rgba(0,0,0,1);
+      box-shadow: 3px 3px 0 rgba(0, 0, 0, 1);
     }
 
     .install-btn:hover {
+      box-shadow: 2px 2px 0 rgba(0, 0, 0, 1);
+      transform: translate(1px, 1px);
+    }
+
+    .install-btn:active {
       box-shadow: none;
       transform: translate(3px, 3px);
     }
 
-    .install-btn[hidden] { display: none; }
+    .install-btn[hidden] {
+      display: none;
+    }
 
     .install-btn:disabled {
       opacity: 0.4;
@@ -230,16 +266,10 @@
 <body>
   <div class="shell">
     <p class="logo">VAULTR</p>
-    <p class="tagline">personal notes</p>
 
     <div class="url-row">
       <input id="url-input" type="url" class="url-input" placeholder="http://localhost:54321" spellcheck="false"
         autocomplete="off">
-      <button id="connect-btn" class="connect-btn" title="Connect">
-        <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14m-7-7 7 7-7 7" />
-        </svg>
-      </button>
     </div>
 
     <div class="status-row">
@@ -248,203 +278,223 @@
     </div>
     <p id="hint" class="hint" hidden></p>
 
+    <button id="start-btn" class="start-btn" hidden>
+      <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14m-7-7 7 7-7 7" />
+      </svg>
+      Start Server
+    </button>
+
     <button id="install-btn" class="install-btn" hidden>
       <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round"
           d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4-4 4m0 0-4-4m4 4V4" />
       </svg>
-      install vaultr cli
+      Install Vaultr CLI
     </button>
   </div>
 
   <script>
-      (function () {
-        const input = document.getElementById('url-input');
-        const btn = document.getElementById('connect-btn');
-        const dotEl = document.getElementById('dot');
-        const statusEl = document.getElementById('status');
-        const hintEl = document.getElementById('hint');
-        const installBtn = document.getElementById('install-btn');
+    (function () {
+      const input = document.getElementById('url-input');
+      const dotEl = document.getElementById('dot');
+      const statusEl = document.getElementById('status');
+      const hintEl = document.getElementById('hint');
+      const startBtn = document.getElementById('start-btn');
+      const installBtn = document.getElementById('install-btn');
 
-        let retryTimer = null;
-        let busy = false;
-        let isRetrying = false; // true after first failure — suppresses "connecting" flash on bg retries
+      let retryTimer = null;
+      let busy = false;
+      let isRetrying = false; // true after first failure — suppresses "connecting" flash on bg retries
 
-        function setUI(state, msg, hint) {
-          // Don't flash "connecting" during silent background retries
-          if (isRetrying && state === 'connecting') return;
+      function setUI(state, msg, hint) {
+        // Don't flash "connecting" during silent background retries
+        if (isRetrying && state === 'connecting') return;
 
-          dotEl.className = 'dot ' + (
-            state === 'ok' ? 'ok' :
-              state === 'error' ? 'error' : 'pulse'
-          );
-          statusEl.textContent = msg;
-          statusEl.className = 'status-txt' + (
-            state === 'error' ? ' error' :
-              state === 'ok' ? ' ok' : ''
-          );
+        dotEl.className = 'dot ' + (
+          state === 'ok' ? 'ok' :
+            state === 'error' ? 'error' : 'pulse'
+        );
+        statusEl.textContent = msg;
+        statusEl.className = 'status-txt' + (
+          state === 'error' ? ' error' :
+            state === 'ok' ? ' ok' : ''
+        );
 
-          const h = (hint || '').trim();
-          if (!h) {
-            hintEl.hidden = true;
-          } else if (hintEl.textContent !== h) {
-            hintEl.textContent = h;
-            hintEl.hidden = false;
-          } else {
-            hintEl.hidden = false;
-          }
+        const h = (hint || '').trim();
+        if (!h) {
+          hintEl.hidden = true;
+        } else if (hintEl.textContent !== h) {
+          hintEl.textContent = h;
+          hintEl.hidden = false;
+        } else {
+          hintEl.hidden = false;
+        }
+      }
+
+      function showStart(v) {
+        startBtn.hidden = !v;
+        if (v) installBtn.hidden = true;
+      }
+
+      function showInstall(v) {
+        installBtn.hidden = !v;
+        if (v) startBtn.hidden = true;
+      }
+
+      function isLocal(raw) {
+        try {
+          const h = new URL(raw).hostname.toLowerCase();
+          return h === 'localhost' || h === '127.0.0.1' || h === '::1';
+        } catch { return false; }
+      }
+
+      let detachStartConsumed = false;
+      let spawnedLocalServerOk = false;
+
+      async function debugPaths() {
+        try {
+          if (window.vaultrDesktop?.getShellDebugPaths)
+            return await window.vaultrDesktop.getShellDebugPaths();
+        } catch { }
+        return {};
+      }
+
+      async function attempt(urlRaw, { userInitiated = false } = {}) {
+        if (busy) return;
+        const url = urlRaw.trim().replace(/\/$/, '');
+        clearTimeout(retryTimer);
+        busy = true;
+        startBtn.disabled = true;
+        setUI('connecting', 'connecting');
+
+        let ok = false;
+        if (window.vaultrDesktop) {
+          try { ok = await window.vaultrDesktop.checkServer(url); } catch { }
         }
 
-        function showInstall(v) { installBtn.hidden = !v; }
-
-        function isLocal(raw) {
-          try {
-            const h = new URL(raw).hostname.toLowerCase();
-            return h === 'localhost' || h === '127.0.0.1' || h === '::1';
-          } catch { return false; }
-        }
-
-        let detachStartConsumed = false;
-        let spawnedLocalServerOk = false;
-
-        async function debugPaths() {
-          try {
-            if (window.vaultrDesktop?.getShellDebugPaths)
-              return await window.vaultrDesktop.getShellDebugPaths();
-          } catch { }
-          return {};
-        }
-
-        async function attempt(urlRaw, { userInitiated = false } = {}) {
-          if (busy) return;
-          const url = urlRaw.trim().replace(/\/$/, '');
-          clearTimeout(retryTimer);
-          busy = true;
-          btn.disabled = true;
-          setUI('connecting', 'connecting');
-
-          let ok = false;
-          if (window.vaultrDesktop) {
-            try { ok = await window.vaultrDesktop.checkServer(url); } catch { }
-          }
-
-          if (ok) {
-            isRetrying = false;
-            detachStartConsumed = false;
-            spawnedLocalServerOk = false;
-            busy = false; btn.disabled = false;
-            showInstall(false);
-            setUI('ok', 'connected');
-            if (window.vaultrDesktop) await window.vaultrDesktop.setServerUrl(url);
-            return;
-          }
-
-          const paths = await debugPaths();
-          let retryMs = 3000;
-          let pendingStart = false;
-          let headline = '', hint = '', showInst = false;
-
-          if (!window.vaultrDesktop) {
-            headline = 'preload api unavailable';
-            hint = 'Desktop API not found. Check DevTools.';
-          } else if (isLocal(url) && !detachStartConsumed) {
-            try {
-              const probe = await window.vaultrDesktop.vaultrOnPath();
-              if (!probe.available) {
-                headline = 'vaultr cli not found';
-                showInst = true;
-              } else {
-                detachStartConsumed = true;
-                const st = await window.vaultrDesktop.startVaultrServerDetached({ userInitiated });
-                if (st.ok) {
-                  spawnedLocalServerOk = true;
-                  pendingStart = true;
-                  retryMs = 1400;
-                } else if (st.reason === 'stopped_by_user') {
-                  isRetrying = false;
-                  busy = false; btn.disabled = false;
-                  showInstall(false);
-                  setUI('error', 'server stopped', 'Click → to start it again.');
-                  return;
-                } else {
-                  spawnedLocalServerOk = false;
-                  headline = 'server start failed';
-                  hint = (st.error ? st.error + '\n\n' : '') +
-                    'Server output:\n' + (paths.serverOutput || '');
-                }
-              }
-            } catch (e) {
-              headline = 'connection error';
-              hint = String(e?.message ?? e);
-            }
-          } else if (spawnedLocalServerOk && isLocal(url)) {
-            headline = 'waiting for server';
-            hint = (paths.serverOutput || '') +
-              (paths.diagnostics ? '\n\nElectron log:\n' + paths.diagnostics : '');
-          } else if (isLocal(url) && detachStartConsumed && !spawnedLocalServerOk) {
-            headline = 'server start failed';
-            hint = (paths.serverOutput || '') +
-              (paths.diagnostics ? '\n\nElectron log:\n' + paths.diagnostics : '');
-          } else {
-            headline = 'cannot connect';
-            if (paths.diagnostics) hint = 'Shell log:\n' + paths.diagnostics;
-          }
-
-          busy = false; btn.disabled = false;
-          isRetrying = true;
-          showInstall(showInst);
-          setUI(
-            pendingStart ? 'starting' : 'error',
-            pendingStart ? 'starting server' : headline,
-            pendingStart ? '' : hint
-          );
-          retryTimer = setTimeout(() => attempt(url), retryMs);
-        }
-
-        async function init() {
-          let url = 'http://localhost:54321';
-          if (window.vaultrDesktop) {
-            try { url = await window.vaultrDesktop.getServerUrl() || url; } catch { }
-          }
-          input.value = url;
-          attempt(url);
-        }
-
-        function userConnect() {
+        if (ok) {
           isRetrying = false;
           detachStartConsumed = false;
           spawnedLocalServerOk = false;
+          busy = false;
           showInstall(false);
-          attempt(input.value.trim().replace(/\/$/, ''), { userInitiated: true });
+          showStart(false);
+          setUI('ok', 'connected');
+          if (window.vaultrDesktop) await window.vaultrDesktop.setServerUrl(url);
+          return;
         }
 
-        btn.addEventListener('click', userConnect);
-        input.addEventListener('keydown', e => { if (e.key === 'Enter') userConnect(); });
-        installBtn.addEventListener('click', async () => {
-          if (installBtn.disabled || !window.vaultrDesktop?.installCli) return;
-          clearTimeout(retryTimer);
-          installBtn.disabled = true;
-          isRetrying = false;
-          showInstall(false);
-          setUI('connecting', 'installing cli...');
+        const paths = await debugPaths();
+        let retryMs = 3000;
+        let pendingStart = false;
+        let headline = '', hint = '', showInst = false;
 
-          const result = await window.vaultrDesktop.installCli();
-
-          installBtn.disabled = false;
-          if (result.ok) {
-            detachStartConsumed = false;
-            spawnedLocalServerOk = false;
-            attempt(input.value.trim().replace(/\/$/, ''));
-          } else {
-            const msg = (result.output || result.error || 'install failed').trim();
-            showInstall(true);
-            setUI('error', 'install failed', msg);
-            retryTimer = setTimeout(() => attempt(input.value.trim().replace(/\/$/, '')), 5000);
+        if (!window.vaultrDesktop) {
+          headline = 'preload api unavailable';
+          hint = 'Desktop API not found. Check DevTools.';
+        } else if (isLocal(url) && !detachStartConsumed) {
+          try {
+            const probe = await window.vaultrDesktop.vaultrOnPath();
+            if (!probe.available) {
+              headline = 'vaultr cli not found';
+              showInst = true;
+            } else {
+              detachStartConsumed = true;
+              const st = await window.vaultrDesktop.startVaultrServerDetached({ userInitiated });
+              if (st.ok) {
+                spawnedLocalServerOk = true;
+                pendingStart = true;
+                retryMs = 1400;
+              } else if (st.reason === 'stopped_by_user') {
+                isRetrying = false;
+                busy = false;
+                startBtn.disabled = false;
+                showInstall(false);
+                showStart(true);
+                setUI('error', 'server stopped');
+                return;
+              } else {
+                spawnedLocalServerOk = false;
+                headline = 'server start failed';
+                hint = (st.error ? st.error + '\n\n' : '') +
+                  'Server output:\n' + (paths.serverOutput || '');
+              }
+            }
+          } catch (e) {
+            headline = 'connection error';
+            hint = String(e?.message ?? e);
           }
-        });
+        } else if (spawnedLocalServerOk && isLocal(url)) {
+          headline = 'waiting for server';
+          hint = (paths.serverOutput || '') +
+            (paths.diagnostics ? '\n\nElectron log:\n' + paths.diagnostics : '');
+        } else if (isLocal(url) && detachStartConsumed && !spawnedLocalServerOk) {
+          headline = 'server start failed';
+          hint = (paths.serverOutput || '') +
+            (paths.diagnostics ? '\n\nElectron log:\n' + paths.diagnostics : '');
+        } else {
+          headline = 'cannot connect';
+          if (paths.diagnostics) hint = 'Shell log:\n' + paths.diagnostics;
+        }
 
-        init();
-      })();
+        busy = false;
+        startBtn.disabled = pendingStart;
+        isRetrying = true;
+        showInstall(showInst);
+        setUI(
+          pendingStart ? 'starting' : 'error',
+          pendingStart ? 'starting server' : headline,
+          pendingStart ? '' : hint
+        );
+        retryTimer = setTimeout(() => attempt(url), retryMs);
+      }
+
+      async function init() {
+        let url = 'http://localhost:54321';
+        if (window.vaultrDesktop) {
+          try { url = await window.vaultrDesktop.getServerUrl() || url; } catch { }
+        }
+        input.value = url;
+        attempt(url);
+      }
+
+      function userConnect() {
+        isRetrying = false;
+        detachStartConsumed = false;
+        spawnedLocalServerOk = false;
+        showInstall(false);
+        attempt(input.value.trim().replace(/\/$/, ''), { userInitiated: true });
+      }
+
+      input.addEventListener('keydown', e => { if (e.key === 'Enter') userConnect(); });
+      startBtn.addEventListener('click', userConnect);
+      installBtn.addEventListener('click', async () => {
+        if (installBtn.disabled || !window.vaultrDesktop?.installCli) return;
+        clearTimeout(retryTimer);
+        installBtn.disabled = true;
+        isRetrying = false;
+        showInstall(false);
+        showStart(false);
+        setUI('connecting', 'installing cli...');
+
+        const result = await window.vaultrDesktop.installCli();
+
+        installBtn.disabled = false;
+        if (result.ok) {
+          detachStartConsumed = false;
+          spawnedLocalServerOk = false;
+          attempt(input.value.trim().replace(/\/$/, ''));
+        } else {
+          const msg = (result.output || result.error || 'install failed').trim();
+          showInstall(true);
+          setUI('error', 'install failed', msg);
+          retryTimer = setTimeout(() => attempt(input.value.trim().replace(/\/$/, '')), 5000);
+        }
+      });
+
+      init();
+    })();
   </script>
 </body>
 

@@ -102,6 +102,7 @@ const searchOverlayStyles = `
       padding: 1px 5px;
       line-height: 1.4;
     }
+    #search-results::-webkit-scrollbar { display: none; }
     /* ── Preview panel ─────────────────────────────────────── */
     .srch-preview-pane {
       padding: 1.25rem 1.5rem 1.75rem;
@@ -177,6 +178,13 @@ const searchOverlayStyles = `
     .srch-mode-desc { font-size: var(--text-xs); color: var(--sr-dir); }
     .srch-mode-footer { border-color: var(--hr) !important; }
     .srch-hint-sep { color: var(--sr-tm); opacity: 0.4; }
+    .srch-key {
+      font-family: var(--font-mono);
+      font-size: var(--text-xs);
+      color: var(--fg);
+      opacity: 0.65;
+      letter-spacing: 0;
+    }
 `
 
 const searchOverlayPanelHTML = `
@@ -270,8 +278,7 @@ const searchOverlayPanelHTML = `
 
           <!-- Left: results list -->
           <div id="search-results" @click="onResultClick($event)" @mousemove="onResultHover($event)"
-               class="flex flex-col gap-0.5 p-2 overflow-y-auto flex-shrink-0
-                      [scrollbar-width:thin] [scrollbar-color:var(--card-bd)_transparent]"
+               class="flex flex-col gap-0.5 p-2 overflow-y-auto flex-shrink-0 [scrollbar-width:none]"
                style="width:300px; border-right:1px solid var(--hr)"></div>
 
           <!-- Right: note preview -->
@@ -285,13 +292,13 @@ const searchOverlayPanelHTML = `
         <!-- Footer hints — shown only when body is visible -->
         <div class="srch-footer flex items-center gap-4 px-4 border-t" x-show="hasQuery" style="height:var(--btn-h-sm)">
           <span class="srch-hint flex items-center gap-1.5">
-            <kbd>↑</kbd><kbd>↓</kbd> navigate
+            <span class="srch-key">↑↓</span> navigate
           </span>
           <span class="srch-hint flex items-center gap-1.5">
-            <kbd>↵</kbd> open
+            <span class="srch-key">↵</span> open
           </span>
           <span class="srch-hint flex items-center gap-1.5">
-            <kbd x-text="isMac ? '⌘↵' : 'Ctrl+↵'"></kbd> copy path
+            <span class="srch-key" x-text="isMac ? '⌘↵' : 'Ctrl+↵'"></span> copy path
           </span>
         </div>
       </div>

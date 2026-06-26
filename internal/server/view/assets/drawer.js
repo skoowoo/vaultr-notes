@@ -1384,6 +1384,11 @@
             prevOpen = false; return;
           }
           prevOpen = true;
+          var _drawerOverlayEl = document.querySelector('.drawer-overlay');
+          if (_drawerOverlayEl) {
+            _drawerOverlayEl.classList.add('drawer-is-opening');
+            setTimeout(function() { _drawerOverlayEl.classList.remove('drawer-is-opening'); }, 320);
+          }
           if (window.__vaultrEscPush) window.__vaultrEscPush('drawer', _drawerEscClose);
           // Refresh key-behavior config on every open so settings changes take
           // effect immediately without restarting the app. Called before any
@@ -1653,6 +1658,12 @@
         var i = this.activeTab;
         if (i < 0 || !this.tabs[i] || this.tabs[i].path) return;
         void this.drawerCloseTab(i);
+      },
+
+      async togglePinActiveNote() {
+        var tab = this.tabs[this.activeTab];
+        if (!tab || !tab.path) return;
+        if (tab.pinned) await this.unpinActiveNote(); else await this.pinActiveNote();
       },
 
       async pinActiveNote() {

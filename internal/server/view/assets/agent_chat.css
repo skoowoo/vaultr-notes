@@ -50,7 +50,7 @@
       font-size: 8px; font-weight: 700; letter-spacing: 0.02em;
       user-select: none; line-height: 1;
     }
-    .mate-chip:hover { background: var(--surface-soft); color: var(--fg); }
+    .mate-chip:hover { background: var(--icon-hov); color: var(--fg); }
     .mate-chip.is-active { background: var(--surface-soft); color: var(--fg); }
 
     .mates-empty-hint { font-size: var(--text-sm); color: var(--muted); opacity: 0.4; font-style: italic; }
@@ -222,7 +222,7 @@
       opacity:0; transition:opacity 120ms, color 120ms, background 120ms; padding:0;
     }
     .msg-assistant-wrap:hover .msg-copy-btn { opacity:0.4; }
-    .msg-copy-btn:hover { opacity:1 !important; color:var(--fg); background:var(--nav-act); }
+    .msg-copy-btn:hover { opacity:1 !important; color:var(--fg); background:var(--icon-hov); }
     .msg-copy-btn.copied { opacity:1 !important; color:var(--link); }
     .msg-copy-btn svg { width:13px; height:13px; flex-shrink:0; }
 
