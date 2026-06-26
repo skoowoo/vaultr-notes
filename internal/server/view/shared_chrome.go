@@ -17,7 +17,7 @@ const navCSS = `
       text-decoration: none; border: none; background: transparent; padding: 0;
     }
     .nav-item:hover { color: rgba(255,255,255,0.78); background: rgba(255,255,255,0.06); }
-    .nav-item.active { background: var(--link); color: #ffffff; }
+    .nav-item.active { background: var(--ui-accent); color: #ffffff; }
     html[data-theme="neo"] .nav-item { color: rgba(0,0,0,0.52); }
     html[data-theme="neo"] .nav-item:hover { color: var(--fg); background: rgba(0,0,0,0.1); }
     html[data-theme="neo"] .nav-item.active { background: var(--seg-act-bg); color: var(--seg-act-fg); }
@@ -42,7 +42,7 @@ const navCSS = `
     .nav-run-badge {
       display: none; position: absolute; top: -4px; right: -4px;
       min-width: 14px; height: 14px; padding: 0 3px;
-      background-color: var(--link);
+      background-color: var(--ui-accent);
       background-image: conic-gradient(
         from var(--_nb-a) at 50% 50%,
         transparent 0%, transparent 50%,
@@ -107,7 +107,7 @@ const topbarCSS = `
       transition: color 120ms, background 120ms;
     }
     .lib-action-btn:hover, .lib-action-btn.is-active { color: var(--fg); background: var(--icon-hov); }
-    .lib-action-btn.is-active { color: var(--link); }
+    .lib-action-btn.is-active { color: var(--ui-accent); }
     .lib-action-btn svg { width: 15px; height: 15px; flex-shrink: 0; }
     .lib-action-btn .lib-ai-px { display: none; }
     .lib-back-btn .lib-ai-px { display: none; }

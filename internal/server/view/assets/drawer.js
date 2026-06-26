@@ -757,8 +757,8 @@
     var cmTheme = s.EditorView.theme({
       '&': {height:'100%',color:'var(--prose-body)',background:'transparent'},
       '&.cm-focused': {outline:'none'},
-      '.cm-content': {caretColor:'var(--link)'},
-      '.cm-cursor,.cm-dropCursor': {borderLeftColor:'var(--link)'},
+      '.cm-content': {caretColor:'var(--ui-accent)'},
+      '.cm-cursor,.cm-dropCursor': {borderLeftColor:'var(--ui-accent)'},
       '.cm-selectionBackground': {background:'var(--cm-selection-bg) !important'},
       '&.cm-focused .cm-selectionBackground': {background:'var(--cm-selection-bg)'},
       '.cm-activeLine': {background:'var(--cm-active-line)'},

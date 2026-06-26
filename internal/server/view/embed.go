@@ -14,6 +14,9 @@ var infoDialogJS string
 //go:embed assets/neo.css
 var neoCSS string
 
+//go:embed assets/neo_note.css
+var neoNoteCSS string
+
 //go:embed assets/short_dialog.css
 var shortDialogCSS string
 

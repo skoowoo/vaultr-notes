@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strconv"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -669,6 +670,10 @@ func shortSanitize(content []byte) []byte {
 	return []byte(strings.Join(lines, "\n"))
 }
 
+// shortEntryDelimRe matches any markdown thematic-break line (--- or ***)
+// used as an entry separator, with optional surrounding whitespace / CRLF.
+var shortEntryDelimRe = regexp.MustCompile(`\r?\n(?:---|\*\*\*)\s*\r?\n`)
+
 // ParseShortEntries parses the raw content of a short daily file and returns
 // individual entries, newest first. DailyPath is set on every returned entry.
 func ParseShortEntries(content []byte, dailyPath string) []ShortEntry {
@@ -683,7 +688,10 @@ func ParseShortEntries(content []byte, dailyPath string) []ShortEntry {
 			return nil
 		}
 	}
-	chunks := strings.Split(raw, "\n\n---\n\n")
+	// Split on any markdown thematic-break separator (--- or ***) with optional
+	// surrounding whitespace, to tolerate the current "\n\n---\n\n" format, older
+	// single-newline variants, and files that used "***" as the delimiter.
+	chunks := shortEntryDelimRe.Split(raw, -1)
 	entries := make([]ShortEntry, 0, len(chunks))
 	for _, chunk := range chunks {
 		chunk = strings.TrimSpace(chunk)

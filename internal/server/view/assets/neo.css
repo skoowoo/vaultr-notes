@@ -146,6 +146,7 @@
     /* Shorts */
     html[data-theme="neo"] .shorts-month-rail {
       border-left-width: 2px;
+      width: 80px;
     }
 
     /* Graph & settings */
@@ -244,19 +245,19 @@
 
     html[data-theme="neo"] .card-ai {
       background: var(--p2);
-      color: #ffffff;
+      color: var(--fg);
       border: 2px solid var(--card-bd);
     }
 
     html[data-theme="neo"] .card-short {
       background: var(--p3);
-      color: #ffffff;
+      color: var(--fg);
       border: 2px solid var(--card-bd);
     }
 
     html[data-theme="neo"] .card-index {
       background: var(--p0);
-      color: #ffffff;
+      color: var(--fg);
       border: 2px solid var(--card-bd);
     }
 
@@ -321,6 +322,15 @@
       box-shadow: var(--px-d3) var(--px-shadow);
     }
 
+    /* Linked-note highlight: solid black border (base uses semi-transparent yellow,
+       which violates neo border rules) + black text on yellow tint bg */
+    html[data-theme="neo"] .note-card.is-linked {
+      border-color: var(--card-bd) !important;
+    }
+    html[data-theme="neo"] .note-card.is-linked .note-name {
+      color: var(--fg);
+    }
+
     /* Config sections — structural container, not interactive card.
        2px border defines separation; no shadow (avoids stacking noise). */
     html[data-theme="neo"] .cfg-section {
@@ -335,6 +345,7 @@
     }
 
     html[data-theme="neo"] .tag-card:hover {
+      background: var(--bg);
       box-shadow: var(--px-d1) var(--px-shadow);
       transform: translate(1px, 1px);
     }
@@ -408,6 +419,7 @@
     }
 
     html[data-theme="neo"] .choice-card:hover {
+      background: var(--btn-primary-bg);
       box-shadow: var(--px-d1) var(--px-shadow);
       transform: translate(1px, 1px);
       border-color: var(--card-bd);
@@ -452,6 +464,7 @@
     html[data-theme="neo"] .cfg-save-btn:hover:not(:disabled),
     html[data-theme="neo"] .cfg-discard-btn:hover,
     html[data-theme="neo"] .agents-toolbar-btn:hover:not(:disabled) {
+      background: var(--bg);
       box-shadow: var(--px-d1) var(--px-shadow);
       transform: translate(1px, 1px);
       border-color: var(--card-bd);
@@ -468,7 +481,7 @@
     /* T6 Danger — hot pink fill + 2px black border (stop/destructive actions) */
     html[data-theme="neo"] .settings-apply-btn--danger {
       background: var(--p1);
-      color: var(--seg-act-fg);
+      color: var(--fg);
       border-color: var(--card-bd);
     }
 
@@ -522,13 +535,13 @@
     html[data-theme="neo"] .mate-act-btn.del {
       background: var(--p1);
       border-color: var(--card-bd);
-      color: var(--seg-act-fg);
+      color: var(--fg);
     }
 
     html[data-theme="neo"] .mate-act-btn.del:hover {
       background: var(--p1);
       border-color: var(--card-bd);
-      color: var(--seg-act-fg);
+      color: var(--fg);
     }
 
     /* Save / Cancel buttons — d2, same tier as cfg-save-btn / cfg-discard-btn */
@@ -540,6 +553,7 @@
 
     html[data-theme="neo"] .mate-save-btn:hover:not(:disabled),
     html[data-theme="neo"] .mate-cancel-btn:hover {
+      background: var(--bg);
       box-shadow: var(--px-d1) var(--px-shadow);
       transform: translate(1px, 1px);
       border-color: var(--card-bd);
@@ -660,13 +674,14 @@
     /* Library Open button — purple fill, white text, translate-only hover */
     html[data-theme="neo"] .note-read-btn {
       background: var(--p2);
-      color: var(--seg-act-fg);
+      color: var(--fg);
       border-color: var(--card-bd);
       box-shadow: var(--px-d1) var(--px-shadow);
       transition: none;
     }
 
     html[data-theme="neo"] .note-read-btn:hover {
+      background: var(--p2);
       box-shadow: var(--px-d0) var(--px-shadow);
       transform: translate(1px, 1px);
     }
@@ -767,6 +782,7 @@
     }
 
     html[data-theme="neo"] .shorts-empty-btn:hover {
+      background: transparent;
       box-shadow: var(--px-d1) var(--px-shadow);
       transform: translate(1px, 1px);
       border-color: var(--card-bd);
@@ -802,6 +818,7 @@
     }
 
     html[data-theme="neo"] .shorts-compose:hover {
+      background: transparent;
       box-shadow: var(--px-d1) var(--px-shadow);
       transform: translate(1px, 1px);
       border-color: var(--card-bd);
@@ -817,9 +834,52 @@
       border-bottom: 2px solid var(--card-bd);
     }
 
-    /* Month rail items — suppress transition */
+    /* "— beginning —" — structured stamp with 2px top rule */
+    html[data-theme="neo"] .shorts-end-msg {
+      border-top: 2px solid var(--card-bd);
+      padding-top: 16px;
+      font-family: var(--font-mono);
+      letter-spacing: 0.1em;
+    }
+
+    /* Month rail items — suppress transition + pre-allocate border space */
     html[data-theme="neo"] .shorts-month-item {
       transition: none;
+      border: 2px solid transparent;
+      padding: 8px 6px;
+      margin: 0 6px;
+    }
+
+    /* Month rail hover — white fill + pixel shadow + black border */
+    html[data-theme="neo"] .shorts-month-item:hover {
+      background: var(--bg);
+      box-shadow: var(--px-d1) var(--px-shadow);
+      border-color: var(--card-bd);
+    }
+
+    /* Month rail current — accent fill stamp (yellow + black border + d1 shadow) */
+    html[data-theme="neo"] .shorts-month-item.is-current {
+      background: var(--accent);
+      border-color: var(--card-bd);
+      box-shadow: var(--px-d1) var(--px-shadow);
+    }
+    html[data-theme="neo"] .shorts-month-item.is-current .shorts-month-abbr {
+      color: var(--fg);
+      opacity: 1;
+    }
+    html[data-theme="neo"] .shorts-month-item.is-current .shorts-month-year {
+      color: var(--muted);
+    }
+
+    /* has-data: solid square dot below year label */
+    html[data-theme="neo"] .shorts-month-item.has-data::after {
+      content: '';
+      display: block;
+      width: 4px;
+      height: 4px;
+      background: var(--fg);
+      margin: 3px auto 0;
+      opacity: 0.35;
     }
 
     /* Selected calendar day — raised 3D look */
@@ -906,10 +966,6 @@
       color: var(--fg);
     }
 
-    /* Path text — full opacity (base has 0.6, too dim for structural info) */
-    html[data-theme="neo"] .drawer-path-text {
-      opacity: 1;
-    }
 
     /* Save status — black pending dot, brand-yellow saved checkmark */
     html[data-theme="neo"] .ssi-pending { color: var(--fg); }
@@ -1069,6 +1125,7 @@
     }
 
     html[data-theme="neo"] .new-chat-btn:hover:not(:disabled) {
+      background: var(--bg);
       box-shadow: var(--px-d1) var(--px-shadow);
       transform: translate(1px, 1px);
       border-color: var(--card-bd);
@@ -1089,6 +1146,7 @@
 
     html[data-theme="neo"] .notif-play-btn:hover:not(:disabled),
     html[data-theme="neo"] .hero-bg-btn:hover {
+      background: var(--bg);
       box-shadow: var(--px-d0) var(--px-shadow);
       transform: translate(1px, 1px);
       border-color: var(--card-bd);
@@ -1115,7 +1173,7 @@
     }
 
     html[data-theme="neo"] .conv-item.is-active {
-      box-shadow: inset 3px 0 0 var(--link);
+      box-shadow: inset 3px 0 0 var(--ui-accent);
     }
 
     html[data-theme="neo"] .conv-item-del {
@@ -1169,6 +1227,7 @@
     }
 
     html[data-theme="neo"] .chat-send-circle:hover:not(:disabled) {
+      background: var(--accent);
       box-shadow: var(--px-d1) var(--px-shadow);
       transform: translate(1px, 1px);
     }
@@ -1181,13 +1240,14 @@
     /* T6 Stop button — purple fill + 2px black border (abort action) */
     html[data-theme="neo"] .chat-stop-circle {
       background: var(--p2);
-      color: var(--seg-act-fg);
+      color: var(--fg);
       border: 2px solid var(--card-bd);
       box-shadow: var(--px-d1) var(--px-shadow);
       transition: none;
     }
 
     html[data-theme="neo"] .chat-stop-circle:hover {
+      background: var(--p2);
       box-shadow: var(--px-d0) var(--px-shadow);
       transform: translate(1px, 1px);
     }
@@ -1247,22 +1307,26 @@
       -webkit-backdrop-filter: none;
     }
 
-    /* Toolbar & bulk buttons — d1 shadow + pixel font, translate on hover */
+    /* Toolbar & bulk buttons — d1 shadow + black text, translate on hover */
     html[data-theme="neo"] .toolbar-toggle,
     html[data-theme="neo"] .bulk-btn {
       box-shadow: var(--px-d1) var(--px-shadow);
+      color: var(--fg);
       transition: none;
     }
 
     html[data-theme="neo"] .toolbar-toggle:hover,
     html[data-theme="neo"] .bulk-btn-neutral:hover {
+      background: transparent;
       box-shadow: var(--px-d0) var(--px-shadow);
       transform: translate(1px, 1px);
       border-color: var(--card-bd);
+      color: var(--fg);
     }
 
     html[data-theme="neo"] .toolbar-toggle:active,
     html[data-theme="neo"] .bulk-btn-neutral:active {
+      background: transparent;
       box-shadow: none;
       transform: translate(2px, 2px);
     }
@@ -1270,7 +1334,7 @@
     html[data-theme="neo"] .bulk-btn-danger {
       background: var(--p1);
       border-color: var(--card-bd);
-      color: var(--seg-act-fg);
+      color: var(--fg);
     }
 
     html[data-theme="neo"] .bulk-btn-danger:hover:not(:disabled) {
@@ -1278,7 +1342,7 @@
       transform: translate(2px, 2px);
       background: var(--p1);
       border-color: var(--card-bd);
-      color: var(--seg-act-fg);
+      color: var(--fg);
     }
 
     /* Lightbox panel — d3 hard shadow (floating panel tier) */
@@ -1299,12 +1363,14 @@
     }
 
     html[data-theme="neo"] .lb-note-card:hover {
+      background: transparent;
       box-shadow: var(--px-d1) var(--px-shadow);
       transform: translate(1px, 1px);
       border-color: var(--card-bd);
     }
 
     html[data-theme="neo"] .lb-note-card:active {
+      background: transparent;
       box-shadow: none;
       transform: translate(3px, 3px);
     }
@@ -1315,10 +1381,9 @@
       transition: none;
     }
 
-    /* Lightbox section labels — pixel font, strip uppercase */
+    /* Lightbox section labels — strip uppercase (base already uses --muted) */
     html[data-theme="neo"] .lb-section-label {
       text-transform: none;
-      opacity: 0.6;
     }
 
     /* ── Drawer chrome ──────────────────────────────────────────── */
@@ -1360,6 +1425,7 @@
       box-shadow: var(--px-d0) var(--px-shadow);
       transform: translate(1px, 1px);
       border-color: var(--card-bd);
+      background: transparent;
     }
 
     html[data-theme="neo"] .drawer-more-btn:active:not(.active) {
@@ -1416,6 +1482,7 @@
     }
 
     html[data-theme="neo"] .drawer-discard-btn:hover {
+      background: var(--bg);
       box-shadow: var(--px-d0) var(--px-shadow);
       transform: translate(1px, 1px);
       border-color: var(--card-bd);
@@ -1496,56 +1563,9 @@
       transition: none;
     }
 
-    /* ── Note prose & Milkdown editor (pixel symbols, readable text) ── */
-    /* Unordered bullets: disc/circle → square pixel dot, all nesting levels */
-    html[data-theme="neo"] .prose ul,
-    html[data-theme="neo"] .prose ul ul,
-    html[data-theme="neo"] .prose ul ul ul,
-    html[data-theme="neo"] .ProseMirror ul,
-    html[data-theme="neo"] .ProseMirror ul ul,
-    html[data-theme="neo"] .ProseMirror ul ul ul {
-      list-style-type: square;
-    }
-
-    /* Blockquote left bar: hard 2px edge (border-radius zeroed by global rule) */
-    html[data-theme="neo"] .prose blockquote::before,
-    html[data-theme="neo"] .ProseMirror blockquote::before {
-      border-radius: 0;
-    }
-
-    /* Code blocks: pixel hard shadow (d2) */
-    html[data-theme="neo"] .prose pre,
-    html[data-theme="neo"] .ProseMirror pre {
-      box-shadow: var(--px-d2) var(--px-shadow);
-    }
-
-    /* Tables: pixel hard shadow (d2) */
-    html[data-theme="neo"] .prose table,
-    html[data-theme="neo"] .ProseMirror table {
-      box-shadow: var(--px-d2) var(--px-shadow);
-    }
-
-    /* Task list checkboxes: no transition, sharp corners, pixel checkmark */
-    html[data-theme="neo"] .prose li>input[type="checkbox"],
-    html[data-theme="neo"] .ProseMirror li[data-item-type="task"]::before {
-      transition: none;
-    }
-
-    html[data-theme="neo"] .ProseMirror li[data-item-type="task"]::before {
-      border-radius: 0;
-    }
-
-    html[data-theme="neo"] .prose li>input[type="checkbox"]:checked,
-    html[data-theme="neo"] .ProseMirror li[data-item-type="task"][data-checked="true"]::before {
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpolyline points='2,6 5,9 10,3' fill='none' stroke='%23fff' stroke-width='1.8' stroke-linecap='square' stroke-linejoin='miter'/%3E%3C/svg%3E");
-    }
-
-    /* Wiki link chips: no transition */
-    html[data-theme="neo"] .prose a[href^="/notes?"],
-    html[data-theme="neo"] .prose a[href^="/notes?"]::before,
-    html[data-theme="neo"] .ProseMirror span[data-wl],
-    html[data-theme="neo"] .ProseMirror span[data-wl]::before {
-      transition: none;
+    /* Active toggle (match-case, whole-word): yellow tint bg + black text for legibility */
+    html[data-theme="neo"] .vaultr-sr-toggle.active {
+      color: var(--fg);
     }
 
     /* ── Search overlay ─────────────────────────────────────── */
@@ -1771,6 +1791,8 @@
     html[data-theme="neo"] .drawer-compile-btn:hover:not(:disabled) {
       box-shadow: var(--px-d0) var(--px-shadow);
       border-color: var(--card-bd);
+      transform: translate(1px, 1px);
+      background: var(--bg);
     }
 
     html[data-theme="neo"] .drawer-source-btn:active,
@@ -1851,7 +1873,7 @@
     /* Entity-type chip — purple fill, white text, 2px black border */
     html[data-theme="neo"] .graph-node-panel-type {
       border: 2px solid var(--card-bd);
-      color: var(--seg-act-fg);
+      color: var(--fg);
       background: var(--entity-type-bg);
     }
 
@@ -1910,7 +1932,7 @@
     html[data-theme="neo"] .s-label-nav[data-px="blue"] {
       --s-px-bg: var(--p0);
       background: var(--p0);
-      color: var(--seg-act-fg);
+      color: var(--fg);
     }
 
     html[data-theme="neo"] .s-label[data-px="green"],
@@ -1923,10 +1945,10 @@
     html[data-theme="neo"] .s-label-nav[data-px="purple"] {
       --s-px-bg: var(--p2);
       background: var(--p2);
-      color: var(--seg-act-fg);
+      color: var(--fg);
     }
 
-    /* Count chip — keep visible, inherit button text color */
+    /* Count chip inside section header — use cnt-tx (#6b7280) over base muted (#4b5563) */
     html[data-theme="neo"] .s-head .s-count {
-      opacity: 0.65;
+      color: var(--cnt-tx);
     }

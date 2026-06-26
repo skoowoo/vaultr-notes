@@ -55,7 +55,7 @@
     }
     .hero-bg-zone:hover .hero-bg-btn { opacity: 1; }
     .hero-bg-btn:hover { background: var(--card-hov); color: var(--fg); }
-    .hero-bg-btn.is-active { color: var(--link); border-color: var(--link); }
+    .hero-bg-btn.is-active { color: var(--ui-accent); border-color: var(--ui-accent); }
     .hero-bg-btn svg { width: 13px; height: 13px; flex-shrink: 0; }
     .home-content {
       flex: 1;
@@ -194,9 +194,9 @@
     .s-label-icon {
       width: 13px; height: 13px; flex-shrink: 0; opacity: 0.6;
     }
-    .s-count { font-size: var(--text-xs); color: var(--muted); opacity: .45; }
+    .s-count { font-size: var(--text-xs); color: var(--muted); }
     .s-fill { flex: 1; }
-    .s-hint { font-size: var(--text-xs); color: var(--muted); opacity: .3; }
+    .s-hint { font-size: var(--text-xs); color: var(--muted-soft); }
     .s-label-nav {
       display: inline-flex; align-items: center; gap: 5px;
       font-size: var(--text-sm); font-weight: 600; letter-spacing: 0;
@@ -275,13 +275,13 @@
       color: var(--accent); background: var(--card-bg);
     }
     .card-meta {
-      font-size: var(--text-sm); color: var(--muted); opacity: .45;
+      font-size: var(--text-sm); color: var(--muted);
       overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
 
     /* empty state */
     .grid-empty {
-      font-size: .775rem; color: var(--muted); opacity: .35; padding: 4px 0;
+      font-size: .775rem; color: var(--muted); padding: 4px 0;
     }
 
     /* ── folder card grid (tighter columns, smaller than note grid) ── */
@@ -327,7 +327,7 @@
     }
     .folder-card-count {
       font-size: var(--text-xs); font-weight: var(--fw-regular); line-height: 1.4;
-      color: var(--muted); opacity: .65; font-variant-numeric: tabular-nums;
+      color: var(--muted); font-variant-numeric: tabular-nums;
     }
     .folder-card .folder-card-icon { color: var(--muted); opacity: 0.55; }
     .folder-card:hover .folder-card-icon { opacity: 1; transform: scale(1.06); }

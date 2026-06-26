@@ -317,9 +317,9 @@ html[data-theme="neo"] .note-card:hover {
 }
 
 .note-read-btn:hover {
-  color: var(--link);
+  color: var(--ui-accent);
   background: rgba(var(--accent-rgb), 0.08);
-  border-color: var(--link);
+  border-color: var(--ui-accent);
 }
 
 .note-read-btn svg {
@@ -445,7 +445,7 @@ html[data-theme="neo"] .note-card:hover {
 
 
 .tag-card.selected .tag-name {
-  color: var(--link);
+  color: var(--ui-accent);
   font-weight: var(--fw-semibold);
 }
 
@@ -632,7 +632,7 @@ html.macos .drawer-overlay.open {
 
 
 .note-card.is-linked .note-name {
-  color: var(--link);
+  color: var(--ui-accent);
 }
 
 .note-card.is-dim {
@@ -700,7 +700,7 @@ html[data-theme="neo"] .lib-conn-line {
 
 /* Selected: solid coral fill */
 .tags-col .tag-card.selected {
-  background: var(--link);
+  background: var(--ui-accent);
   border: none;
 }
 

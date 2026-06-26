@@ -78,9 +78,9 @@
     }
     .img-select-check svg { display: none; width: 10px; height: 10px; color: #fff; flex-shrink: 0; }
     .select-mode .img-select-check { display: flex; }
-    .img-card.is-selected .img-select-check { border-color: var(--link); background: var(--link); }
+    .img-card.is-selected .img-select-check { border-color: var(--ui-accent); background: var(--ui-accent); }
     .img-card.is-selected .img-select-check svg { display: block; }
-    .img-card.is-selected { border-color: var(--link) !important; }
+    .img-card.is-selected { border-color: var(--ui-accent) !important; }
 
     /* ── Toolbar ────────────────────────────────────────────────── */
     .img-toolbar {
@@ -101,7 +101,7 @@
     .toolbar-toggle svg { width: 12px; height: 12px; flex-shrink: 0; }
     .toolbar-select-group { display: flex; align-items: center; gap: 0.5rem; width: 100%; min-width: 0; }
     .bulk-count { flex: 1; min-width: 0; font-size: var(--text-sm); font-weight: 500; color: var(--muted); }
-    .bulk-count strong { color: var(--link); font-weight: 600; }
+    .bulk-count strong { color: var(--ui-accent); font-weight: 600; }
     .bulk-btn {
       display: inline-flex; align-items: center; gap: 0.3rem;
       padding: 0 0.65rem; height: 26px; border-radius: var(--radius-sm);
@@ -204,7 +204,7 @@
     /* ── Sidebar info rows ───────────────────────────────────────── */
     .lb-section-label {
       font-size: var(--text-xs); font-weight: 600; letter-spacing: 0.1em;
-      text-transform: uppercase; color: var(--muted); opacity: 0.45;
+      text-transform: uppercase; color: var(--muted);
       margin-bottom: 0.6rem;
     }
     .lb-field { margin-bottom: 0.875rem; }
@@ -234,7 +234,7 @@
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
     .lb-note-card-arrow { flex-shrink: 0; width: 12px; height: 12px; color: var(--muted); opacity: 0.4; }
-    .lb-no-notes { font-size: var(--text-xs); color: var(--muted); opacity: 0.5; padding: 0.25rem 0; }
+    .lb-no-notes { font-size: var(--text-xs); color: var(--muted); padding: 0.25rem 0; }
 
     /* ── macOS ─────────────────────────────────────────────────── */
     html.macos .drawer-overlay.open { -webkit-app-region: no-drag; }

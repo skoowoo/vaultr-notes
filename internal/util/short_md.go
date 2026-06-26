@@ -9,8 +9,8 @@ import (
 )
 
 // shortFileDelimiterRe splits a daily short file into raw entry blobs. Entries
-// are stored separated by a line containing only --- (AppendShort format).
-var shortFileDelimiterRe = regexp.MustCompile(`\r?\n---\s*\r?\n`)
+// are stored separated by a markdown thematic-break line (--- or ***).
+var shortFileDelimiterRe = regexp.MustCompile(`\r?\n(?:---|\*\*\*)\s*\r?\n`)
 
 const shortNoteHeadingPrefix = "###### Short Note:"
 

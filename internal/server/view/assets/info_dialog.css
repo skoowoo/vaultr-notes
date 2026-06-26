@@ -39,7 +39,7 @@
       height: 30px; padding: 0 0.875rem; border-radius: var(--radius-sm);
       font-size: var(--text-sm); font-weight: 500; cursor: pointer;
       font-family: inherit;
-      background: var(--link); color: #fff; border: none;
+      background: var(--ui-accent); color: #fff; border: none;
       transition: opacity 120ms;
     }
     .info-btn-close:hover { opacity: 0.85; }

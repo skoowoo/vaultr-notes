@@ -54,7 +54,7 @@
     }
     .confirm-btn-confirm.is-danger { background: var(--s-err); }
     .confirm-btn-confirm.is-danger:hover { opacity: 0.85; }
-    .confirm-btn-confirm:not(.is-danger) { background: var(--link); }
+    .confirm-btn-confirm:not(.is-danger) { background: var(--ui-accent); }
     .confirm-btn-confirm:not(.is-danger):hover { opacity: 0.85; }
 
     @keyframes confirm-bg-in {

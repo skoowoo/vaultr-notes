@@ -54,7 +54,7 @@ const settingsModalCSS = `
       transition: background 120ms, color 120ms;
     }
     .settings-sidebar-item:hover { color: var(--fg); background: var(--card-hov); }
-    .settings-sidebar-item.active { color: var(--btn-primary-fg); background: var(--link); }
+    .settings-sidebar-item.active { color: var(--btn-primary-fg); background: var(--ui-accent); }
     .settings-sidebar-item svg { width: 14px; height: 14px; flex-shrink: 0; }
 
     /* ── Content area ─────────────────────────────────────────── */
@@ -78,7 +78,7 @@ const settingsModalCSS = `
       outline: none; font-family: var(--font-mono);
       transition: border-color 150ms;
     }
-    .settings-input:focus { border-color: var(--link); }
+    .settings-input:focus { border-color: var(--ui-accent); }
     .settings-apply-btn, .cfg-save-btn, .agents-toolbar-btn {
       height: 32px; padding: 0 0.875rem; border-radius: var(--radius-md);
       border: 1px solid var(--card-bd); background: transparent; color: var(--fg);
@@ -176,7 +176,7 @@ const settingsModalCSS = `
       display: flex; align-items: center; gap: 0.4rem; flex-shrink: 0; margin-top: 0.1rem;
     }
     .cfg-section-dirty-dot {
-      width: 6px; height: 6px; border-radius: 50%; background: var(--link); flex-shrink: 0;
+      width: 6px; height: 6px; border-radius: 50%; background: var(--ui-accent); flex-shrink: 0;
     }
     .cfg-section-chev {
       flex-shrink: 0; color: var(--muted); display: flex; align-items: center; margin-top: 0.15rem;
@@ -201,7 +201,7 @@ const settingsModalCSS = `
     .cfg-section.is-open .cfg-field:last-of-type { border-bottom: none; }
     .cfg-field.dirty .cfg-field-label::before {
       content: ''; display: inline-block; width: 5px; height: 5px;
-      border-radius: 50%; background: var(--link);
+      border-radius: 50%; background: var(--ui-accent);
       margin-right: 5px; vertical-align: middle; margin-bottom: 1px;
     }
     .cfg-field-meta { grid-area: meta; min-width: 0; }
@@ -245,7 +245,7 @@ const settingsModalCSS = `
       font-family: var(--font-mono);
       transition: border-color 150ms;
     }
-    .cfg-input:focus { border-color: var(--link); }
+    .cfg-input:focus { border-color: var(--ui-accent); }
     select.cfg-input { cursor: pointer; }
     input[type="number"].cfg-input { width: 110px; }
     .cfg-textarea {
@@ -256,7 +256,7 @@ const settingsModalCSS = `
       font-family: var(--font-mono);
       transition: border-color 150ms; line-height: 1.5;
     }
-    .cfg-textarea:focus { border-color: var(--link); }
+    .cfg-textarea:focus { border-color: var(--ui-accent); }
     .cfg-reveal-wrap { display: flex; gap: 0.375rem; align-items: center; width: 100%; }
     .cfg-reveal-btn {
       flex-shrink: 0; width: 32px; height: 32px; padding: 0;
@@ -381,7 +381,7 @@ const settingsModalCSS = `
       transition: border-color 130ms, background 130ms; text-align: left;
     }
     .effect-card:hover { border-color: var(--muted); background: var(--card-hov); }
-    .effect-card.active { border-color: var(--link); background: var(--card-hov); }
+    .effect-card.active { border-color: var(--ui-accent); background: var(--card-hov); }
     .effect-card-name { font-size: var(--text-sm); font-weight: 600; color: var(--fg); }
     .effect-card-desc { font-size: var(--text-xs); color: var(--muted); margin-top: 0.1rem; white-space: nowrap; }
 
@@ -663,7 +663,7 @@ const settingsModalCSS = `
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 260px;
       transition: color 100ms, opacity 100ms;
     }
-    .skill-repo-link:hover { color: var(--link); opacity: 1; }
+    .skill-repo-link:hover { color: var(--ui-accent); opacity: 1; }
 
     /* ── Placeholder text ────────────────────────────────────── */
     .mate-form-input::placeholder,

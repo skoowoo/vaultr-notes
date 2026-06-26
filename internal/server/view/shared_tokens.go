@@ -40,7 +40,7 @@ const appTokensNeo = `
       /* ── Base surface ── */
       --bg:#ffffff; --fg:#111111;
       --muted:#4b5563; --card-bg:#f5f5f5; --surface-soft:#f8f9fa;
-      --card-hov:rgba(234,179,8,0.10);
+      --card-hov:rgba(250,204,21,0.10);
       --canvas:#ffffff; --hairline:#e5e7eb; --muted-soft:#898989; --body:#374151;
       /* ── Borders & dividers — opaque black (Neo-Brutalism) ── */
       --hr:#333333;
@@ -48,25 +48,27 @@ const appTokensNeo = `
       /* ── Code surfaces ── */
       --code-bg:rgba(17,17,17,0.055); --code-bd:rgba(17,17,17,0.10);
       /* ── Navigation — brand yellow ── */
-      --nav-bg:#eab308; --nav-act:rgba(0,0,0,0.1);
+      --nav-bg:#facc15; --nav-act:rgba(0,0,0,0.1);
       /* ── Brand accent — yellow ── */
-      --accent:#eab308; --accent-rgb:234,179,8; --accent-hov:#ca9f07;
-      --link:var(--accent);
+      --accent:#facc15; --accent-rgb:250,204,21; --accent-hov:#eab308;
+      /* ── Link color — prose hyperlinks only; do not use in UI chrome ── */
+      --link:#ec4899; --link-hov:#db2777; --link-rgb:236,72,153;
+      --link-ul:rgba(236,72,153,0.32); --link-ul-hov:rgba(236,72,153,0.55);
+      /* ── UI primary — interactive states, active elements, buttons (not prose links) ── */
+      --ui-accent:#facc15; --ui-accent-hov:#eab308;
       /* ── Prose headings ── */
-      --cover-dir:#9ca3af;
+      --cover-dir:#6b7280;
       --h1:#111111; --h2:#1f2937; --h3:#374151; --h4:#6b7280;
       /* ── Prose body ── */
       --prose-body:#374151;
       --prose-strong:#111111; --prose-em:#374151;
-      --link-hov:var(--accent-hov);
-      --link-ul:rgba(234,179,8,0.32); --link-ul-hov:rgba(234,179,8,0.55);
       --pre-bg:#f5f5f5; --pre-bd:#e5e7eb; --pre-tx:#111111;
       --code-tx:#374151;
-      --bq-bd:rgba(234,179,8,0.55); --bq-tx:rgba(55,65,81,0.88);
+      --bq-bd:rgba(250,204,21,0.55); --bq-tx:rgba(55,65,81,0.88);
       --ul-mk:rgba(17,17,17,0.22); --ol-mk:rgba(17,17,17,0.32);
       --th-bg:rgba(17,17,17,0.04); --th-tx:#9ca3af; --td-tx:#374151; --tbl-bd:#e5e7eb;
-      --cm-md-muted:#9ca3af; --cm-active-line:rgba(17,17,17,0.04); --cm-selection-bg:rgba(234,179,8,0.12);
-      --p0:#3b82f6; --p1:#ec4899; --p2:#8b5cf6; --p3:#10b981;
+      --cm-md-muted:#9ca3af; --cm-active-line:rgba(17,17,17,0.04); --cm-selection-bg:rgba(250,204,21,0.12);
+      --p0:#22d3ee; --p1:#f472b6; --p2:#a78bfa; --p3:#34d399;
       /* ── Overlays ── */
       --overlay-bg:rgba(17,17,17,0.38);
       /* ── Typography (theme-independent) ── */
@@ -86,22 +88,22 @@ const appTokensNeo = `
       --topbar-h:40px; --nav-w:60px; --nav-item-sz:40px; --action-btn-sz:28px;
       --btn-h:40px; --btn-h-sm:36px; --btn-h-xs:28px;
       --card-note-h:96px; --card-note-w-max:210px;
-      --cnt-bg:rgba(17,17,17,0.07); --cnt-tx:rgba(17,17,17,0.42);
+      --cnt-bg:rgba(17,17,17,0.07); --cnt-tx:#6b7280;
       /* ── Primary button — brand yellow ── */
-      --btn-primary-bg:#eab308; --btn-primary-fg:#111111;
-      --btn-primary-hover:#ca9f07; --btn-primary-active:#b88a10;
+      --btn-primary-bg:#facc15; --btn-primary-fg:#111111;
+      --btn-primary-hover:#eab308; --btn-primary-active:#ca8a04;
       /* ── Semantic state colors ── */
       --s-ok:#059669; --s-ok-bg:rgba(16,185,129,0.08); --s-ok-bd:rgba(16,185,129,0.35);
       --s-err:#dc2626; --s-err-bg:rgba(239,68,68,0.06); --s-err-bd:rgba(239,68,68,0.25);
       --s-warn:#d97706; --s-warn-bg:rgba(217,119,6,0.07); --s-warn-bd:rgba(217,119,6,0.26);
-      --input-focus-ring:rgba(234,179,8,0.08);
+      --input-focus-ring:rgba(250,204,21,0.08);
       --drawer-overlay-bg:rgba(0,0,0,0.22);
       --scrollbar-thumb:rgba(17,17,17,0.12); --scrollbar-thumb-hov:rgba(17,17,17,0.26);
       /* ── Interaction tints — brand yellow on white bg ── */
-      --icon-hov:rgba(234,179,8,0.10);
-      --tint-soft:rgba(234,179,8,0.06);
-      --tint-md:rgba(234,179,8,0.10);
-      --tint-strong:rgba(234,179,8,0.14);
+      --icon-hov:rgba(250,204,21,0.10);
+      --tint-soft:rgba(250,204,21,0.06);
+      --tint-md:rgba(250,204,21,0.10);
+      --tint-strong:rgba(250,204,21,0.14);
       /* ── Segmented / toggle control active state ── */
       --seg-act-bg:#000000; --seg-act-fg:#ffffff;
       /* ── Knowledge graph entity type chip ── */

@@ -128,48 +128,41 @@
       background-repeat: no-repeat; background-size: 100% 100%;
     }
 
-    /* ── Wiki link cards ─────────────────────────────────────────── */
-    .prose a[href^="/notes?"] {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.28em;
+    /* ── Wiki link chips — shared base (read + editor) ──────────────── */
+    .prose a[href^="/notes?"],
+    .ProseMirror span[data-wl] {
+      display: inline-flex; align-items: center; gap: 0.28em;
       padding: 0.06em 0.55em 0.08em 0.38em;
       border-radius: 6px;
-      background: rgba(var(--accent-rgb),0.07);
-      border: 1px solid rgba(var(--accent-rgb),0.22);
-      color: var(--link);
-      font-weight: 500;
-      font-size: 0.875em;
-      text-decoration: none;
-      vertical-align: baseline;
-      line-height: 1.55;
-      white-space: nowrap;
+      background: rgba(var(--link-rgb),0.07);
+      border: 1px solid rgba(var(--link-rgb),0.22);
+      color: var(--link); font-weight: 500; font-size: 0.875em;
+      vertical-align: baseline; line-height: 1.55; white-space: nowrap;
       transition: background 150ms, border-color 150ms, color 150ms;
     }
-    .prose a[href^="/notes?"]::before {
-      content: '';
-      display: inline-block;
-      width: 10px;
-      height: 11px;
-      flex-shrink: 0;
+    .prose a[href^="/notes?"]::before,
+    .ProseMirror span[data-wl]::before {
+      content: ''; display: inline-block; width: 10px; height: 11px; flex-shrink: 0;
       background-color: var(--link);
       -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 13'%3E%3Cpath d='M0 0H7L10 3V13H0Z' fill='black'/%3E%3C/svg%3E");
       mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 13'%3E%3Cpath d='M0 0H7L10 3V13H0Z' fill='black'/%3E%3C/svg%3E");
-      -webkit-mask-size: 100% 100%;
-      mask-size: 100% 100%;
-      -webkit-mask-repeat: no-repeat;
-      mask-repeat: no-repeat;
+      -webkit-mask-size: 100% 100%; mask-size: 100% 100%;
+      -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
       transition: background-color 150ms;
     }
-    .prose a[href^="/notes?"]:hover {
-      background: rgba(var(--accent-rgb),0.13);
-      border-color: rgba(var(--accent-rgb),0.40);
+    .prose a[href^="/notes?"]:hover,
+    .ProseMirror span[data-wl]:hover {
+      background: rgba(var(--link-rgb),0.13);
+      border-color: rgba(var(--link-rgb),0.40);
       color: var(--link-hov);
-      text-decoration: none;
     }
-    .prose a[href^="/notes?"]:hover::before {
+    .prose a[href^="/notes?"]:hover::before,
+    .ProseMirror span[data-wl]:hover::before {
       background-color: var(--link-hov);
     }
+    /* read-view only */
+    .prose a[href^="/notes?"] { text-decoration: none; max-width: 100%; overflow: hidden; }
+    /* broken wiki links (read-view only) */
     .prose a[href^="/notes?"].wikilink-broken {
       text-decoration: line-through;
       background: rgba(128,128,128,0.06);
@@ -177,9 +170,7 @@
       color: var(--prose-body);
       opacity: 0.55;
     }
-    .prose a[href^="/notes?"].wikilink-broken::before {
-      background-color: var(--prose-body);
-    }
+    .prose a[href^="/notes?"].wikilink-broken::before { background-color: var(--prose-body); }
     .prose a[href^="/notes?"].wikilink-broken:hover {
       background: rgba(128,128,128,0.10);
       border-color: rgba(128,128,128,0.35);

@@ -72,6 +72,15 @@ function shouldShowBlockFormats(state) {
   return false;
 }
 
+// Returns true if cursor is inside the frontmatter node.
+function selectionInFrontmatter(state) {
+  const { $from } = state.selection;
+  for (let d = $from.depth; d >= 0; d--) {
+    if ($from.node(d).type.name === 'frontmatter') return true;
+  }
+  return false;
+}
+
 // Returns true if cursor is inside a blockquote.
 function selectionInBlockquote(state) {
   const { $from } = state.selection;
@@ -277,6 +286,18 @@ export const tooltipPlugin = $prose(() => new Plugin({
 
     let pmView  = null;
     let visible = false;
+    // Track the PM selection at mousedown so we can detect whether the user
+    // actually made a new selection (drag) vs. just clicking in the edit area
+    // while an old non-empty selection happened to exist.
+    let selectionAtMousedown = null;
+
+    function onMouseDown(e) {
+      if (!pmView) return;
+      const editArea = document.getElementById('drawer-edit-area');
+      const inEditor = pmView.dom.contains(e.target) ||
+                       (editArea && editArea.contains(e.target));
+      selectionAtMousedown = inEditor ? pmView.state.selection : null;
+    }
 
     function onMouseUp(e) {
       setTimeout(() => {
@@ -289,6 +310,10 @@ export const tooltipPlugin = $prose(() => new Plugin({
         const inEditor = pmView.dom.contains(e.target) ||
                          (editArea && editArea.contains(e.target));
         if (!inEditor) return;
+        // Only show when the user actually created a new selection this gesture.
+        // If the selection is identical to what it was at mousedown the user
+        // clicked (or clicked outside pmView.dom) without dragging — skip.
+        if (selectionAtMousedown && pmView.state.selection.eq(selectionAtMousedown)) return;
         // New mouse selection: always reposition from scratch.
         if (visible) { window.__vaultrEscPop?.('format-tooltip'); visible = false; }
         render(pmView);
@@ -302,8 +327,9 @@ export const tooltipPlugin = $prose(() => new Plugin({
       if (!visible) render(pmView);
     }
 
-    document.addEventListener('mouseup', onMouseUp, true);
-    document.addEventListener('keyup',   onKeyUp,   true);
+    document.addEventListener('mousedown', onMouseDown, true);
+    document.addEventListener('mouseup',   onMouseUp,   true);
+    document.addEventListener('keyup',     onKeyUp,     true);
 
     function hide(collapseSelection) {
       if (!visible) return;
@@ -322,6 +348,7 @@ export const tooltipPlugin = $prose(() => new Plugin({
     function render(view) {
       const { state } = view;
       if (state.selection.empty) { hide(false); return; }
+      if (selectionInFrontmatter(state)) { hide(false); return; }
 
       const showClear = !hasToggleFormats(state);
       const clearTarget = showClear ? detectClearTarget(state) : null;
@@ -509,8 +536,9 @@ export const tooltipPlugin = $prose(() => new Plugin({
       destroy() {
         hide(false);
         el.remove();
-        document.removeEventListener('mouseup', onMouseUp, true);
-        document.removeEventListener('keyup',   onKeyUp,   true);
+        document.removeEventListener('mousedown', onMouseDown, true);
+        document.removeEventListener('mouseup',   onMouseUp,   true);
+        document.removeEventListener('keyup',     onKeyUp,     true);
       },
     };
   },

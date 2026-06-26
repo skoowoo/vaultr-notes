@@ -8,10 +8,10 @@ const searchOverlayStyles = `
     }
     .srch-row   { border-color: var(--srch-row-bd) !important; }
     .srch-icon  { color: var(--srch-ic); transition: color 150ms; }
-    .srch-row:focus-within .srch-icon { color: var(--link); }
+    .srch-row:focus-within .srch-icon { color: var(--ui-accent); }
     .srch-input {
       color: var(--fg);
-      caret-color: var(--link);
+      caret-color: var(--ui-accent);
       font-size: var(--text-body);
       font-family: var(--font-ui);
       letter-spacing: 0;
@@ -53,7 +53,7 @@ const searchOverlayStyles = `
       left: 0; top: 50%;
       transform: translateY(-50%) scaleY(0);
       width: 2.5px; height: 60%;
-      background: var(--link);
+      background: var(--ui-accent);
       border-radius: 0 2px 2px 0;
       transition: transform 100ms;
     }
@@ -76,7 +76,7 @@ const searchOverlayStyles = `
       justify-self: end;
     }
     .sr-icon  { color: var(--sr-ic); transition: color 100ms; }
-    #search-results a.is-active .sr-icon { color: var(--link); }
+    #search-results a.is-active .sr-icon { color: var(--ui-accent); }
     .sr-empty {
       color: var(--sr-em);
       font-size: var(--text-sm);
@@ -150,12 +150,12 @@ const searchOverlayStyles = `
       transition: background 100ms;
     }
     .srch-icon-area:hover { background: var(--card-hov); }
-    .srch-icon-area.has-mode .srch-icon { color: var(--link); }
+    .srch-icon-area.has-mode .srch-icon { color: var(--ui-accent); }
     .srch-mode-chip {
       font-size: var(--text-2xs);
       font-family: var(--font-ui);
       font-weight: 600;
-      color: var(--link);
+      color: var(--ui-accent);
       letter-spacing: 0.06em;
       text-transform: uppercase;
       white-space: nowrap;
@@ -257,7 +257,7 @@ const searchOverlayPanelHTML = `
                       class="srch-mode-item flex items-center gap-3 px-3 py-2 rounded-lg w-full text-left">
                 <span class="srch-mode-name" x-text="m.label"></span>
                 <span class="srch-mode-desc flex-1" x-text="m.desc"></span>
-                <span x-show="m.key === mode.key" class="ml-auto shrink-0" style="color:var(--link);font-size:var(--text-xs)">✓</span>
+                <span x-show="m.key === mode.key" class="ml-auto shrink-0" style="color:var(--ui-accent);font-size:var(--text-xs)">✓</span>
               </button>
             </template>
           </div>

@@ -139,23 +139,24 @@ function graphCtrl() {
     },
 
     _entityTypeColors: {
-      'concept': '#b45309',
-      'person': '#3b82f6',
-      'product': '#10b981',
-      'company': '#eab308',
-      'project': '#8b5cf6',
-      'topic': '#ec4899',
-      'brand': '#f97316',
+      'concept': '#facc15',
+      'person': '#60a5fa',
+      'product': '#34d399',
+      'company': '#fb923c',
+      'project': '#a78bfa',
+      'topic': '#f472b6',
+      'brand': '#f87171',
       'business-model': '#6366f1',
-      'book': '#0ea5e9',
+      'book': '#38bdf8',
       'tool': '#14b8a6',
       'framework': '#06b6d4',
       'technique': '#a855f7',
       'strategy': '#ef4444',
-      'product-platform': '#10b981',
+      'protocol': '#22d3ee',
+      'product-platform': '#34d399',
       'startup': '#f59e0b',
       'role': '#84cc16',
-      'market': '#fb923c',
+      'market': '#fdba74',
       'opensource-project': '#22c55e',
       'service': '#2dd4bf',
       'event': '#f43f5e',
@@ -165,7 +166,7 @@ function graphCtrl() {
 
     _tagPaletteColor(tag) {
       if (this._entityTypeColors[tag]) return this._entityTypeColors[tag];
-      var palette = ['#3b82f6', '#ec4899', '#8b5cf6', '#10b981', '#eab308', '#b45309', '#06b6d4', '#f97316'];
+      var palette = ['#60a5fa', '#f472b6', '#a78bfa', '#34d399', '#facc15', '#fb923c', '#22d3ee', '#f87171'];
       var h = 0;
       for (var i = 0; i < tag.length; i++) h = (Math.imul(31, h) + tag.charCodeAt(i)) | 0;
       return palette[Math.abs(h) % palette.length];
