@@ -478,7 +478,7 @@ body {
 
 
 .tag-card.selected .tag-name {
-  color: var(--ui-accent);
+  color: var(--accent);
   font-weight: var(--fw-semibold);
 }
 
@@ -611,7 +611,7 @@ html.macos .drawer-overlay.open {
 }
 
 .tags-col .tag-card.selected .tag-name {
-  color: var(--btn-primary-fg);
+  color: var(--fg);
   font-weight: var(--fw-semibold);
 }
 

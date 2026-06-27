@@ -54,7 +54,7 @@
       box-shadow: none;
       transform: translate(2px, 2px);
     }
-    .hero-bg-btn.is-active { color: var(--ui-accent); border-color: var(--ui-accent); }
+    .hero-bg-btn.is-active { color: var(--accent); border-color: var(--accent); }
     .hero-bg-btn svg { width: 13px; height: 13px; flex-shrink: 0; }
     .home-content {
       flex: 1;

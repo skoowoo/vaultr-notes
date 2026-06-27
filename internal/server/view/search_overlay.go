@@ -9,7 +9,7 @@ const searchOverlayStyles = `
     }
     .srch-row   { border-color: var(--srch-row-bd) !important; border-bottom-width: 2px; background: var(--srch-row-bg); }
     .srch-icon  { color: var(--srch-ic); transition: color 150ms; }
-    .srch-row:focus-within .srch-icon { color: var(--ui-accent); }
+    .srch-row:focus-within .srch-icon { color: var(--accent); }
     .srch-input {
       color: var(--fg);
       caret-color: var(--fg);
@@ -35,7 +35,7 @@ const searchOverlayStyles = `
     .srch-btn:hover {
       color: var(--fg);
       border-color: var(--srch-panel-bd);
-      background: var(--card-bg);
+      background: var(--bg);
       box-shadow: var(--px-d0) var(--px-shadow);
       transform: translate(1px, 1px);
     }
@@ -255,7 +255,7 @@ const searchOverlayPanelHTML = `
                       class="srch-mode-item flex items-center gap-3 px-3 py-2 rounded-lg w-full text-left">
                 <span class="srch-mode-name" x-text="m.label"></span>
                 <span class="srch-mode-desc flex-1" x-text="m.desc"></span>
-                <span x-show="m.key === mode.key" class="ml-auto shrink-0" style="color:var(--ui-accent);font-size:var(--text-xs)">✓</span>
+                <span x-show="m.key === mode.key" class="ml-auto shrink-0" style="color:var(--accent);font-size:var(--text-xs)">✓</span>
               </button>
             </template>
           </div>

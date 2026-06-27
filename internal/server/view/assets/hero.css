@@ -82,7 +82,7 @@
 .choice-card {
   height: var(--btn-h-sm);
   padding: 0 14px;
-  background: var(--btn-primary-bg);
+  background: var(--accent);
   border: 2px solid var(--card-bd);
   display: inline-flex;
   flex-direction: row;
@@ -90,19 +90,19 @@
   gap: 7px;
   cursor: pointer;
   text-align: left;
-  color: var(--btn-primary-fg);
+  color: var(--fg);
   font-family: inherit;
   box-shadow: var(--px-d2) var(--px-shadow);
 }
 
 .choice-card:hover {
-  background: var(--btn-primary-bg);
+  background: var(--accent);
   box-shadow: var(--px-d1) var(--px-shadow);
   transform: translate(1px, 1px);
 }
 
 .choice-card:active {
-  background: var(--btn-primary-bg);
+  background: var(--accent);
   box-shadow: none;
   transform: translate(3px, 3px);
 }

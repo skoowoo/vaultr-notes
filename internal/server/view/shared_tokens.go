@@ -38,10 +38,10 @@ const appTokensNeo = `
       /* ── Neo UI font (Space Grotesk — UI chrome only, content stays Inter) ── */
       --font-ui:"Space Grotesk",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
       /* ── Base surface ── */
-      --bg:#ffffff; --fg:#111111;
-      --muted:#4b5563; --card-bg:#f5f5f5; --surface-soft:#f8f9fa;
+      --bg:#fffef5; --fg:#111111;
+      --muted:#4b5563; --surface-soft:#fffdf0;
       --card-hov:rgba(250,204,21,0.10);
-      --canvas:#ffffff; --hairline:#e5e7eb; --muted-soft:#898989; --body:#374151;
+      --canvas:#ffffff; --hairline:rgba(17,17,17,0.13); --muted-soft:#898989; --body:#374151;
       /* ── Borders & dividers — opaque black (Neo-Brutalism) ── */
       --hr:#333333;
       --card-bd:#000000;
@@ -52,21 +52,19 @@ const appTokensNeo = `
       /* ── Brand accent — yellow ── */
       --accent:#facc15; --accent-rgb:250,204,21; --accent-hov:#eab308;
       /* ── Link color — prose hyperlinks only; do not use in UI chrome ── */
-      --link:#f472b6; --link-hov:#ec4899; --link-rgb:244,114,182;
-      --link-ul:rgba(244,114,182,0.28); --link-ul-hov:rgba(244,114,182,0.50);
-      /* ── UI primary — interactive states, active elements, buttons (not prose links) ── */
-      --ui-accent:#facc15; --ui-accent-hov:#eab308;
-      /* ── Prose headings ── */
+      --link:#111111;
+      --link-ul:#facc15; --link-ul-hov:#eab308;
+     /* ── Prose headings ── */
       --cover-dir:#6b7280;
       --h1:#111111; --h2:#1f2937; --h3:#374151; --h4:#6b7280;
       /* ── Prose body ── */
       --prose-body:#374151;
       --prose-strong:#111111; --prose-em:#374151;
-      --pre-bg:#f5f5f5; --pre-bd:#e5e7eb; --pre-tx:#111111;
+      --pre-bg:rgba(17,17,17,0.055); --pre-bd:rgba(17,17,17,0.13); --pre-tx:#111111;
       --code-tx:#374151;
       --bq-bd:rgba(250,204,21,0.55); --bq-tx:rgba(55,65,81,0.88);
       --ul-mk:rgba(17,17,17,0.22); --ol-mk:rgba(17,17,17,0.32);
-      --th-bg:rgba(17,17,17,0.04); --th-tx:#9ca3af; --td-tx:#374151; --tbl-bd:#e5e7eb;
+      --th-bg:rgba(17,17,17,0.04); --th-tx:#9ca3af; --td-tx:#374151; --tbl-bd:rgba(17,17,17,0.12);
       --cm-md-muted:#9ca3af; --cm-active-line:rgba(17,17,17,0.04); --cm-selection-bg:rgba(250,204,21,0.12);
       --p0:#22d3ee; --p1:#f472b6; --p2:#a78bfa; --p3:#34d399;
       /* ── Overlays ── */
@@ -82,17 +80,12 @@ const appTokensNeo = `
       --ls-cap:0.08em;
       /* ── Spacing ── */
       --space-xxs:4px; --space-xs:8px; --space-sm:12px; --space-md:16px; --space-lg:24px;
-      /* ── Radius (zeroed globally by neo.css * rule) ── */
-      --radius-xs:4px; --radius-sm:6px; --radius-md:8px; --radius-lg:12px; --radius-pill:9999px;
-      /* ── Component sizes ── */
+     /* ── Component sizes ── */
       --topbar-h:40px; --nav-w:60px; --nav-item-sz:40px; --action-btn-sz:28px;
       --btn-h:40px; --btn-h-sm:36px; --btn-h-xs:28px;
       --card-note-h:96px; --card-note-w-max:210px;
       --cnt-bg:rgba(17,17,17,0.07); --cnt-tx:#6b7280;
-      /* ── Primary button — brand yellow ── */
-      --btn-primary-bg:#facc15; --btn-primary-fg:#111111;
-      --btn-primary-hover:#eab308; --btn-primary-active:#ca8a04;
-      /* ── Semantic state colors ── */
+     /* ── Semantic state colors ── */
       --s-ok:#059669; --s-ok-bg:rgba(16,185,129,0.08); --s-ok-bd:rgba(16,185,129,0.35);
       --s-err:#dc2626; --s-err-bg:rgba(239,68,68,0.06); --s-err-bd:rgba(239,68,68,0.25);
       --s-warn:#d97706; --s-warn-bg:rgba(217,119,6,0.07); --s-warn-bd:rgba(217,119,6,0.26);

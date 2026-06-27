@@ -175,7 +175,7 @@ function graphCtrl() {
     _tagColor(tag) {
       if (!tag) {
         var s = getComputedStyle(document.documentElement);
-        return s.getPropertyValue('--card-bg').trim() || '#1a1a1a';
+        return s.getPropertyValue('--bg').trim() || '#1a1a1a';
       }
       return this._hexToRgba(this._tagPaletteColor(tag), 0.30);
     },

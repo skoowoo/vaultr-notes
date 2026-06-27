@@ -92,7 +92,7 @@ const topbarCSS = `
       background: transparent; color: var(--muted); cursor: pointer;
     }
     .lib-action-btn:hover, .lib-action-btn.is-active { color: var(--fg); background: var(--icon-hov); }
-    .lib-action-btn.is-active { color: var(--ui-accent); }
+    .lib-action-btn.is-active { color: var(--accent); }
     .lib-action-btn svg { width: 15px; height: 15px; flex-shrink: 0; }
     .lib-action-btn .lib-ai-px { display: none; }
     .lib-back-btn .lib-ai-px { display: none; }

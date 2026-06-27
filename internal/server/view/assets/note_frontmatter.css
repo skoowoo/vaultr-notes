@@ -20,8 +20,8 @@
       padding-top: 0.15rem; white-space: nowrap;
     }
     .fm-val { font-size: var(--text-xs); color: var(--cover-dir); line-height: 1.6; overflow: hidden; }
-    .fm-val a { color: var(--link); text-decoration: none; opacity: 0.85; }
-    .fm-val a:hover { opacity: 1; }
+    .fm-val a { color: var(--link); text-decoration: underline; text-decoration-color: var(--link-ul); text-decoration-thickness: 1px; text-underline-offset: 2px; opacity: 0.85; }
+    .fm-val a:hover { opacity: 1; text-decoration-color: var(--link-ul-hov); }
     .fm-val-text { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .fm-tag {
       display: inline-block; font-size: var(--text-sm); font-weight: 500;

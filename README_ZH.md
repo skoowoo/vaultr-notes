@@ -232,8 +232,6 @@ Mate 最有意思的地方是事件驱动：配好触发器，你什么都不用
 | `discord_message`    | 收到 Discord 私信            |
 | `compile_requested`  | 手动触发了笔记编译           |
 
-<img src="./docs/assets/trigger.png" width="600" alt="Event Triggers">
-
 #### 底层 Agent
 
 > **Vaultr 直接从本地 `PATH` 发现可用的 agent CLI，不用任何额外配置。** 你已经在用 Claude Code 写代码？在终端里跑 Codex 或 Copilot？Vaultr 启动时自动找到它们，直接拿来用。你的工具，你的习惯，Vaultr 不折腾你。
@@ -255,8 +253,6 @@ Mate 最有意思的地方是事件驱动：配好触发器，你什么都不用
 - Qoder CLI
 - Kiro CLI
 - Kilo
-
-<img src="./docs/assets/agents.png" width="600" alt="Agents">
 
 ## 微信
 

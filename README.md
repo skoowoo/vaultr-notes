@@ -234,8 +234,6 @@ Add one or more triggers to a mate and it runs automatically whenever a matching
 | `discord_message`    | A Discord DM is received                 |
 | `compile_requested`  | A note compilation is manually triggered |
 
-<img src="./docs/assets/trigger.png" width="600" alt="Event Triggers">
-
 #### Backing Agents
 
 > **Vaultr automatically discovers available agent CLIs from your local `PATH` with no extra configuration needed.** If you already use Claude Code, Codex, or Copilot in your terminal, Vaultr finds them at startup and makes them available as backing agents for your mates.
@@ -257,9 +255,6 @@ Vaultr integrates **15 agent CLIs** out of the box:
 - Qoder CLI
 - Kiro CLI
 - Kilo
-
-<img src="./docs/assets/agents.png" width="600" alt="Agents">
-
 
 ## WeChat
 

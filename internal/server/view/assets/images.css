@@ -23,9 +23,9 @@
     /* ── Card ───────────────────────────────────────────────────── */
     .img-card {
       border: 2px solid var(--card-bd);
-      background: var(--card-bg); overflow: hidden; cursor: pointer;
+      background: var(--bg); overflow: hidden; cursor: pointer;
     }
-    .img-card:hover { background: var(--card-bg); border-color: var(--card-bd); box-shadow: var(--px-d3) var(--px-shadow); }
+    .img-card:hover { background: var(--bg); border-color: var(--card-bd); box-shadow: var(--px-d3) var(--px-shadow); }
 
     /* ── Thumbnail ──────────────────────────────────────────────── */
     .img-thumb-wrap {
@@ -74,9 +74,9 @@
     }
     .img-select-check svg { display: none; width: 10px; height: 10px; color: #fff; flex-shrink: 0; }
     .select-mode .img-select-check { display: flex; }
-    .img-card.is-selected .img-select-check { border-color: var(--ui-accent); background: var(--ui-accent); }
+    .img-card.is-selected .img-select-check { border-color: var(--accent); background: var(--accent); }
     .img-card.is-selected .img-select-check svg { display: block; }
-    .img-card.is-selected { border-color: var(--ui-accent) !important; }
+    .img-card.is-selected { border-color: var(--accent) !important; }
 
     /* ── Toolbar ────────────────────────────────────────────────── */
     .img-toolbar {
@@ -105,7 +105,7 @@
     .toolbar-toggle svg { width: 12px; height: 12px; flex-shrink: 0; }
     .toolbar-select-group { display: flex; align-items: center; gap: 0.5rem; width: 100%; min-width: 0; }
     .bulk-count { flex: 1; min-width: 0; font-size: var(--text-sm); font-weight: 500; color: var(--muted); }
-    .bulk-count strong { color: var(--ui-accent); font-weight: 600; }
+    .bulk-count strong { color: var(--accent); font-weight: 600; }
     .bulk-btn {
       display: inline-flex; align-items: center; gap: 0.3rem;
       padding: 0 0.65rem; height: 26px;
@@ -161,7 +161,7 @@
       display: flex; width: 100%; max-width: 1080px;
       height: 80vh; max-height: 820px;
       overflow: hidden;
-      background: var(--card-bg); border: 2px solid var(--hr);
+      background: var(--bg); border: 2px solid var(--hr);
       box-shadow: var(--px-d3) var(--px-shadow);
       transition: transform 200ms ease;
       user-select: none;
@@ -239,7 +239,7 @@
     .lb-note-card {
       display: flex; align-items: center; gap: 0.5rem;
       padding: 0.5rem 0.6rem;
-      border: 2px solid var(--card-bd); background: var(--card-bg);
+      border: 2px solid var(--card-bd); background: var(--bg);
       margin-bottom: 0.4rem; cursor: pointer;
       box-shadow: var(--px-d2) var(--px-shadow);
     }

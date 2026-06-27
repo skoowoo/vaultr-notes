@@ -106,7 +106,7 @@
     }
 
     .graph-index-item.active .graph-index-item-name {
-      color: var(--btn-primary-fg);
+      color: var(--fg);
       font-weight: var(--fw-semibold);
     }
 
@@ -259,7 +259,7 @@
     /* ── Node tooltip ────────────────────────────────────────── */
     .graph-tooltip {
       position: fixed; z-index: 100; pointer-events: none;
-      background: var(--card-bg); border: 2px solid var(--card-bd);
+      background: var(--bg); border: 2px solid var(--card-bd);
       padding: 0.4rem 0.65rem;
       font-size: var(--text-sm); color: var(--fg);
       box-shadow: var(--px-d2) var(--px-shadow); white-space: nowrap;
@@ -351,8 +351,8 @@
       height: 32px;
       padding: 0;
       border: 2px solid var(--card-bd);
-      background: var(--btn-primary-bg);
-      color: var(--btn-primary-fg);
+      background: var(--accent);
+      color: var(--fg);
       font-size: var(--text-sm);
       font-weight: var(--fw-medium);
       font-family: var(--font-ui);
@@ -361,12 +361,12 @@
     }
 
     .graph-node-open-btn:hover {
-      background: var(--btn-primary-bg);
+      background: var(--accent);
       box-shadow: var(--px-d1) var(--px-shadow);
       transform: translate(1px, 1px);
     }
     .graph-node-open-btn:active {
-      background: var(--btn-primary-bg);
+      background: var(--accent);
       box-shadow: none;
       transform: translate(3px, 3px);
     }

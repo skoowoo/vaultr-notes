@@ -76,7 +76,7 @@ const settingsModalCSS = `
       outline: none; font-family: var(--font-mono);
       box-shadow: var(--px-d2) var(--px-shadow);
     }
-    .settings-input:focus { border-color: var(--ui-accent); }
+    .settings-input:focus { border-color: var(--accent); }
     .settings-apply-btn, .cfg-save-btn, .agents-toolbar-btn {
       height: 32px; padding: 0 0.875rem;
       border: 2px solid var(--card-bd); color: var(--fg);
@@ -180,7 +180,7 @@ const settingsModalCSS = `
       display: flex; align-items: center; gap: 0.4rem; flex-shrink: 0; margin-top: 0.1rem;
     }
     .cfg-section-dirty-dot {
-      width: 6px; height: 6px; border-radius: 50%; background: var(--ui-accent); flex-shrink: 0;
+      width: 6px; height: 6px; border-radius: 50%; background: var(--accent); flex-shrink: 0;
     }
     .cfg-section-chev {
       flex-shrink: 0; color: var(--muted); display: flex; align-items: center; margin-top: 0.15rem;
@@ -205,7 +205,7 @@ const settingsModalCSS = `
     .cfg-section.is-open .cfg-field:last-of-type { border-bottom: none; }
     .cfg-field.dirty .cfg-field-label::before {
       content: ''; display: inline-block; width: 5px; height: 5px;
-      border-radius: 50%; background: var(--ui-accent);
+      border-radius: 50%; background: var(--accent);
       margin-right: 5px; vertical-align: middle; margin-bottom: 1px;
     }
     .cfg-field-meta { grid-area: meta; min-width: 0; }
@@ -224,14 +224,14 @@ const settingsModalCSS = `
     .cfg-wechat-auth-title { font-size: var(--text-sm); font-weight: 500; color: var(--body); }
     .cfg-wechat-badge {
       font-size: var(--text-sm); font-weight: 500;
-      padding: 3px 10px; border-radius: var(--radius-pill);
+      padding: 3px 10px; border-radius: 0;
       color: var(--muted); background: var(--code-bg);
     }
-    .cfg-wechat-badge.connected { color: var(--p3); background: var(--s-ok-bg); }
+    .cfg-wechat-badge.connected { color: var(--s-ok); background: var(--s-ok-bg); }
     .cfg-wechat-meta { font-size: var(--text-xs); color: var(--muted); line-height: 1.55; margin: 0 0 0.75rem; }
     .cfg-wechat-meta code {
-      font-size: var(--text-2xs); padding: 0.05rem 0.3rem; border-radius: var(--radius-xs);
-      background: var(--card-bg); border: 1px solid var(--code-bd);
+      font-size: var(--text-2xs); padding: 0.05rem 0.3rem; border-radius: 0;
+      background: var(--code-bg); border: 1px solid var(--code-bd);
     }
     .cfg-wechat-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
     .cfg-wechat-qr {
@@ -249,7 +249,7 @@ const settingsModalCSS = `
       font-family: var(--font-mono);
       box-shadow: var(--px-d2) var(--px-shadow);
     }
-    .cfg-input:focus { border-color: var(--ui-accent); }
+    .cfg-input:focus { border-color: var(--accent); }
     select.cfg-input { cursor: pointer; }
     input[type="number"].cfg-input { width: 110px; }
     .cfg-textarea {
@@ -260,7 +260,7 @@ const settingsModalCSS = `
       font-family: var(--font-mono); line-height: 1.5;
       box-shadow: var(--px-d2) var(--px-shadow);
     }
-    .cfg-textarea:focus { border-color: var(--ui-accent); }
+    .cfg-textarea:focus { border-color: var(--accent); }
     .cfg-reveal-wrap { display: flex; gap: 0.375rem; align-items: center; width: 100%; }
     .cfg-reveal-btn {
       flex-shrink: 0; width: 32px; height: 32px; padding: 0;
@@ -323,10 +323,10 @@ const settingsModalCSS = `
     }
     .agent-status-badge {
       font-size: var(--text-xs); font-weight: 500;
-      padding: 2px 8px; border-radius: var(--radius-pill); flex-shrink: 0;
+      padding: 2px 8px; border-radius: 0; flex-shrink: 0;
       background: var(--code-bg); color: var(--muted); white-space: nowrap;
     }
-    .agent-status-badge.ok { color: var(--p3); background: var(--s-ok-bg); }
+    .agent-status-badge.ok { color: var(--s-ok); background: var(--s-ok-bg); }
     /* row 2: path · version · protocol — single line, no wrap */
     .agent-card-info {
       display: flex; align-items: center; gap: 0.85rem;
@@ -344,7 +344,7 @@ const settingsModalCSS = `
       padding-left: 1.1rem; min-width: 0; overflow: hidden;
     }
     .agent-model-pill {
-      font-size: var(--text-2xs); font-weight: 500; padding: 1px 7px; border-radius: var(--radius-pill);
+      font-size: var(--text-2xs); font-weight: 500; padding: 1px 7px; border-radius: 0;
       background: var(--code-bg); color: var(--muted);
       white-space: nowrap; max-width: 160px; overflow: hidden; text-overflow: ellipsis;
     }
@@ -373,7 +373,7 @@ const settingsModalCSS = `
       white-space: nowrap;
     }
     .agent-cli-copy:hover { color: var(--fg); background: var(--card-hov); }
-    .agent-cli-copy.copied { color: var(--p3); border-color: var(--s-ok-bd); }
+    .agent-cli-copy.copied { color: var(--s-ok); border-color: var(--s-ok-bd); }
 
     /* ── Editor effects ───────────────────────────────────────── */
     .effect-card {
@@ -419,7 +419,7 @@ const settingsModalCSS = `
     .kbd {
       display: inline-flex; align-items: center;
       padding: 0.18rem 0.42rem;
-      background: var(--code-bg); border: 2px solid var(--card-bd);
+      background: var(--bg); border: 2px solid var(--card-bd);
       font-family: var(--font-mono);
       font-size: var(--text-xs); color: var(--fg); white-space: nowrap; line-height: 1.4;
       box-shadow: var(--px-d1) var(--px-shadow);
@@ -453,11 +453,11 @@ const settingsModalCSS = `
     .mate-card-actions { display: flex; gap: 0.3rem; flex-shrink: 0; }
     .mate-card-tags { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.15rem; }
     .mate-badge {
-      font-size: var(--text-xs); font-weight: 500; padding: 2px 8px; border-radius: var(--radius-pill);
+      font-size: var(--text-xs); font-weight: 500; padding: 2px 8px; border-radius: 0;
       background: var(--code-bg); color: var(--muted);
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px;
     }
-    .mate-badge.trigger { color: var(--p3); background: var(--s-ok-bg); }
+    .mate-badge.trigger { color: var(--s-ok); background: var(--s-ok-bg); }
     .mate-act-btn {
       height: 26px; padding: 0 0.6rem;
       border: 2px solid var(--card-bd); background: transparent;
@@ -666,7 +666,7 @@ const settingsModalCSS = `
     .skill-name { font-size: var(--text-sm); font-weight: 600; color: var(--fg); }
     .skill-default-badge {
       font-size: var(--text-xs); font-weight: 500; padding: 2px 8px;
-      border-radius: var(--radius-pill); background: var(--code-bg); color: var(--muted);
+      border-radius: 0; background: var(--code-bg); color: var(--muted);
     }
     .skill-toggling { opacity: 0.55; pointer-events: none; }
     .skill-repo-link {
@@ -675,7 +675,7 @@ const settingsModalCSS = `
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 260px;
       transition: color 100ms, opacity 100ms;
     }
-    .skill-repo-link:hover { color: var(--ui-accent); opacity: 1; }
+    .skill-repo-link:hover { color: var(--accent); opacity: 1; }
 
     /* ── Placeholder text ────────────────────────────────────── */
     .mate-form-input::placeholder,

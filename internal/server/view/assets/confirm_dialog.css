@@ -15,7 +15,7 @@
     }
 
     .confirm-card {
-      background: var(--card-bg);
+      background: var(--bg);
       border: 2px solid var(--card-bd);
       padding: 1.5rem 1.5rem 1.25rem;
       max-width: 360px;
@@ -106,5 +106,5 @@
     }
 
     .confirm-btn-confirm:not(.is-danger) {
-      background: var(--ui-accent);
+      background: var(--accent);
     }

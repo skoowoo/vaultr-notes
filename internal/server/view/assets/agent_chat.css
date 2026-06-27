@@ -289,7 +289,7 @@
       align-items: center;
       justify-content: center;
       padding: 0.1rem 0.28rem;
-      border-radius: var(--radius-xs);
+      border-radius: 0;
       border: 1px solid var(--srch-kbd-bd);
       font-size: 0.68rem;
       font-family: inherit;
@@ -623,7 +623,7 @@
 
     .msg-copy-btn.copied {
       opacity: 1 !important;
-      color: var(--ui-accent);
+      color: var(--accent);
     }
 
     .msg-copy-btn svg {
@@ -986,7 +986,7 @@
     }
 
     .conv-item.is-active {
-      box-shadow: inset 3px 0 0 var(--ui-accent);
+      box-shadow: inset 3px 0 0 var(--accent);
     }
 
     .conv-item-del {

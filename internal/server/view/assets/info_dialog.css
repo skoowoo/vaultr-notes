@@ -7,7 +7,7 @@
       animation: info-bg-in 160ms ease both;
     }
     .info-card {
-      background: var(--card-bg);
+      background: var(--bg);
       border: 2px solid var(--card-bd);
       padding: 1.5rem 1.5rem 1.25rem;
       max-width: 400px; width: 100%;
@@ -39,7 +39,7 @@
       height: 30px; padding: 0 0.875rem;
       font-size: var(--text-sm); font-weight: 500; cursor: pointer;
       font-family: inherit;
-      background: var(--ui-accent); color: #fff; border: none;
+      background: var(--accent); color: #fff; border: none;
       box-shadow: var(--px-d2) var(--px-shadow);
     }
     .info-btn-close:hover {

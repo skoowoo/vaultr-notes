@@ -26,7 +26,7 @@
       particles: {
         label: 'Particles', desc: 'Colorful dots burst from cursor',
         fn: function(c) {
-          var colors = ['var(--link)','var(--p2)','var(--p3)','var(--p1)','var(--p0)','var(--link-hov)'];
+          var colors = ['var(--accent)','var(--p2)','var(--p3)','var(--p1)','var(--p0)','var(--accent-hov)'];
           for (var i = 0; i < 7; i++) {
             var p = document.createElement('div');
             p.className = 'vaultr-ep';
@@ -757,8 +757,8 @@
     var cmTheme = s.EditorView.theme({
       '&': {height:'100%',color:'var(--prose-body)',background:'transparent'},
       '&.cm-focused': {outline:'none'},
-      '.cm-content': {caretColor:'var(--ui-accent)'},
-      '.cm-cursor,.cm-dropCursor': {borderLeftColor:'var(--ui-accent)'},
+      '.cm-content': {caretColor:'var(--accent)'},
+      '.cm-cursor,.cm-dropCursor': {borderLeftColor:'var(--accent)'},
       '.cm-selectionBackground': {background:'var(--cm-selection-bg) !important'},
       '&.cm-focused .cm-selectionBackground': {background:'var(--cm-selection-bg)'},
       '.cm-activeLine': {background:'var(--cm-active-line)'},
@@ -771,7 +771,7 @@
       {tag:s.tags.heading4,color:'var(--h4)',fontWeight:'500'},
       {tag:s.tags.emphasis,fontStyle:'italic',color:'var(--prose-em)'},
       {tag:s.tags.strong,fontWeight:'600',color:'var(--prose-strong)'},
-      {tag:s.tags.link,color:'var(--link)'},{tag:s.tags.url,color:'var(--link)',opacity:'0.72'},
+      {tag:s.tags.link,color:'var(--p1)'},{tag:s.tags.url,color:'var(--p1)',opacity:'0.72'},
       {tag:s.tags.monospace,color:'var(--code-tx)'},{tag:s.tags.meta,color:'var(--cm-md-muted)'},
       {tag:s.tags.punctuation,color:'var(--cm-md-muted)'},
       {tag:s.tags.processingInstruction,color:'var(--cm-md-muted)'},

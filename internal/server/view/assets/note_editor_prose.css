@@ -3,7 +3,8 @@
     .ProseMirror [data-fm] { margin-bottom: 1.75rem; }
     .ProseMirror [data-fm] .fm-card {
       background: transparent; border: 1px solid var(--hr);
-      border-radius: 8px; padding: 0.6rem 0.875rem 0.75rem;
+      padding: 0.6rem 0.875rem 0.75rem;
+      box-shadow: var(--px-d2) var(--px-shadow);
     }
     .ProseMirror [data-fm] .fm-card-hd {
       display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;
@@ -18,7 +19,7 @@
       border: none; background: transparent;
       width: 22px; height: 22px; padding: 3px;
       display: flex; align-items: center; justify-content: center;
-      border-radius: 4px; cursor: pointer; color: var(--muted);
+      cursor: pointer; color: var(--muted);
       transition: color 120ms, background 120ms, opacity 120ms;
     }
     .ProseMirror [data-fm] .fm-edit-btn svg { width: 13px; height: 13px; flex-shrink: 0; }
@@ -26,8 +27,8 @@
       color: var(--fg); background: var(--nav-act); opacity: 1;
     }
     .ProseMirror [data-fm] .fm-done-btn {
-      flex-shrink: 0; border: none; border-radius: 4px;
-      background: var(--ui-accent); color: #fff;
+      flex-shrink: 0; border: none;
+      background: var(--accent); color: #fff;
       font-size: 0.7rem; font-weight: 500;
       cursor: pointer; padding: 0.25em 0.65em; font-family: inherit;
     }
@@ -94,7 +95,7 @@
        (empty list item), so the cursor anchor stays on line 1 instead of drifting down. */
     .ProseMirror li > p > br.ProseMirror-trailingBreak:not(:only-child) { display: none; }
     .ProseMirror > p:first-of-type { font-size: 1em; line-height: 1.75; color: var(--prose-body); }
-    .ProseMirror ul  { padding-left: 1.4em; list-style-type: disc; margin-bottom: 0; }
+    .ProseMirror ul  { padding-left: 1.4em; list-style-type: square; margin-bottom: 0; }
     .ProseMirror ol  { padding-left: 1.6em; list-style-type: decimal; margin-bottom: 0; }
     /* Block rhythm — declared after ul/ol/table resets so adjacency rule wins the cascade. */
     .ProseMirror > * + p,
@@ -102,19 +103,24 @@
     .ProseMirror > * + blockquote,
     .ProseMirror > * + table { margin-top: 1em; }
     .ProseMirror blockquote > * + * { margin-top: 0.85em; }
-    .ProseMirror ul ul  { list-style-type: circle; }
+    .ProseMirror ul ul  { list-style-type: square; }
     .ProseMirror ul ul ul { list-style-type: square; }
     .ProseMirror ul > li::marker { color: var(--ul-mk); }
     .ProseMirror ol > li::marker { color: var(--ol-mk); font-size: 0.85em; }
     .ProseMirror strong { color: var(--prose-strong); font-weight: 600; }
     .ProseMirror em     { color: var(--prose-em); font-style: italic; }
     .ProseMirror a {
-      color: var(--link); font-weight: 400;
+      color: var(--link); font-weight: 500;
       text-decoration: underline;
-      text-underline-offset: 3px; text-decoration-color: var(--link-ul);
+      text-underline-offset: 3px;
+      text-decoration-color: var(--link-ul);
+      text-decoration-thickness: 1px;
       cursor: pointer;
     }
-    .ProseMirror a:hover { color: var(--link-hov); text-decoration-color: var(--link-ul-hov); }
+    .ProseMirror a:hover {
+      text-decoration-color: var(--link-ul-hov);
+      background: var(--tint-soft);
+    }
     .ProseMirror blockquote {
       font-style: italic; margin: 0;
       padding: 0.35rem 0 0.35rem 1.5rem;
@@ -129,7 +135,6 @@
       top: 0.28em;
       bottom: 0.28em;
       width: 2px;
-      border-radius: 1px;
       background: var(--bq-bd);
     }
     .ProseMirror blockquote > :first-child { margin-top: 0; }
@@ -137,7 +142,7 @@
     .ProseMirror blockquote p::before, .ProseMirror blockquote p::after { content: none; }
     .ProseMirror pre {
       background: var(--pre-bg); border: 1px solid var(--pre-bd);
-      border-radius: 8px; padding: 1.25rem 1.5rem; overflow-x: auto; line-height: 1.65;
+      padding: 1.25rem 1.5rem; overflow-x: auto; line-height: 1.65;
       margin: 1em 0;
     }
     .ProseMirror pre code {
@@ -150,12 +155,12 @@
       font-family: "JetBrains Mono", ui-monospace, monospace;
       color: var(--code-tx); background: var(--code-bg);
       border: 1px solid var(--code-bd);
-      padding: 0.15em 0.42em; border-radius: 4px; font-size: 0.85em;
+      padding: 0.15em 0.42em; font-size: 0.85em;
     }
     .ProseMirror :not(pre) > code::before, .ProseMirror :not(pre) > code::after { content: none; }
     .ProseMirror table {
-      border-collapse: separate; border-spacing: 0; width: 100%;
-      border: 1px solid var(--tbl-bd); border-radius: 12px; overflow: hidden;
+      border-collapse: collapse; width: 100%;
+      border: 1px solid var(--tbl-bd);
       margin-bottom: 0;
     }
     .ProseMirror th {
@@ -171,7 +176,7 @@
     .ProseMirror td:last-child { border-right: none; }
     .ProseMirror tr:last-child td { border-bottom: none; }
     .ProseMirror hr { border: none; border-top: 1px solid var(--hr); margin: 2em 0; }
-    .ProseMirror img { border-radius: 12px; border: 1px solid var(--tbl-bd); max-width: 100%; height: auto; }
+    .ProseMirror img { border: 1px solid var(--tbl-bd); max-width: 100%; height: auto; }
 
     /* ── Task list (GFM editor) ─────────────────────────────────────── */
     .ProseMirror li[data-item-type="task"] { list-style: none; position: relative; padding-left: 1.6em; }
@@ -181,13 +186,13 @@
       content: '';
       position: absolute; left: 0; top: 0.38em;
       width: 14px; height: 14px;
-      border: 1.5px solid var(--ul-mk); border-radius: 4px;
+      border: 1.5px solid var(--ul-mk); border-radius: 0;
       background: transparent;
-      transition: background 120ms, border-color 120ms;
+      transition: none;
     }
     .ProseMirror li[data-item-type="task"][data-checked="true"]::before {
       background: var(--ul-mk); border-color: transparent;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpolyline points='2,6 5,9 10,3' fill='none' stroke='%23fff' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpolyline points='2,6 5,9 10,3' fill='none' stroke='%23fff' stroke-width='1.8' stroke-linecap='square' stroke-linejoin='miter'/%3E%3C/svg%3E");
       background-repeat: no-repeat; background-size: 100% 100%;
     }
 
@@ -198,7 +203,7 @@
       max-width: 100%;
     }
     .ProseMirror span[data-wi] img {
-      border-radius: 12px; border: 1px solid var(--tbl-bd);
+      border: 1px solid var(--tbl-bd);
       max-width: 100%; height: auto; display: block;
     }
 
