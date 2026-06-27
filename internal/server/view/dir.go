@@ -220,7 +220,7 @@ var dirPageHTML = `<!DOCTYPE html>
 <html lang="en" data-theme="neo">
 ` + headHTML(headOpts{title: "Folder — Vaultr", withFonts: true, withTW: true, withAlpine: true, withHTMX: true}) + `  <style>
 ` + appTokensCSS + `
-` + infoDialogCSS + navCSS + neoCSS + topbarCSS + dirCSS + drawerCSS + noteSharedCSS + noteEditorCSS + searchOverlayStyles + confirmDialogCSS + shortDialogCSS + settingsModalCSS + `
+` + infoDialogCSS + navCSS + neoCSS + topbarCSS + heroCSS + dirCSS + drawerCSS + noteSharedCSS + noteEditorCSS + searchOverlayStyles + confirmDialogCSS + shortDialogCSS + settingsModalCSS + `
   </style>
   <script>
   /* Apply hero background synchronously before first paint to avoid flash */
@@ -228,6 +228,7 @@ var dirPageHTML = `<!DOCTYPE html>
     var d=localStorage.getItem('vaultr-hero-bg');
     if(!d) return;
     var y=parseFloat(localStorage.getItem('vaultr-hero-bg-y'))||0;
+    var i=new Image();i.src=d;
     var s=document.createElement('style');
     s.id='hero-bg-preload';
     s.textContent='.home-hero-wrapper{background-image:url('+d+');background-size:100% auto;background-repeat:no-repeat;background-position:center '+y+'px}';

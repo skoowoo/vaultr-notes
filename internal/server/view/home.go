@@ -14,13 +14,13 @@ const homeRecentShortsLimit = 15
 const homeFolderLimit = 15
 
 type homePageData struct {
-	PinnedNotes      []noteItem
-	Folders          []storage.DirSummary
-	RecentShorts     []noteItem
-	RecentRaw        []noteItem
-	RecentKnowledge  []noteItem
-	TotalNotes       int
-	KnowledgeNotes   int
+	PinnedNotes     []noteItem
+	Folders         []storage.DirSummary
+	RecentShorts    []noteItem
+	RecentRaw       []noteItem
+	RecentKnowledge []noteItem
+	TotalNotes      int
+	KnowledgeNotes  int
 }
 
 func (vh *ViewHandler) Home(w http.ResponseWriter, r *http.Request) {
@@ -36,8 +36,8 @@ func (vh *ViewHandler) Home(w http.ResponseWriter, r *http.Request) {
 	}
 
 	recentShorts, err := vh.vault.ListAllNotes(storage.ListOptions{
-		SortByTime:  true,
-		Limit:       homeRecentShortsLimit,
+		SortByTime: true,
+		Limit:      homeRecentShortsLimit,
 		OnlyKinds:  []storage.Kind{storage.KindShort},
 	})
 	if err != nil {
@@ -46,8 +46,8 @@ func (vh *ViewHandler) Home(w http.ResponseWriter, r *http.Request) {
 	}
 
 	recentKnowledge, err := vh.vault.ListAllNotes(storage.ListOptions{
-		SortByTime:  true,
-		Limit:       homeRecentLimit,
+		SortByTime: true,
+		Limit:      homeRecentLimit,
 		OnlyKinds:  []storage.Kind{storage.KindKnowledge},
 	})
 	if err != nil {
@@ -56,8 +56,8 @@ func (vh *ViewHandler) Home(w http.ResponseWriter, r *http.Request) {
 	}
 
 	recentRaw, err := vh.vault.ListAllNotes(storage.ListOptions{
-		SortByTime:     true,
-		Limit:          homeRecentLimit,
+		SortByTime:   true,
+		Limit:        homeRecentLimit,
 		ExcludeKinds: []storage.Kind{storage.KindShort, storage.KindKnowledge, storage.KindIndex},
 	})
 	if err != nil {
@@ -127,13 +127,26 @@ var homeTemplateFuncs = template.FuncMap{
 		}
 		return sum % 4
 	},
+	"folderInitial": func(dir string) string {
+		label := dir
+		if len(label) > 1 && label[0] == '/' {
+			label = label[1:]
+		}
+		if label == "" || label == "/" {
+			return "/"
+		}
+		for _, r := range label {
+			return string(r)
+		}
+		return "?"
+	},
 }
 
 var homePageHTML = `<!DOCTYPE html>
 <html lang="en" data-theme="neo">
 ` + headHTML(headOpts{title: "Home — Vaultr", withFonts: true, withTW: true, withAlpine: true, withHTMX: true}) + `  <style>
 ` + appTokensCSS + `
-` + infoDialogCSS + navCSS + neoCSS + topbarCSS + homeCSS + drawerCSS + noteSharedCSS + noteEditorCSS + searchOverlayStyles + confirmDialogCSS + shortDialogCSS + settingsModalCSS + `
+` + infoDialogCSS + navCSS + neoCSS + topbarCSS + heroCSS + homeCSS + drawerCSS + noteSharedCSS + noteEditorCSS + searchOverlayStyles + confirmDialogCSS + shortDialogCSS + settingsModalCSS + `
   </style>
   <script>
   /* Apply hero background synchronously before first paint to avoid flash */
@@ -141,6 +154,7 @@ var homePageHTML = `<!DOCTYPE html>
     var d=localStorage.getItem('vaultr-hero-bg');
     if(!d) return;
     var y=parseFloat(localStorage.getItem('vaultr-hero-bg-y'))||0;
+    var i=new Image();i.src=d;
     var s=document.createElement('style');
     s.id='hero-bg-preload';
     s.textContent='.home-hero-wrapper{background-image:url('+d+');background-size:100% auto;background-repeat:no-repeat;background-position:center '+y+'px}';
@@ -192,8 +206,8 @@ func (vh *ViewHandler) HomeRefresh(w http.ResponseWriter, r *http.Request) {
 	}
 
 	recentShorts, err := vh.vault.ListAllNotes(storage.ListOptions{
-		SortByTime:  true,
-		Limit:       homeRecentShortsLimit,
+		SortByTime: true,
+		Limit:      homeRecentShortsLimit,
 		OnlyKinds:  []storage.Kind{storage.KindShort},
 	})
 	if err != nil {
@@ -202,8 +216,8 @@ func (vh *ViewHandler) HomeRefresh(w http.ResponseWriter, r *http.Request) {
 	}
 
 	recentKnowledge, err := vh.vault.ListAllNotes(storage.ListOptions{
-		SortByTime:  true,
-		Limit:       homeRecentLimit,
+		SortByTime: true,
+		Limit:      homeRecentLimit,
 		OnlyKinds:  []storage.Kind{storage.KindKnowledge},
 	})
 	if err != nil {
@@ -212,8 +226,8 @@ func (vh *ViewHandler) HomeRefresh(w http.ResponseWriter, r *http.Request) {
 	}
 
 	recentRaw, err := vh.vault.ListAllNotes(storage.ListOptions{
-		SortByTime:     true,
-		Limit:          homeRecentLimit,
+		SortByTime:   true,
+		Limit:        homeRecentLimit,
 		ExcludeKinds: []storage.Kind{storage.KindShort, storage.KindKnowledge, storage.KindIndex},
 	})
 	if err != nil {
@@ -284,14 +298,12 @@ var homeRefreshTemplate = template.Must(template.New("home-refresh").Funcs(homeT
 <div id="home-folders-grid" class="card-grid card-grid--folder" hx-swap-oob="true">
   {{range .Folders}}
   <div class="folder-card" data-fc="{{folderColorIdx .Dir}}" onclick="location.href='/dir?path='+encodeURIComponent('{{.Dir}}')">
-    <div class="folder-card-inner">
-      <svg class="folder-card-icon" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/>
-      </svg>
-      <div class="folder-card-body">
-        <span class="folder-card-name">{{folderLabel .Dir}}</span>
-        <span class="folder-card-count">{{.Count}} notes</span>
-      </div>
+    <div class="folder-card-header">
+      <span class="folder-card-initial">{{folderInitial .Dir}}</span>
+    </div>
+    <div class="folder-card-body">
+      <span class="folder-card-name">{{folderLabel .Dir}}</span>
+      <span class="folder-card-count">{{.Count}} notes</span>
     </div>
   </div>
   {{end}}

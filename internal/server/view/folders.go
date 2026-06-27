@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"sort"
 	"strings"
-
 )
 
 type folderItem struct {
@@ -76,12 +75,18 @@ func (vh *ViewHandler) Folders(w http.ResponseWriter, r *http.Request) {
 }
 
 var foldersTemplateFuncs = template.FuncMap{
-	"folderColorIdx": func(dir string) int {
-		sum := 0
-		for _, c := range dir {
-			sum += int(c)
+	"folderInitial": func(dir string) string {
+		label := dir
+		if len(label) > 1 && label[0] == '/' {
+			label = label[1:]
 		}
-		return sum % 4
+		if label == "" || label == "/" {
+			return "/"
+		}
+		for _, r := range label {
+			return string(r)
+		}
+		return "?"
 	},
 }
 
@@ -89,7 +94,7 @@ var foldersPageHTML = `<!DOCTYPE html>
 <html lang="en" data-theme="neo">
 ` + headHTML(headOpts{title: "Folders — Vaultr", withFonts: true, withTW: true, withAlpine: true, withHTMX: true}) + `  <style>
 ` + appTokensCSS + `
-` + navCSS + neoCSS + topbarCSS + foldersCSS + drawerCSS + noteSharedCSS + noteEditorCSS + searchOverlayStyles + confirmDialogCSS + shortDialogCSS + settingsModalCSS + `
+` + navCSS + neoCSS + topbarCSS + heroCSS + foldersCSS + drawerCSS + noteSharedCSS + noteEditorCSS + searchOverlayStyles + confirmDialogCSS + shortDialogCSS + settingsModalCSS + `
   </style>
   <script>
   /* Apply hero background synchronously before first paint to avoid flash */
@@ -97,6 +102,7 @@ var foldersPageHTML = `<!DOCTYPE html>
     var d=localStorage.getItem('vaultr-hero-bg');
     if(!d) return;
     var y=parseFloat(localStorage.getItem('vaultr-hero-bg-y'))||0;
+    var i=new Image();i.src=d;
     var s=document.createElement('style');
     s.id='hero-bg-preload';
     s.textContent='.home-hero-wrapper{background-image:url('+d+');background-size:100% auto;background-repeat:no-repeat;background-position:center '+y+'px}';

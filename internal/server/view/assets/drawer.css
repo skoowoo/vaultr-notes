@@ -7,7 +7,7 @@
     .drawer-overlay.open { pointer-events: auto; background: var(--drawer-overlay-bg); }
     .drawer-panel {
       position: absolute; top: 0; right: 0; bottom: 0; width: 80vw;
-      background: var(--bg); border-left: 1px solid var(--hr);
+      background: var(--bg); border-left: 2px solid var(--hr);
       display: flex; flex-direction: column; overflow: hidden;
       transform: translateX(24px);
       opacity: 0;
@@ -22,7 +22,7 @@
     /* ── Tab bar ─────────────────────────────────────────────────── */
     .drawer-tab-bar {
       flex-shrink: 0; display: flex; align-items: stretch;
-      background: var(--bg); border-bottom: 1px solid var(--hr);
+      background: var(--bg); border-bottom: 2px solid var(--hr);
       min-height: 40px; overflow: hidden; position: relative; z-index: 3;
     }
     .drawer-tab-bar-start {
@@ -32,12 +32,11 @@
     }
     .drawer-expand-btn {
       display: flex; align-items: center; justify-content: center;
-      width: var(--action-btn-sz); height: var(--action-btn-sz); border-radius: var(--radius-sm);
+      width: var(--action-btn-sz); height: var(--action-btn-sz);
       border: none; background: transparent; color: var(--canvas);
       cursor: pointer; padding: 0; flex-shrink: 0;
-      transition: color 120ms, background 120ms;
     }
-    .drawer-expand-btn:hover { color: var(--canvas); background: color-mix(in srgb, var(--canvas) 15%, transparent); }
+    .drawer-expand-btn:hover { color: var(--canvas); background: var(--icon-hov); }
     .drawer-expand-btn:focus { outline: none; }
     .drawer-panel button:focus,
     .milkdown-tooltip button:focus { outline: none; }
@@ -51,32 +50,32 @@
       display: flex; align-items: center; gap: 0.3rem;
       padding: 0 0.55rem 0 0.7rem; width: 132px; flex-shrink: 0;
       cursor: pointer; position: relative;
-      border: none; border-right: 1px solid var(--hr);
+      border: none; border-right: 2px solid var(--hr);
       background: transparent; color: var(--muted);
       font-family: inherit; font-size: var(--text-xs);
-      transition: color 120ms, background 120ms; user-select: none;
+      user-select: none;
     }
     .drawer-tab:hover { color: var(--fg); background: var(--card-hov); }
-    .drawer-tab.active { color: var(--canvas); background: var(--accent); }
+    .drawer-tab.active { color: var(--fg); background: var(--accent); }
     .drawer-tab.draft { color: var(--s-warn); }
     .drawer-tab.draft:hover { color: var(--s-warn); background: var(--s-warn-bg); }
-    .drawer-tab.draft.active { background: var(--s-warn); color: var(--bg); }
+    .drawer-tab.draft.active { background: var(--accent); color: var(--fg); }
     .drawer-tab.draft.active .drawer-tab-draft-icon { color: inherit; opacity: 0.75; }
     .drawer-tab-title { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .drawer-tab-draft-icon {
-      flex-shrink: 0; width: 16px; height: 16px; border-radius: var(--radius-xs);
+      flex-shrink: 0; width: 16px; height: 16px;
       display: flex; align-items: center; justify-content: center;
       color: var(--s-warn); opacity: 0.9;
     }
     .drawer-tab-draft-icon svg { width: 11px; height: 11px; }
     .drawer-tab-close {
-      flex-shrink: 0; width: 16px; height: 16px; border-radius: var(--radius-xs);
+      flex-shrink: 0; width: 16px; height: 16px;
       border: none; background: transparent; color: inherit; cursor: pointer; padding: 0;
       display: flex; align-items: center; justify-content: center;
-      opacity: 0; transition: opacity 120ms, background 120ms;
+      opacity: 0;
     }
     .drawer-tab:hover .drawer-tab-close { opacity: 0.6; }
-    .drawer-tab-close:hover { opacity: 1 !important; background: var(--card-bd); }
+    .drawer-tab-close:hover { opacity: 1 !important; background: var(--tint-strong); }
     .drawer-tab-bar-end {
       flex-shrink: 0; display: flex; align-items: center;
       padding: 0 0.6rem 0 0.4rem;
@@ -86,7 +85,7 @@
     .drawer-tool-bar {
       flex-shrink: 0; display: flex; align-items: center; gap: 0.5rem;
       padding: 0 0.625rem 0 0.75rem;
-      border-bottom: 1px solid var(--hr); height: 42px; background: var(--bg);
+      border-bottom: 2px solid var(--hr); height: 40px; background: var(--bg);
     }
     /* Create-mode half */
     .drawer-create-bar {
@@ -98,7 +97,7 @@
     .drawer-path-input {
       width: 100%; background: transparent; border: none; outline: none;
       font-size: var(--text-xs); color: var(--muted);
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-family: var(--font-mono);
       transition: color 120ms;
     }
     .drawer-path-input:focus { color: var(--fg); }
@@ -108,40 +107,54 @@
       display: none; position: absolute; top: calc(100% + 4px); left: 0;
       min-width: 360px; max-width: min(440px, 90vw); max-height: min(240px, 40vh); overflow-y: auto;
       margin: 0; padding: 4px 0; list-style: none;
-      background: var(--bg); border: 1px solid var(--card-bd); border-radius: var(--radius-md);
-      box-shadow: 0 12px 36px rgba(0,0,0,0.35); z-index: 200;
+      background: var(--bg); border: 2px solid var(--card-bd);
+      box-shadow: var(--px-d1) var(--px-shadow); z-index: 200;
     }
     .drawer-path-ac.open { display: block; }
     .drawer-path-ac li {
       padding: 0.4rem 0.65rem; font-size: var(--text-xs);
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-family: var(--font-mono);
       color: var(--fg); cursor: pointer; user-select: none;
-      transition: background 100ms;
     }
     .drawer-path-ac li:hover, .drawer-path-ac li[aria-selected="true"] { background: var(--card-hov); }
     .drawer-path-ac li.path-ac-muted { color: var(--muted); cursor: default; font-style: italic; }
     .drawer-path-ac li.path-ac-muted:hover { background: transparent; }
     .drawer-publish-btn {
-      flex-shrink: 0; height: var(--action-btn-sz); padding: 0 0.75rem; border-radius: var(--radius-sm);
-      border: none; background: var(--fg); color: var(--bg);
+      flex-shrink: 0; height: var(--action-btn-sz); padding: 0 0.75rem;
+      border: 2px solid var(--card-bd); background: var(--seg-act-bg); color: var(--seg-act-fg);
       font-size: var(--text-xs); font-weight: 600; font-family: inherit; cursor: pointer;
-      transition: opacity 120ms;
+      box-shadow: var(--px-d2) var(--px-shadow);
     }
-    .drawer-publish-btn:hover:not(:disabled) { opacity: 0.82; }
+    .drawer-publish-btn:hover:not(:disabled) {
+      box-shadow: var(--px-d1) var(--px-shadow);
+      transform: translate(1px, 1px);
+    }
+    .drawer-publish-btn:active:not(:disabled) {
+      box-shadow: none;
+      transform: translate(3px, 3px);
+    }
     .drawer-publish-btn:disabled { opacity: 0.32; cursor: not-allowed; }
     .drawer-publish-btn.success { background: var(--s-ok); color: var(--canvas); opacity: 1; }
     .drawer-discard-btn {
       flex-shrink: 0; height: var(--action-btn-sz); padding: 0 0.65rem;
-      border-radius: var(--radius-sm); border: 1px solid var(--card-bd);
-      background: transparent; color: var(--body);
+      border: 2px solid var(--card-bd);
+      background: var(--bg); color: var(--fg);
       font-size: var(--text-xs); font-weight: 500; font-family: inherit; cursor: pointer;
-      transition: color 120ms, border-color 120ms, background 120ms;
+      box-shadow: var(--px-d1) var(--px-shadow);
     }
-    .drawer-discard-btn:hover { color: var(--fg); border-color: var(--muted); background: var(--card-hov); }
+    .drawer-discard-btn:hover {
+      color: var(--fg); border-color: var(--card-bd); background: var(--bg);
+      box-shadow: var(--px-d0) var(--px-shadow);
+      transform: translate(1px, 1px);
+    }
+    .drawer-discard-btn:active {
+      box-shadow: none;
+      transform: translate(2px, 2px);
+    }
     /* Edit-mode half */
     .drawer-path-text {
       flex: 1; min-width: 0; font-size: var(--text-xs);
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-family: var(--font-mono);
       color: var(--muted);
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
@@ -154,81 +167,121 @@
     .drawer-save-status .ssi-saved { display: none; }
     .drawer-save-status[data-state="pending"] .ssi-pending { display: block; }
     .drawer-save-status[data-state="saved"] .ssi-saved { display: block; }
-    .ssi-pending { color: var(--muted); animation: ssi-pulse 1.2s ease-in-out infinite; }
+    .ssi-pending { color: var(--fg); animation: ssi-pulse 1.2s ease-in-out infinite; }
     @keyframes ssi-pulse {
       0%, 100% { opacity: 0.35; transform: scale(0.85); }
       50%       { opacity: 1;    transform: scale(1); }
     }
-    .ssi-saved { color: var(--s-ok); animation: ssi-fadein 0.25s ease; }
+    .ssi-saved { color: var(--accent); animation: ssi-fadein 0.25s ease; }
     @keyframes ssi-fadein { from { opacity: 0; transform: scale(0.7); } to { opacity: 1; transform: scale(1); } }
     /* Shared tool buttons */
     .frag-close-btn {
       display: flex; align-items: center; justify-content: center;
-      width: var(--action-btn-sz); height: var(--action-btn-sz); border-radius: var(--radius-sm);
+      width: var(--action-btn-sz); height: var(--action-btn-sz);
       color: var(--muted); border: none; background: transparent;
-      cursor: pointer; padding: 0; transition: color 120ms, background 120ms; flex-shrink: 0;
+      cursor: pointer; padding: 0; flex-shrink: 0;
     }
-    .frag-close-btn:hover { color: var(--fg); background: var(--card-hov); }
+    .frag-close-btn:hover { color: var(--fg); background: var(--icon-hov); }
     /* ── More menu ──────────────────────────────────────────────── */
     .drawer-more-wrap { position: relative; flex-shrink: 0; }
     .drawer-more-btn {
       display: flex; align-items: center; justify-content: center;
-      width: var(--action-btn-sz); height: var(--action-btn-sz); border-radius: var(--radius-sm);
-      border: 1px solid var(--card-bd); background: transparent;
-      color: var(--muted); cursor: pointer; transition: color 120ms, background 120ms, border-color 120ms;
+      width: var(--action-btn-sz); height: var(--action-btn-sz);
+      border: 2px solid var(--card-bd); background: transparent;
+      color: var(--muted); cursor: pointer;
+      box-shadow: var(--px-d1) var(--px-shadow);
     }
-    .drawer-more-btn:hover { color: var(--fg); background: var(--icon-hov); border-color: var(--muted); }
-    .drawer-more-btn.active { color: var(--fg); background: var(--nav-act); border-color: var(--muted); }
+    .drawer-more-btn:hover {
+      color: var(--fg); background: transparent; border-color: var(--card-bd);
+      box-shadow: var(--px-d0) var(--px-shadow);
+      transform: translate(1px, 1px);
+    }
+    .drawer-more-btn:active:not(.active) {
+      box-shadow: none;
+      transform: translate(2px, 2px);
+    }
+    .drawer-more-btn.active {
+      color: var(--fg); background: transparent; border-color: var(--card-bd);
+      box-shadow: none;
+      transform: translate(2px, 2px);
+    }
     .drawer-more-btn svg { width: 14px; height: 14px; }
     .drawer-more-menu {
       position: absolute; top: calc(100% + 6px); right: 0; z-index: 50;
       min-width: 130px; padding: 0.25rem;
-      background: var(--bg); border: 1px solid var(--hr);
-      border-radius: var(--radius-md);
-      box-shadow: 0 8px 24px rgba(0,0,0,0.14);
+      background: var(--bg); border: 2px solid var(--hr);
+      box-shadow: var(--px-d2) var(--px-shadow);
     }
     .drawer-more-item {
       display: flex; align-items: center; gap: 0.45rem;
-      width: 100%; padding: 0.4rem 0.55rem; border-radius: var(--radius-sm);
+      width: 100%; padding: 0.4rem 0.55rem;
       border: none; background: transparent;
       font-size: 0.8125rem; font-family: inherit; color: var(--muted);
       cursor: pointer; text-align: left;
-      transition: color 120ms, background 120ms;
       white-space: nowrap;
     }
     .drawer-more-item svg { width: 13px; height: 13px; flex-shrink: 0; }
+    .drawer-more-item:hover { color: var(--fg); background: var(--icon-hov); }
     .drawer-more-item-danger:hover { color: var(--s-err); background: var(--s-err-bg); }
     .frag-pin-btn {
       display: flex; align-items: center; justify-content: center;
-      width: var(--action-btn-sz); height: var(--action-btn-sz); border-radius: var(--radius-sm);
-      border: 1px solid var(--card-bd); background: transparent;
-      color: var(--muted); cursor: pointer; transition: color 120ms, background 120ms, border-color 120ms;
+      width: var(--action-btn-sz); height: var(--action-btn-sz);
+      border: 2px solid var(--card-bd); background: transparent;
+      color: var(--muted); cursor: pointer;
+      box-shadow: var(--px-d1) var(--px-shadow);
     }
-    .frag-pin-btn:hover { color: var(--fg); background: var(--card-hov); border-color: var(--muted); }
-    .frag-pin-btn.active { color: var(--accent); background: var(--nav-act); border-color: var(--accent); }
+    .frag-pin-btn:hover {
+      color: var(--fg); background: var(--bg); border-color: var(--card-bd);
+      box-shadow: var(--px-d0) var(--px-shadow);
+      transform: translate(1px, 1px);
+    }
+    .frag-pin-btn:active {
+      box-shadow: none;
+    }
+    .frag-pin-btn.active {
+      color: var(--accent); background: var(--bg); border-color: var(--accent);
+      box-shadow: none;
+    }
     .frag-pin-btn.active svg { fill: currentColor; }
     .frag-pin-btn svg { width: 14px; height: 14px; }
     .drawer-compile-btn {
       display: flex; align-items: center; justify-content: center;
-      width: var(--action-btn-sz); height: var(--action-btn-sz); border-radius: var(--radius-sm);
-      border: 1px solid var(--card-bd); background: transparent;
-      color: var(--muted); cursor: pointer; transition: color 120ms, background 120ms, border-color 120ms;
+      width: var(--action-btn-sz); height: var(--action-btn-sz);
+      border: 2px solid var(--card-bd); background: transparent;
+      color: var(--muted); cursor: pointer;
+      box-shadow: var(--px-d1) var(--px-shadow);
     }
-    .drawer-compile-btn:hover:not(:disabled) { color: var(--fg); background: var(--card-hov); border-color: var(--muted); }
+    .drawer-compile-btn:hover:not(:disabled) {
+      color: var(--fg); background: var(--bg); border-color: var(--card-bd);
+      box-shadow: var(--px-d0) var(--px-shadow);
+      transform: translate(1px, 1px);
+    }
+    .drawer-compile-btn:active:not(:disabled) { box-shadow: none; }
     .drawer-compile-btn:disabled { cursor: progress; }
-    .drawer-compile-btn.success { color: var(--s-ok); border-color: var(--s-ok-bd); background: var(--s-ok-bg); }
+    .drawer-compile-btn.success {
+      color: var(--s-ok); border-color: var(--s-ok-bd); background: var(--s-ok-bg);
+      box-shadow: none; opacity: 0.7;
+    }
     .drawer-compile-btn svg { width: 14px; height: 14px; }
     @keyframes drawer-compile-pulse { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; } }
     .drawer-compile-btn.is-compiling { animation: drawer-compile-pulse 1.2s ease-in-out infinite; }
     .drawer-source-btn {
       display: flex; align-items: center; justify-content: center;
-      width: var(--action-btn-sz); height: var(--action-btn-sz); border-radius: var(--radius-sm);
-      border: 1px solid var(--card-bd); background: transparent;
+      width: var(--action-btn-sz); height: var(--action-btn-sz);
+      border: 2px solid var(--card-bd); background: transparent;
       color: var(--muted); cursor: pointer; flex-shrink: 0;
-      transition: color 120ms, background 120ms, border-color 120ms;
+      box-shadow: var(--px-d1) var(--px-shadow);
     }
-    .drawer-source-btn:hover { color: var(--fg); background: var(--icon-hov); border-color: var(--muted); }
-    .drawer-source-btn.active { color: var(--accent); background: var(--nav-act); border-color: var(--accent); }
+    .drawer-source-btn:hover {
+      color: var(--fg); background: var(--bg); border-color: var(--card-bd);
+      box-shadow: var(--px-d0) var(--px-shadow);
+      transform: translate(1px, 1px);
+    }
+    .drawer-source-btn:active { box-shadow: none; }
+    .drawer-source-btn.active {
+      color: var(--accent); background: var(--bg); border-color: var(--accent);
+      box-shadow: none;
+    }
     .drawer-source-btn svg { width: 14px; height: 14px; }
 
     /* ── Editor areas ────────────────────────────────────────────── */
@@ -238,7 +291,7 @@
     }
     #drawer-milkdown { max-width: 720px; margin: 0 auto; }
     #drawer-edit-area:focus { outline: none; }
-    .ProseMirror { outline: none; min-height: 60vh; word-wrap: break-word; caret-color: var(--ui-accent); }
+    .ProseMirror { outline: none; min-height: 60vh; word-wrap: break-word; caret-color: var(--fg); }
     .ProseMirror ::selection { background: var(--cm-selection-bg); }
     #drawer-cm-wrap {
       flex: 1; overflow: hidden; display: none;
@@ -247,7 +300,7 @@
     #drawer-cm-wrap .cm-editor {
       height: 100%;
       font-size: var(--text-base);
-      font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, monospace;
+      font-family: var(--font-mono);
       outline: none;
     }
     #drawer-cm-wrap .cm-editor.cm-focused { outline: none; }
@@ -260,14 +313,14 @@
 
     /* ── Search panel (custom, top-anchored) ─────────────────── */
     #drawer-cm-wrap .cm-panels { background: var(--bg); color: var(--fg); }
-    #drawer-cm-wrap .cm-panels-top { border-bottom: 1px solid var(--hr); }
+    #drawer-cm-wrap .cm-panels-top { border-bottom: 2px solid var(--hr); }
     .vaultr-search-panel {
       display: grid;
       grid-template-columns: 1fr auto;
       row-gap: 0.4rem; column-gap: 0.5rem;
       align-items: center;
       padding: 0.625rem 1rem;
-      background: var(--bg); font-family: var(--font-sans);
+      background: var(--bg);
     }
     .vaultr-sr-row { display: contents; }
     .vaultr-sr-input-wrap { position: relative; display: flex; align-items: center; }
@@ -278,24 +331,19 @@
     .vaultr-sr-input {
       width: 100%; height: var(--btn-h-xs);
       padding: 0 0.5rem;
-      background: transparent; border: 1px solid var(--card-bd);
-      border-radius: var(--radius-sm); color: var(--fg);
+      background: transparent; border: 2px solid var(--card-bd);
+      color: var(--fg);
       font-family: inherit; font-size: var(--text-sm); outline: none;
-      transition: border-color 120ms, box-shadow 120ms;
     }
     .vaultr-sr-input[main-field]       { padding-right: 4.5rem; }
     .vaultr-sr-input:not([main-field]) { padding-right: 3rem; }
-    .vaultr-sr-input:focus {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 2px var(--input-focus-ring);
-    }
+    .vaultr-sr-input:focus { border-color: var(--accent); }
     .vaultr-sr-input::placeholder { color: var(--muted-soft); }
     .vaultr-sr-ibtn {
       flex-shrink: 0; width: 20px; height: 20px;
       display: flex; align-items: center; justify-content: center;
-      background: transparent; border: none; border-radius: var(--radius-xs);
+      background: transparent; border: none;
       color: var(--muted); cursor: pointer; padding: 0;
-      transition: color 120ms, background 120ms;
     }
     .vaultr-sr-ibtn:hover { color: var(--fg); background: var(--card-hov); }
     .vaultr-sr-toggle {
@@ -303,13 +351,13 @@
       font-size: 0.625rem; font-weight: 800; font-family: inherit; letter-spacing: -0.02em;
     }
     .vaultr-sr-toggle.active {
-      color: var(--accent);
+      color: var(--fg);
       background: color-mix(in srgb, var(--accent) 12%, transparent);
     }
     /* Match highlights */
     #drawer-cm-wrap .cm-searchMatch {
       background: color-mix(in srgb, var(--accent) 22%, transparent);
-      border-radius: 2px; outline: none;
+      outline: none;
     }
     #drawer-cm-wrap .cm-searchMatch.cm-searchMatch-selected {
       background: color-mix(in srgb, var(--accent) 46%, transparent);
@@ -323,10 +371,6 @@
     html.macos .drawer-overlay.open .drawer-tab,
     html.macos .drawer-overlay.open .drawer-tab-close,
     html.macos .drawer-overlay.open .frag-close-btn { -webkit-app-region: no-drag; }
-    /* During slide-in animation, transform shifts visual position away from layout position.
-       Electron hit-tests drag regions against layout position, not transform position,
-       so the no-drag exclusion on the expand button is misaligned for the 280ms animation.
-       Suppress the drag region entirely while the panel is animating. */
     html.macos .drawer-overlay.open.drawer-is-opening .drawer-tab-bar { -webkit-app-region: no-drag; }
 
     /* ── Drawer scrollbars ───────────────────────────────────────── */
@@ -342,7 +386,6 @@
     #drawer-edit-area::-webkit-scrollbar-thumb,
     #drawer-cm-wrap .cm-scroller::-webkit-scrollbar-thumb {
       background: var(--scrollbar-thumb);
-      border-radius: 9999px;
     }
     #drawer-edit-area::-webkit-scrollbar-thumb:hover,
     #drawer-cm-wrap .cm-scroller::-webkit-scrollbar-thumb:hover {
@@ -363,56 +406,51 @@
       position: fixed; z-index: 1000;
       display: none; align-items: center; gap: 4px;
       padding: 5px 6px;
-      background: var(--card-bg); border: 1px solid var(--card-bd);
-      border-radius: var(--radius-md);
-      box-shadow: 0 4px 14px rgba(0,0,0,0.14), 0 1px 3px rgba(0,0,0,0.08);
+      background: var(--bg); border: 2px solid var(--card-bd);
+      box-shadow: var(--px-d1) var(--px-shadow);
       pointer-events: auto;
     }
     .mdt-chip {
       display: inline-flex; align-items: center; justify-content: center;
       height: 24px; padding: 0 10px;
-      background: color-mix(in srgb, var(--ui-accent) 10%, transparent); border-radius: var(--radius-pill);
+      background: var(--seg-act-bg);
       font-size: var(--text-sm); font-weight: 600; font-family: inherit;
-      color: var(--ui-accent); user-select: none; white-space: nowrap;
+      color: var(--seg-act-fg); user-select: none; white-space: nowrap;
     }
     .mdt-sep {
-      width: 1px; height: 14px; flex-shrink: 0;
-      background: var(--hr); margin: 0 2px;
+      width: 2px; height: 14px; flex-shrink: 0;
+      background: var(--card-bd); margin: 0 2px;
     }
     .mdt-clear {
       display: inline-flex; align-items: center; justify-content: center;
       width: 22px; height: 22px; padding: 0; flex-shrink: 0;
-      background: transparent; border: none; border-radius: var(--radius-sm);
+      background: transparent; border: none;
       color: var(--muted); cursor: pointer;
-      transition: color 120ms, background 120ms;
     }
     .mdt-clear:hover { color: var(--s-err); background: var(--s-err-bg); }
     .mdt-clear svg { width: 12px; height: 12px; pointer-events: none; }
     .mdt-copy {
       display: inline-flex; align-items: center; justify-content: center;
       width: 22px; height: 22px; padding: 0; flex-shrink: 0;
-      background: transparent; border: none; border-radius: var(--radius-sm);
+      background: transparent; border: none;
       color: var(--muted); cursor: pointer;
-      transition: color 120ms, background 120ms;
     }
-    .mdt-copy:hover { color: var(--ui-accent); background: color-mix(in srgb, var(--ui-accent) 9%, transparent); }
+    .mdt-copy:hover { color: var(--fg); background: var(--icon-hov); }
     .mdt-copy svg { width: 12px; height: 12px; pointer-events: none; }
     .mdt-short {
       display: inline-flex; align-items: center; justify-content: center;
       width: 22px; height: 22px; padding: 0; flex-shrink: 0;
-      background: transparent; border: none; border-radius: var(--radius-sm);
+      background: transparent; border: none;
       color: var(--muted); cursor: pointer;
-      transition: color 120ms, background 120ms;
     }
-    .mdt-short:hover { color: var(--ui-accent); background: color-mix(in srgb, var(--ui-accent) 9%, transparent); }
-    .mdt-short.saved { color: var(--s-ok); background: color-mix(in srgb, var(--s-ok) 9%, transparent); }
+    .mdt-short:hover { color: var(--fg); background: var(--icon-hov); }
+    .mdt-short.saved { color: var(--accent); background: var(--icon-hov); }
     .mdt-short svg { width: 12px; height: 12px; pointer-events: none; }
     .mdt-x {
       display: inline-flex; align-items: center; justify-content: center;
       width: 22px; height: 22px; padding: 0; flex-shrink: 0;
-      background: transparent; border: none; border-radius: var(--radius-sm);
+      background: transparent; border: none;
       color: var(--muted); cursor: pointer;
-      transition: color 120ms, background 120ms;
       margin-left: 1px;
     }
     .mdt-x:hover { color: var(--fg); background: var(--card-hov); }
@@ -420,14 +458,13 @@
     .mdt-fmt {
       display: inline-flex; align-items: center; justify-content: center;
       min-width: 22px; height: 22px; padding: 0 5px; flex-shrink: 0;
-      background: transparent; border: none; border-radius: var(--radius-sm);
+      background: transparent; border: none;
       color: var(--muted); cursor: pointer;
       font-size: 11px; font-weight: 700; font-family: inherit; white-space: nowrap;
-      transition: color 120ms, background 120ms;
     }
     .mdt-fmt:hover { color: var(--fg); background: var(--card-hov); }
-    .mdt-fmt--active { color: var(--ui-accent); background: color-mix(in srgb, var(--ui-accent) 12%, transparent); }
-    .mdt-fmt--active:hover { color: var(--ui-accent); background: color-mix(in srgb, var(--ui-accent) 18%, transparent); }
+    .mdt-fmt--active { color: var(--seg-act-fg); background: var(--seg-act-bg); }
+    .mdt-fmt--active:hover { color: var(--seg-act-fg); background: var(--seg-act-bg); }
     .mdt-fmt--icon { padding: 0; }
     .mdt-fmt--icon svg { width: 13px; height: 13px; pointer-events: none; }
     .mdt-count {

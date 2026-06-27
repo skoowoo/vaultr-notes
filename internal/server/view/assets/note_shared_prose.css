@@ -76,13 +76,13 @@
       margin: 1.5em 0;
     }
     .prose pre code {
-      font-family: "JetBrains Mono", ui-monospace, monospace;
+      font-family: var(--font-mono);
       color: var(--pre-tx); background: transparent !important;
       border: none !important; padding: 0 !important;
       font-size: var(--text-base); font-weight: 400; border-radius: 0;
     }
     .prose :not(pre) > code {
-      font-family: "JetBrains Mono", ui-monospace, monospace;
+      font-family: var(--font-mono);
       color: var(--code-tx); background: var(--code-bg);
       border: 1px solid var(--code-bd);
       padding: 0.15em 0.42em; border-radius: 4px; font-size: 0.85em;

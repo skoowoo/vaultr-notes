@@ -80,8 +80,8 @@ body {
   align-items: center;
   gap: 0.45rem;
   padding: 0 1.25rem;
-  border-right: 1px solid var(--hr);
-  border-bottom: 1px solid var(--hr);
+  border-right: 2px solid var(--hr);
+  border-bottom: 2px solid var(--hr);
   background: var(--surface-soft);
   position: relative;
   z-index: 10;
@@ -93,7 +93,7 @@ body {
 
 .col-title {
   font-size: var(--text-sm);
-  font-weight: var(--fw-medium);
+  font-weight: var(--fw-semibold);
   letter-spacing: 0;
   color: var(--fg);
   opacity: 0.82;
@@ -112,10 +112,8 @@ body {
   border: 1px solid transparent;
   color: var(--muted);
   cursor: pointer;
-  border-radius: var(--radius-sm);
   opacity: 0;
   pointer-events: none;
-  transition: opacity 150ms, background 120ms, border-color 120ms, color 120ms;
 }
 
 .col-back-top svg {
@@ -129,19 +127,27 @@ body {
   pointer-events: auto;
   background: var(--surface-soft);
   border-color: var(--card-bd);
+  box-shadow: var(--px-d1) var(--px-shadow);
 }
 
 .col-back-top.visible:hover {
   background: var(--card-hov);
   color: var(--fg);
   border-color: var(--card-bd);
+  box-shadow: var(--px-d0) var(--px-shadow);
+  transform: translate(1px, 1px);
+}
+
+.col-back-top.visible:active {
+  box-shadow: none;
+  transform: translate(2px, 2px);
 }
 
 .col-body {
   flex: 1;
   overflow-y: auto;
   padding: 0.5rem 1.25rem;
-  border-right: 1px solid var(--hr);
+  border-right: 2px solid var(--hr);
   contain: layout style;
 }
 
@@ -161,16 +167,26 @@ body {
   align-items: center;
   justify-content: space-between;
   padding: 0.46rem 0.7rem;
-  border-radius: var(--radius-sm);
   background: var(--bg);
-  border: 1px solid var(--card-bd);
+  border: 2px solid var(--card-bd);
   cursor: default;
-  transition: background 120ms, border-color 120ms;
   gap: 0.5rem;
+  box-shadow: var(--px-d2) var(--px-shadow);
 }
 
 .tag-card:hover {
-  background: var(--surface-soft);
+  background: var(--bg);
+  box-shadow: var(--px-d1) var(--px-shadow);
+  transform: translate(1px, 1px);
+}
+
+.tag-card:active {
+  box-shadow: none;
+  transform: translate(3px, 3px);
+}
+
+.tag-card.selected {
+  box-shadow: var(--px-d1) var(--px-shadow);
 }
 
 .tag-name {
@@ -191,7 +207,6 @@ body {
   color: var(--cnt-tx);
   background: var(--cnt-bg);
   padding: 0.07em 0.4em;
-  border-radius: var(--radius-pill);
   font-variant-numeric: tabular-nums;
 }
 
@@ -199,22 +214,17 @@ body {
 .note-card {
   display: block;
   padding: 0.72rem 0.9rem;
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--card-bd);
+  border: 2px solid var(--card-bd);
   background: var(--bg);
   margin-bottom: 0.45rem;
   text-decoration: none;
   cursor: pointer;
-  transition: background 120ms, border-color 120ms;
 }
 
 .note-card:hover {
-  background: var(--surface-soft);
-}
-
-html[data-theme="neo"] .note-card:hover {
   background: var(--bg);
   border-color: var(--card-bd);
+  box-shadow: var(--px-d3) var(--px-shadow);
 }
 
 .note-title-row {
@@ -227,7 +237,7 @@ html[data-theme="neo"] .note-card:hover {
 
 .note-name {
   font-size: var(--text-base);
-  font-weight: var(--fw-medium);
+  font-weight: var(--fw-semibold);
   color: var(--fg);
   white-space: nowrap;
   overflow: hidden;
@@ -276,7 +286,6 @@ html[data-theme="neo"] .note-card:hover {
   align-items: center;
   height: 18px;
   padding: 0 0.42rem;
-  border-radius: var(--radius-pill);
   border: none;
   background: var(--code-bg);
   color: var(--muted-soft);
@@ -302,10 +311,9 @@ html[data-theme="neo"] .note-card:hover {
   justify-content: center;
   gap: 0.28rem;
   height: 24px;
-  border-radius: var(--radius-pill);
-  border: 1px solid var(--card-bd);
-  background: transparent;
-  color: var(--muted);
+  border: 2px solid var(--card-bd);
+  background: var(--p2);
+  color: var(--fg);
   cursor: pointer;
   padding: 0 0.52rem;
   font-size: var(--text-xs);
@@ -313,13 +321,20 @@ html[data-theme="neo"] .note-card:hover {
   line-height: 1;
   opacity: 0;
   pointer-events: none;
-  transition: color 120ms, background 120ms, border-color 120ms, opacity 120ms;
+  box-shadow: var(--px-d1) var(--px-shadow);
 }
 
 .note-read-btn:hover {
-  color: var(--ui-accent);
-  background: rgba(var(--accent-rgb), 0.08);
-  border-color: var(--ui-accent);
+  color: var(--fg);
+  background: var(--p2);
+  border-color: var(--card-bd);
+  box-shadow: var(--px-d0) var(--px-shadow);
+  transform: translate(1px, 1px);
+}
+
+.note-read-btn:active {
+  box-shadow: none;
+  transform: translate(2px, 2px);
 }
 
 .note-read-btn svg {
@@ -335,6 +350,19 @@ html[data-theme="neo"] .note-card:hover {
   pointer-events: auto;
 }
 
+/* col-filtered: hide read-btn by default — only show on card hover or selected */
+.col-filtered .note-read-btn {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.col-filtered .note-card:hover .note-read-btn,
+.col-filtered .note-card-pinned .note-read-btn,
+.col-filtered .note-card.is-open .note-read-btn {
+  opacity: 1;
+  pointer-events: auto;
+}
+
 .note-knowledge-btn {
   flex-shrink: 0;
   display: flex;
@@ -342,8 +370,7 @@ html[data-theme="neo"] .note-card:hover {
   justify-content: center;
   gap: 0.28rem;
   height: 24px;
-  border-radius: var(--radius-pill);
-  border: 1px solid var(--s-warn-bd);
+  border: 2px solid var(--s-warn-bd);
   background: var(--s-warn-bg);
   color: var(--s-warn);
   cursor: pointer;
@@ -351,13 +378,20 @@ html[data-theme="neo"] .note-card:hover {
   font-size: var(--text-xs);
   font-weight: var(--fw-semibold);
   line-height: 1;
-  transition: color 120ms, background 120ms, border-color 120ms, opacity 120ms;
+  box-shadow: var(--px-d1) var(--px-shadow);
 }
 
 .note-knowledge-btn:hover {
   color: var(--fg);
   background: var(--s-warn-bg);
   border-color: var(--s-warn-bd);
+  box-shadow: var(--px-d0) var(--px-shadow);
+  transform: translate(1px, 1px);
+}
+
+.note-knowledge-btn:active {
+  box-shadow: none;
+  transform: translate(2px, 2px);
 }
 
 .note-knowledge-btn[disabled] {
@@ -400,9 +434,9 @@ html[data-theme="neo"] .note-card:hover {
 .col-mode-tabs {
   display: inline-flex;
   align-items: center;
-  background: var(--surface-soft);
-  border-radius: var(--radius-pill);
-  padding: 3px;
+  background: transparent;
+  border: 2px solid var(--card-bd);
+  padding: 2px;
   gap: 2px;
 }
 
@@ -410,7 +444,6 @@ html[data-theme="neo"] .note-card:hover {
   display: flex;
   align-items: center;
   padding: 0.18rem 0.6rem;
-  border-radius: var(--radius-pill);
   border: none;
   background: transparent;
   font-size: var(--text-sm);
@@ -419,17 +452,17 @@ html[data-theme="neo"] .note-card:hover {
   cursor: pointer;
   white-space: nowrap;
   line-height: 1.4;
-  transition: background 120ms, color 120ms, box-shadow 120ms;
 }
 
 .col-mode-tab:hover {
   color: var(--fg);
+  background: var(--icon-hov);
 }
 
 .col-mode-tab.active {
-  background: var(--bg);
-  color: var(--fg);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18), 0 1px 2px rgba(0, 0, 0, 0.10);
+  background: var(--seg-act-bg);
+  color: var(--seg-act-fg);
+  box-shadow: none;
 }
 
 
@@ -452,25 +485,16 @@ html[data-theme="neo"] .note-card:hover {
 /* ── Pinned / open note card ─────────────────────────────────── */
 .note-card-pinned,
 .note-card.is-open {
-  background: rgba(var(--accent-rgb), 0.14);
-  border-color: rgba(var(--accent-rgb), 0.50);
+  background: var(--bg);
+  border-color: var(--card-bd);
+  box-shadow: var(--px-d3) var(--px-shadow);
 }
 
 .note-card-pinned:hover,
 .note-card.is-open:hover {
-  background: rgba(var(--accent-rgb), 0.20);
-  border-color: rgba(var(--accent-rgb), 0.65);
-}
-
-html[data-theme="neo"] .note-card-pinned,
-html[data-theme="neo"] .note-card.is-open {
   background: var(--bg);
   border-color: var(--card-bd);
-}
-html[data-theme="neo"] .note-card-pinned:hover,
-html[data-theme="neo"] .note-card.is-open:hover {
-  background: var(--bg);
-  border-color: var(--card-bd);
+  box-shadow: var(--px-d3) var(--px-shadow);
 }
 
 .note-card-pinned .note-name,
@@ -480,123 +504,9 @@ html[data-theme="neo"] .note-card.is-open:hover {
 
 /* ── Linked-notes separator ─────────────────────────────────── */
 .linked-sep {
-  height: 1px;
+  height: 2px;
   background: var(--hr);
   margin: 0.5rem 0 0.6rem;
-}
-
-/* ── Hero ───────────────────────────────────────────────────── */
-.home-hero-wrapper {
-  flex-shrink: 0;
-  width: 100%;
-  height: 184px;
-  padding: 0 20px 40px;
-  display: flex;
-  align-items: flex-end;
-  border-bottom: 1px solid var(--hr);
-  background: var(--surface-soft);
-  position: relative;
-  overflow: hidden;
-}
-
-.home-hero {
-  width: 100%;
-  max-width: 100%;
-}
-
-.home-hero-title {
-  font-family: "Press Start 2P", monospace;
-  font-size: clamp(1.2rem, 2.2vw, 1.8rem);
-  font-weight: 400;
-  color: var(--fg);
-  margin: 0;
-  letter-spacing: 0.02em;
-  line-height: 1.4;
-}
-
-.home-hero-lede {
-  margin: 0.875rem 0 0;
-  max-width: 34rem;
-  font-size: var(--text-base);
-  font-weight: 400;
-  line-height: 1.5;
-  letter-spacing: 0;
-  color: var(--muted);
-}
-
-.home-hero-row {
-  display: flex;
-  flex-direction: row;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 2rem 2.5rem;
-  flex-wrap: wrap;
-}
-
-.home-hero-copy {
-  flex: 1 1 16rem;
-  min-width: 0;
-}
-
-.home-compose-strip {
-  flex: 0 1 auto;
-  min-width: 0;
-}
-
-.home-choice-row {
-  display: flex;
-  width: 100%;
-  justify-content: flex-end;
-}
-
-.choice-grid {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: flex-end;
-}
-
-.choice-card {
-  height: var(--btn-h-sm);
-  padding: 0 14px;
-  background: var(--btn-primary-bg);
-  border: 1px solid var(--btn-primary-bg);
-  border-radius: var(--radius-md);
-  display: inline-flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 7px;
-  cursor: pointer;
-  text-align: left;
-  color: var(--btn-primary-fg);
-  transition: background 120ms, border-color 120ms;
-  font-family: inherit;
-}
-
-.choice-card:hover {
-  background: var(--btn-primary-hover);
-  border-color: var(--btn-primary-hover);
-}
-
-.choice-card:active {
-  background: var(--btn-primary-active);
-  border-color: var(--btn-primary-active);
-}
-
-.choice-icon {
-  width: 15px;
-  height: 15px;
-  color: currentColor;
-  opacity: 0.65;
-  flex-shrink: 0;
-}
-
-.choice-title {
-  font-size: var(--text-base);
-  font-weight: 600;
-  white-space: nowrap;
-  letter-spacing: 0;
 }
 
 /* ── macOS drag regions ─────────────────────────────────────── */
@@ -627,12 +537,11 @@ html.macos .drawer-overlay.open {
 /* ── Connection highlight states ────────────────────────────── */
 .note-card.is-linked {
   background: rgba(var(--accent-rgb), 0.1) !important;
-  border-color: rgba(var(--accent-rgb), 0.40) !important;
+  border-color: var(--card-bd) !important;
 }
 
-
 .note-card.is-linked .note-name {
-  color: var(--ui-accent);
+  color: var(--fg);
 }
 
 .note-card.is-dim {
@@ -654,15 +563,10 @@ html.macos .drawer-overlay.open {
 
 .lib-conn-line {
   fill: none;
-  stroke: rgba(var(--accent-rgb), 0.65);
-  stroke-width: 1.5;
-  stroke-linecap: butt;
-  stroke-linejoin: miter;
-}
-
-html[data-theme="neo"] .lib-conn-line {
   stroke: var(--accent);
   stroke-width: 2;
+  stroke-linecap: butt;
+  stroke-linejoin: miter;
 }
 
 /* ── Left nav sidebar (index / tag col) ────────────────────── */
@@ -684,24 +588,26 @@ html[data-theme="neo"] .lib-conn-line {
   gap: 2px;
 }
 
-/* Nav items: rounded floating rows — mirrors settings-sidebar-item */
+/* Tags-col nav sidebar rows: flat rows with transparent border */
 .tags-col .tag-card {
-  border: none;
-  border-radius: var(--radius-md);
+  border: 2px solid transparent;
   background: transparent;
   padding: 0.4rem 0.65rem;
-  transition: background 120ms, color 120ms;
+  box-shadow: none;
 }
 
 .tags-col .tag-card:hover {
-  background: var(--card-hov);
-  border: none;
+  background: var(--bg);
+  border-color: var(--card-bd);
+  box-shadow: var(--px-d1) var(--px-shadow);
+  transform: none;
 }
 
 /* Selected: solid coral fill */
 .tags-col .tag-card.selected {
-  background: var(--ui-accent);
-  border: none;
+  background: var(--accent);
+  border-color: var(--card-bd);
+  box-shadow: var(--px-d1) var(--px-shadow);
 }
 
 .tags-col .tag-card.selected .tag-name {
@@ -710,6 +616,6 @@ html[data-theme="neo"] .lib-conn-line {
 }
 
 .tags-col .tag-card.selected .tag-count {
-  background: rgba(255, 255, 255, 0.18);
-  color: var(--btn-primary-fg);
+  background: var(--tint-md);
+  color: var(--fg);
 }

@@ -1,49 +1,47 @@
-
-    /* ── Neo note prose & Milkdown editor overrides ──────────────
+/* ── Neo note prose & Milkdown editor overrides ──────────────
        Applied on top of noteSharedProseCSS / noteEditorProseCSS.
        Adjusts note content rendering to match the pixel/brutalist aesthetic. */
 
-    /* Unordered bullets: disc/circle → square pixel dot, all nesting levels */
-    html[data-theme="neo"] .prose ul,
-    html[data-theme="neo"] .prose ul ul,
-    html[data-theme="neo"] .prose ul ul ul,
-    html[data-theme="neo"] .ProseMirror ul,
-    html[data-theme="neo"] .ProseMirror ul ul,
-    html[data-theme="neo"] .ProseMirror ul ul ul {
-      list-style-type: square;
-    }
+/* Unordered bullets: disc/circle → square pixel dot, all nesting levels */
+.prose ul,
+.prose ul ul,
+.prose ul ul ul,
+.ProseMirror ul,
+.ProseMirror ul ul,
+.ProseMirror ul ul ul {
+  list-style-type: square;
+}
 
-    /* Blockquote left bar: hard 2px edge (border-radius zeroed by global rule) */
-    html[data-theme="neo"] .prose blockquote::before,
-    html[data-theme="neo"] .ProseMirror blockquote::before {
-      border-radius: 0;
-    }
+/* Blockquote left bar: hard 2px edge (border-radius zeroed by global rule) */
+.prose blockquote::before,
+.ProseMirror blockquote::before {
+  border-radius: 0;
+}
 
+/* Frontmatter card: pixel hard shadow (d2) */
+.ProseMirror [data-fm] .fm-card {
+  box-shadow: var(--px-d2) var(--px-shadow);
+}
 
-    /* Frontmatter card: pixel hard shadow (d2) */
-    html[data-theme="neo"] .ProseMirror [data-fm] .fm-card {
-      box-shadow: var(--px-d2) var(--px-shadow);
-    }
+/* Task list checkboxes: no transition, sharp corners, pixel checkmark */
+.prose li>input[type="checkbox"],
+.ProseMirror li[data-item-type="task"]::before {
+  transition: none;
+}
 
-    /* Task list checkboxes: no transition, sharp corners, pixel checkmark */
-    html[data-theme="neo"] .prose li>input[type="checkbox"],
-    html[data-theme="neo"] .ProseMirror li[data-item-type="task"]::before {
-      transition: none;
-    }
+.ProseMirror li[data-item-type="task"]::before {
+  border-radius: 0;
+}
 
-    html[data-theme="neo"] .ProseMirror li[data-item-type="task"]::before {
-      border-radius: 0;
-    }
+.prose li>input[type="checkbox"]:checked,
+.ProseMirror li[data-item-type="task"][data-checked="true"]::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpolyline points='2,6 5,9 10,3' fill='none' stroke='%23fff' stroke-width='1.8' stroke-linecap='square' stroke-linejoin='miter'/%3E%3C/svg%3E");
+}
 
-    html[data-theme="neo"] .prose li>input[type="checkbox"]:checked,
-    html[data-theme="neo"] .ProseMirror li[data-item-type="task"][data-checked="true"]::before {
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpolyline points='2,6 5,9 10,3' fill='none' stroke='%23fff' stroke-width='1.8' stroke-linecap='square' stroke-linejoin='miter'/%3E%3C/svg%3E");
-    }
-
-    /* Wiki link chips: no transition */
-    html[data-theme="neo"] .prose a[href^="/notes?"],
-    html[data-theme="neo"] .prose a[href^="/notes?"]::before,
-    html[data-theme="neo"] .ProseMirror span[data-wl],
-    html[data-theme="neo"] .ProseMirror span[data-wl]::before {
-      transition: none;
-    }
+/* Wiki link chips: no transition */
+.prose a[href^="/notes?"],
+.prose a[href^="/notes?"]::before,
+.ProseMirror span[data-wl],
+.ProseMirror span[data-wl]::before {
+  transition: none;
+}

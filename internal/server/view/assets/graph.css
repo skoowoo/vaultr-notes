@@ -20,7 +20,7 @@
       max-width: 220px;
       display: flex;
       flex-direction: column;
-      border-right: 1px solid var(--hr);
+      border-right: 2px solid var(--hr);
       min-height: 0;
       background: var(--surface-soft);
     }
@@ -32,13 +32,13 @@
       align-items: center;
       gap: 0.45rem;
       padding: 0 0.75rem;
-      border-bottom: 1px solid var(--hr);
+      border-bottom: 2px solid var(--hr);
       background: var(--surface-soft);
     }
 
     .graph-index-head-title {
       font-size: var(--text-sm);
-      font-weight: var(--fw-medium);
+      font-weight: var(--fw-semibold);
       color: var(--fg);
       opacity: 0.82;
     }
@@ -50,7 +50,6 @@
       color: var(--cnt-tx);
       background: var(--cnt-bg);
       padding: 0.07em 0.4em;
-      border-radius: var(--radius-pill);
       font-variant-numeric: tabular-nums;
     }
 
@@ -75,21 +74,24 @@
       align-items: center;
       justify-content: space-between;
       padding: 0.4rem 0.65rem;
-      border-radius: var(--radius-md);
       background: transparent;
-      border: none;
+      border: 2px solid transparent;
       cursor: pointer;
-      transition: background 120ms, color 120ms;
       gap: 0.4rem;
       user-select: none;
     }
 
     .graph-index-item:hover {
-      background: var(--card-hov);
+      background: var(--bg);
+      border-color: var(--card-bd);
+      box-shadow: var(--px-d1) var(--px-shadow);
     }
 
     .graph-index-item.active {
-      background: var(--ui-accent);
+      background: var(--accent);
+      color: var(--fg);
+      border-color: var(--card-bd);
+      box-shadow: var(--px-d1) var(--px-shadow);
     }
 
     .graph-index-item-name {
@@ -115,13 +117,12 @@
       color: var(--cnt-tx);
       background: var(--cnt-bg);
       padding: 0.07em 0.4em;
-      border-radius: var(--radius-pill);
       font-variant-numeric: tabular-nums;
     }
 
     .graph-index-item.active .graph-index-item-count {
-      background: rgba(255, 255, 255, 0.18);
-      color: var(--btn-primary-fg);
+      background: var(--tint-md);
+      color: var(--fg);
     }
 
     /* ── Main area ───────────────────────────────────────────── */
@@ -141,7 +142,7 @@
       align-items: center;
       gap: 0.5rem;
       padding: 0 1rem;
-      border-bottom: 1px solid var(--hr);
+      border-bottom: 2px solid var(--hr);
       background: var(--bg);
       user-select: none;
     }
@@ -152,8 +153,7 @@
       gap: 0.32rem;
       height: 26px;
       padding: 0 0.65rem;
-      border-radius: var(--radius-sm);
-      border: 1px solid var(--card-bd);
+      border: 2px solid var(--card-bd);
       background: transparent;
       color: var(--muted);
       font-size: var(--text-xs);
@@ -161,7 +161,6 @@
       font-family: var(--font-ui);
       cursor: pointer;
       white-space: nowrap;
-      transition: background 120ms, border-color 120ms, color 120ms;
     }
 
     .graph-toolbar-btn:hover {
@@ -188,11 +187,10 @@
       display: flex;
       flex-direction: row;
       gap: 2px;
-      background: var(--card-bg);
-      border: 1px solid var(--card-bd);
-      border-radius: var(--radius-md);
+      background: var(--bg);
+      border: 2px solid var(--card-bd);
       padding: 3px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.10);
+      box-shadow: var(--px-d1) var(--px-shadow);
     }
 
     .graph-zoom-btn {
@@ -201,19 +199,17 @@
       justify-content: center;
       width: 28px; height: 28px;
       border: none;
-      border-radius: var(--radius-sm);
       background: transparent;
       color: var(--muted);
       cursor: pointer;
-      transition: color 120ms, background 120ms;
     }
 
     .graph-zoom-btn:hover { color: var(--fg); background: var(--icon-hov); }
     .graph-zoom-btn svg { width: 14px; height: 14px; flex-shrink: 0; }
 
     .graph-zoom-divider {
-      width: 1px;
-      background: var(--hr);
+      width: 2px;
+      background: var(--card-bd);
       margin: 4px 1px;
     }
 
@@ -263,10 +259,10 @@
     /* ── Node tooltip ────────────────────────────────────────── */
     .graph-tooltip {
       position: fixed; z-index: 100; pointer-events: none;
-      background: var(--card-bg); border: 1px solid var(--card-bd);
-      border-radius: var(--radius-md); padding: 0.4rem 0.65rem;
+      background: var(--card-bg); border: 2px solid var(--card-bd);
+      padding: 0.4rem 0.65rem;
       font-size: var(--text-sm); color: var(--fg);
-      box-shadow: 0 4px 16px rgba(0,0,0,0.3); white-space: nowrap;
+      box-shadow: var(--px-d2) var(--px-shadow); white-space: nowrap;
       opacity: 0; transition: opacity 80ms;
     }
 
@@ -300,12 +296,11 @@
       gap: 0.4rem;
     }
 
-    /* §2.6: 紫色填充 + 白字 + 2px 黑边框 */
     .graph-node-panel-type {
       font-size: var(--text-xs);
       font-weight: var(--fw-medium);
-      color: #ffffff;
-      background: #7c3aed;
+      color: var(--fg);
+      background: var(--entity-type-bg);
       padding: 0.15em 0.5em;
       border: 2px solid var(--card-bd);
       white-space: nowrap;

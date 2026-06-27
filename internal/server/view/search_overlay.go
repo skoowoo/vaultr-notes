@@ -4,14 +4,15 @@ const searchOverlayStyles = `
     /* ── Search UI ─────────────────────────────────────── */
     .srch-panel {
       border-color: var(--srch-panel-bd) !important;
+      border-width: 2px;
       box-shadow: var(--srch-panel-shadow);
     }
-    .srch-row   { border-color: var(--srch-row-bd) !important; }
+    .srch-row   { border-color: var(--srch-row-bd) !important; border-bottom-width: 2px; background: var(--srch-row-bg); }
     .srch-icon  { color: var(--srch-ic); transition: color 150ms; }
     .srch-row:focus-within .srch-icon { color: var(--ui-accent); }
     .srch-input {
       color: var(--fg);
-      caret-color: var(--ui-accent);
+      caret-color: var(--fg);
       font-size: var(--text-body);
       font-family: var(--font-ui);
       letter-spacing: 0;
@@ -28,13 +29,19 @@ const searchOverlayStyles = `
     .srch-btn {
       color: var(--muted);
       border-color: var(--srch-panel-bd);
-      transition: color 150ms, border-color 150ms, background 150ms;
       font-family: var(--font-ui);
+      box-shadow: var(--px-d1) var(--px-shadow);
     }
     .srch-btn:hover {
       color: var(--fg);
-      border-color: var(--hr);
+      border-color: var(--srch-panel-bd);
       background: var(--card-bg);
+      box-shadow: var(--px-d0) var(--px-shadow);
+      transform: translate(1px, 1px);
+    }
+    .srch-btn:active {
+      box-shadow: none;
+      transform: translate(2px, 2px);
     }
     .srch-shortcut {
       font-family: var(--font-ui);
@@ -43,25 +50,16 @@ const searchOverlayStyles = `
       color: var(--muted);
     }
     #search-results a {
-      transition: background 100ms;
       position: relative;
-      border-radius: var(--radius-sm);
+      border: 2px solid transparent;
     }
     #search-results a::before {
-      content: '';
-      position: absolute;
-      left: 0; top: 50%;
-      transform: translateY(-50%) scaleY(0);
-      width: 2.5px; height: 60%;
-      background: var(--ui-accent);
-      border-radius: 0 2px 2px 0;
-      transition: transform 100ms;
+      display: none;
     }
     #search-results a.is-active {
       background: var(--srch-av);
-    }
-    #search-results a.is-active::before {
-      transform: translateY(-50%) scaleY(1);
+      border-color: var(--card-bd);
+      box-shadow: var(--px-d1) var(--px-shadow);
     }
     .sr-name  { color: var(--fg); font-size: var(--text-base); font-weight: 500; letter-spacing: 0; }
     .sr-dir   { color: var(--sr-dir); font-size: var(--text-xs); }
@@ -76,7 +74,10 @@ const searchOverlayStyles = `
       justify-self: end;
     }
     .sr-icon  { color: var(--sr-ic); transition: color 100ms; }
-    #search-results a.is-active .sr-icon { color: var(--ui-accent); }
+    #search-results a.is-active .sr-name,
+    #search-results a.is-active .sr-dir,
+    #search-results a.is-active .sr-time,
+    #search-results a.is-active .sr-icon { color: var(--fg); }
     .sr-empty {
       color: var(--sr-em);
       font-size: var(--text-sm);
@@ -85,6 +86,7 @@ const searchOverlayStyles = `
     }
     .srch-footer {
       border-color: var(--hr) !important;
+      border-top-width: 2px;
     }
     .srch-hint {
       font-size: var(--text-xs);
@@ -97,8 +99,7 @@ const searchOverlayStyles = `
       font-family: var(--font-ui);
       font-size: var(--text-2xs);
       color: var(--srch-kbd-fg);
-      border: 1px solid var(--srch-kbd-bd);
-      border-radius: var(--radius-xs);
+      border: 2px solid var(--srch-kbd-bd);
       padding: 1px 5px;
       line-height: 1.4;
     }
@@ -110,7 +111,7 @@ const searchOverlayStyles = `
     .srch-preview-pane .frag-cover {
       margin-bottom: 1rem;
       padding-bottom: 0.75rem;
-      border-bottom: 1px solid var(--hr);
+      border-bottom: 2px solid var(--hr);
     }
     .srch-preview-pane .frag-dir,
     .srch-preview-pane .cover-dir {
@@ -144,18 +145,16 @@ const searchOverlayStyles = `
     /* ── Mode system ─────────────────────────────────────── */
     .srch-icon-area {
       cursor: pointer;
-      border-radius: var(--radius-xs);
       padding: 3px 2px;
       min-width: 24px;
-      transition: background 100ms;
     }
-    .srch-icon-area:hover { background: var(--card-hov); }
-    .srch-icon-area.has-mode .srch-icon { color: var(--ui-accent); }
+    .srch-icon-area:hover { background: var(--icon-hov); }
+    .srch-icon-area.has-mode .srch-icon { color: var(--fg); }
     .srch-mode-chip {
       font-size: var(--text-2xs);
       font-family: var(--font-ui);
       font-weight: 600;
-      color: var(--ui-accent);
+      color: var(--fg);
       letter-spacing: 0.06em;
       text-transform: uppercase;
       white-space: nowrap;
@@ -167,16 +166,15 @@ const searchOverlayStyles = `
       font-weight: 400;
       opacity: 0.7;
     }
-    .srch-mode-menu { border-color: var(--hr) !important; }
+    .srch-mode-menu { border-color: var(--hr) !important; border-bottom-width: 2px; }
     .srch-mode-item {
       color: var(--fg);
       font-family: var(--font-ui);
-      transition: background 100ms;
     }
-    .srch-mode-item.is-active { background: var(--srch-av); }
+    .srch-mode-item.is-active { background: var(--seg-act-bg); color: var(--seg-act-fg); }
     .srch-mode-name { font-size: var(--text-sm); font-weight: 500; min-width: 5rem; }
     .srch-mode-desc { font-size: var(--text-xs); color: var(--sr-dir); }
-    .srch-mode-footer { border-color: var(--hr) !important; }
+    .srch-mode-footer { border-color: var(--hr) !important; border-top-width: 2px; }
     .srch-hint-sep { color: var(--sr-tm); opacity: 0.4; }
     .srch-key {
       font-family: var(--font-mono);
@@ -279,7 +277,7 @@ const searchOverlayPanelHTML = `
           <!-- Left: results list -->
           <div id="search-results" @click="onResultClick($event)" @mousemove="onResultHover($event)"
                class="flex flex-col gap-0.5 p-2 overflow-y-auto flex-shrink-0 [scrollbar-width:none]"
-               style="width:300px; border-right:1px solid var(--hr)"></div>
+               style="width:300px; border-right:2px solid var(--hr); padding:0.5rem; gap:0"></div>
 
           <!-- Right: note preview -->
           <div id="search-preview"

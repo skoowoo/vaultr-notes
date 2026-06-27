@@ -3,59 +3,44 @@ package view
 // navCSS is the stylesheet for the shared left navigation strip.
 // Drop it inside a page's <style> block.
 const navCSS = `
-    /* ── Left nav — theme-aware sidebar ───────────────────────── */
+    /* ── Left nav ─────────────────────────────────────────────── */
     .lib-nav {
       flex-shrink: 0; width: var(--nav-w); height: 100%;
-      background: var(--nav-bg); border-right: 1px solid var(--hr);
+      background: var(--nav-bg); border-right: 2px solid var(--hr);
       display: flex; flex-direction: column; align-items: center;
       padding: 0.875rem 0; gap: 0.375rem;
+      view-transition-name: page-nav;
     }
     .nav-item {
       display: flex; align-items: center; justify-content: center;
-      width: var(--nav-item-sz); height: var(--nav-item-sz); border-radius: var(--radius-md);
-      color: rgba(255,255,255,0.38); transition: color 120ms, background 120ms;
+      width: var(--nav-item-sz); height: var(--nav-item-sz);
+      color: rgba(0,0,0,0.52);
       text-decoration: none; border: none; background: transparent; padding: 0;
     }
-    .nav-item:hover { color: rgba(255,255,255,0.78); background: rgba(255,255,255,0.06); }
-    .nav-item.active { background: var(--ui-accent); color: #ffffff; }
-    html[data-theme="neo"] .nav-item { color: rgba(0,0,0,0.52); }
-    html[data-theme="neo"] .nav-item:hover { color: var(--fg); background: rgba(0,0,0,0.1); }
-    html[data-theme="neo"] .nav-item.active { background: var(--seg-act-bg); color: var(--seg-act-fg); }
+    .nav-item:hover { color: var(--fg); background: rgba(0,0,0,0.1); }
+    .nav-item.active { background: var(--seg-act-bg); color: var(--seg-act-fg); box-shadow: var(--px-d1) var(--px-shadow); }
     .nav-item svg { width: 19px; height: 19px; }
     .nav-spacer { flex: 1; }
     .lib-nav, .nav-item { user-select: none; }
     .nav-item-wrap { position: relative; display: flex; align-items: center; justify-content: center; }
     .nav-compose-btn {
       display: flex; align-items: center; justify-content: center;
-      width: 30px; height: 30px; border-radius: 50%;
+      width: 30px; height: 30px;
       background: var(--nav-act);
       border: none;
-      color: rgba(255,255,255,0.38); cursor: pointer; padding: 0;
-      transition: color 120ms, background 120ms;
+      color: rgba(0,0,0,0.55); cursor: pointer; padding: 0;
       user-select: none;
     }
-    .nav-compose-btn:hover { background: var(--accent); color: var(--canvas); }
-    html[data-theme="neo"] .nav-compose-btn { color: rgba(0,0,0,0.55); }
-    html[data-theme="neo"] .nav-compose-btn:hover { background: var(--seg-act-bg); color: var(--seg-act-fg); }
+    .nav-compose-btn:hover { background: var(--seg-act-bg); color: var(--seg-act-fg); }
     .nav-compose-btn svg { width: 17px; height: 17px; flex-shrink: 0; }
-    @property --_nb-a { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
     .nav-run-badge {
       display: none; position: absolute; top: -4px; right: -4px;
       min-width: 14px; height: 14px; padding: 0 3px;
-      background-color: var(--ui-accent);
-      background-image: conic-gradient(
-        from var(--_nb-a) at 50% 50%,
-        transparent 0%, transparent 50%,
-        rgba(255,255,255,0.90) 65%,
-        rgba(255,255,255,0.20) 78%,
-        transparent 88%
-      );
-      color: var(--canvas);
+      background-color: var(--seg-act-bg);
+      color: var(--accent);
       font-size: var(--text-2xs); font-weight: var(--fw-semibold); line-height: 14px;
-      border-radius: var(--radius-pill); text-align: center;
-      animation: nav-badge-chase 1.5s linear infinite;
-    }
-    @keyframes nav-badge-chase { to { --_nb-a: 360deg; } }`
+      text-align: center;
+    }`
 
 // svgHome is the Lucide "Layers" icon used for the Home nav item.
 const svgHome = `<svg fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24">
@@ -88,23 +73,23 @@ const topbarCSS = `
     .lib-topbar {
       flex-shrink: 0; height: var(--topbar-h);
       display: flex; align-items: center;
-      padding: 0 1rem; border-bottom: 1px solid var(--hr); background: var(--bg);
+      padding: 0 1rem; border-bottom: 2px solid var(--hr); background: var(--bg);
       user-select: none;
     }
     .lib-topbar-left { display: flex; align-items: center; gap: 0.5rem; min-width: 0; }
     .lib-topbar-spacer { flex: 1; min-width: 0; }
     .lib-topbar-actions { display: flex; align-items: center; gap: 0.5rem; min-width: 0; }
     .lib-status {
-      display: inline-flex; align-items: center; gap: 0.28rem; padding: 0 0.25rem;
+      display: inline-flex; align-items: center; gap: 0.28rem; padding: 0 7px;
       color: var(--muted); font-size: var(--text-sm); line-height: 1;
+      border: 1px solid var(--hr); height: 22px;
     }
     .lib-status-value { color: var(--muted); opacity: 0.8; font-weight: 500; font-variant-numeric: tabular-nums; }
     .lib-status-label { letter-spacing: 0.01em; }
     .lib-action-btn {
       display: inline-flex; align-items: center; justify-content: center;
-      width: var(--action-btn-sz); height: var(--action-btn-sz); padding: 0; border-radius: var(--radius-sm); border: none;
+      width: var(--action-btn-sz); height: var(--action-btn-sz); padding: 0; border: none;
       background: transparent; color: var(--muted); cursor: pointer;
-      transition: color 120ms, background 120ms;
     }
     .lib-action-btn:hover, .lib-action-btn.is-active { color: var(--fg); background: var(--icon-hov); }
     .lib-action-btn.is-active { color: var(--ui-accent); }
@@ -116,10 +101,9 @@ const topbarCSS = `
     .lib-back-btn {
       display: inline-flex; align-items: center; gap: 0.3rem;
       height: var(--action-btn-sz); padding: 0 0.5rem 0 0.35rem;
-      border-radius: var(--radius-sm); border: none; background: transparent;
+      border: none; background: transparent;
       color: var(--muted); cursor: pointer; text-decoration: none;
       font-size: var(--text-base); font-weight: 500; white-space: nowrap;
-      transition: color 120ms, background 120ms;
     }
     .lib-back-btn:hover { color: var(--fg); background: var(--icon-hov); }
     .lib-back-btn svg { width: 15px; height: 15px; flex-shrink: 0; }

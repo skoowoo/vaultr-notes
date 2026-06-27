@@ -52,8 +52,8 @@ const appTokensNeo = `
       /* ── Brand accent — yellow ── */
       --accent:#facc15; --accent-rgb:250,204,21; --accent-hov:#eab308;
       /* ── Link color — prose hyperlinks only; do not use in UI chrome ── */
-      --link:#ec4899; --link-hov:#db2777; --link-rgb:236,72,153;
-      --link-ul:rgba(236,72,153,0.32); --link-ul-hov:rgba(236,72,153,0.55);
+      --link:#f472b6; --link-hov:#ec4899; --link-rgb:244,114,182;
+      --link-ul:rgba(244,114,182,0.28); --link-ul-hov:rgba(244,114,182,0.50);
       /* ── UI primary — interactive states, active elements, buttons (not prose links) ── */
       --ui-accent:#facc15; --ui-accent-hov:#eab308;
       /* ── Prose headings ── */

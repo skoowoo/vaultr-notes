@@ -555,13 +555,15 @@ var libraryPageHTML = `<!DOCTYPE html>
 <html lang="en" data-theme="neo">
 ` + headHTML(headOpts{title: "Library — Vaultr", withFonts: true, withTW: true, withAlpine: true, withHTMX: true}) + `  <style>
 ` + appTokensCSS + `
-` + navCSS + neoCSS + topbarCSS + libraryCSS + drawerCSS + noteSharedCSS + noteEditorCSS + searchOverlayStyles + confirmDialogCSS + shortDialogCSS + settingsModalCSS + `
+` + navCSS + neoCSS + topbarCSS + heroCSS + libraryCSS + drawerCSS + noteSharedCSS + noteEditorCSS + searchOverlayStyles + confirmDialogCSS + shortDialogCSS + settingsModalCSS + `
   </style>
   <script>
+  /* Apply hero background synchronously before first paint to avoid flash */
   (function(){
     var d=localStorage.getItem('vaultr-hero-bg');
     if(!d) return;
     var y=parseFloat(localStorage.getItem('vaultr-hero-bg-y'))||0;
+    var i=new Image();i.src=d;
     var s=document.createElement('style');
     s.id='hero-bg-preload';
     s.textContent='.home-hero-wrapper{background-image:url('+d+');background-size:100% auto;background-repeat:no-repeat;background-position:center '+y+'px}';

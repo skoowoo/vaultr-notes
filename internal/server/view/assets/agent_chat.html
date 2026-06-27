@@ -9,7 +9,6 @@
           </template>
           <template x-for="m in mates" :key="m.id">
             <button class="mate-chip" :class="m.id === selectedMateId ? 'is-active' : ''"
-                    :style="m.id === selectedMateId && m.color ? 'border-color:' + m.color : ''"
                     @click="selectMate(m.id)" type="button">
               <span class="mate-chip-avatar"
                     :style="m.color ? 'background:' + m.color : ''"

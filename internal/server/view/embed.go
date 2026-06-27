@@ -53,6 +53,9 @@ var agentChatMainHTML string
 //go:embed assets/agent_chat.js
 var agentChatJS string
 
+//go:embed assets/hero.css
+var heroCSS string
+
 //go:embed assets/home.css
 var homeCSS string
 

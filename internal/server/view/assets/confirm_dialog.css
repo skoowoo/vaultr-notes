@@ -1,67 +1,110 @@
-    [x-cloak] { display: none !important; }
+    [x-cloak] {
+      display: none !important;
+    }
 
     /* ── Confirmation dialog ──────────────────────────────────────── */
     .confirm-overlay {
-      position: fixed; inset: 0; z-index: 9000;
-      display: flex; align-items: center; justify-content: center;
+      position: fixed;
+      inset: 0;
+      z-index: 9000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       padding: 1.5rem;
       background: var(--overlay-bg);
-      animation: confirm-bg-in 160ms ease both;
     }
+
     .confirm-card {
       background: var(--card-bg);
-      border: 1px solid var(--card-bd);
-      border-radius: var(--radius-lg);
+      border: 2px solid var(--card-bd);
       padding: 1.5rem 1.5rem 1.25rem;
-      max-width: 360px; width: 100%;
-      box-shadow: 0 12px 40px rgba(0,0,0,0.36);
-      animation: confirm-card-in 180ms cubic-bezier(0.16,1,0.3,1) both;
+      max-width: 360px;
+      width: 100%;
+      box-shadow: var(--px-d3) var(--px-shadow);
     }
+
     .confirm-card.is-wide {
       max-width: min(30rem, calc(100vw - 2rem));
     }
+
     .confirm-title {
-      font-size: var(--text-base); font-weight: 600;
-      color: var(--fg); margin: 0 0 0.375rem; line-height: 1.4;
+      font-size: var(--text-base);
+      font-weight: 600;
+      color: var(--fg);
+      margin: 0 0 0.375rem;
+      line-height: 1.4;
     }
+
+    .confirm-title-icon {
+      display: inline-block;
+      vertical-align: middle;
+      margin-right: 0.45rem;
+      position: relative;
+      top: -1px;
+    }
+
     .confirm-message {
-      font-size: var(--text-sm); color: var(--muted);
-      line-height: 1.6; margin: 0;
+      font-size: var(--text-sm);
+      color: var(--muted);
+      line-height: 1.6;
+      margin: 0;
     }
+
     .confirm-actions {
-      display: flex; flex-wrap: nowrap; gap: 0.45rem; justify-content: flex-end;
+      display: flex;
+      flex-wrap: nowrap;
+      gap: 0.45rem;
+      justify-content: flex-end;
       align-items: center;
       margin-top: 1.25rem;
     }
+
     .confirm-card.is-wide .confirm-btn {
       padding: 0 0.65rem;
       font-size: var(--text-sm);
       white-space: nowrap;
     }
-    .confirm-btn {
-      height: 30px; padding: 0 0.875rem; border-radius: var(--radius-sm);
-      font-size: var(--text-sm); font-weight: 500; cursor: pointer;
-      font-family: inherit; transition: opacity 120ms, background 120ms, border-color 120ms, color 120ms;
-      flex: 0 0 auto;
-    }
-    .confirm-btn-cancel {
-      background: transparent; color: var(--muted);
-      border: 1px solid var(--card-bd);
-    }
-    .confirm-btn-cancel:hover { color: var(--fg); border-color: var(--muted); background: var(--nav-act); }
-    .confirm-btn-confirm {
-      border: none; color: #fff;
-    }
-    .confirm-btn-confirm.is-danger { background: var(--s-err); }
-    .confirm-btn-confirm.is-danger:hover { opacity: 0.85; }
-    .confirm-btn-confirm:not(.is-danger) { background: var(--ui-accent); }
-    .confirm-btn-confirm:not(.is-danger):hover { opacity: 0.85; }
 
-    @keyframes confirm-bg-in {
-      from { opacity: 0; }
-      to   { opacity: 1; }
+    .confirm-btn {
+      height: 30px;
+      padding: 0 0.875rem;
+      font-size: var(--text-sm);
+      font-weight: 500;
+      cursor: pointer;
+      font-family: inherit;
+      flex: 0 0 auto;
+      box-shadow: var(--px-d2) var(--px-shadow);
     }
-    @keyframes confirm-card-in {
-      from { opacity: 0; transform: translateY(6px) scale(0.97); }
-      to   { opacity: 1; transform: translateY(0)  scale(1); }
+
+    .confirm-btn:hover:not(:disabled) {
+      box-shadow: var(--px-d1) var(--px-shadow);
+      transform: translate(1px, 1px);
+    }
+
+    .confirm-btn:active:not(:disabled) {
+      box-shadow: none;
+      transform: translate(3px, 3px);
+    }
+
+    .confirm-btn-cancel {
+      background: transparent;
+      color: var(--muted);
+      border: 2px solid var(--card-bd);
+    }
+
+    .confirm-btn-cancel:hover {
+      color: var(--fg);
+    }
+
+    .confirm-btn-confirm {
+      border: none;
+      color: #fff;
+    }
+
+    .confirm-btn-confirm.is-danger {
+      background: var(--s-err);
+    }
+
+    .confirm-btn-confirm:not(.is-danger) {
+      background: var(--ui-accent);
     }
