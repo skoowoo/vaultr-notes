@@ -1,7 +1,9 @@
 # Vaultr：最简的方式构建笔记 AI 工作流
 
-![Vaultr Hero](./docs/assets/hero.png)
+![Vaultr Hero](./docs/assets/hero4.png)
+![Vaultr Hero](./docs/assets/hero3.png)
 ![Vaultr Hero](./docs/assets/hero2.png)
+![Vaultr Hero](./docs/assets/hero.png)
 
 ## 目录
 

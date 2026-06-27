@@ -2,8 +2,10 @@
 
 [中文文档](./README_ZH.md)
 
-![Vaultr Hero](./docs/assets/hero.png)
+![Vaultr Hero](./docs/assets/hero4.png)
+![Vaultr Hero](./docs/assets/hero3.png)
 ![Vaultr Hero](./docs/assets/hero2.png)
+![Vaultr Hero](./docs/assets/hero.png)
 
 ## Table of Contents
 
