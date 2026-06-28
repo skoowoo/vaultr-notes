@@ -24,9 +24,22 @@ vaultr knowledge list-indexes
 
 Select 1–3 domain indexes most relevant to the topic. Read those index files to find matching units. If no indexes exist, scan `_knowledge/` directly.
 
-Surface the palette: list the knowledge units you found that could feed this article. For each unit, one line — name and why it's relevant. Ask the user: does this palette cover what you need, or should we adjust the topic?
+**Present the palette for confirmation.** Do not proceed to Phase 1 until the user signs off. Format it like this:
 
-If the user says a unit is missing: suggest they run `vaultr-compile-note` on the relevant source first, then come back. Do not continue to Phase 1 with a palette the user hasn't confirmed.
+---
+**Sources found**
+
+| #   | Knowledge unit | What it contributes                                  |
+| --- | -------------- | ---------------------------------------------------- |
+| 1   | `unit-name`    | one sentence on what this unit brings to the article |
+| 2   | …              | …                                                    |
+
+**Possible gaps:** list anything you think the article needs that the knowledge base doesn't cover (if any).
+
+> That's everything I found. Does this palette cover what you need, or should we add more? If something's missing, compile the relevant notes with `vaultr-compile-note` first and I'll re-scan.
+---
+
+Wait for the user to confirm, remove units, or tell you what's missing before moving on. If the user wants to add coverage: suggest they run `vaultr-compile-note` on the relevant source, then re-scan and re-present the updated palette. Do not continue to Phase 1 with a palette the user hasn't confirmed.
 
 ---
 
@@ -56,6 +69,14 @@ Loop until the article reaches a natural end:
 When the article reaches its natural end, write the final beat and stop.
 
 Then ask: **Do you want to compile this article back into the knowledge base?** If yes, trigger the `vaultr-compile-note` skill on the article file. The article itself becomes a source — its argument, its synthesis, its publication date feed back as new knowledge.
+
+Finally, output the article's wiki link — derive it from the saved path by taking the filename without the `.md` extension:
+
+```
+[[Article Title]]
+```
+
+For example, if the file was saved to `essays/on-focus.md`, output `[[on-focus]]`. Output this as the last line of your response so the user can copy it directly into any note.
 
 </what-to-do>
 

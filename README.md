@@ -20,7 +20,7 @@
 - [Mate Bots](#mate-bots)
 - [WeChat](#wechat)
 - [Discord](#discord)
-- [Note AI Compiler](#note-ai-compiler)
+- [LLM-Wiki Compiler](#llm-wiki-compiler)
 - [Personal Memory](#personal-memory)
 - [Skills](#skills)
 - [Customizing AI Behavior](#customizing-ai-behavior)
@@ -41,8 +41,8 @@
 - **Event-triggered automation**: agents run tasks automatically when notes change, messages arrive, or schedules fire
 - **WeChat & Discord integration**: chat with agents directly from WeChat or Discord DMs
 
-#### 🧠 Note AI Compiler
-- Compiles your notes into **structured knowledge points** automatically
+#### 🧠 LLM-Wiki Compiler
+- Compiles your notes into **structured knowledge** and builds an interconnected **LLM wiki network**
 
 #### 🪞 Personal Memory
 - Automatically extracts **personal memories** from your notes (identity, preferences, goals, beliefs, people, and current state) into structured files that stay current
@@ -70,7 +70,7 @@ Concretely, Vaultr **strongly discourages nested directories**. You can create s
 What turns raw notes into useful knowledge? Vaultr's answer: hand it off to AI.
 
 - You write short notes, journal entries, clip web pages. No curation needed.
-- AI agents automatically **compile these notes into structured knowledge units**, stored in the knowledge base
+- AI agents automatically **compile these notes into structured knowledge**, building an interconnected LLM wiki network in the knowledge base
 - The knowledge base is further distilled into **personal memory**, giving every conversation context
 
 The entire pipeline runs automatically. You don't need to be involved in any organizing work.
@@ -149,7 +149,7 @@ Vaultr is **fully compatible with Obsidian**. Both tools can work on the same va
 - **Same vault, same files.** Vaultr reads and writes plain Markdown in your existing directory structure. Keep using Obsidian as your primary editor if you prefer.
 - **Obsidian-native syntax.** Wikilinks (`[[Note]]`), aliases (`[[Page|Alias]]`), and wiki images (`![[image.png]]`) all work out of the box.
 - **No format conversion.** Everything Vaultr creates or modifies stays standard Markdown — open it in Obsidian and it looks exactly as you'd expect.
-- **Vaultr as your AI layer.** Point Vaultr at your Obsidian vault and let it handle the AI side: note compilation, personal memory, event-driven agents, WeChat, and search. You write in Obsidian; Vaultr runs the automation on top.
+- **Vaultr as your AI layer.** Point Vaultr at your Obsidian vault and let it handle the AI side: LLM wiki compilation, personal memory, event-driven agents, WeChat, and search. You write in Obsidian; Vaultr runs the automation on top.
 
 #### Get started with an existing vault
 
@@ -235,7 +235,7 @@ Add one or more triggers to a mate and it runs automatically whenever a matching
 | `scheduled`          | On a configured interval or daily time   |
 | `wechat_message`     | A WeChat direct message is received      |
 | `discord_message`    | A Discord DM is received                 |
-| `compile_requested`  | A note compilation is manually triggered |
+| `compile_requested`  | An LLM wiki compilation is manually triggered |
 
 #### Backing Agents
 
@@ -317,9 +317,9 @@ If `discord.com` is not directly reachable, set **Proxy URL** to your local prox
 
 Done. Every incoming DM now triggers the mate agent and gets a reply.
 
-## Note AI Compiler
+## LLM-Wiki Compiler
 
-Compile notes into structured knowledge points automatically.
+Compile notes into structured knowledge and build an interconnected LLM wiki network automatically.
 
 #### Step 1 — Enable the Compiler
 
@@ -429,9 +429,9 @@ In **Settings → Mate Bots**, each mate exposes two customization points:
 - **System Prompt** — mate-specific instructions. Appended to the global system prompt (joined with `---`).
 - **Trigger Prompt template**: the user message sent to the agent when a trigger fires. Supports variables: `{Path}`, `{Name}`, `{Content}` for vault events; `{Now}`, `{Date}`, `{Time}` for scheduled triggers; `{Content}`, `{WechatUserID}` for WeChat triggers; `{Content}`, `{DiscordChannelID}`, `{DiscordUserID}` for Discord triggers.
 
-#### 3. Rewrite the Compile Skill
+#### 3. Rewrite the LLM-Wiki Compile Skill
 
-The knowledge compilation behavior is defined in `~/.vaultr/skills/vaultr-compile-note/SKILL.md`. Edit this file to change how raw notes are compiled into structured knowledge units.
+The LLM wiki compilation behavior is defined in `~/.vaultr/skills/vaultr-compile-note/SKILL.md`. Edit this file to change how raw notes are compiled into structured knowledge and linked into the LLM wiki network.
 
 #### 4. Rewrite the Memory Extraction Skill
 
