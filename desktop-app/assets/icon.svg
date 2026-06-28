@@ -20,19 +20,19 @@
 
   <!-- Hard pixel shadow — light ~70° elevation, 6px right / 10px down -->
   <g transform="translate(518 522) skewX(-8)">
-    <path fill="#3a3228" d="M -220 -260 L -80 -260 L 20 240 L -120 240 Z"/>
-    <path fill="#3a3228" d="M 80 -260 L 220 -260 L 120 240 L -20 240 Z"/>
+    <path fill="#2a1f0a" d="M -220 -260 L -80 -260 L 20 240 L -120 240 Z"/>
+    <path fill="#2a1f0a" d="M 80 -260 L 220 -260 L 120 240 L -20 240 Z"/>
   </g>
 
   <!-- V mark — asymmetric, dynamic, pixel-lit -->
   <g transform="translate(512 512) skewX(-8)">
 
-    <!-- LEFT STROKE: brand yellow -->
-    <path fill="#facc15"
+    <!-- LEFT STROKE: deep amber -->
+    <path fill="#ca8a04"
           d="M -220 -260 L -80 -260 L 20 240 L -120 240 Z"/>
 
-    <!-- RIGHT STROKE: brand cream white -->
-    <path fill="#fffef5"
+    <!-- RIGHT STROKE: bright white -->
+    <path fill="#ffffff"
           d="M 80 -260 L 220 -260 L 120 240 L -20 240 Z"/>
 
   </g>

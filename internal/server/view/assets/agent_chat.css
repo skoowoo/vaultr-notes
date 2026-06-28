@@ -288,13 +288,14 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      padding: 0.1rem 0.28rem;
-      border-radius: 0;
-      border: 1px solid var(--srch-kbd-bd);
+      padding: 0.15rem 0.4rem;
+      background: var(--bg);
+      border: 2px solid var(--card-bd);
+      box-shadow: var(--px-d1) var(--px-shadow);
       font-size: 0.68rem;
-      font-family: inherit;
+      font-family: var(--font-mono);
       line-height: 1.4;
-      color: var(--muted);
+      color: var(--fg);
     }
 
     .chat-empty-hint-sep {

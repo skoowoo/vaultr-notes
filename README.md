@@ -412,7 +412,6 @@ cp -r your-skill ~/.vaultr/skills/
 
 Vaultr picks up all skills in `~/.vaultr/skills/` automatically on startup.
 
-<img src="./docs/assets/skills.png" width="600" alt="Skills">
 
 ## Customizing AI Behavior
 

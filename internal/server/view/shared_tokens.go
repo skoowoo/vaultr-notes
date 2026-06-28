@@ -38,8 +38,8 @@ const appTokensNeo = `
       /* ── Neo UI font (Space Grotesk — UI chrome only, content stays Inter) ── */
       --font-ui:"Space Grotesk",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
       /* ── Base surface ── */
-      --bg:#fffef5; --fg:#111111;
-      --muted:#4b5563; --surface-soft:#fffdf0;
+      --bg:#fcfbf7; --fg:#111111;
+      --muted:#4b5563; --surface-soft:#f7f5ed;
       --card-hov:rgba(250,204,21,0.10);
       --canvas:#ffffff; --hairline:rgba(17,17,17,0.13); --muted-soft:#898989; --body:#374151;
       /* ── Borders & dividers — opaque black (Neo-Brutalism) ── */

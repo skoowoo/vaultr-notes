@@ -409,8 +409,6 @@ cp -r your-skill ~/.vaultr/skills/
 
 Vaultr 启动时会自动加载 `~/.vaultr/skills/` 下的所有 skill。
 
-<img src="./docs/assets/skills.png" width="600" alt="Skills">
-
 ## 自定义 AI 行为
 
 Vaultr 的每一层 AI 输出都可以自定义：
