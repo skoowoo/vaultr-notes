@@ -3,7 +3,8 @@
 ![Vaultr Hero](./docs/assets/hero4.png)
 ![Vaultr Hero](./docs/assets/hero3.png)
 ![Vaultr Hero](./docs/assets/hero2.png)
-![Vaultr Hero](./docs/assets/hero.png)
+![Vaultr Hero](./docs/assets/hero1.png)
+![Vaultr Hero](./docs/assets/hero0.png)
 
 ## 目录
 
