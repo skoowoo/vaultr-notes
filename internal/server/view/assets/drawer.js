@@ -459,12 +459,6 @@
   }
 
   // ── Lazy editor init ─────────────────────────────────────────────────────────
-  function __vaultrDERefreshBreaksConfig() {
-    var s = __vaultrDE;
-    if (!s.setBreaksConfig) return;
-    s.setBreaksConfig({ enterKey: 'newparagraph', shiftEnterKey: 'hardbreak' });
-  }
-
   async function __vaultrEnsureDrawerEditor() {
     var s = __vaultrDE;
     if (s.milkdown) return;
@@ -483,9 +477,7 @@
       s.cmReplaceNext = mod.replaceNext; s.cmReplaceAll = mod.cmReplaceAll;
       s.SearchQuery = mod.SearchQuery; s.getSearchQuery = mod.getSearchQuery; s.setSearchQuery = mod.setSearchQuery;
       s.pmHistory = mod.pmHistory; s.pmKeymap = mod.pmKeymap; s.$prose = mod.$prose;
-      s.setBreaksConfig = mod.setBreaksConfig; s.linkInputRule = mod.linkInputRule; s.insertImageInputRule = mod.insertImageInputRule;
-
-      await __vaultrDERefreshBreaksConfig();
+      s.linkInputRule = mod.linkInputRule; s.insertImageInputRule = mod.insertImageInputRule;
 
       var editArea = document.getElementById('drawer-edit-area');
       s.milkdown = await mod.Editor.make()
@@ -1280,7 +1272,6 @@
           // content loading so all code paths (same note, new note, draft) pick
           // it up. No-op if the editor hasn't been created yet (handled later in
           // __vaultrEnsureDrawerEditor's initPromise).
-          await __vaultrDERefreshBreaksConfig();
           // Always read latest tabs from localStorage before opening — other
           // WebContentsViews (same session, different JS context) may have
           // added tabs since this view last called _restore().

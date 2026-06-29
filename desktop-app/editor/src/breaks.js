@@ -1,7 +1,8 @@
 import { $remark } from '@milkdown/utils';
 import { KeymapReady, keymapCtx } from '@milkdown/core';
 import { visit } from 'unist-util-visit';
-import { splitBlock, liftEmptyBlock } from 'prosemirror-commands';
+import { Fragment, Slice } from 'prosemirror-model';
+import { Selection } from 'prosemirror-state';
 
 // ── Remark transformer ────────────────────────────────────────────────────────
 // Milkdown's built-in remarkLineBreak converts single \n to {type:"break",
@@ -25,66 +26,61 @@ function remarkBreakSerialize() {
 }
 const remarkBreakSerializePlugin = $remark('remarkBreakSerialize', () => remarkBreakSerialize);
 
-// ── Config ────────────────────────────────────────────────────────────────────
-// Set once before editor creation via setBreaksConfig(). Read at keypress time
-// from module-level vars — no per-keystroke localStorage/IPC overhead.
-let _enterKey = 'newparagraph';    // 'hardbreak' | 'newparagraph'
-let _shiftEnterKey = 'hardbreak';  // 'newparagraph' | 'hardbreak'
-
-export function setBreaksConfig({ enterKey, shiftEnterKey } = {}) {
-  if (enterKey) _enterKey = enterKey;
-  if (shiftEnterKey) _shiftEnterKey = shiftEnterKey;
-}
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
-function isInParagraphOutsideList(state) {
+// ── Fix: nested task list Enter ───────────────────────────────────────────────
+// prosemirror-schema-list's splitListItem uses createAndFill() (no attrs) when
+// lifting an empty nested item, so checked defaults to null and the new outer
+// item renders as a plain list item. This handler runs first (priority 150) and
+// replicates that branch with { checked: false } to preserve task-item type.
+function enterInNestedTaskList(state, dispatch) {
+  if (!state.selection.empty) return false;
   const { $from } = state.selection;
-  if ($from.parent.type !== state.schema.nodes.paragraph) return false;
-  for (let d = $from.depth - 1; d >= 0; d--) {
-    if ($from.node(d).type.name === 'list_item') return false;
+
+  if ($from.parent.content.size !== 0) return false;
+  if ($from.depth < 4) return false;
+
+  const listItem = $from.node(-1);
+  if (listItem.type.name !== 'list_item') return false;
+  if (listItem.attrs.checked === null || listItem.attrs.checked === undefined) return false;
+  if ($from.node(-1).childCount !== $from.indexAfter(-1)) return false;
+
+  // Mirrors splitListItem's nested-empty guard exactly
+  if ($from.depth === 3) return false;
+  if ($from.node(-3).type.name !== 'list_item') return false;
+  if ($from.index(-2) !== $from.node(-2).childCount - 1) return false;
+
+  if (dispatch) {
+    const listItemType = listItem.type;
+    const depthBefore = $from.index(-1) ? 1 : $from.index(-2) ? 2 : 3;
+    let wrap = Fragment.empty;
+    for (let d = $from.depth - depthBefore; d >= $from.depth - 3; d--) {
+      wrap = Fragment.from($from.node(d).copy(wrap));
+    }
+    const depthAfter = $from.indexAfter(-1) < $from.node(-2).childCount ? 1
+      : $from.indexAfter(-2) < $from.node(-3).childCount ? 2 : 3;
+
+    const newItem = listItemType.createAndFill({ checked: false });
+    if (!newItem) return false;
+    wrap = wrap.append(Fragment.from(newItem));
+
+    const start = $from.before($from.depth - (depthBefore - 1));
+    let tr = state.tr.replace(start, $from.after(-depthAfter), new Slice(wrap, 4 - depthBefore, 0));
+
+    let sel = -1;
+    tr.doc.nodesBetween(start, tr.doc.content.size, (node, pos) => {
+      if (sel > -1) return false;
+      if (node.isTextblock && node.content.size === 0) sel = pos + 1;
+    });
+    if (sel > -1) tr.setSelection(Selection.near(tr.doc.resolve(sel)));
+    dispatch(tr.scrollIntoView());
   }
   return true;
 }
 
-function insertHardBreak(state, dispatch) {
-  const hardBreak = state.schema.nodes.hardbreak;
-  if (!hardBreak) return false;
-  if (dispatch) dispatch(state.tr.replaceSelectionWith(hardBreak.create()).scrollIntoView());
-  return true;
-}
-
-// ── Commands (read module vars, not localStorage) ─────────────────────────────
-function isInBlockquote(state) {
-  const { $from } = state.selection;
-  for (let d = $from.depth - 1; d >= 0; d--) {
-    if ($from.node(d).type.name === 'blockquote') return true;
-  }
-  return false;
-}
-
-function enterCmd(state, dispatch, view) {
-  // Empty paragraph inside blockquote → lift out (exit the blockquote)
-  if (isInBlockquote(state) && state.selection.$from.parent.content.size === 0) {
-    return liftEmptyBlock(state, dispatch);
-  }
-  if (!isInParagraphOutsideList(state)) return false;
-  return _enterKey === 'hardbreak'
-    ? insertHardBreak(state, dispatch)
-    : splitBlock(state, dispatch, view);
-}
-
-function shiftEnterCmd(state, dispatch, view) {
-  if (_shiftEnterKey === 'newparagraph') return splitBlock(state, dispatch, view);
-  if (!isInParagraphOutsideList(state)) return false;
-  return insertHardBreak(state, dispatch);
-}
-
-// ── Keymap (priority 100 > Milkdown default 50) ───────────────────────────────
+// ── Keymap ────────────────────────────────────────────────────────────────────
 const breaksKeymapPlugin = (ctx) => async () => {
   await ctx.wait(KeymapReady);
   const km = ctx.get(keymapCtx);
-  km.add({ key: 'Enter',       onRun: () => enterCmd,       priority: 100 });
-  km.add({ key: 'Shift-Enter', onRun: () => shiftEnterCmd,  priority: 100 });
+  km.add({ key: 'Enter', onRun: () => enterInNestedTaskList, priority: 150 });
 };
 
 export const breaksPlugin = [

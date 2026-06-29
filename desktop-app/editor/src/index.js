@@ -1,5 +1,5 @@
 export { Editor, rootCtx, defaultValueCtx, editorViewCtx, schemaCtx, serializerCtx } from '@milkdown/core';
-export { breaksPlugin, setBreaksConfig } from './breaks.js';
+export { breaksPlugin } from './breaks.js';
 export { commonmark, insertImageInputRule } from '@milkdown/preset-commonmark';
 export { gfm } from '@milkdown/preset-gfm';
 export { listener, listenerCtx } from '@milkdown/plugin-listener';

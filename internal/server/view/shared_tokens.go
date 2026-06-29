@@ -113,4 +113,5 @@ const appTokensNeo = `
 
 // appTokensCSS is the single-theme CSS block — drop it inside a <style> tag.
 const appTokensCSS = `    html[data-theme="neo"] {` + appTokensNeo + `
-    }`
+    }
+    *:focus-visible { outline: none; box-shadow: none; }`
