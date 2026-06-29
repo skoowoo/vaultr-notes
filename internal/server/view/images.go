@@ -283,7 +283,7 @@ var imagesPageHTML = `<!DOCTYPE html>
 ` + alpineStoresScript + `
   });
 
-` + keysJS + drawerScript + searchOverlayScript + confirmDialogJS + shortDialogJS + settingsCtrlJS + imagesJS + `
+` + keysJS + pathAcScript + drawerScript + searchOverlayScript + confirmDialogJS + shortDialogJS + settingsCtrlJS + imagesJS + `
   </script>
 ` + noteSharedJS + `
 </body>

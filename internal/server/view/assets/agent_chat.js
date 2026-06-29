@@ -1,3 +1,55 @@
+  // ── Chat path autocomplete ───────────────────────────────────────────────────
+  // parseCtx for the chat textarea: trigger when the cursor is inside a
+  // slash-prefixed token that follows whitespace (or is at start of input).
+  function __vaultrChatAcParseCtx(val, caret) {
+    val = typeof val === 'string' ? val : '';
+    if (caret == null || caret > val.length) caret = val.length;
+    var left = val.slice(0, caret);
+    var tokenStart = 0;
+    for (var i = left.length - 1; i >= 0; i--) {
+      if (/[\s]/.test(left[i])) { tokenStart = i + 1; break; }
+    }
+    var token = left.slice(tokenStart);
+    if (!token.startsWith('/')) return null;
+    var slash = token.lastIndexOf('/');
+    var partial = token.slice(slash + 1);
+    if (partial.indexOf('.') !== -1) return null;
+    var dirPath = slash === 0 ? '/' : token.slice(0, slash);
+    return { dirPath: dirPath, partial: partial, replaceStart: tokenStart + slash + 1 };
+  }
+
+  var __vaultrChatPathAc = null;
+
+  function __vaultrSetupChatAc() {
+    __vaultrChatPathAc = __vaultrPathAcCreate({
+      getInput: function() { return document.getElementById('chat-textarea'); },
+      getList:  function() { return document.getElementById('chat-path-ac'); },
+      parseCtx: __vaultrChatAcParseCtx,
+      onApply: function(input, newVal, caretPos) {
+        input.value = newVal;
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        input.setSelectionRange(caretPos, caretPos);
+        input.focus();
+      },
+      escKey: 'chat-ac',
+    });
+
+    var ta = document.getElementById('chat-textarea');
+    if (!ta) return;
+    ta.addEventListener('input', function() { __vaultrChatPathAc.refresh(); });
+    ta.addEventListener('click', function() { __vaultrChatPathAc.refresh(); });
+    ta.addEventListener('keyup', function(ev) {
+      if (ev.key === 'ArrowLeft' || ev.key === 'ArrowRight' || ev.key === 'Home' || ev.key === 'End')
+        __vaultrChatPathAc.refresh();
+    });
+    ta.addEventListener('blur', function() {
+      setTimeout(function() {
+        var list = document.getElementById('chat-path-ac');
+        if (list && !list.contains(document.activeElement)) __vaultrChatPathAc.close();
+      }, 180);
+    });
+  }
+
   window.handleSearchResultSelection = function(el) {
     if (!el || !el.dataset) return false;
     var focusURL = el.dataset.focusUrl || '';
@@ -50,6 +102,7 @@
 
       async init() {
         this.initDrawer();
+        __vaultrSetupChatAc();
         await Promise.all([this.loadMates(), this.loadMateEvents()]);
         // Restore last selected mate.
         var lastMateId = sessionStorage.getItem('vaultr_mate_id');
@@ -512,6 +565,7 @@
       scrollToBottom() { var el = document.getElementById('chat-scroll'); if (el) el.scrollTop = el.scrollHeight; },
 
       handleKeydown(e) {
+        if (__vaultrChatPathAc && __vaultrChatPathAc.handleKeydown(e)) return;
         if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); void this.send(); }
       },
 

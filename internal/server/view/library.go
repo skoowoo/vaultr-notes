@@ -593,7 +593,7 @@ var libraryPageHTML = `<!DOCTYPE html>
 ` + alpineStoresScript + `
   });
 
-` + keysJS + drawerScript + searchOverlayScript + confirmDialogJS + shortDialogJS + settingsCtrlJS + libraryJS + `
+` + keysJS + pathAcScript + drawerScript + searchOverlayScript + confirmDialogJS + shortDialogJS + settingsCtrlJS + libraryJS + `
   </script>
 ` + noteSharedJS + `
 </body>

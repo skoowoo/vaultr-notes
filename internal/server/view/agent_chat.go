@@ -54,7 +54,7 @@ var agentChatHTML = `<!DOCTYPE html>
 ` + alpineStoresScript + `
   });
 
-` + keysJS + drawerScript + searchOverlayScript + confirmDialogJS + shortDialogJS + settingsCtrlJS + agentChatJS + `
+` + keysJS + pathAcScript + drawerScript + searchOverlayScript + confirmDialogJS + shortDialogJS + settingsCtrlJS + agentChatJS + `
   </script>
 ` + noteSharedJS + `
 </body>

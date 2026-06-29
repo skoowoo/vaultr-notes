@@ -315,7 +315,7 @@ var graphPageHTML = `<!DOCTYPE html>
 ` + alpineStoresScript + `
   });
 
-` + keysJS + drawerScript + searchOverlayScript + confirmDialogJS + shortDialogJS + settingsCtrlJS + `
+` + keysJS + pathAcScript + drawerScript + searchOverlayScript + confirmDialogJS + shortDialogJS + settingsCtrlJS + `
 
   ` + graphJS + `
   </script>

@@ -65,12 +65,20 @@
     return Date.now() * 1000 + __vaultrDETabSeq;
   }
 
-  // ── Autocomplete state ───────────────────────────────────────────────────────
-  var __vaultrDEAc = {
-    seq: 0, abort: null, tick: null, active: -1,
-    fetchedDir: null, cachedDirs: [], enterFirstTs: 0,
-  };
+  // ── Autocomplete (path input in create mode) ─────────────────────────────────
   var __DRAWER_PATH_DBL_ENTER_MS = 2000;
+  var __vaultrDEPathAc = null; // created in __vaultrDESetupCreateMode
+
+  function __vaultrDEAcParseCtx(val, caret) {
+    val = typeof val === 'string' ? val : '';
+    if (caret == null || caret > val.length) caret = val.length;
+    var left = val.slice(0, caret);
+    if (left.indexOf('/') === -1) return null;
+    var slash = left.lastIndexOf('/');
+    var partial = left.slice(slash + 1);
+    if (partial.indexOf('.') !== -1) return null;
+    return { dirPath: slash === 0 ? '/' : left.slice(0, slash), partial: partial, replaceStart: slash + 1 };
+  }
 
   // ── Save helpers ─────────────────────────────────────────────────────────────
   function __vaultrDESaveStatus(txt) {
@@ -1018,183 +1026,60 @@
     return true;
   }
 
-  // ── Autocomplete functions (path input in create mode) ───────────────────────
-  function __vaultrDEAcParseCtx(val, caret) {
-    val = typeof val === 'string' ? val : '';
-    if (caret == null || caret > val.length) caret = val.length;
-    var left = val.slice(0, caret);
-    if (left.indexOf('/') === -1) return null;
-    var slash = left.lastIndexOf('/');
-    var partial = left.slice(slash + 1);
-    if (partial.indexOf('.') !== -1) return null;
-    return { dirPath: slash === 0 ? '/' : left.slice(0, slash), partial: partial, replaceStart: slash + 1 };
-  }
-  function __vaultrDEAcClose() {
-    var ac = __vaultrDEAc;
-    if (ac.abort) ac.abort.abort(); ac.abort = null;
-    clearTimeout(ac.tick); ac.tick = null;
-    var el = document.getElementById('drawer-path-ac');
-    if (el) { el.classList.remove('open'); el.hidden = true; el.setAttribute('aria-expanded','false'); el.innerHTML = ''; }
-    ac.active = -1;
-    if (window.__vaultrEscPop) window.__vaultrEscPop('drawer-ac');
-  }
-  function __vaultrDEAcItems() {
-    var el = document.getElementById('drawer-path-ac');
-    return el ? el.querySelectorAll('li[role="option"]') : [];
-  }
-  function __vaultrDEAcSetActive(ix) {
-    var opts = __vaultrDEAcItems(); if (!opts.length) return;
-    if (ix < 0) ix = 0; if (ix >= opts.length) ix = opts.length - 1;
-    __vaultrDEAc.active = ix;
-    opts.forEach(function(el, j){ el.setAttribute('aria-selected', j === ix ? 'true' : 'false'); });
-    var li = document.querySelector('#drawer-path-ac li[aria-selected="true"]');
-    if (li) li.scrollIntoView({block:'nearest'});
-  }
-  function __vaultrDEAcRender(filtered, emptyMsg) {
-    var el = document.getElementById('drawer-path-ac'); if (!el) return;
-    el.innerHTML = '';
-    if (!filtered.length) {
-      var li0 = document.createElement('li');
-      li0.className = 'path-ac-muted'; li0.textContent = emptyMsg || 'No folders';
-      li0.setAttribute('role','presentation'); el.appendChild(li0);
-      __vaultrDEAc.active = -1; return;
-    }
-    filtered.forEach(function(name, i) {
-      var li = document.createElement('li');
-      li.setAttribute('role','option'); li.setAttribute('data-name', name);
-      li.setAttribute('aria-selected', i === 0 ? 'true' : 'false');
-      li.textContent = name + '/';
-      li.addEventListener('mousedown', function(ev){ ev.preventDefault(); __vaultrDEAcApply(name); });
-      el.appendChild(li);
-    });
-    __vaultrDEAc.active = 0;
-  }
-  function __vaultrDEAcFilter(ctx) {
-    var pref = (ctx.partial || '').toLowerCase();
-    var ac = __vaultrDEAc;
-    var filtered = ac.cachedDirs.filter(function(d){ return !pref || d.toLowerCase().indexOf(pref) === 0; });
-    var emptyMsg = !ac.cachedDirs.length ? 'No folders' : 'No match — new folders are created on Publish';
-    __vaultrDEAcRender(filtered.length ? filtered : [], filtered.length ? '' : emptyMsg);
-    var el = document.getElementById('drawer-path-ac');
-    if (el) { el.classList.add('open'); el.hidden = false; el.setAttribute('aria-expanded','true'); }
-    if (window.__vaultrEscPush) window.__vaultrEscPush('drawer-ac', __vaultrDEAcClose);
-  }
-  async function __vaultrDEAcFetch(ctx0) {
-    var ac = __vaultrDEAc; var mySeq = ac.seq;
-    ac.abort = new AbortController();
-    try {
-      var resp = await fetch('/api/vault/list-dirs', {
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({path: ctx0.dirPath}), signal: ac.abort.signal,
-      });
-      if (mySeq !== ac.seq) return;
-      if (!resp.ok) { __vaultrDEAcClose(); return; }
-      var data = await resp.json();
-      ac.fetchedDir = typeof data.path === 'string' ? data.path : ctx0.dirPath;
-      ac.cachedDirs = Array.isArray(data.dirs) ? data.dirs : [];
-      var pi = document.getElementById('drawer-path-input'); if (!pi) return;
-      var ctxNow = __vaultrDEAcParseCtx(pi.value, pi.selectionStart);
-      if (!ctxNow || ctxNow.dirPath !== ac.fetchedDir) return;
-      __vaultrDEAcFilter(ctxNow);
-    } catch(e) { if (e.name !== 'AbortError') __vaultrDEAcClose(); }
-  }
-  function __vaultrDEAcSchedule() {
-    var ac = __vaultrDEAc;
-    if (ac.abort) ac.abort.abort(); clearTimeout(ac.tick); ac.seq++;
-    ac.tick = setTimeout(function() {
-      ac.tick = null;
-      var pi = document.getElementById('drawer-path-input'); if (!pi) return;
-      var ctx = __vaultrDEAcParseCtx(pi.value, pi.selectionStart);
-      if (!ctx) { __vaultrDEAcClose(); return; }
-      __vaultrDEAcFetch(ctx);
-    }, 160);
-  }
-  function __vaultrDEAcRefresh() {
-    var pi = document.getElementById('drawer-path-input'); if (!pi) return;
-    var ctx = __vaultrDEAcParseCtx(pi.value, pi.selectionStart);
-    if (!ctx) { __vaultrDEAcClose(); return; }
-    var ac = __vaultrDEAc;
-    if (ac.fetchedDir !== null && ctx.dirPath === ac.fetchedDir) { __vaultrDEAcFilter(ctx); return; }
-    __vaultrDEAcSchedule();
-  }
-  function __vaultrDEAcApply(name) {
-    var pi = document.getElementById('drawer-path-input'); if (!pi) return;
-    var ctx = __vaultrDEAcParseCtx(pi.value, pi.selectionStart);
-    if (!ctx) { __vaultrDEAcClose(); return; }
-    var prefix = pi.value.slice(0, ctx.replaceStart);
-    var suffix  = pi.value.slice(pi.selectionStart);
-    var insert  = name + '/';
-    var nextCaret = prefix.length + insert.length;
-    pi.value = prefix + insert + suffix;
-    pi.setSelectionRange(nextCaret, nextCaret);
-    pi.focus(); __vaultrDEAcClose();
-    pi.classList.remove('invalid');
-    pi.placeholder = 'filename.md  ·  or  /folder/note.md';
-    __vaultrDEAcRefresh();
-    __vaultrDEScheduleActiveDraftSave();
-  }
 
   // ── Create mode: path input handlers + Publish ───────────────────────────────
   function __vaultrDESetupCreateMode() {
     var pi = document.getElementById('drawer-path-input');
     var pb = document.getElementById('drawer-publish-btn');
     if (!pi) return;
+
+    // Build the autocomplete instance via the shared factory.
+    var enterFirstTs = 0;
+    __vaultrDEPathAc = __vaultrPathAcCreate({
+      getInput: function() { return document.getElementById('drawer-path-input'); },
+      getList:  function() { return document.getElementById('drawer-path-ac'); },
+      parseCtx: __vaultrDEAcParseCtx,
+      onApply: function(input, newVal, caretPos) {
+        input.value = newVal;
+        input.setSelectionRange(caretPos, caretPos);
+        input.focus();
+        input.classList.remove('invalid');
+        input.placeholder = 'filename.md  ·  or  /folder/note.md';
+        __vaultrDEScheduleActiveDraftSave();
+      },
+      escKey: 'drawer-ac',
+    });
+
     pi.addEventListener('input', function() {
-      __vaultrDEAc.enterFirstTs = 0;
+      enterFirstTs = 0;
       pi.classList.remove('invalid');
       pi.placeholder = 'filename.md  ·  or  /folder/note.md';
-      __vaultrDEAcRefresh();
+      __vaultrDEPathAc.refresh();
       __vaultrDEScheduleActiveDraftSave();
     });
-    pi.addEventListener('click', function() { __vaultrDEAcRefresh(); });
+    pi.addEventListener('click', function() { __vaultrDEPathAc.refresh(); });
     pi.addEventListener('keyup', function(ev) {
       if (ev.key === 'ArrowLeft' || ev.key === 'ArrowRight' || ev.key === 'Home' || ev.key === 'End')
-        __vaultrDEAcRefresh();
+        __vaultrDEPathAc.refresh();
     });
     pi.addEventListener('blur', function() {
-      __vaultrDEAc.enterFirstTs = 0;
+      enterFirstTs = 0;
       setTimeout(function() {
         var acEl = document.getElementById('drawer-path-ac');
-        if (!acEl || !acEl.contains(document.activeElement)) __vaultrDEAcClose();
+        if (!acEl || !acEl.contains(document.activeElement)) __vaultrDEPathAc.close();
       }, 180);
     });
     pi.addEventListener('keydown', function(ev) {
-      var acEl = document.getElementById('drawer-path-ac');
-      var acOpen = acEl && acEl.classList.contains('open');
-      var opts = acOpen ? __vaultrDEAcItems() : [];
-      if (acOpen && opts.length) {
-        if (ev.key === 'ArrowDown') {
-          ev.preventDefault();
-          var nDown = __vaultrDEAc.active < 0 ? 0 : __vaultrDEAc.active + 1;
-          __vaultrDEAcSetActive(nDown >= opts.length ? 0 : nDown); return;
-        }
-        if (ev.key === 'ArrowUp') {
-          ev.preventDefault();
-          var pUp = __vaultrDEAc.active < 0 ? opts.length - 1 : __vaultrDEAc.active - 1;
-          __vaultrDEAcSetActive(pUp < 0 ? opts.length - 1 : pUp); return;
-        }
-        if (ev.key === 'Tab') {
-          ev.preventDefault();
-          var pickTab = opts[__vaultrDEAc.active < 0 ? 0 : __vaultrDEAc.active];
-          var nmTab = pickTab && pickTab.getAttribute('data-name');
-          if (nmTab) __vaultrDEAcApply(nmTab); return;
-        }
-      }
+      if (__vaultrDEPathAc.handleKeydown(ev)) return;
       if (ev.key !== 'Enter') return;
       var now = Date.now();
-      if (__vaultrDEAc.enterFirstTs && (now - __vaultrDEAc.enterFirstTs) <= __DRAWER_PATH_DBL_ENTER_MS) {
-        ev.preventDefault(); __vaultrDEAc.enterFirstTs = 0;
+      if (enterFirstTs && (now - enterFirstTs) <= __DRAWER_PATH_DBL_ENTER_MS) {
+        ev.preventDefault(); enterFirstTs = 0;
         var s = __vaultrDE;
         if (s.milkdown && s.editorViewCtx) s.milkdown.action(function(ctx){ ctx.get(s.editorViewCtx).focus(); });
         return;
       }
-      __vaultrDEAc.enterFirstTs = now;
-      if (acOpen && opts.length) {
-        ev.preventDefault();
-        var pickEnt = opts[__vaultrDEAc.active < 0 ? 0 : __vaultrDEAc.active];
-        var nmEnt = pickEnt && pickEnt.getAttribute('data-name');
-        if (nmEnt) __vaultrDEAcApply(nmEnt);
-      }
+      enterFirstTs = now;
     });
     if (pb) pb.addEventListener('click', __vaultrDrawerPublish);
   }
@@ -1248,7 +1133,7 @@
       published = true;
       __vaultrDE.currentPath = apiPath; __vaultrDE.dirty = false; __vaultrDE.baselineMd = __vaultrDE.currentMd; __vaultrDESaveStatus('Saved');
       __vaultrDE.currentDraftId = '';
-      __vaultrDEAcClose();
+      __vaultrDEPathAc && __vaultrDEPathAc.close();
       if (drawer) {
         if (tab && !tab.path) {
           var oldDraftId = tab.draftId;
@@ -1520,7 +1405,7 @@
 
         setTimeout(function() {
           var pi = document.getElementById('drawer-path-input');
-          if (pi) { pi.value = rawName; pi.classList.remove('invalid'); pi.placeholder='filename.md  ·  or  /folder/note.md'; __vaultrDEAcClose(); }
+          if (pi) { pi.value = rawName; pi.classList.remove('invalid'); pi.placeholder='filename.md  ·  or  /folder/note.md'; __vaultrDEPathAc && __vaultrDEPathAc.close(); }
           focusManager.focusPathInput();
         }, 0);
       },
@@ -1586,7 +1471,7 @@
         // Save current tab's state
         if (prevTab) {
           await __vaultrDESaveTabForLeave(prevTab);
-          if (!prevTab.path) __vaultrDEAcClose();
+          if (!prevTab.path) __vaultrDEPathAc && __vaultrDEPathAc.close();
         }
         
         // Switch active tab
@@ -1622,7 +1507,7 @@
         if (closingCreate) void __vaultrDEDeleteDraft(closingTab);
         
         this.tabs.splice(i, 1);
-        if (closingCreate && wasActive) __vaultrDEAcClose();
+        if (closingCreate && wasActive) __vaultrDEPathAc && __vaultrDEPathAc.close();
         
         if (this.tabs.length === 0) {
           this.drawerOpen = false; this.activeTab = -1;

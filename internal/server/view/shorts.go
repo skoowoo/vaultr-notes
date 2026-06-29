@@ -471,7 +471,7 @@ var shortsPageHTML = `<!DOCTYPE html>
 ` + alpineStoresScript + `
   });
 
-` + keysJS + drawerScript + searchOverlayScript + infoDialogJS + shortDialogJS + settingsCtrlJS + shortsJS + `
+` + keysJS + pathAcScript + drawerScript + searchOverlayScript + infoDialogJS + shortDialogJS + settingsCtrlJS + shortsJS + `
   </script>
 ` + noteSharedJS + `
 </body>

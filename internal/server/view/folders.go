@@ -131,7 +131,7 @@ var foldersPageHTML = `<!DOCTYPE html>
 ` + alpineStoresScript + `
   });
 
-` + keysJS + drawerScript + searchOverlayScript + confirmDialogJS + shortDialogJS + settingsCtrlJS + foldersJS + `
+` + keysJS + pathAcScript + drawerScript + searchOverlayScript + confirmDialogJS + shortDialogJS + settingsCtrlJS + foldersJS + `
   </script>
 ` + noteSharedJS + `
 </body>

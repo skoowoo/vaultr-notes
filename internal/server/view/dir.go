@@ -257,7 +257,7 @@ var dirPageHTML = `<!DOCTYPE html>
 ` + alpineStoresScript + `
   });
 
-` + keysJS + drawerScript + searchOverlayScript + confirmDialogJS + infoDialogJS + shortDialogJS + settingsCtrlJS + dirJS + `
+` + keysJS + pathAcScript + drawerScript + searchOverlayScript + confirmDialogJS + infoDialogJS + shortDialogJS + settingsCtrlJS + dirJS + `
   </script>
 ` + noteSharedJS + `
 </body>

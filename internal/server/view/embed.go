@@ -38,6 +38,9 @@ var drawerCSS string
 //go:embed assets/drawer.html
 var drawerHTML string
 
+//go:embed assets/path_ac.js
+var pathAcScript string
+
 //go:embed assets/drawer.js
 var drawerScript string
 

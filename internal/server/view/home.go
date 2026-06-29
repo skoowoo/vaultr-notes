@@ -180,7 +180,7 @@ var homePageHTML = `<!DOCTYPE html>
 ` + alpineStoresScript + `
   });
 
-` + keysJS + drawerScript + searchOverlayScript + confirmDialogJS + infoDialogJS + shortDialogJS + settingsCtrlJS + homeJS + `
+` + keysJS + pathAcScript + drawerScript + searchOverlayScript + confirmDialogJS + infoDialogJS + shortDialogJS + settingsCtrlJS + homeJS + `
   </script>
 ` + noteSharedJS + `
 </body>
