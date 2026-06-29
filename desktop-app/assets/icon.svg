@@ -2,8 +2,8 @@
   <defs>
     <!-- Pixel dot-grid baked into the plate background -->
     <pattern id="px-dot" x="0" y="0" width="8" height="8" patternUnits="userSpaceOnUse">
-      <rect width="8" height="8" fill="#111111"/>
-      <rect x="0" y="0" width="1.5" height="1.5" fill="#1a1a1a"/>
+      <rect width="8" height="8" fill="#FFD60A"/>
+      <rect x="0" y="0" width="1.5" height="1.5" fill="#E8C200"/>
     </pattern>
     <clipPath id="sq-clip">
       <rect x="102" y="102" width="820" height="820" rx="184.5" ry="184.5"/>
@@ -11,24 +11,19 @@
   </defs>
 
   <!-- macOS squircle plate — shape and size unchanged -->
-  <rect x="102" y="102" width="820" height="820" rx="184.5" ry="184.5" fill="#111111"/>
-  <!-- Dot-grid texture clipped to squircle -->
-  <rect x="0" y="0" width="1024" height="1024" fill="url(#px-dot)" clip-path="url(#sq-clip)"/>
-  <!-- Plate edge ring -->
-  <rect x="102" y="102" width="820" height="820" rx="184.5" ry="184.5"
-        fill="none" stroke="#333333" stroke-opacity="0.50" stroke-width="2"/>
+  <rect x="102" y="102" width="820" height="820" rx="184.5" ry="184.5" fill="#FFD60A"/>
 
-  <!-- Hard pixel shadow — light ~70° elevation, 6px right / 10px down -->
-  <g transform="translate(518 522) skewX(-8)">
-    <path fill="#2a1f0a" d="M -220 -260 L -80 -260 L 20 240 L -120 240 Z"/>
-    <path fill="#2a1f0a" d="M 80 -260 L 220 -260 L 120 240 L -20 240 Z"/>
+  <!-- Hard pixel shadow — brutalist, 26px right / 30px down -->
+  <g transform="translate(538 542) skewX(-8)">
+    <path fill="#0D0D0D" d="M -220 -260 L -80 -260 L 20 240 L -120 240 Z"/>
+    <path fill="#0D0D0D" d="M 80 -260 L 220 -260 L 120 240 L -20 240 Z"/>
   </g>
 
   <!-- V mark — asymmetric, dynamic, pixel-lit -->
   <g transform="translate(512 512) skewX(-8)">
 
-    <!-- LEFT STROKE: deep amber -->
-    <path fill="#ca8a04"
+    <!-- LEFT STROKE: pure black -->
+    <path fill="#0D0D0D"
           d="M -220 -260 L -80 -260 L 20 240 L -120 240 Z"/>
 
     <!-- RIGHT STROKE: bright white -->
