@@ -98,16 +98,6 @@ if [ -d "$TMP_DIR/skills" ]; then
     cp -r "$TMP_DIR/skills" "$VAULTR_DIR/"
 fi
 
-# Install external skills via install-skills.sh
-if [ -f "$TMP_DIR/install-skills.sh" ]; then
-    INSTALL_SKILLS="$TMP_DIR/install-skills.sh"
-else
-    echo "==> Downloading install-skills.sh..."
-    curl -sL -o "$TMP_DIR/install-skills.sh" "https://raw.githubusercontent.com/$REPO/main/install-skills.sh"
-    INSTALL_SKILLS="$TMP_DIR/install-skills.sh"
-fi
-
-sh "$INSTALL_SKILLS" --skills-dir "$VAULTR_DIR/skills"
-
 echo "${GREEN}==> Installation complete!${NC}"
 echo "You can now run: $BINARY_NAME"
+echo "==> External skills can be installed from Settings > Skills in the UI."

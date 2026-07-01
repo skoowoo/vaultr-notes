@@ -493,6 +493,95 @@ func (c *Client) TagDelete(tag string) (*TagDeleteResponse, error) {
 	return &out, nil
 }
 
+// ── Skills ────────────────────────────────────────────────────────────────────
+
+// SkillInfo mirrors skills.SkillInfo for JSON decoding.
+type SkillInfo struct {
+	Name      string `json:"name"`
+	Default   bool   `json:"default"`
+	Installed bool   `json:"installed"`
+	Enabled   bool   `json:"enabled"`
+	RepoURL   string `json:"repoUrl,omitempty"`
+	SubPath   string `json:"subPath,omitempty"`
+}
+
+// SkillsList calls GET /api/skills and returns all installed skills.
+func (c *Client) SkillsList() ([]SkillInfo, error) {
+	req, err := http.NewRequest(http.MethodGet, c.baseURL+"/api/skills", nil)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := c.do(req)
+	if err != nil {
+		return nil, wrapConnErr(err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		raw, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("skills list: %s", statusMsg(resp.StatusCode, raw))
+	}
+	var out struct {
+		Skills []SkillInfo `json:"skills"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
+		return nil, fmt.Errorf("skills list: decode response: %w", err)
+	}
+	return out.Skills, nil
+}
+
+// SkillsRemove calls DELETE /api/skills/{name} to remove a skill and its symlinks.
+func (c *Client) SkillsRemove(name string) error {
+	req, err := http.NewRequest(http.MethodDelete, c.baseURL+"/api/skills/"+name, nil)
+	if err != nil {
+		return err
+	}
+	resp, err := c.do(req)
+	if err != nil {
+		return wrapConnErr(err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		raw, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("skills remove: %s", statusMsg(resp.StatusCode, raw))
+	}
+	return nil
+}
+
+// SkillsInstall calls POST /api/skills/install to clone a GitHub repository
+// and extract the named skill into ~/.vaultr/skills/.
+// subPath is the directory inside the repo that contains SKILL.md; pass an
+// empty string to use automatic heuristic search.
+// Uses a 5-minute timeout because git clone can be slow on large repositories.
+func (c *Client) SkillsInstall(repoURL, subPath, skillName string) error {
+	body, err := json.Marshal(map[string]any{
+		"repoUrl": repoURL,
+		"subPath": subPath,
+		"skill":   skillName,
+	})
+	if err != nil {
+		return err
+	}
+	req, err := http.NewRequest(http.MethodPost, c.baseURL+"/api/skills/install", bytes.NewReader(body))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	if c.apiKey != "" {
+		req.Header.Set("X-Vaultr-API-Key", c.apiKey)
+	}
+	installClient := &http.Client{Timeout: 5 * time.Minute}
+	resp, err := installClient.Do(req)
+	if err != nil {
+		return wrapConnErr(err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		raw, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("skills install: %s", statusMsg(resp.StatusCode, raw))
+	}
+	return nil
+}
+
 // ── Status ────────────────────────────────────────────────────────────────────
 
 // StatusResponse mirrors handler.StatusResponse for JSON decoding.

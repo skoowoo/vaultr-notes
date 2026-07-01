@@ -48,6 +48,7 @@ rootCmd.AddCommand(newStatusCmd())
 	rootCmd.AddCommand(newExtractCmd())
 	rootCmd.AddCommand(newTagCmd())
 	rootCmd.AddCommand(newShortCmd())
+	rootCmd.AddCommand(newSkillsCmd())
 }
 
 // Execute is the single entry point called from main.

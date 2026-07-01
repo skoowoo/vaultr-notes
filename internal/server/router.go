@@ -105,13 +105,15 @@ func newRouter(
 
 	skh := handler.NewSkillsHTTP(skillsMgr)
 	mux.HandleFunc("GET /api/skills", skh.List)
+	mux.HandleFunc("POST /api/skills/install", skh.Install)
+	mux.HandleFunc("DELETE /api/skills/{name}", skh.Remove)
 	mux.HandleFunc("POST /api/skills/{name}/enable", skh.Enable)
 	mux.HandleFunc("POST /api/skills/{name}/disable", skh.Disable)
 
 	// System routes
 	mux.HandleFunc("POST /healthz", h.HealthCheck)
 	mux.HandleFunc("POST /version", h.Version)
-mux.HandleFunc("POST /api/status", handler.NewStatus(vault, searchPlugin).Status)
+	mux.HandleFunc("POST /api/status", handler.NewStatus(vault, searchPlugin).Status)
 
 	mux.HandleFunc("GET /api/config", cfgHTTP.Get)
 	mux.HandleFunc("GET /api/config/schema", cfgHTTP.Schema)
@@ -161,7 +163,7 @@ mux.HandleFunc("POST /api/status", handler.NewStatus(vault, searchPlugin).Status
 	mux.HandleFunc("POST /api/vault/delete", gh.Delete)
 	mux.HandleFunc("POST /api/vault/upload-image", gh.UploadImage)
 	mux.HandleFunc("POST /api/vault/pin", gh.Pin)
-mux.HandleFunc("POST /api/vault/shorts", gh.Short)
+	mux.HandleFunc("POST /api/vault/shorts", gh.Short)
 	mux.HandleFunc("POST /api/vault/shorts/list", gh.ShortList)
 	mux.HandleFunc("GET /_assets/", gh.ServeAsset)
 	mux.HandleFunc("GET /api/images/serve", gh.ServeImageByName)

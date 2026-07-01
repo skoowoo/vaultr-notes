@@ -226,15 +226,15 @@ Mate Bots are custom AI agents you define in **Settings → Mate Bots**. Each ma
 
 Add one or more triggers to a mate and it runs automatically whenever a matching event fires. Vaultr ships with these built-in events:
 
-| Event                | When it fires                            |
-| -------------------- | ---------------------------------------- |
-| `note_created`       | Any new note is created in the vault     |
-| `note_updated`       | Any existing note is modified            |
-| `note_deleted`       | Any note is deleted                      |
-| `short_note_created` | A short-note entry is appended           |
-| `scheduled`          | On a configured interval or daily time   |
-| `wechat_message`     | A WeChat direct message is received      |
-| `discord_message`    | A Discord DM is received                 |
+| Event                | When it fires                                 |
+| -------------------- | --------------------------------------------- |
+| `note_created`       | Any new note is created in the vault          |
+| `note_updated`       | Any existing note is modified                 |
+| `note_deleted`       | Any note is deleted                           |
+| `short_note_created` | A short-note entry is appended                |
+| `scheduled`          | On a configured interval or daily time        |
+| `wechat_message`     | A WeChat direct message is received           |
+| `discord_message`    | A Discord DM is received                      |
 | `compile_requested`  | An LLM wiki compilation is manually triggered |
 
 #### Backing Agents
@@ -389,7 +389,7 @@ From this point on, memory updates run automatically once a day with no manual a
 
 ## Skills
 
-Vaultr ships with a set of built-in skills that agents can use when running tasks. You can add your own skills by placing them in `~/.vaultr/skills/`.
+Vaultr ships with a set of built-in skills that agents can use when running tasks. You can extend it with external skills from GitHub or your own custom skills placed in `~/.vaultr/skills/`.
 
 Each skill is a directory containing a `SKILL.md` file:
 
@@ -399,19 +399,37 @@ Each skill is a directory containing a `SKILL.md` file:
     └── SKILL.md
 ```
 
-Install external skills:
+#### Managing skills with the CLI
+
+**List installed skills**
 
 ```sh
-curl -sL https://raw.githubusercontent.com/skoowoo/vaultr-notes/main/install-skills.sh | sh
+vaultr skills list
 ```
 
-Install a custom skill:
+**Install a skill from a GitHub repository**
 
 ```sh
-cp -r your-skill ~/.vaultr/skills/
+vaultr skills add https://github.com/hardhackerlabs/podwise-cli --skill podwise
 ```
 
-Vaultr picks up all skills in `~/.vaultr/skills/` automatically on startup.
+The skill is saved to `~/.vaultr/skills/podwise/`.
+
+Shorthand `owner/repo` form also works:
+
+```sh
+vaultr skills add hardhackerlabs/podwise-cli --skill podwise
+```
+
+**Remove a skill**
+
+```sh
+vaultr skills remove podwise
+```
+
+Removes the skill directory and any active symlinks.
+
+Vaultr picks up all skills in `~/.vaultr/skills/` automatically on startup. Enable or disable individual skills in **Settings → Skills**.
 
 
 ## Customizing AI Behavior

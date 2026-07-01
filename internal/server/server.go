@@ -14,6 +14,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/hardhacker/vaultr/internal/agent"
 	"github.com/hardhacker/vaultr/internal/config"
 	"github.com/hardhacker/vaultr/internal/mate"
 	"github.com/hardhacker/vaultr/internal/plugin"
@@ -40,7 +41,7 @@ type Server struct {
 // New creates a Server from the given config, logger, and Vault.
 // It initialises any enabled plugins and wires the vault event hook.
 func New(cfg *config.Config, cfgFileLoaded string, logger *slog.Logger, vault *storage.Vault) *Server {
-	skillsMgr := skills.Open(vault.Root())
+	skillsMgr := skills.Open(vault.Root(), agent.ShellEnv)
 	skillsMgr.LinkEnabled(logger)
 
 	mgr := plugin.NewManager(logger)

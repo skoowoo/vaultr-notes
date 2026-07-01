@@ -1,4 +1,5 @@
-export { Editor, rootCtx, defaultValueCtx, editorViewCtx, schemaCtx, serializerCtx } from '@milkdown/core';
+export { Editor, rootCtx, defaultValueCtx, editorViewCtx, schemaCtx, serializerCtx, parserCtx } from '@milkdown/core';
+export { Slice } from 'prosemirror-model';
 export { breaksPlugin } from './breaks.js';
 export { commonmark, insertImageInputRule } from '@milkdown/preset-commonmark';
 export { gfm } from '@milkdown/preset-gfm';

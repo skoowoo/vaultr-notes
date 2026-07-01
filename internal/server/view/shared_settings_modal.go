@@ -659,7 +659,10 @@ const settingsModalCSS = `
       box-shadow: none;
     }
     .skill-card:hover { background: var(--card-hov); }
+    .skill-card.not-installed .skill-card-left { opacity: 0.7; }
+    .skill-card.not-installed:hover .skill-card-left { opacity: 1; }
     .skill-card-left { display: flex; align-items: center; gap: 0.6rem; flex: 1; min-width: 0; }
+    .skill-card-right { display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0; }
     .skill-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
     .skill-dot.on  { background: var(--s-ok); }
     .skill-dot.off { background: var(--muted); opacity: 0.55; }
@@ -676,6 +679,17 @@ const settingsModalCSS = `
       transition: color 100ms, opacity 100ms;
     }
     .skill-repo-link:hover { color: var(--accent); opacity: 1; }
+    .skill-act-btn {
+      height: 26px; padding: 0 0.65rem;
+      border: 2px solid var(--card-bd); background: var(--bg);
+      color: var(--fg); font-size: var(--text-xs); font-weight: 500;
+      cursor: pointer; box-shadow: var(--px-d1) var(--px-shadow); white-space: nowrap;
+    }
+    .skill-act-btn:hover:not(:disabled) { box-shadow: var(--px-d0) var(--px-shadow); transform: translate(1px, 1px); }
+    .skill-act-btn:active:not(:disabled) { box-shadow: none; transform: translate(2px, 2px); }
+    .skill-act-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+    .skill-act-btn--del { background: var(--p1); color: var(--fg); border-color: var(--card-bd); }
+    .skill-act-btn--del:hover:not(:disabled) { background: var(--p1); }
 
     /* ── Placeholder text ────────────────────────────────────── */
     .mate-form-input::placeholder,
@@ -1415,36 +1429,44 @@ func settingsModalHTML() string {
 ` + toolbarRefreshBtnHTML("skillsLoading", "loadSkills()", "Loading…") + `
             </div>
             <p class="skills-desc">
-              Enable or disable skills for agents. Source directory: <code>~/.vaultr/skills/</code>
+              Manage skills for agents. Built-in skills are always enabled.
+              External skills can be installed or removed here. Source directory: <code>~/.vaultr/skills/</code>
             </p>
             <div class="cfg-err-msg" x-show="skillsError && !skillsLoading" x-text="'Error: ' + skillsError"></div>
             <div class="cfg-loader" x-show="skillsLoading">Loading skills…</div>
             <div x-show="!skillsLoading">
               <template x-if="skillsList.length === 0">
-                <div class="skills-empty">No skills found in ~/.vaultr/skills/</div>
+                <div class="skills-empty">No skills found.</div>
               </template>
               <div class="skills-list">
                 <template x-for="s in sortedSkillsList" :key="s.name">
-                  <div class="skill-card">
+                  <div class="skill-card" :class="s.installed ? '' : 'not-installed'">
                     <div class="skill-card-left">
-                      <span class="skill-dot" :class="s.enabled ? 'on' : 'off'"></span>
+                      <span class="skill-dot" :class="s.installed ? 'on' : 'off'"></span>
                       <span class="skill-name" x-text="s.name"></span>
-                      <span class="skill-default-badge" x-show="s.default">default</span>
+                      <span class="skill-default-badge" x-show="s.default">built-in</span>
                       <template x-if="s.repoUrl">
                         <a class="skill-repo-link" :href="s.repoUrl" target="_blank" rel="noopener noreferrer"
                            @click.stop
                            x-text="s.repoUrl.replace('https://github.com/', '')"></a>
                       </template>
                     </div>
-                    <template x-if="!s.default">
-                      <label class="cfg-toggle" :class="skillsToggling[s.name] ? 'skill-toggling' : ''">
-                        <input type="checkbox"
-                               :checked="s.enabled"
-                               :disabled="!!skillsToggling[s.name]"
-                               @change="toggleSkill(s.name, $event.target.checked)">
-                        <span class="cfg-toggle-pill"></span>
-                      </label>
-                    </template>
+                    <div class="skill-card-right">
+                      <template x-if="!s.default && s.installed">
+                        <button class="skill-act-btn skill-act-btn--del"
+                                :disabled="!!skillsUninstalling[s.name]"
+                                @click="uninstallSkill(s.name)"
+                                x-text="skillsUninstalling[s.name] ? 'Removing…' : 'Uninstall'">
+                        </button>
+                      </template>
+                      <template x-if="!s.default && !s.installed">
+                        <button class="skill-act-btn"
+                                :disabled="!!skillsInstalling[s.name]"
+                                @click="installSkill(s.name, s.repoUrl, s.subPath)"
+                                x-text="skillsInstalling[s.name] ? 'Installing…' : 'Install'">
+                        </button>
+                      </template>
+                    </div>
                   </div>
                 </template>
               </div>
@@ -1607,15 +1629,16 @@ const settingsCtrlJS = `
       skillsList: [],
       skillsLoading: false,
       skillsError: '',
-      skillsToggling: {},
+      skillsInstalling: {},
+      skillsUninstalling: {},
 
       notifySettings: { textEnabled: true, soundEnabled: true, startSound: 'beep', doneSound: 'beep' },
       notifySaveOk: false,
 
       get sortedSkillsList() {
         return [...this.skillsList].sort(function(a, b) {
-          const rank = function(s) { return s.default ? 0 : s.enabled ? 1 : 2; };
-          return rank(a) - rank(b);
+          if (a.default !== b.default) return a.default ? -1 : 1;
+          return a.name.localeCompare(b.name);
         });
       },
 
@@ -2023,27 +2046,53 @@ const settingsCtrlJS = `
         finally { this.skillsLoading = false; }
       },
 
-      async toggleSkill(name, enabled) {
-        this.skillsList = this.skillsList.map(function(s) {
-          return s.name === name ? Object.assign({}, s, { enabled: enabled }) : s;
-        });
-        this.skillsToggling = Object.assign({}, this.skillsToggling, { [name]: true });
+      async installSkill(name, repoUrl, subPath) {
+        this.skillsInstalling = Object.assign({}, this.skillsInstalling, { [name]: true });
         try {
-          const action = enabled ? 'enable' : 'disable';
-          const r = await fetch('/api/skills/' + encodeURIComponent(name) + '/' + action, { method: 'POST' });
-          if (!r.ok) {
-            this.skillsList = this.skillsList.map(function(s) {
-              return s.name === name ? Object.assign({}, s, { enabled: !enabled }) : s;
-            });
-          }
-        } catch(_) {
-          this.skillsList = this.skillsList.map(function(s) {
-            return s.name === name ? Object.assign({}, s, { enabled: !enabled }) : s;
+          const r = await fetch('/api/skills/install', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ repoUrl: repoUrl, subPath: subPath || '', skill: name }),
           });
+          const d = await r.json();
+          if (!r.ok) {
+            if (typeof window.showError === 'function') window.showError(d.error || 'Install failed', 'Install failed');
+            return;
+          }
+          this.skillsList = this.skillsList.map(function(s) {
+            return s.name === name ? Object.assign({}, s, { installed: true, enabled: true }) : s;
+          });
+        } catch(e) {
+          if (typeof window.showError === 'function') window.showError(e.message, 'Install failed');
         } finally {
-          const t = Object.assign({}, this.skillsToggling);
+          const t = Object.assign({}, this.skillsInstalling);
           delete t[name];
-          this.skillsToggling = t;
+          this.skillsInstalling = t;
+        }
+      },
+
+      async uninstallSkill(name) {
+        const ok = (typeof window.showConfirm === 'function')
+          ? await window.showConfirm({ title: 'Uninstall skill', message: 'Remove "' + name + '" and all its files from ~/.vaultr/skills/?', confirmLabel: 'Uninstall', danger: true })
+          : window.confirm('Uninstall skill "' + name + '"? This cannot be undone.');
+        if (!ok) return;
+        this.skillsUninstalling = Object.assign({}, this.skillsUninstalling, { [name]: true });
+        try {
+          const r = await fetch('/api/skills/' + encodeURIComponent(name), { method: 'DELETE' });
+          const d = await r.json();
+          if (!r.ok) {
+            if (typeof window.showError === 'function') window.showError(d.error || 'Uninstall failed', 'Uninstall failed');
+            return;
+          }
+          this.skillsList = this.skillsList.map(function(s) {
+            return s.name === name ? Object.assign({}, s, { installed: false, enabled: false }) : s;
+          });
+        } catch(e) {
+          if (typeof window.showError === 'function') window.showError(e.message, 'Uninstall failed');
+        } finally {
+          const t = Object.assign({}, this.skillsUninstalling);
+          delete t[name];
+          this.skillsUninstalling = t;
         }
       },
 

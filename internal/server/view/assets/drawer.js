@@ -5,7 +5,7 @@
     pendingBaselineFromEditor: false, pendingBaselineTimer: null,
     currentPath: '', currentDraftId: '', currentMd: '', baselineMd: '',
     saveTimer: null, draftSaveTimer: null, draftSaveTabId: null,
-    replaceAll: null, editorViewCtx: null, schemaCtx: null, serializerCtx: null,
+    replaceAll: null, editorViewCtx: null, schemaCtx: null, serializerCtx: null, parserCtx: null, pmSlice: null,
     EditorView: null, EditorState: null, keymap: null,
     defaultKeymap: null, historyKeymap: null, history: null,
     markdown: null, HighlightStyle: null, syntaxHighlighting: null, tags: null,
@@ -466,6 +466,7 @@
     s.initPromise = (async function() {
       var mod = await import('/static/editor.js');
       s.replaceAll = mod.replaceAll; s.editorViewCtx = mod.editorViewCtx; s.schemaCtx = mod.schemaCtx; s.serializerCtx = mod.serializerCtx;
+      s.parserCtx = mod.parserCtx; s.pmSlice = mod.Slice;
       s.EditorView = mod.EditorView; s.EditorState = mod.EditorState; s.keymap = mod.keymap;
       s.defaultKeymap = mod.defaultKeymap; s.historyKeymap = mod.historyKeymap; s.history = mod.history;
       s.markdown = mod.markdown; s.HighlightStyle = mod.HighlightStyle;
@@ -584,24 +585,48 @@
         });
         editArea.addEventListener('paste', async function(e) {
           var imgFile = __vaultrDEFindImageFile(e.clipboardData);
-          if (!imgFile) return;
-          e.preventDefault(); e.stopPropagation();
-          try {
-            var src = await __vaultrDEUploadImage(imgFile);
-            var filename = src.split('/').pop();
-            s.milkdown.action(function(ctx) {
-              var view = ctx.get(s.editorViewCtx);
-              var schema = ctx.get(s.schemaCtx);
-              var wiType = schema.nodes.wikiImage;
-              if (wiType) {
-                view.dispatch(view.state.tr.replaceSelectionWith(wiType.create({value: filename})));
-              } else {
-                view.dispatch(view.state.tr.replaceSelectionWith(schema.nodes.image.create({src: src, alt: ''})));
-              }
-            });
-          } catch(e) {
-            window.showError((e && e.message) || 'Image upload failed.', 'Upload error');
+          if (imgFile) {
+            e.preventDefault(); e.stopPropagation();
+            try {
+              var src = await __vaultrDEUploadImage(imgFile);
+              var filename = src.split('/').pop();
+              s.milkdown.action(function(ctx) {
+                var view = ctx.get(s.editorViewCtx);
+                var schema = ctx.get(s.schemaCtx);
+                var wiType = schema.nodes.wikiImage;
+                if (wiType) {
+                  view.dispatch(view.state.tr.replaceSelectionWith(wiType.create({value: filename})));
+                } else {
+                  view.dispatch(view.state.tr.replaceSelectionWith(schema.nodes.image.create({src: src, alt: ''})));
+                }
+              });
+            } catch(e) {
+              window.showError((e && e.message) || 'Image upload failed.', 'Upload error');
+            }
+            return;
           }
+          // Parse plain-text markdown paste as structured content instead of literal text.
+          // Without this, ProseMirror treats pasted text as literal and escapes markdown syntax.
+          var html = e.clipboardData.getData('text/html');
+          if (html) return; // let ProseMirror handle HTML natively
+          var text = e.clipboardData.getData('text/plain');
+          if (!text || !s.parserCtx || !s.pmSlice) return;
+          e.preventDefault(); e.stopPropagation();
+          s.milkdown.action(function(ctx) {
+            var view = ctx.get(s.editorViewCtx);
+            var parser = ctx.get(s.parserCtx);
+            if (!view || !parser) return;
+            try {
+              var parsedDoc = parser(text);
+              if (!parsedDoc) throw new Error('parse failed');
+              var state = view.state;
+              var slice = new s.pmSlice(parsedDoc.content, 0, 0);
+              view.dispatch(state.tr.replace(state.selection.from, state.selection.to, slice));
+            } catch(_) {
+              var sel = view.state.selection;
+              view.dispatch(view.state.tr.insertText(text, sel.from, sel.to));
+            }
+          });
         }, true);
         // Capture-phase: intercept link and wiki-link clicks before ProseMirror.
         editArea.addEventListener('click', function(e) {

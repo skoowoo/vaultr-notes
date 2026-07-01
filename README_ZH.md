@@ -386,7 +386,7 @@ Agent 会自己调用 `vaultr-memory` skill 完成提取。首次运行扫最近
 
 ## Skills
 
-Vaultr 内置了一套 skill，agent 执行任务时会自动调用。你也可以把自己写的 skill 扔进 `~/.vaultr/skills/` 来扩展。
+Vaultr 内置了一套 skill，agent 执行任务时会自动调用。你也可以从 GitHub 安装外部 skill，或者把自己写的 skill 扔进 `~/.vaultr/skills/` 来扩展。
 
 每个 skill 就是一个带 `SKILL.md` 的目录：
 
@@ -396,19 +396,37 @@ Vaultr 内置了一套 skill，agent 执行任务时会自动调用。你也可�
     └── SKILL.md
 ```
 
-安装外部 skill：
+#### 用 CLI 管理 skill
+
+**查看已安装的 skill**
 
 ```sh
-curl -sL https://raw.githubusercontent.com/skoowoo/vaultr-notes/main/install-skills.sh | sh
+vaultr skills list
 ```
 
-安装自定义 skill：
+**从 GitHub 仓库安装 skill**
 
 ```sh
-cp -r your-skill ~/.vaultr/skills/
+vaultr skills add https://github.com/hardhackerlabs/podwise-cli --skill podwise
 ```
 
-Vaultr 启动时会自动加载 `~/.vaultr/skills/` 下的所有 skill。
+安装后保存到 `~/.vaultr/skills/podwise/`。
+
+也支持 `owner/repo` 简写：
+
+```sh
+vaultr skills add hardhackerlabs/podwise-cli --skill podwise
+```
+
+**删除 skill**
+
+```sh
+vaultr skills remove podwise
+```
+
+删除 skill 目录、清理所有软链接。
+
+Vaultr 启动时自动加载 `~/.vaultr/skills/` 下的所有 skill。在 **Settings → Skills** 中可以单独启用或禁用某个 skill。
 
 ## 自定义 AI 行为
 
