@@ -215,51 +215,6 @@
       flex-shrink: 0;
     }
 
-    /* Install button */
-    .install-btn {
-      margin-top: 1.25rem;
-      width: 100%;
-      padding: 0.6rem 1rem;
-      background: #f472b6;
-      border: 2px solid #000000;
-      color: #111111;
-      font-family: inherit;
-      font-size: 0.75rem;
-      font-weight: 700;
-      letter-spacing: 0.04em;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.5rem;
-      user-select: none;
-      box-shadow: 3px 3px 0 rgba(0, 0, 0, 1);
-    }
-
-    .install-btn:hover {
-      box-shadow: 2px 2px 0 rgba(0, 0, 0, 1);
-      transform: translate(1px, 1px);
-    }
-
-    .install-btn:active {
-      box-shadow: none;
-      transform: translate(3px, 3px);
-    }
-
-    .install-btn[hidden] {
-      display: none;
-    }
-
-    .install-btn:disabled {
-      opacity: 0.4;
-      cursor: not-allowed;
-    }
-
-    .install-btn svg {
-      width: 13px;
-      height: 13px;
-      flex-shrink: 0;
-    }
   </style>
 </head>
 
@@ -285,13 +240,6 @@
       Start Server
     </button>
 
-    <button id="install-btn" class="install-btn" hidden>
-      <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round"
-          d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4-4 4m0 0-4-4m4 4V4" />
-      </svg>
-      Install Vaultr CLI
-    </button>
   </div>
 
   <script>
@@ -301,7 +249,6 @@
       const statusEl = document.getElementById('status');
       const hintEl = document.getElementById('hint');
       const startBtn = document.getElementById('start-btn');
-      const installBtn = document.getElementById('install-btn');
 
       let retryTimer = null;
       let busy = false;
@@ -334,12 +281,6 @@
 
       function showStart(v) {
         startBtn.hidden = !v;
-        if (v) installBtn.hidden = true;
-      }
-
-      function showInstall(v) {
-        installBtn.hidden = !v;
-        if (v) startBtn.hidden = true;
       }
 
       function isLocal(raw) {
@@ -378,7 +319,6 @@
           detachStartConsumed = false;
           spawnedLocalServerOk = false;
           busy = false;
-          showInstall(false);
           showStart(false);
           setUI('ok', 'connected');
           if (window.vaultrDesktop) await window.vaultrDesktop.setServerUrl(url);
@@ -388,38 +328,31 @@
         const paths = await debugPaths();
         let retryMs = 3000;
         let pendingStart = false;
-        let headline = '', hint = '', showInst = false;
+        let headline = '', hint = '';
 
         if (!window.vaultrDesktop) {
           headline = 'preload api unavailable';
           hint = 'Desktop API not found. Check DevTools.';
         } else if (isLocal(url) && !detachStartConsumed) {
           try {
-            const probe = await window.vaultrDesktop.vaultrOnPath();
-            if (!probe.available) {
-              headline = 'vaultr cli not found';
-              showInst = true;
+            detachStartConsumed = true;
+            const st = await window.vaultrDesktop.startVaultrServerDetached({ userInitiated });
+            if (st.ok) {
+              spawnedLocalServerOk = true;
+              pendingStart = true;
+              retryMs = 1400;
+            } else if (st.reason === 'stopped_by_user') {
+              isRetrying = false;
+              busy = false;
+              startBtn.disabled = false;
+              showStart(true);
+              setUI('error', 'server stopped');
+              return;
             } else {
-              detachStartConsumed = true;
-              const st = await window.vaultrDesktop.startVaultrServerDetached({ userInitiated });
-              if (st.ok) {
-                spawnedLocalServerOk = true;
-                pendingStart = true;
-                retryMs = 1400;
-              } else if (st.reason === 'stopped_by_user') {
-                isRetrying = false;
-                busy = false;
-                startBtn.disabled = false;
-                showInstall(false);
-                showStart(true);
-                setUI('error', 'server stopped');
-                return;
-              } else {
-                spawnedLocalServerOk = false;
-                headline = 'server start failed';
-                hint = (st.error ? st.error + '\n\n' : '') +
-                  'Server output:\n' + (paths.serverOutput || '');
-              }
+              spawnedLocalServerOk = false;
+              headline = 'server start failed';
+              hint = (st.error ? st.error + '\n\n' : '') +
+                'Server output:\n' + (paths.serverOutput || '');
             }
           } catch (e) {
             headline = 'connection error';
@@ -441,7 +374,6 @@
         busy = false;
         startBtn.disabled = pendingStart;
         isRetrying = true;
-        showInstall(showInst);
         setUI(
           pendingStart ? 'starting' : 'error',
           pendingStart ? 'starting server' : headline,
@@ -463,35 +395,11 @@
         isRetrying = false;
         detachStartConsumed = false;
         spawnedLocalServerOk = false;
-        showInstall(false);
         attempt(input.value.trim().replace(/\/$/, ''), { userInitiated: true });
       }
 
       input.addEventListener('keydown', e => { if (e.key === 'Enter') userConnect(); });
       startBtn.addEventListener('click', userConnect);
-      installBtn.addEventListener('click', async () => {
-        if (installBtn.disabled || !window.vaultrDesktop?.installCli) return;
-        clearTimeout(retryTimer);
-        installBtn.disabled = true;
-        isRetrying = false;
-        showInstall(false);
-        showStart(false);
-        setUI('connecting', 'installing cli...');
-
-        const result = await window.vaultrDesktop.installCli();
-
-        installBtn.disabled = false;
-        if (result.ok) {
-          detachStartConsumed = false;
-          spawnedLocalServerOk = false;
-          attempt(input.value.trim().replace(/\/$/, ''));
-        } else {
-          const msg = (result.output || result.error || 'install failed').trim();
-          showInstall(true);
-          setUI('error', 'install failed', msg);
-          retryTimer = setTimeout(() => attempt(input.value.trim().replace(/\/$/, '')), 5000);
-        }
-      });
 
       init();
     })();

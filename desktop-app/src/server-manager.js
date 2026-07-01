@@ -7,6 +7,7 @@ const http = require("node:http");
 const https = require("node:https");
 const { spawn, spawnSync } = require("node:child_process");
 const os = require("node:os");
+const { installCli, BINARY_NAME } = require("./cli-installer");
 
 // ── Diagnostics ───────────────────────────────────────────────────────────────
 
@@ -73,14 +74,13 @@ function expandedEnv() {
 
 // ── Vaultr binary resolution ──────────────────────────────────────────────────
 
-const VAULTR_FALLBACK_BINS = [
-  "/usr/local/bin/vaultr",
-  path.join(os.homedir(), ".local", "bin", "vaultr"),
-];
-
 /** Returns the first working vaultr binary path, or null if none found. */
 function resolveVaultrBin() {
-  for (const bin of ["vaultr", ...VAULTR_FALLBACK_BINS]) {
+  const candidates = [
+    path.join(os.homedir(), ".local", "bin", "vaultr"),
+    "vaultr",
+  ];
+  for (const bin of candidates) {
     try {
       const r = spawnSync(bin, ["--version"], {
         encoding: "utf8", timeout: 8000, windowsHide: true, env: expandedEnv(),
@@ -343,44 +343,17 @@ function register(opts = {}) {
   });
 
   // ── install-cli ─────────────────────────────────────────────────────────────
+  // Copies the bundled CLI binary from app resources to the system PATH.
+  // No network required — replaces the old curl | sh approach.
 
-  ipcMain.handle("install-cli", () => {
-    return new Promise((resolve) => {
-      // Use a login shell so the user's profile (.zprofile, .bash_profile, etc.) is sourced,
-      // which brings in proxy env vars (http_proxy, https_proxy, etc.) and extended PATH —
-      // both are absent from Electron's minimal process.env when launched from the Dock.
-      const shell = process.env.SHELL || "/bin/sh";
-      const child = spawn(
-        shell,
-        ["-l", "-i", "-c", "curl -sL https://raw.githubusercontent.com/skoowoo/vaultr-notes/main/install-cli.sh | sh"],
-        { stdio: ["ignore", "pipe", "pipe"], windowsHide: true }
-      );
-
-      let output = "";
-      child.stdout.on("data", (chunk) => { output += chunk.toString(); });
-      child.stderr.on("data", (chunk) => { output += chunk.toString(); });
-
-      child.on("close", (code) => {
-        diagLog("install-cli: exit code", code);
-        if (code !== 0) {
-          resolve({ ok: false, output: output.slice(-2000).trim() });
-          return;
-        }
-        const bin = resolveVaultrBin();
-        if (bin) {
-          diagLog("install-cli: verified vaultr at:", bin);
-          resolve({ ok: true, output: output.slice(-2000).trim() });
-        } else {
-          diagLog("install-cli: verify failed, vaultr not found after install");
-          resolve({ ok: false, output: output.slice(-2000).trim(), error: "installed but vaultr not found in PATH, /usr/local/bin, or ~/.local/bin" });
-        }
-      });
-
-      child.on("error", (err) => {
-        diagLog("install-cli: spawn error:", err.message);
-        resolve({ ok: false, error: err.message, output: output.trim() });
-      });
-    });
+  ipcMain.handle("install-cli", async () => {
+    const result = await installCli((msg) => diagLog(msg));
+    if (result.ok) {
+      diagLog("install-cli: success, installed to", result.installDir);
+    } else {
+      diagLog("install-cli: failed:", result.error);
+    }
+    return result;
   });
 
   // ── restart-vaultr-server ───────────────────────────────────────────────────

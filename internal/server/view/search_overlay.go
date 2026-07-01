@@ -453,6 +453,7 @@ const searchOverlayScript = `
         this.hasQuery = val.trim().length > 0;
       },
       onInputKeydown(e) {
+        if (e.isComposing || e.keyCode === 229) return;
         if (this.showModes) {
           if (e.key === 'ArrowDown') {
             e.preventDefault(); e.stopPropagation();

@@ -3,7 +3,6 @@ const { contextBridge, ipcRenderer } = require("electron");
 contextBridge.exposeInMainWorld("vaultrDesktop", {
   platform: process.platform,
   checkServer: (url) => ipcRenderer.invoke("check-server", url),
-  vaultrOnPath: () => ipcRenderer.invoke("vaultr-on-path"),
   startVaultrServerDetached: (opts) => ipcRenderer.invoke("start-vaultr-server-detached", opts),
   stopServer: () => ipcRenderer.invoke("stop-vaultr-server"),
   getServerProcessStatus: () => ipcRenderer.invoke("get-server-process-status"),
@@ -22,7 +21,6 @@ contextBridge.exposeInMainWorld("vaultrDesktop", {
     delete: (id)       => ipcRenderer.invoke("draft:delete", id),
   },
   pickFolder: (opts) => ipcRenderer.invoke("pick-folder", opts),
-  installCli: () => ipcRenderer.invoke("install-cli"),
   mateNotify: {
     getSettings: ()           => ipcRenderer.invoke("mate-notify:get-settings"),
     setSettings: (settings)   => ipcRenderer.invoke("mate-notify:set-settings", settings),

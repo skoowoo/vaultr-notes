@@ -17,7 +17,7 @@
         width 220ms cubic-bezier(0.25, 0.8, 0.25, 1);
     }
     .drawer-overlay.open .drawer-panel { transform: translateX(0); opacity: 1; }
-    .drawer-panel.expanded { width: 100vw; }
+    .drawer-panel.expanded { width: 100vw; border-left: none; }
 
     /* ── Tab bar ─────────────────────────────────────────────────── */
     .drawer-tab-bar {

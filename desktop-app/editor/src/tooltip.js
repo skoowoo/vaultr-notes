@@ -297,6 +297,9 @@ export const tooltipPlugin = $prose(() => new Plugin({
       const inEditor = pmView.dom.contains(e.target) ||
                        (editArea && editArea.contains(e.target));
       selectionAtMousedown = inEditor ? pmView.state.selection : null;
+      if (visible && !inEditor && !el.contains(e.target)) {
+        hide(false);
+      }
     }
 
     function onMouseUp(e) {
@@ -327,9 +330,15 @@ export const tooltipPlugin = $prose(() => new Plugin({
       if (!visible) render(pmView);
     }
 
+    function onScroll() {
+      if (!visible || !pmView) return;
+      positionTooltip(el, pmView);
+    }
+
     document.addEventListener('mousedown', onMouseDown, true);
     document.addEventListener('mouseup',   onMouseUp,   true);
     document.addEventListener('keyup',     onKeyUp,     true);
+    document.addEventListener('scroll',    onScroll,    true);
 
     function hide(collapseSelection) {
       if (!visible) return;
@@ -539,6 +548,7 @@ export const tooltipPlugin = $prose(() => new Plugin({
         document.removeEventListener('mousedown', onMouseDown, true);
         document.removeEventListener('mouseup',   onMouseUp,   true);
         document.removeEventListener('keyup',     onKeyUp,     true);
+        document.removeEventListener('scroll',    onScroll,    true);
       },
     };
   },

@@ -29,7 +29,6 @@ archives:
     files:
       - config.example.toml
       - skills/**/*
-      - install-skills.sh
 
 checksum:
   disable: true

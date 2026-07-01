@@ -7,6 +7,7 @@ const fs = require("node:fs");
 const http = require("node:http");
 const https = require("node:https");
 const { getAutoStart, setAutoStart, setServerUrl, getMateNotifySettings, registerConfigIpcHandlers } = require("./config");
+const { installCli } = require("./cli-installer");
 
 require("./server-manager").register({
   onRestartDone:  () => resetToStartScreen(),
@@ -675,6 +676,11 @@ app.whenReady().then(() => {
 
   fs.mkdirSync(getDraftsDir(), { recursive: true });
   createWindow();
+
+  // Install bundled CLI to system PATH in the background — does not block window startup.
+  installCli((msg) => console.error("[vaultr-shell]", msg))
+    .then((r) => { if (!r.ok) console.error("[vaultr-shell] cli auto-install failed:", r.error); })
+    .catch((e) => console.error("[vaultr-shell] cli auto-install threw:", e));
 
   app.on("activate", () => {
     if (!win || win.isDestroyed()) {
