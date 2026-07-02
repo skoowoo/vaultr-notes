@@ -9,7 +9,8 @@ const https = require("node:https");
 const { getAutoStart, setAutoStart, setServerUrl, getMateNotifySettings, registerConfigIpcHandlers } = require("./config");
 const { installCli } = require("./cli-installer");
 
-require("./server-manager").register({
+const serverManager = require("./server-manager");
+serverManager.register({
   onRestartDone:  () => resetToStartScreen(),
   onServerStopped: () => resetToStartScreen(),
   onBeforeStop:   () => stopMateNotifications(),
@@ -678,8 +679,13 @@ app.whenReady().then(() => {
   createWindow();
 
   // Install bundled CLI to system PATH in the background — does not block window startup.
+  // On a real upgrade (not skipped), kill the old running server so the start screen's
+  // auto-restart loop picks up the new binary.
   installCli((msg) => console.error("[vaultr-shell]", msg))
-    .then((r) => { if (!r.ok) console.error("[vaultr-shell] cli auto-install failed:", r.error); })
+    .then(async (r) => {
+      if (!r.ok) { console.error("[vaultr-shell] cli auto-install failed:", r.error); return; }
+      if (!r.skipped) await serverManager.restartServerAfterCliUpdate();
+    })
     .catch((e) => console.error("[vaultr-shell] cli auto-install threw:", e));
 
   app.on("activate", () => {

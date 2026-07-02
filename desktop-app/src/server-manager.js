@@ -116,6 +116,24 @@ function isProcessAlive(pid) {
 /** PID of the vaultr server process most recently spawned by this Electron instance. */
 let managedServerChildPid = 0;
 
+/** Callbacks registered via register() — used by restartServerAfterCliUpdate. */
+let _registeredOpts = {};
+
+/** Shared SIGTERM → wait → optional SIGKILL logic. Returns true when the process is gone. */
+async function killProcess(pid) {
+  if (!isProcessAlive(pid)) return true;
+  try { process.kill(pid, "SIGTERM"); } catch { return false; }
+  const deadline = Date.now() + 8000;
+  while (Date.now() < deadline) {
+    await new Promise((r) => setTimeout(r, 150));
+    if (!isProcessAlive(pid)) return true;
+  }
+  diagLog("kill-process: still alive after 8s, sending SIGKILL to pid", pid);
+  try { process.kill(pid, "SIGKILL"); } catch { /* noop */ }
+  await new Promise((r) => setTimeout(r, 300));
+  return !isProcessAlive(pid);
+}
+
 /** @returns {{ available: true } | { available: false, detail: string }} */
 function probeVaultrCliSync() {
   try {
@@ -220,26 +238,12 @@ function startVaultrServerDetached() {
  * }} [opts]
  */
 function register(opts = {}) {
+  _registeredOpts = opts;
   const { onRestartDone, onServerStopped, onBeforeStop, getAutoStart, setAutoStart } = opts;
 
   /** Schedule a UI-transition callback after the current IPC promise resolves. */
   function deferUiTransition(fn) {
     if (fn) setTimeout(() => { try { fn(); } catch { /* noop */ } }, 0);
-  }
-
-  /** Shared SIGTERM → wait → optional SIGKILL logic. Returns true when the process is gone. */
-  async function killProcess(pid) {
-    if (!isProcessAlive(pid)) return true;
-    try { process.kill(pid, "SIGTERM"); } catch { return false; }
-    const deadline = Date.now() + 8000;
-    while (Date.now() < deadline) {
-      await new Promise((r) => setTimeout(r, 150));
-      if (!isProcessAlive(pid)) return true;
-    }
-    diagLog("kill-process: still alive after 8s, sending SIGKILL to pid", pid);
-    try { process.kill(pid, "SIGKILL"); } catch { /* noop */ }
-    await new Promise((r) => setTimeout(r, 300));
-    return !isProcessAlive(pid);
   }
 
   // ── check-server ────────────────────────────────────────────────────────────
@@ -389,4 +393,20 @@ function register(opts = {}) {
   });
 }
 
-module.exports = { register };
+/**
+ * Called after a CLI upgrade: kills the currently running server (if any) so the
+ * start screen's auto-restart loop picks up the new binary.  autoStart is left
+ * untouched — the start screen will re-spawn the server automatically.
+ */
+async function restartServerAfterCliUpdate() {
+  const { onBeforeStop, onServerStopped } = _registeredOpts;
+  const pid = readServerPID();
+  if (!pid || !isProcessAlive(pid)) return; // no server running — nothing to do
+  diagLog("cli-upgrade: killing old server pid", pid, "to pick up new binary");
+  if (onBeforeStop) onBeforeStop();
+  await killProcess(pid);
+  managedServerChildPid = 0;
+  if (onServerStopped) setTimeout(() => { try { onServerStopped(); } catch { /* noop */ } }, 0);
+}
+
+module.exports = { register, restartServerAfterCliUpdate };

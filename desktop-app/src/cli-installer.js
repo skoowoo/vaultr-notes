@@ -96,11 +96,14 @@ async function installCli(log = () => {}) {
   }
 
   const destBin = path.join(installDir, BINARY_NAME);
+  const tmpBin = destBin + ".tmp." + process.pid;
   try {
-    await fsp.copyFile(path.join(tmpDir, BINARY_NAME), destBin);
-    if (process.platform !== "win32") await fsp.chmod(destBin, 0o755);
+    await fsp.copyFile(path.join(tmpDir, BINARY_NAME), tmpBin);
+    if (process.platform !== "win32") await fsp.chmod(tmpBin, 0o755);
+    await fsp.rename(tmpBin, destBin); // atomic replace — safe even if old binary is running
     log(`cli-installer: installed to ${destBin}`);
   } catch (e) {
+    try { await fsp.unlink(tmpBin); } catch { /* noop */ }
     log(`cli-installer: binary copy failed: ${e.message}`);
     return { ok: false, error: e.message };
   }

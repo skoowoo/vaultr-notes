@@ -114,13 +114,24 @@ func (m *Manager) Start(ctx context.Context) {
 	}
 }
 
-// Stop cancels the context shared by all plugins, waits for them to exit,
-// then calls Stop() on each to perform final cleanup.
-func (m *Manager) Stop() {
+// Stop cancels the context shared by all plugins and waits for them to exit,
+// bounded by ctx so a hung plugin (e.g. a WebSocket close that never returns)
+// cannot prevent the process from shutting down. Calls Stop() on each plugin
+// for final cleanup regardless of whether wg.Wait timed out.
+func (m *Manager) Stop(ctx context.Context) {
 	if m.cancel != nil {
 		m.cancel()
 	}
-	m.wg.Wait()
+	done := make(chan struct{})
+	go func() {
+		m.wg.Wait()
+		close(done)
+	}()
+	select {
+	case <-done:
+	case <-ctx.Done():
+		m.logger.Warn("plugins did not stop within shutdown timeout; forcing cleanup")
+	}
 	for _, p := range m.plugins {
 		if err := p.Stop(); err != nil {
 			m.logger.Warn("plugin stop error", "plugin", p.Name(), "err", err)

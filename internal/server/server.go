@@ -161,10 +161,17 @@ func (s *Server) Run(pidFile string) error {
 	}
 	s.logger.Info("listening", "protocol", protocol, "addr", addr)
 
+	// baseCtx is the parent for all HTTP request contexts. Cancelling it causes
+	// long-lived connections (SSE, streaming) to see ctx.Done() and exit cleanly,
+	// allowing srv.Shutdown to complete without hitting the deadline.
+	baseCtx, cancelBase := context.WithCancel(context.Background())
+	defer cancelBase()
+
 	srv := &http.Server{
 		Handler:      s.handler,
 		ReadTimeout:  time.Duration(s.cfg.Server.ReadTimeout) * time.Second,
 		WriteTimeout: time.Duration(s.cfg.Server.WriteTimeout) * time.Second,
+		BaseContext:  func(net.Listener) context.Context { return baseCtx },
 	}
 
 	// Start the vault watcher so that files dropped directly into the vault
@@ -211,12 +218,16 @@ func (s *Server) Run(pidFile string) error {
 
 	s.logger.Info("graceful shutdown", "timeout", shutdownTimeout)
 
+	// Cancel base context so SSE/streaming handlers exit their select loops
+	// and connections close, letting Shutdown complete well within the timeout.
+	cancelBase()
+
 	if err := srv.Shutdown(ctx); err != nil {
 		return fmt.Errorf("shutdown: %w", err)
 	}
 
 	// Stop plugins before closing the vault so any final commits can complete.
-	s.pluginMgr.Stop()
+	s.pluginMgr.Stop(ctx)
 
 	if err := s.vault.Close(); err != nil {
 		s.logger.Warn("vault close error", "err", err)
