@@ -123,6 +123,18 @@ Vaultr 提供全文搜索，但更重要的是让 agent 替你检索。当你需
 
    解决也很简单：**系统设置 → 隐私与安全性**，找到拦截提示点**仍要打开**就好
 
+4. App 会把 `vaultr` CLI 装到 `~/.local/bin/vaultr`。把这个路径加到你的 shell 配置里，agent 才能正常调用它：
+
+   ```sh
+   # zsh — 加到 ~/.zshrc 或 ~/.zprofile
+   export PATH="$HOME/.local/bin:$PATH"
+
+   # bash — 加到 ~/.bash_profile 或 ~/.bashrc
+   export PATH="$HOME/.local/bin:$PATH"
+   ```
+
+   加完重启终端（或者执行 `source ~/.zshrc` / `source ~/.bash_profile`）。
+
 #### 🧩 浏览器扩展（Clip）
 
 1. 同样去 [最新发布页](https://github.com/skoowoo/vaultr-notes/releases/latest) 下载 `vaultr-clip-*.zip`

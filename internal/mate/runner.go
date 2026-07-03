@@ -19,9 +19,6 @@ type RunResult struct {
 	EventType   MateEventType // the MateEvent type that triggered this run
 }
 
-// RunStartHook is called just before a trigger run is dispatched to fn.
-type RunStartHook func(m *Mate, convID, prompt string, ev MateEvent)
-
 // RunDoneHook is called when a trigger run reaches a terminal state.
 type RunDoneHook func(m *Mate, result RunResult)
 
@@ -32,12 +29,11 @@ type RunFunc func(ctx context.Context, m *Mate, convID, prompt string, ev MateEv
 // Runner implements plugin.Plugin and fires mate triggers in response to vault events
 // and configured schedules.
 type Runner struct {
-	store     *Store
-	runFn     atomic.Value // stores RunFunc
-	startHook atomic.Value // stores RunStartHook
-	doneHook  atomic.Value // stores RunDoneHook
-	logger    *slog.Logger
-	sem       chan struct{} // concurrency limiter
+	store    *Store
+	runFn    atomic.Value // stores RunFunc
+	doneHook atomic.Value // stores RunDoneHook
+	logger   *slog.Logger
+	sem      chan struct{} // concurrency limiter
 }
 
 // NewRunner creates a Runner. Call SetRunFunc before the vault watcher fires events.
@@ -52,11 +48,6 @@ func NewRunner(store *Store, logger *slog.Logger) *Runner {
 // SetRunFunc wires in the function that fires an agent run for a trigger match.
 func (r *Runner) SetRunFunc(fn RunFunc) {
 	r.runFn.Store(fn)
-}
-
-// SetRunStartHook registers a hook called just before each trigger run is dispatched.
-func (r *Runner) SetRunStartHook(fn RunStartHook) {
-	r.startHook.Store(fn)
 }
 
 // SetRunDoneHook registers a hook called when a trigger run reaches a terminal state.
@@ -209,10 +200,6 @@ func (r *Runner) fireTrigger(t MateTrigger, me MateEvent) {
 			fields = append(fields, "path", ev.Path)
 		}
 		r.logger.Info("mate_runner: trigger fired", fields...)
-
-		if sh, _ := r.startHook.Load().(RunStartHook); sh != nil {
-			sh(m, convID, prompt, ev)
-		}
 
 		start := time.Now()
 		dh, _ := r.doneHook.Load().(RunDoneHook)

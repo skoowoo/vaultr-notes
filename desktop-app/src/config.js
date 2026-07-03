@@ -45,30 +45,29 @@ function setAutoStart(v) {
   saveConfig(c);
 }
 
-const DEFAULT_MATE_NOTIFY = {
+const DEFAULT_INBOX_NOTIFY = {
   textEnabled: true,
   soundEnabled: true,
-  startSound: "beep",
-  doneSound: "beep",
+  sound: "beep",
 };
 
-function getMateNotifySettings() {
+function getInboxNotifySettings() {
   const c = loadConfig();
-  return { ...DEFAULT_MATE_NOTIFY, ...(c.mateNotify || {}) };
+  return { ...DEFAULT_INBOX_NOTIFY, ...(c.inboxNotify || {}) };
 }
 
-function setMateNotifySettings(settings) {
+function setInboxNotifySettings(settings) {
   const c = loadConfig();
-  c.mateNotify = { ...getMateNotifySettings(), ...settings };
+  c.inboxNotify = { ...getInboxNotifySettings(), ...settings };
   saveConfig(c);
 }
 
 function registerConfigIpcHandlers(ipcMain) {
   ipcMain.handle("get-server-url", () => getServerUrl());
-  ipcMain.handle("mate-notify:get-settings", () => getMateNotifySettings());
-  ipcMain.handle("mate-notify:set-settings", (_e, settings) => {
-    setMateNotifySettings(settings);
-    return getMateNotifySettings();
+  ipcMain.handle("inbox-notify:get-settings", () => getInboxNotifySettings());
+  ipcMain.handle("inbox-notify:set-settings", (_e, settings) => {
+    setInboxNotifySettings(settings);
+    return getInboxNotifySettings();
   });
 }
 
@@ -78,7 +77,7 @@ module.exports = {
   setServerUrl,
   getAutoStart,
   setAutoStart,
-  getMateNotifySettings,
-  setMateNotifySettings,
+  getInboxNotifySettings,
+  setInboxNotifySettings,
   registerConfigIpcHandlers,
 };

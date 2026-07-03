@@ -21,9 +21,9 @@ contextBridge.exposeInMainWorld("vaultrDesktop", {
     delete: (id)       => ipcRenderer.invoke("draft:delete", id),
   },
   pickFolder: (opts) => ipcRenderer.invoke("pick-folder", opts),
-  mateNotify: {
-    getSettings: ()           => ipcRenderer.invoke("mate-notify:get-settings"),
-    setSettings: (settings)   => ipcRenderer.invoke("mate-notify:set-settings", settings),
-    previewSound: (sound)     => ipcRenderer.invoke("mate-notify:preview-sound", sound),
+  inboxNotify: {
+    getSettings: ()           => ipcRenderer.invoke("inbox-notify:get-settings"),
+    setSettings: (settings)   => ipcRenderer.invoke("inbox-notify:set-settings", settings),
+    previewSound: (sound)     => ipcRenderer.invoke("inbox-notify:preview-sound", sound),
   },
 });

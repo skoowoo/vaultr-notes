@@ -3,9 +3,11 @@ package server
 import (
 	"log/slog"
 	"net/http"
+	"regexp"
 
 	"github.com/hardhacker/vaultr/internal/agent"
 	"github.com/hardhacker/vaultr/internal/config"
+	"github.com/hardhacker/vaultr/internal/inbox"
 	"github.com/hardhacker/vaultr/internal/mate"
 	"github.com/hardhacker/vaultr/internal/plugins/compile"
 	"github.com/hardhacker/vaultr/internal/plugins/gitsync"
@@ -43,35 +45,64 @@ func newRouter(
 	agentCache.WarmUp()
 	ah := handler.NewAgentAPI(logger, cfg, vault, agentHub, mateStore, agentCache)
 
+	// Inbox: generic, source-agnostic message store. mate trigger runs are the
+	// first producer (wired below); other producers can call inboxStore.Create
+	// directly without depending on the mate package. Shares mate.db's
+	// connection rather than opening its own file.
+	var inboxStore *inbox.Store
+	if mateStore != nil {
+		is, err := inbox.Open(mateStore.DB())
+		if err != nil {
+			logger.Warn("inbox store unavailable", "err", err)
+		} else {
+			inboxStore = is
+		}
+	}
+
 	// Wire mate runner → agent API so trigger runs use the same execution path.
-	notifBus := mate.NewNotificationBus()
+	// Trigger run completions become inbox messages; inboxStore.Create fans out
+	// to /api/inbox/notifications on its own, so no separate push is needed here.
 	if mateRunner != nil {
 		mateRunner.SetRunFunc(ah.FireTriggerRun)
-		mateRunner.SetRunStartHook(func(m *mate.Mate, convID, prompt string, ev mate.MateEvent) {
-			if ev.Type == mate.MateEventWechatMessage || ev.Type == mate.MateEventDiscordMessage {
-				return
-			}
-			notifBus.Push(mate.RunNotification{
-				Type:      "run_start",
-				MateID:    m.ID,
-				MateName:  m.Name,
-				ConvID:    convID,
-				EventType: string(ev.Type),
-			})
-		})
 		mateRunner.SetRunDoneHook(func(m *mate.Mate, result mate.RunResult) {
 			if result.EventType == mate.MateEventWechatMessage || result.EventType == mate.MateEventDiscordMessage {
 				return
 			}
-			notifBus.Push(mate.RunNotification{
-				Type:        "run_done",
-				MateID:      m.ID,
-				MateName:    m.Name,
-				Success:     result.Success,
-				DurationSec: result.Duration.Seconds(),
-				LastMessage: result.LastMessage,
-			})
+			if inboxStore == nil {
+				return
+			}
+			level := inbox.LevelSuccess
+			if !result.Success {
+				level = inbox.LevelError
+			}
+			title := m.Name
+			if h1 := firstMarkdownH1(result.LastMessage); h1 != "" {
+				title = m.Name + ": " + h1
+			}
+			if _, err := inboxStore.Create(inbox.Message{
+				Source: "mate_trigger",
+				Level:  level,
+				Title:  title,
+				Body:   result.LastMessage,
+				Metadata: map[string]any{
+					"mateId":     m.ID,
+					"eventType":  string(result.EventType),
+					"durationMs": result.Duration.Milliseconds(),
+				},
+			}); err != nil {
+				logger.Warn("inbox: create message", "err", err)
+			}
 		})
+	}
+
+	if inboxStore != nil {
+		ih := handler.NewInboxAPI(inboxStore)
+		mux.HandleFunc("GET /api/inbox", ih.InboxGET)
+		mux.HandleFunc("GET /api/inbox/unread-count", ih.InboxUnreadCountGET)
+		mux.HandleFunc("POST /api/inbox/read-all", ih.InboxReadAllPOST)
+		mux.HandleFunc("POST /api/inbox/{id}/read", ih.InboxReadPOST)
+		mux.HandleFunc("DELETE /api/inbox/{id}", ih.InboxDELETE)
+		mux.HandleFunc("GET /api/inbox/notifications", inboxStore.Notifications().StreamSSE)
 	}
 
 	mux.HandleFunc("GET /api/agents", ah.AgentsGET)
@@ -93,7 +124,6 @@ func newRouter(
 
 		mh := handler.NewMateAPI(logger, mateStore)
 		mux.HandleFunc("GET /api/mate-events", mh.MateEventsGET)
-		mux.HandleFunc("GET /api/mate/run-notifications", notifBus.StreamSSE)
 
 		mux.HandleFunc("GET /api/mates", mh.MatesGET)
 		mux.HandleFunc("POST /api/mates/reorder", mh.MatesReorderPOST)
@@ -142,6 +172,7 @@ func newRouter(
 	mux.HandleFunc("GET /images", vh.Images)
 	mux.HandleFunc("GET /images/grid", vh.ImagesGrid)
 	mux.HandleFunc("GET /agent", vh.AgentChat)
+	mux.HandleFunc("GET /agent/inbox", vh.Inbox)
 	mux.HandleFunc("GET /library/notes", vh.LibraryNotes)
 	mux.HandleFunc("GET /library/tag", vh.LibraryTag)
 	mux.HandleFunc("GET /library/index/select", vh.LibraryIndexSelect)
@@ -191,4 +222,19 @@ func newRouter(
 		middleware.Logger(logger),
 		middleware.Authenticator(apiKey, logger),
 	)
+}
+
+// markdownH1Pattern matches the first ATX H1 heading ("# ...", not "##...")
+// on its own line, multiline mode so ^/$ match at line boundaries.
+var markdownH1Pattern = regexp.MustCompile(`(?m)^#[ \t]+(.+?)[ \t]*$`)
+
+// firstMarkdownH1 returns the text of the first H1 heading in body, so an
+// inbox message's title can read "<mate name>: <H1>" instead of just the
+// mate name. Returns "" if body has no H1.
+func firstMarkdownH1(body string) string {
+	m := markdownH1Pattern.FindStringSubmatch(body)
+	if m == nil {
+		return ""
+	}
+	return m[1]
 }

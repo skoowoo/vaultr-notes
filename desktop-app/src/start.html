@@ -328,6 +328,7 @@
         const paths = await debugPaths();
         let retryMs = 3000;
         let pendingStart = false;
+        let showRetry = false;
         let headline = '', hint = '';
 
         if (!window.vaultrDesktop) {
@@ -350,11 +351,17 @@
               return;
             } else {
               spawnedLocalServerOk = false;
+              // Let the next automatic retry attempt spawning again instead of
+              // dead-ending in a checkServer-only poll loop forever.
+              detachStartConsumed = false;
+              showRetry = true;
               headline = 'server start failed';
               hint = (st.error ? st.error + '\n\n' : '') +
                 'Server output:\n' + (paths.serverOutput || '');
             }
           } catch (e) {
+            detachStartConsumed = false;
+            showRetry = true;
             headline = 'connection error';
             hint = String(e?.message ?? e);
           }
@@ -363,6 +370,10 @@
           hint = (paths.serverOutput || '') +
             (paths.diagnostics ? '\n\nElectron log:\n' + paths.diagnostics : '');
         } else if (isLocal(url) && detachStartConsumed && !spawnedLocalServerOk) {
+          // Defensive fallback — shouldn't normally be reached now that a failed
+          // spawn resets detachStartConsumed above, but keep it recoverable too.
+          detachStartConsumed = false;
+          showRetry = true;
           headline = 'server start failed';
           hint = (paths.serverOutput || '') +
             (paths.diagnostics ? '\n\nElectron log:\n' + paths.diagnostics : '');
@@ -374,6 +385,7 @@
         busy = false;
         startBtn.disabled = pendingStart;
         isRetrying = true;
+        showStart(showRetry);
         setUI(
           pendingStart ? 'starting' : 'error',
           pendingStart ? 'starting server' : headline,

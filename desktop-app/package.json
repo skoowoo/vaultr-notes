@@ -2,6 +2,7 @@
   "name": "vaultr-desktop",
   "productName": "Vaultr",
   "version": "1.0.1",
+  "vaultrBuild": "1",
   "private": true,
   "description": "Desktop shell for the local Vaultr web app.",
   "main": "src/main.js",

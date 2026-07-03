@@ -1100,7 +1100,7 @@ func settingsModalHTML() string {
                       <span class="cfg-toggle-pill"></span>
                     </label>
                   </div>
-                  <p class="settings-field-desc">Show a system notification when a mate agent run starts or finishes.</p>
+                  <p class="settings-field-desc">Show a system notification when a new inbox message arrives.</p>
                 </div>
 
                 <div>
@@ -1112,68 +1112,39 @@ func settingsModalHTML() string {
                       <span class="cfg-toggle-pill"></span>
                     </label>
                   </div>
-                  <p class="settings-field-desc">Play a sound when a run starts or finishes.</p>
+                  <p class="settings-field-desc">Play a sound when a new inbox message arrives.</p>
                 </div>
 
                 <template x-if="notifySettings.soundEnabled">
                   <div class="settings-fields" style="gap:1.25rem">
 
                     <div>
-                      <label class="settings-field-label">Start Sound</label>
+                      <label class="settings-field-label">Notification Sound</label>
                       <div class="notif-sound-row">
                         <div class="cselect" x-data="{ csOpen: false }" @click.outside="csOpen = false" style="flex:1;min-width:0">
                           <button type="button" class="cselect-btn" :class="{open: csOpen}" @click="csOpen = !csOpen" @keydown.escape="csOpen = false">
-                            <span class="cselect-btn-text" x-text="notifySoundLabel(notifySettings.startSound)"></span>
+                            <span class="cselect-btn-text" x-text="notifySoundLabel(notifySettings.sound)"></span>
                             <svg fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
                           </button>
                           <div class="cselect-dropdown" x-show="csOpen">
-                            <button type="button" class="cselect-option" :class="notifySettings.startSound==='beep'?'sel':''" @click="notifySettings.startSound='beep'; saveNotifySettings(); csOpen=false"><span class="cselect-option-dot"></span><span>System beep</span></button>
-                            <button type="button" class="cselect-option" :class="notifySettings.startSound==='none'?'sel':''" @click="notifySettings.startSound='none'; saveNotifySettings(); csOpen=false"><span class="cselect-option-dot"></span><span>None</span></button>
-                            <button type="button" class="cselect-option" :class="notifySettings.startSound==='Glass'?'sel':''" @click="notifySettings.startSound='Glass'; saveNotifySettings(); csOpen=false"><span class="cselect-option-dot"></span><span>Glass</span></button>
-                            <button type="button" class="cselect-option" :class="notifySettings.startSound==='Ping'?'sel':''" @click="notifySettings.startSound='Ping'; saveNotifySettings(); csOpen=false"><span class="cselect-option-dot"></span><span>Ping</span></button>
-                            <button type="button" class="cselect-option" :class="notifySettings.startSound==='Pop'?'sel':''" @click="notifySettings.startSound='Pop'; saveNotifySettings(); csOpen=false"><span class="cselect-option-dot"></span><span>Pop</span></button>
-                            <button type="button" class="cselect-option" :class="notifySettings.startSound==='Tink'?'sel':''" @click="notifySettings.startSound='Tink'; saveNotifySettings(); csOpen=false"><span class="cselect-option-dot"></span><span>Tink</span></button>
-                            <button type="button" class="cselect-option" :class="notifySettings.startSound==='Hero'?'sel':''" @click="notifySettings.startSound='Hero'; saveNotifySettings(); csOpen=false"><span class="cselect-option-dot"></span><span>Hero</span></button>
-                            <button type="button" class="cselect-option" :class="notifySettings.startSound==='Purr'?'sel':''" @click="notifySettings.startSound='Purr'; saveNotifySettings(); csOpen=false"><span class="cselect-option-dot"></span><span>Purr</span></button>
-                            <button type="button" class="cselect-option" :class="notifySettings.startSound==='Submarine'?'sel':''" @click="notifySettings.startSound='Submarine'; saveNotifySettings(); csOpen=false"><span class="cselect-option-dot"></span><span>Submarine</span></button>
+                            <button type="button" class="cselect-option" :class="notifySettings.sound==='beep'?'sel':''" @click="notifySettings.sound='beep'; saveNotifySettings(); csOpen=false"><span class="cselect-option-dot"></span><span>System beep</span></button>
+                            <button type="button" class="cselect-option" :class="notifySettings.sound==='none'?'sel':''" @click="notifySettings.sound='none'; saveNotifySettings(); csOpen=false"><span class="cselect-option-dot"></span><span>None</span></button>
+                            <button type="button" class="cselect-option" :class="notifySettings.sound==='Glass'?'sel':''" @click="notifySettings.sound='Glass'; saveNotifySettings(); csOpen=false"><span class="cselect-option-dot"></span><span>Glass</span></button>
+                            <button type="button" class="cselect-option" :class="notifySettings.sound==='Ping'?'sel':''" @click="notifySettings.sound='Ping'; saveNotifySettings(); csOpen=false"><span class="cselect-option-dot"></span><span>Ping</span></button>
+                            <button type="button" class="cselect-option" :class="notifySettings.sound==='Pop'?'sel':''" @click="notifySettings.sound='Pop'; saveNotifySettings(); csOpen=false"><span class="cselect-option-dot"></span><span>Pop</span></button>
+                            <button type="button" class="cselect-option" :class="notifySettings.sound==='Tink'?'sel':''" @click="notifySettings.sound='Tink'; saveNotifySettings(); csOpen=false"><span class="cselect-option-dot"></span><span>Tink</span></button>
+                            <button type="button" class="cselect-option" :class="notifySettings.sound==='Hero'?'sel':''" @click="notifySettings.sound='Hero'; saveNotifySettings(); csOpen=false"><span class="cselect-option-dot"></span><span>Hero</span></button>
+                            <button type="button" class="cselect-option" :class="notifySettings.sound==='Purr'?'sel':''" @click="notifySettings.sound='Purr'; saveNotifySettings(); csOpen=false"><span class="cselect-option-dot"></span><span>Purr</span></button>
+                            <button type="button" class="cselect-option" :class="notifySettings.sound==='Submarine'?'sel':''" @click="notifySettings.sound='Submarine'; saveNotifySettings(); csOpen=false"><span class="cselect-option-dot"></span><span>Submarine</span></button>
                           </div>
                         </div>
                         <button type="button" class="notif-play-btn" title="Preview sound"
-                                :disabled="notifySettings.startSound === 'none'"
-                                @click="window.vaultrDesktop?.mateNotify?.previewSound(notifySettings.startSound)">
+                                :disabled="notifySettings.sound === 'none'"
+                                @click="window.vaultrDesktop?.inboxNotify?.previewSound(notifySettings.sound)">
                           <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 4v16l13-8z"/></svg>
                         </button>
                       </div>
-                      <p class="settings-field-desc">Sound played when an agent run begins.</p>
-                    </div>
-
-                    <div>
-                      <label class="settings-field-label">Done Sound</label>
-                      <div class="notif-sound-row">
-                        <div class="cselect" x-data="{ csOpen: false }" @click.outside="csOpen = false" style="flex:1;min-width:0">
-                          <button type="button" class="cselect-btn" :class="{open: csOpen}" @click="csOpen = !csOpen" @keydown.escape="csOpen = false">
-                            <span class="cselect-btn-text" x-text="notifySoundLabel(notifySettings.doneSound)"></span>
-                            <svg fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
-                          </button>
-                          <div class="cselect-dropdown" x-show="csOpen">
-                            <button type="button" class="cselect-option" :class="notifySettings.doneSound==='beep'?'sel':''" @click="notifySettings.doneSound='beep'; saveNotifySettings(); csOpen=false"><span class="cselect-option-dot"></span><span>System beep</span></button>
-                            <button type="button" class="cselect-option" :class="notifySettings.doneSound==='none'?'sel':''" @click="notifySettings.doneSound='none'; saveNotifySettings(); csOpen=false"><span class="cselect-option-dot"></span><span>None</span></button>
-                            <button type="button" class="cselect-option" :class="notifySettings.doneSound==='Glass'?'sel':''" @click="notifySettings.doneSound='Glass'; saveNotifySettings(); csOpen=false"><span class="cselect-option-dot"></span><span>Glass</span></button>
-                            <button type="button" class="cselect-option" :class="notifySettings.doneSound==='Ping'?'sel':''" @click="notifySettings.doneSound='Ping'; saveNotifySettings(); csOpen=false"><span class="cselect-option-dot"></span><span>Ping</span></button>
-                            <button type="button" class="cselect-option" :class="notifySettings.doneSound==='Pop'?'sel':''" @click="notifySettings.doneSound='Pop'; saveNotifySettings(); csOpen=false"><span class="cselect-option-dot"></span><span>Pop</span></button>
-                            <button type="button" class="cselect-option" :class="notifySettings.doneSound==='Tink'?'sel':''" @click="notifySettings.doneSound='Tink'; saveNotifySettings(); csOpen=false"><span class="cselect-option-dot"></span><span>Tink</span></button>
-                            <button type="button" class="cselect-option" :class="notifySettings.doneSound==='Hero'?'sel':''" @click="notifySettings.doneSound='Hero'; saveNotifySettings(); csOpen=false"><span class="cselect-option-dot"></span><span>Hero</span></button>
-                            <button type="button" class="cselect-option" :class="notifySettings.doneSound==='Purr'?'sel':''" @click="notifySettings.doneSound='Purr'; saveNotifySettings(); csOpen=false"><span class="cselect-option-dot"></span><span>Purr</span></button>
-                            <button type="button" class="cselect-option" :class="notifySettings.doneSound==='Submarine'?'sel':''" @click="notifySettings.doneSound='Submarine'; saveNotifySettings(); csOpen=false"><span class="cselect-option-dot"></span><span>Submarine</span></button>
-                          </div>
-                        </div>
-                        <button type="button" class="notif-play-btn" title="Preview sound"
-                                :disabled="notifySettings.doneSound === 'none'"
-                                @click="window.vaultrDesktop?.mateNotify?.previewSound(notifySettings.doneSound)">
-                          <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 4v16l13-8z"/></svg>
-                        </button>
-                      </div>
-                      <p class="settings-field-desc">Sound played when an agent run completes.</p>
+                      <p class="settings-field-desc">Sound played when a new inbox message arrives.</p>
                     </div>
 
                   </div>
@@ -1632,7 +1603,7 @@ const settingsCtrlJS = `
       skillsInstalling: {},
       skillsUninstalling: {},
 
-      notifySettings: { textEnabled: true, soundEnabled: true, startSound: 'beep', doneSound: 'beep' },
+      notifySettings: { textEnabled: true, soundEnabled: true, sound: 'beep' },
       notifySaveOk: false,
 
       get sortedSkillsList() {
@@ -2259,24 +2230,23 @@ const settingsCtrlJS = `
       },
 
       async loadNotifySettings() {
-        if (!window.vaultrDesktop?.mateNotify) return;
+        if (!window.vaultrDesktop?.inboxNotify) return;
         try {
-          this.notifySettings = await window.vaultrDesktop.mateNotify.getSettings();
+          this.notifySettings = await window.vaultrDesktop.inboxNotify.getSettings();
         } catch(_) {}
       },
 
       async saveNotifySettings() {
-        if (!window.vaultrDesktop?.mateNotify) return;
+        if (!window.vaultrDesktop?.inboxNotify) return;
         try {
           // Spread to a plain object so Electron's contextBridge Structured Clone
           // doesn't silently drop the Alpine.js reactive Proxy wrapper.
           const snap = {
-            textEnabled: this.notifySettings.textEnabled,
+            textEnabled:  this.notifySettings.textEnabled,
             soundEnabled: this.notifySettings.soundEnabled,
-            startSound:   this.notifySettings.startSound,
-            doneSound:    this.notifySettings.doneSound,
+            sound:        this.notifySettings.sound,
           };
-          this.notifySettings = await window.vaultrDesktop.mateNotify.setSettings(snap);
+          this.notifySettings = await window.vaultrDesktop.inboxNotify.setSettings(snap);
           this.notifySaveOk = true;
           setTimeout(() => { this.notifySaveOk = false; }, 1500);
         } catch(e) { console.error('[notify] saveNotifySettings error:', e); }

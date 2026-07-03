@@ -7,8 +7,21 @@ const { spawnSync } = require("node:child_process");
 
 const BINARY_NAME = process.platform === "win32" ? "vaultr.exe" : "vaultr";
 
-// Sentinel file: records which app version last installed the CLI.
-// If it matches the current app version, installation is skipped.
+// app.getVersion() (package.json "version", x.y.z) is what users see and
+// should only change on real releases. "vaultrBuild" is a separate counter
+// for re-shipping the same x.y.z with a fixed bundled CLI/skills payload
+// (e.g. patching a bug found right after release, without bumping the public
+// version number). Bump vaultrBuild whenever bundled/ changes but version
+// doesn't; reset it to "0" whenever version is bumped for a normal release.
+const { vaultrBuild: BUILD_ID = "0" } = require("../package.json");
+
+/** Combines app version + build id so a build-only re-ship still invalidates old sentinels. */
+function sentinelValueFor(appVersion) {
+  return `${appVersion}-${BUILD_ID}`;
+}
+
+// Sentinel file: records which app version+build last installed the CLI.
+// If it matches the current value, installation is skipped.
 const SENTINEL_FILE = path.join(os.homedir(), ".vaultr", ".cli_app_version");
 
 function getBundledArchive() {
@@ -22,29 +35,56 @@ function getSystemInstallDir() {
   return path.join(os.homedir(), ".local", "bin");
 }
 
+// Serializes all installCli() calls onto one chain. Two call sites can race
+// in practice — main.js's proactive install at every launch, and
+// server-manager.js's "binary went missing" fallback — and both write to the
+// same destBin/tmpBin path (tmpBin includes only process.pid, which is
+// identical for concurrent calls in this process). Without serialization,
+// concurrent copyFile/rename calls to that shared path can interleave and
+// install a truncated/corrupt binary. installChain always resolves (never
+// rejects) so one failed install doesn't block the next call from running;
+// each caller still gets its own accurate result via `run`.
+let installChain = Promise.resolve();
+
 /**
  * Install the bundled vaultr CLI by extracting the tar.gz from app resources.
  *
- * Skipped when the sentinel file matches the current app version.
+ * Skipped when the sentinel file matches the current app version + vaultrBuild,
+ * unless `force` is set (e.g. the sentinel matches but the binary itself is
+ * missing — reinstalling is the only way to recover).
  * Binary is always overwritten (keeps CLI in sync with app version).
  * config.toml and skills/ files are only written if absent.
  *
+ * Concurrent calls are serialized (see installChain above) rather than run
+ * in parallel.
+ *
  * @param {(msg: string) => void} [log]
+ * @param {{ force?: boolean }} [opts]
  * @returns {Promise<{ ok: boolean, skipped?: boolean, installDir?: string, error?: string }>}
  */
-async function installCli(log = () => {}) {
+function installCli(log = () => {}, opts = {}) {
+  const run = installChain.then(() => doInstallCli(log, opts));
+  installChain = run.then(() => {}, () => {});
+  return run;
+}
+
+async function doInstallCli(log, opts) {
+  const { force = false } = opts;
   const { app } = require("electron");
   const appVersion = app.getVersion();
+  const sentinelValue = sentinelValueFor(appVersion);
   const fsp = fs.promises;
 
-  // Skip if this app version has already installed the CLI
-  try {
-    const installed = (await fsp.readFile(SENTINEL_FILE, "utf8")).trim();
-    if (installed === appVersion) {
-      log(`cli-installer: already up to date (v${appVersion}), skipping`);
-      return { ok: true, skipped: true };
-    }
-  } catch { /* sentinel absent or unreadable → proceed */ }
+  // Skip if this app version+build has already installed the CLI
+  if (!force) {
+    try {
+      const installed = (await fsp.readFile(SENTINEL_FILE, "utf8")).trim();
+      if (installed === sentinelValue) {
+        log(`cli-installer: already up to date (v${sentinelValue}), skipping`);
+        return { ok: true, skipped: true };
+      }
+    } catch { /* sentinel absent or unreadable → proceed */ }
+  }
 
   const archive = getBundledArchive();
   if (!archive) {
@@ -142,10 +182,10 @@ async function installCli(log = () => {}) {
   // Clean up temp dir
   try { fs.rmSync(tmpDir, { recursive: true, force: true }); } catch { /* noop */ }
 
-  // Write sentinel so subsequent launches with the same app version skip install
+  // Write sentinel so subsequent launches with the same app version+build skip install
   try {
     await fsp.mkdir(path.dirname(SENTINEL_FILE), { recursive: true });
-    await fsp.writeFile(SENTINEL_FILE, appVersion, "utf8");
+    await fsp.writeFile(SENTINEL_FILE, sentinelValue, "utf8");
   } catch (e) {
     log(`cli-installer: sentinel write failed (non-fatal): ${e.message}`);
   }

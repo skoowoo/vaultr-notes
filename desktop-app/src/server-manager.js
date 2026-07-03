@@ -5,9 +5,9 @@ const path = require("node:path");
 const fs = require("node:fs");
 const http = require("node:http");
 const https = require("node:https");
-const { spawn, spawnSync } = require("node:child_process");
+const { spawn, spawnSync, execFile } = require("node:child_process");
 const os = require("node:os");
-const { installCli, BINARY_NAME } = require("./cli-installer");
+const { installCli } = require("./cli-installer");
 
 // ── Diagnostics ───────────────────────────────────────────────────────────────
 
@@ -53,7 +53,13 @@ function diagLogCheckFailThrottled(url, reason) {
 // Full shell env (http_proxy, tokens, etc.) is captured by the Go server
 // at startup via agent.WarmShellEnv — no need to do it here.
 
+// Computed once and cached — process.env.PATH doesn't change over the app's
+// lifetime, and this is recomputed on every resolveVaultrBin() candidate and
+// every spawn, which added up to redundant work on the same static inputs.
+let cachedExpandedEnv = null;
+
 function expandedEnv() {
+  if (cachedExpandedEnv) return cachedExpandedEnv;
   const home = os.homedir();
   const extra = [
     path.join(home, ".local", "bin"),
@@ -69,24 +75,37 @@ function expandedEnv() {
   const current = process.env.PATH || "";
   const parts = new Set(current.split(path.delimiter).filter(Boolean));
   for (const p of extra) parts.add(p);
-  return { ...process.env, PATH: [...parts].join(path.delimiter) };
+  cachedExpandedEnv = { ...process.env, PATH: [...parts].join(path.delimiter) };
+  return cachedExpandedEnv;
 }
 
 // ── Vaultr binary resolution ──────────────────────────────────────────────────
 
+/**
+ * Runs `bin --version` without blocking the main thread (unlike spawnSync,
+ * which freezes the whole UI — window dragging, all IPC — for up to the
+ * timeout if the target binary hangs). Resolves true iff it exits 0.
+ */
+function checkBinWorks(bin) {
+  return new Promise((resolve) => {
+    try {
+      execFile(bin, ["--version"], { timeout: 8000, windowsHide: true, env: expandedEnv() }, (error) => {
+        resolve(!error);
+      });
+    } catch {
+      resolve(false);
+    }
+  });
+}
+
 /** Returns the first working vaultr binary path, or null if none found. */
-function resolveVaultrBin() {
+async function resolveVaultrBin() {
   const candidates = [
     path.join(os.homedir(), ".local", "bin", "vaultr"),
     "vaultr",
   ];
   for (const bin of candidates) {
-    try {
-      const r = spawnSync(bin, ["--version"], {
-        encoding: "utf8", timeout: 8000, windowsHide: true, env: expandedEnv(),
-      });
-      if (!r.error && r.status === 0) return bin;
-    } catch { /* try next */ }
+    if (await checkBinWorks(bin)) return bin;
   }
   return null;
 }
@@ -111,6 +130,30 @@ function isProcessAlive(pid) {
   try { process.kill(pid, 0); return true; } catch { return false; }
 }
 
+/**
+ * Best-effort check that `pid` actually looks like a vaultr process, not an
+ * unrelated process that reused this PID after the real server exited
+ * without cleaning up its PID file (isProcessAlive only checks existence).
+ * Returns true (assume it's ours) if the platform lookup itself fails —
+ * a failed check shouldn't be treated as proof it's NOT ours.
+ */
+function looksLikeVaultrProcess(pid) {
+  try {
+    const r = process.platform === "win32"
+      ? spawnSync("wmic", ["process", "where", `ProcessId=${pid}`, "get", "ExecutablePath"], { encoding: "utf8", timeout: 3000, windowsHide: true })
+      : spawnSync("ps", ["-p", String(pid), "-o", "comm="], { encoding: "utf8", timeout: 3000 });
+    if (r.error || r.status !== 0) return true; // couldn't verify — don't block on it
+    return /vaultr/i.test((r.stdout || "").trim());
+  } catch {
+    return true;
+  }
+}
+
+/** Combines existence + identity: is `pid` alive AND does it look like our vaultr server? */
+function pidIsVaultrServer(pid) {
+  return isProcessAlive(pid) && looksLikeVaultrProcess(pid);
+}
+
 // ── Server spawn ──────────────────────────────────────────────────────────────
 
 /** PID of the vaultr server process most recently spawned by this Electron instance. */
@@ -121,7 +164,7 @@ let _registeredOpts = {};
 
 /** Shared SIGTERM → wait → optional SIGKILL logic. Returns true when the process is gone. */
 async function killProcess(pid) {
-  if (!isProcessAlive(pid)) return true;
+  if (!pidIsVaultrServer(pid)) return true;
   try { process.kill(pid, "SIGTERM"); } catch { return false; }
   const deadline = Date.now() + 8000;
   while (Date.now() < deadline) {
@@ -134,26 +177,15 @@ async function killProcess(pid) {
   return !isProcessAlive(pid);
 }
 
-/** @returns {{ available: true } | { available: false, detail: string }} */
-function probeVaultrCliSync() {
-  try {
-    const bin = resolveVaultrBin();
-    if (bin) {
-      diagLog("vaultr found at:", bin);
-      return { available: true };
-    }
-    return {
-      available: false,
-      detail: "`vaultr` not found in PATH, /usr/local/bin, or ~/.local/bin.",
-    };
-  } catch (e) {
-    diagLog("probeVaultrCli sync exception:", e);
-    return { available: false, detail: String(e.message || e).slice(0, 320) };
-  }
-}
-
-/** Detached subprocess; stdout/stderr go to userData log. Survives after Electron exits. */
-function startVaultrServerDetached() {
+/**
+ * Detached subprocess; stdout/stderr go to userData log. Survives after Electron exits.
+ *
+ * If no `vaultr` binary can be resolved, this falls back to a forced re-install of the
+ * bundled CLI (bypassing the sentinel — the sentinel may say this version+build is
+ * already installed even though the binary itself has since gone missing) and retries
+ * resolution once before giving up.
+ */
+async function startVaultrServerDetached() {
   const { serverOutput } = getShellDiagPaths();
   try {
     fs.mkdirSync(path.dirname(serverOutput), { recursive: true });
@@ -165,6 +197,41 @@ function startVaultrServerDetached() {
     diagLog("server output log preamble failed:", e.message);
   }
 
+  let bin = await resolveVaultrBin();
+  if (!bin) {
+    diagLog("start-server: vaultr binary not found, attempting fallback CLI install");
+    let installResult;
+    try {
+      installResult = await installCli((msg) => diagLog(msg), { force: true });
+    } catch (e) {
+      return { ok: false, error: `\`vaultr\` not found, and fallback install threw: ${e.message}` };
+    }
+    if (!installResult.ok) {
+      return { ok: false, error: `\`vaultr\` not found, and fallback install failed: ${installResult.error || "unknown error"}` };
+    }
+    bin = await resolveVaultrBin();
+    // A freshly-written binary can occasionally fail its first exec attempt
+    // (e.g. macOS briefly scanning a newly-extracted executable before
+    // allowing it to run) even though the install itself succeeded. Give it
+    // a couple of short retries before giving up — but only when an install
+    // actually ran; retrying after a `skipped` no-op (e.g. dev mode with no
+    // bundled archive) can't change the outcome.
+    if (!bin && !installResult.skipped) {
+      for (const delayMs of [300, 600]) {
+        await new Promise((r) => setTimeout(r, delayMs));
+        bin = await resolveVaultrBin();
+        if (bin) break;
+      }
+    }
+    if (!bin) {
+      const reason = installResult.skipped
+        ? "no bundled CLI archive available to install (dev mode?)"
+        : "reinstalling the bundled CLI did not produce a working binary";
+      return { ok: false, error: `\`vaultr\` not found in PATH, /usr/local/bin, or ~/.local/bin (${reason}).` };
+    }
+    diagLog("start-server: fallback install succeeded, resolved vaultr at", bin);
+  }
+
   return new Promise((resolve) => {
     let settled = false;
     const finish = (/** @type {{ ok: boolean, error?: string, pid?: number }} */ out) => {
@@ -172,12 +239,6 @@ function startVaultrServerDetached() {
       settled = true;
       resolve(out);
     };
-
-    const bin = resolveVaultrBin();
-    if (!bin) {
-      finish({ ok: false, error: "`vaultr` not found in PATH, /usr/local/bin, or ~/.local/bin." });
-      return;
-    }
 
     /** @type {number | undefined} */
     let logFd;
@@ -280,10 +341,6 @@ function register(opts = {}) {
     });
   });
 
-  // ── vaultr-on-path ──────────────────────────────────────────────────────────
-
-  ipcMain.handle("vaultr-on-path", () => probeVaultrCliSync());
-
   // ── start-vaultr-server-detached ────────────────────────────────────────────
 
   ipcMain.handle("start-vaultr-server-detached", async (_event, invokeOpts = {}) => {
@@ -301,7 +358,7 @@ function register(opts = {}) {
 
     // If Electron already spawned a server that is still initialising, skip the
     // duplicate spawn and let the start screen keep polling.
-    if (managedServerChildPid > 0 && isProcessAlive(managedServerChildPid)) {
+    if (managedServerChildPid > 0 && pidIsVaultrServer(managedServerChildPid)) {
       diagLog("start-server: managed server pid=%d alive, skip duplicate spawn", managedServerChildPid);
       return { ok: true };
     }
@@ -321,7 +378,7 @@ function register(opts = {}) {
     return {
       managed: pid !== null,
       pid,
-      alive: pid !== null && isProcessAlive(pid),
+      alive: pid !== null && pidIsVaultrServer(pid),
     };
   });
 
@@ -346,20 +403,6 @@ function register(opts = {}) {
     return { ok: true };
   });
 
-  // ── install-cli ─────────────────────────────────────────────────────────────
-  // Copies the bundled CLI binary from app resources to the system PATH.
-  // No network required — replaces the old curl | sh approach.
-
-  ipcMain.handle("install-cli", async () => {
-    const result = await installCli((msg) => diagLog(msg));
-    if (result.ok) {
-      diagLog("install-cli: success, installed to", result.installDir);
-    } else {
-      diagLog("install-cli: failed:", result.error);
-    }
-    return result;
-  });
-
   // ── restart-vaultr-server ───────────────────────────────────────────────────
 
   ipcMain.handle("restart-vaultr-server", async () => {
@@ -371,7 +414,7 @@ function register(opts = {}) {
     // Close persistent connections before SIGTERM for the same reason as stop.
     if (onBeforeStop) onBeforeStop();
 
-    if (isProcessAlive(pid)) {
+    if (pidIsVaultrServer(pid)) {
       diagLog("restart-server: stopping pid", pid);
       const killed = await killProcess(pid);
       if (!killed) {
@@ -401,7 +444,7 @@ function register(opts = {}) {
 async function restartServerAfterCliUpdate() {
   const { onBeforeStop, onServerStopped } = _registeredOpts;
   const pid = readServerPID();
-  if (!pid || !isProcessAlive(pid)) return; // no server running — nothing to do
+  if (!pid || !pidIsVaultrServer(pid)) return; // no server running — nothing to do
   diagLog("cli-upgrade: killing old server pid", pid, "to pick up new binary");
   if (onBeforeStop) onBeforeStop();
   await killProcess(pid);

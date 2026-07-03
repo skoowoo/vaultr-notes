@@ -1,6 +1,10 @@
 package search
 
 import (
+	"embed"
+	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 
@@ -11,19 +15,91 @@ import (
 
 const jiebaTokenizerName = "jieba"
 
+// jiebaDictFS embeds the cppjieba dictionary files into the Vaultr binary.
+//
+// gojieba.NewJieba() with no arguments resolves dictionary paths relative to
+// the source file location recorded at *compile* time (via runtime.Caller),
+// which points into the Go module cache of the machine that built the
+// binary (e.g. /Users/<builder>/go/pkg/mod/...). That path doesn't exist on
+// any other machine, so the search plugin panics for every user except the
+// one who compiled it. Embedding the dicts and extracting them to a stable
+// per-user directory at runtime makes dictionary resolution independent of
+// where or by whom the binary was built.
+//
+//go:embed jiebadict/*.utf8
+var jiebaDictFS embed.FS
+
 // jiebaHandle is a package-level singleton. Loading the jieba dictionaries
-// is expensive (~1s, ~50MB), so we do it once and protect concurrent
+// is expensive (~1s, ~11MB), so we do it once and protect concurrent
 // Tokenize calls with jiebaMu (gojieba is not goroutine-safe).
 var (
-	jiebaOnce   sync.Once
-	jiebaHandle *gojieba.Jieba
-	jiebaMu     sync.Mutex
+	jiebaOnce    sync.Once
+	jiebaHandle  *gojieba.Jieba
+	jiebaInitErr error
+	jiebaMu      sync.Mutex
 )
 
-func initJieba() {
+func initJieba() error {
 	jiebaOnce.Do(func() {
-		jiebaHandle = gojieba.NewJieba()
+		dictPaths, err := extractJiebaDicts()
+		if err != nil {
+			jiebaInitErr = fmt.Errorf("search: extract jieba dictionaries: %w", err)
+			return
+		}
+		jiebaHandle = gojieba.NewJieba(dictPaths[:]...)
 	})
+	return jiebaInitErr
+}
+
+// extractJiebaDicts writes the embedded dictionary files to a stable
+// directory under the user's home (~/.vaultr/jieba-dict/) and returns their
+// paths in the order gojieba.NewJieba expects:
+// dict, hmm, user dict, idf, stop words. Files already present with the
+// expected size are left untouched.
+func extractJiebaDicts() ([5]string, error) {
+	var paths [5]string
+
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return paths, err
+	}
+	destDir := filepath.Join(home, ".vaultr", "jieba-dict")
+	if err := os.MkdirAll(destDir, 0o755); err != nil {
+		return paths, err
+	}
+
+	names := [5]string{
+		"jieba.dict.utf8",
+		"hmm_model.utf8",
+		"user.dict.utf8",
+		"idf.utf8",
+		"stop_words.utf8",
+	}
+
+	for i, name := range names {
+		src := "jiebadict/" + name
+		dest := filepath.Join(destDir, name)
+		paths[i] = dest
+
+		data, err := jiebaDictFS.ReadFile(src)
+		if err != nil {
+			return paths, fmt.Errorf("read embedded %s: %w", name, err)
+		}
+
+		if info, err := os.Stat(dest); err == nil && info.Size() == int64(len(data)) {
+			continue
+		}
+
+		tmp := dest + ".tmp"
+		if err := os.WriteFile(tmp, data, 0o644); err != nil {
+			return paths, fmt.Errorf("write %s: %w", dest, err)
+		}
+		if err := os.Rename(tmp, dest); err != nil {
+			return paths, fmt.Errorf("rename %s: %w", dest, err)
+		}
+	}
+
+	return paths, nil
 }
 
 // JiebaTokenizer is a bleve analysis.Tokenizer backed by gojieba.
@@ -33,7 +109,9 @@ func initJieba() {
 type JiebaTokenizer struct{}
 
 func newJiebaTokenizer(_ map[string]interface{}, _ *registry.Cache) (analysis.Tokenizer, error) {
-	initJieba()
+	if err := initJieba(); err != nil {
+		return nil, err
+	}
 	return &JiebaTokenizer{}, nil
 }
 

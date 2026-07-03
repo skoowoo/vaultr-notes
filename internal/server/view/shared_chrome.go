@@ -8,7 +8,7 @@ const navCSS = `
       flex-shrink: 0; width: var(--nav-w); height: 100%;
       background: var(--nav-bg); border-right: 2px solid var(--hr);
       display: flex; flex-direction: column; align-items: center;
-      padding: 0.875rem 0; gap: 0.375rem;
+      padding: var(--space-lg) 0; gap: var(--space-xs);
       view-transition-name: page-nav;
     }
     .nav-item {
@@ -25,7 +25,7 @@ const navCSS = `
     .nav-item-wrap { position: relative; display: flex; align-items: center; justify-content: center; }
     .nav-compose-btn {
       display: flex; align-items: center; justify-content: center;
-      width: 30px; height: 30px;
+      width: 30px; height: 30px; margin-top: var(--space-sm);
       background: var(--nav-act);
       border: none;
       color: rgba(0,0,0,0.55); cursor: pointer; padding: 0;
@@ -57,8 +57,19 @@ const svgAgent = `<svg fill="none" stroke="currentColor" stroke-width="1.7" view
         <path stroke-linecap="round" stroke-linejoin="round" d="M22 21v-2a4 4 0 0 0-3-3.87"/>
       </svg>`
 
+// svgInbox is the Lucide "Inbox" icon used for the Inbox nav item.
+const svgInbox = `<svg fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24">
+        <polyline points="22 12 16 12 14 15 10 15 8 12 2 12" stroke-linecap="round" stroke-linejoin="round"/>
+        <path stroke-linecap="round" stroke-linejoin="round" d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>
+      </svg>`
+
 // svgCompose is the Lucide "Plus" icon used for the quick new-note button.
 const svgCompose = `<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14M5 12h14"/></svg>`
+
+// svgCheck is the Lucide "Check" icon, used wherever a small smooth checkmark
+// is needed (e.g. Inbox's mark-all-read button). Kept distinct from the
+// pixelarticons svgPx* set, which is not used for icon-only action buttons.
+const svgCheck = `<svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 6 9 17l-5-5"/></svg>`
 
 // svgSettings is the Lucide "Settings" icon used for the Settings nav item.
 const svgSettings = `<svg fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24">
@@ -112,8 +123,10 @@ const topbarCSS = `
     html.macos .lib-topbar a { -webkit-app-region: no-drag; }`
 
 // navHTML returns the complete <nav class="lib-nav">…</nav> HTML block.
-// active should be the page's own name: "home", "agent", "graph", "settings",
+// active should be the page's own name: "home", "agent", "inbox", "graph", "settings",
 // or a sub-page name ("images", "shorts", "dir", "library") — sub-pages highlight their parent.
+// Inbox is nested under /agent (shares its Electron section view) but gets its own nav icon
+// and active state, distinct from Agent Chat.
 func navHTML(active string) string {
 	// sub-pages of Home highlight the Home nav item
 	if active == "images" || active == "shorts" || active == "dir" || active == "library" || active == "folders" || active == "graph" {
@@ -135,8 +148,13 @@ func navHTML(active string) string {
         <span class="nav-run-badge" id="_nav-agent-badge"></span>
       </span>
     </a>
+    <a href="/agent/inbox" ` + cls("inbox") + ` title="Inbox">
+      <span class="nav-item-wrap">
+        ` + svgInbox + `
+        <span class="nav-run-badge" id="_nav-inbox-badge"></span>
+      </span>
+    </a>
     <button type="button" class="nav-compose-btn" title="New note (Ctrl+N)"
-            style="margin-top:0.75rem"
             onclick="window.__vaultrDrawer && void window.__vaultrDrawer.openNewInDrawer('','')">
       ` + svgCompose + `
     </button>
@@ -148,13 +166,18 @@ func navHTML(active string) string {
   <script>
   (function(){
     var _t = null;
+    function _setBadge(id, n) {
+      var b = document.getElementById(id);
+      if (!b) return;
+      b.textContent = n > 9 ? '9+' : String(n);
+      b.style.display = n > 0 ? 'block' : 'none';
+    }
     function _poll() {
       fetch('/api/runs/active').then(function(r){return r.json();}).then(function(d){
-        var b = document.getElementById('_nav-agent-badge');
-        if (!b) return;
-        var n = (d && d.count) ? d.count : 0;
-        b.textContent = n > 9 ? '9+' : String(n);
-        b.style.display = n > 0 ? 'block' : 'none';
+        _setBadge('_nav-agent-badge', (d && d.count) ? d.count : 0);
+      }).catch(function(){});
+      fetch('/api/inbox/unread-count').then(function(r){return r.json();}).then(function(d){
+        _setBadge('_nav-inbox-badge', (d && d.count) ? d.count : 0);
       }).catch(function(){});
       _t = setTimeout(_poll, 3000);
     }
@@ -172,6 +195,10 @@ func navHTML(active string) string {
     window.__vaultrHotkeys.register('nav-agent', '2', function() {
       if (window.__vaultrAnyModalOpen && window.__vaultrAnyModalOpen()) return;
       window.location.href = '/agent';
+    });
+    window.__vaultrHotkeys.register('nav-inbox', '3', function() {
+      if (window.__vaultrAnyModalOpen && window.__vaultrAnyModalOpen()) return;
+      window.location.href = '/agent/inbox';
     });
     window.__vaultrHotkeys.register('refresh', 'r', function() {
       if (typeof window.__vaultrBackgroundRefresh === 'function') {

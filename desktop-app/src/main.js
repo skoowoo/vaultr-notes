@@ -6,14 +6,14 @@ const path = require("node:path");
 const fs = require("node:fs");
 const http = require("node:http");
 const https = require("node:https");
-const { getAutoStart, setAutoStart, setServerUrl, getMateNotifySettings, registerConfigIpcHandlers } = require("./config");
+const { getAutoStart, setAutoStart, setServerUrl, getInboxNotifySettings, registerConfigIpcHandlers } = require("./config");
 const { installCli } = require("./cli-installer");
 
 const serverManager = require("./server-manager");
 serverManager.register({
   onRestartDone:  () => resetToStartScreen(),
   onServerStopped: () => resetToStartScreen(),
-  onBeforeStop:   () => stopMateNotifications(),
+  onBeforeStop:   () => stopInboxNotifications(),
   getAutoStart:   () => getAutoStart(),
   setAutoStart:   (v) => setAutoStart(v),
 });
@@ -62,42 +62,44 @@ let activeSection = null;
 // pre-synced before they are made visible (prevents flash-of-wrong-theme).
 let currentViewBgColor = '#0f0f0f';
 
-// ── Mate run notifications (direct SSE from main process) ─────────────────────
+// ── Inbox notifications (direct SSE from main process) ─────────────────────────
+// Fires once per new /api/inbox message, regardless of producer (mate trigger
+// runs today, other sources later) — see internal/inbox.Store.Notifications().
 
 /** @type {import("node:http").ClientRequest | null} */
-let mateNotifReq = null;
-let mateNotifReconnectTimer = null;
-let mateNotifWatchdogTimer = null;
-const MATE_NOTIF_WATCHDOG_MS = 45_000;
+let inboxNotifReq = null;
+let inboxNotifReconnectTimer = null;
+let inboxNotifWatchdogTimer = null;
+const INBOX_NOTIF_WATCHDOG_MS = 45_000;
 
-function stopMateNotifications() {
-  if (mateNotifReconnectTimer) {
-    clearTimeout(mateNotifReconnectTimer);
-    mateNotifReconnectTimer = null;
+function stopInboxNotifications() {
+  if (inboxNotifReconnectTimer) {
+    clearTimeout(inboxNotifReconnectTimer);
+    inboxNotifReconnectTimer = null;
   }
-  if (mateNotifWatchdogTimer) {
-    clearTimeout(mateNotifWatchdogTimer);
-    mateNotifWatchdogTimer = null;
+  if (inboxNotifWatchdogTimer) {
+    clearTimeout(inboxNotifWatchdogTimer);
+    inboxNotifWatchdogTimer = null;
   }
-  if (mateNotifReq) {
-    try { mateNotifReq.destroy(); } catch (_) {}
-    mateNotifReq = null;
+  if (inboxNotifReq) {
+    try { inboxNotifReq.destroy(); } catch (_) {}
+    inboxNotifReq = null;
   }
 }
 
-function scheduleMateNotifReconnect(url) {
-  mateNotifReconnectTimer = setTimeout(() => {
-    mateNotifReconnectTimer = null;
-    if (serverUrl === url) startMateNotifications(url);
+function scheduleInboxNotifReconnect(url) {
+  inboxNotifReconnectTimer = setTimeout(() => {
+    inboxNotifReconnectTimer = null;
+    if (serverUrl === url) startInboxNotifications(url);
   }, 5000);
 }
 
-function resetMateNotifWatchdog(url) {
-  if (mateNotifWatchdogTimer) clearTimeout(mateNotifWatchdogTimer);
-  mateNotifWatchdogTimer = setTimeout(() => {
-    mateNotifWatchdogTimer = null;
-    if (serverUrl === url) startMateNotifications(url);
-  }, MATE_NOTIF_WATCHDOG_MS);
+function resetInboxNotifWatchdog(url) {
+  if (inboxNotifWatchdogTimer) clearTimeout(inboxNotifWatchdogTimer);
+  inboxNotifWatchdogTimer = setTimeout(() => {
+    inboxNotifWatchdogTimer = null;
+    if (serverUrl === url) startInboxNotifications(url);
+  }, INBOX_NOTIF_WATCHDOG_MS);
 }
 
 /**
@@ -122,62 +124,56 @@ function playSound(sound) {
   }
 }
 
-function showMateNotification(type, payload) {
-  const settings = getMateNotifySettings();
-  const name = payload.mateName || "Mate";
-  const isDone = type === "run_done";
+function showInboxNotification(message) {
+  const settings = getInboxNotifySettings();
 
   if (settings.textEnabled && Notification.isSupported()) {
-    const title = name;
-    const status = isDone ? (payload.success ? "Finished" : "Failed") : "Started";
-    const msg = (payload.lastMessage || "").trim().slice(0, 100);
-    const body = msg ? `${status} — ${msg}` : status;
+    const title = message.title || message.source || "Inbox";
+    const body = (message.body || "").trim().slice(0, 150);
     new Notification({ title, body, silent: true }).show();
   }
 
   if (settings.soundEnabled) {
-    playSound(isDone ? settings.doneSound : settings.startSound);
+    playSound(settings.sound);
   }
 }
 
-function startMateNotifications(url) {
-  stopMateNotifications();
+function startInboxNotifications(url) {
+  stopInboxNotifications();
   if (!url) return;
 
   let parsed;
-  try { parsed = new URL("/api/mate/run-notifications", url); } catch { return; }
+  try { parsed = new URL("/api/inbox/notifications", url); } catch { return; }
   const mod = parsed.protocol === "https:" ? https : http;
 
   let buffer = "";
   const req = mod.request(parsed, (res) => {
     if (res.statusCode !== 200) {
       res.resume();
-      scheduleMateNotifReconnect(url);
+      scheduleInboxNotifReconnect(url);
       return;
     }
-    resetMateNotifWatchdog(url);
+    resetInboxNotifWatchdog(url);
     res.on("data", (chunk) => {
-      resetMateNotifWatchdog(url);
+      resetInboxNotifWatchdog(url);
       buffer += chunk.toString();
       const blocks = buffer.split("\n\n");
       buffer = blocks.pop(); // keep the incomplete trailing fragment
       for (const block of blocks) {
         if (!block.trim()) continue;
-        const evMatch   = block.match(/^event: (.+)$/m);
         const dataMatch = block.match(/^data: (.+)$/m);
         if (!dataMatch) continue;
-        const type = evMatch?.[1]?.trim() || "";
         try {
-          showMateNotification(type, JSON.parse(dataMatch[1].trim()));
+          showInboxNotification(JSON.parse(dataMatch[1].trim()));
         } catch { /* ignore malformed events */ }
       }
     });
-    res.on("end",   () => scheduleMateNotifReconnect(url));
-    res.on("error", () => scheduleMateNotifReconnect(url));
+    res.on("end",   () => scheduleInboxNotifReconnect(url));
+    res.on("error", () => scheduleInboxNotifReconnect(url));
   });
-  req.on("error", () => scheduleMateNotifReconnect(url));
+  req.on("error", () => scheduleInboxNotifReconnect(url));
   req.end();
-  mateNotifReq = req;
+  inboxNotifReq = req;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -210,33 +206,59 @@ function showSection(name, opts = {}) {
   const { fullUrl = null, reload = false } = opts;
   if (!views[name]) return;
 
-  if (activeSection && activeSection !== name && views[activeSection]) {
-    win.contentView.removeChildView(views[activeSection]);
-  }
+  const view = views[name];
 
-  if (activeSection !== name) {
-    activeSection = name;
-    // Pre-sync the native background colour before the view is composited so
-    // the OS-level layer never flashes the wrong colour on first paint.
-    try { views[name].setBackgroundColor(currentViewBgColor); } catch (_) {}
-    win.contentView.addChildView(views[name]);
-    views[name].setBounds(getContentBounds());
+  // Reveals the view and gives it focus. Called either immediately (no navigation
+  // needed) or after a pending loadURL/reload finishes, so the previous view stays
+  // on screen until the new content is actually ready — no flash of the target
+  // view's stale previous page (e.g. Inbox's nav highlight before Agent Chat repaints).
+  function reveal() {
+    if (activeSection && activeSection !== name && views[activeSection]) {
+      win.contentView.removeChildView(views[activeSection]);
+    }
+    if (activeSection !== name) {
+      activeSection = name;
+      // Pre-sync the native background colour before the view is composited so
+      // the OS-level layer never flashes the wrong colour on first paint.
+      try { view.setBackgroundColor(currentViewBgColor); } catch (_) {}
+      win.contentView.addChildView(view);
+      view.setBounds(getContentBounds());
+    }
+    view.webContents.focus();
   }
-
-  views[name].webContents.focus();
 
   if (reload) {
-    views[name].webContents.reload();
+    const onDone = () => {
+      view.webContents.removeListener("did-finish-load", onDone);
+      view.webContents.removeListener("did-fail-load", onDone);
+      reveal();
+    };
+    view.webContents.once("did-finish-load", onDone);
+    view.webContents.once("did-fail-load", onDone);
+    view.webContents.reload();
     return;
   }
 
   if (fullUrl) {
-    const sectionBase = serverUrl + "/" + name;
-    const currentUrl = views[name].webContents.getURL();
-    if (fullUrl !== sectionBase && fullUrl !== currentUrl) {
-      views[name].webContents.loadURL(fullUrl);
+    // Compare against the view's actual current URL, not an assumed section base —
+    // a section's view can be sitting on a sub-page (e.g. /agent/inbox) rather than
+    // its nominal root (/agent), so the base URL alone can't tell us whether a
+    // reload is needed.
+    const currentUrl = view.webContents.getURL();
+    if (fullUrl !== currentUrl) {
+      const onDone = () => {
+        view.webContents.removeListener("did-finish-load", onDone);
+        view.webContents.removeListener("did-fail-load", onDone);
+        reveal();
+      };
+      view.webContents.once("did-finish-load", onDone);
+      view.webContents.once("did-fail-load", onDone);
+      view.webContents.loadURL(fullUrl);
+      return;
     }
   }
+
+  reveal();
 }
 
 // Show the connection screen, discarding any active section views.
@@ -244,7 +266,7 @@ function resetToStartScreen() {
   if (!serverUrl) return; // already reset, guard against concurrent did-fail-load calls
   serverUrl = null;
   agentCache = null;
-  stopMateNotifications();
+  stopInboxNotifications();
 
   if (activeSection && views[activeSection]) {
     try { win.contentView.removeChildView(views[activeSection]); } catch { }
@@ -389,7 +411,7 @@ registerConfigIpcHandlers(ipcMain);
 ipcMain.handle("set-server-url", (_event, url) => {
   agentCache = null;
   setServerUrl(url);
-  startMateNotifications(url);
+  startInboxNotifications(url);
   if (win) {
     if (Object.keys(views).length === 0) {
       // First successful connection — create all section views
@@ -589,7 +611,7 @@ ipcMain.handle("draft:delete", (_e, id) => {
 });
 
 
-ipcMain.handle("mate-notify:preview-sound", (_e, sound) => {
+ipcMain.handle("inbox-notify:preview-sound", (_e, sound) => {
   playSound(sound);
 });
 

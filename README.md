@@ -125,6 +125,18 @@ Because it's a plain HTTP server, it deploys equally well on your local machine 
 
    **Fix:** Go to **System Settings → Privacy & Security**, scroll down to find the blocked app notice, and click **Open Anyway**
 
+4. The Desktop App installs the `vaultr` CLI to `~/.local/bin/vaultr`. Add this to your shell profile so agents can use it:
+
+   ```sh
+   # zsh — add to ~/.zshrc or ~/.zprofile
+   export PATH="$HOME/.local/bin:$PATH"
+
+   # bash — add to ~/.bash_profile or ~/.bashrc
+   export PATH="$HOME/.local/bin:$PATH"
+   ```
+
+   Restart your terminal (or run `source ~/.zshrc` / `source ~/.bash_profile`) afterward.
+
 #### 🧩 Browser Extension (Clip)
 
 1. Download the latest `vaultr-clip-*.zip` from the [Latest Release](https://github.com/skoowoo/vaultr-notes/releases/latest) page
