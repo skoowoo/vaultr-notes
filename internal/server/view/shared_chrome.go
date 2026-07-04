@@ -142,16 +142,16 @@ func navHTML(active string) string {
     <a href="/home" ` + cls("home") + ` title="Home">
       ` + svgHome + `
     </a>
-    <a href="/agent" ` + cls("agent") + ` title="Agent Chat">
-      <span class="nav-item-wrap">
-        ` + svgAgent + `
-        <span class="nav-run-badge" id="_nav-agent-badge"></span>
-      </span>
-    </a>
     <a href="/agent/inbox" ` + cls("inbox") + ` title="Inbox">
       <span class="nav-item-wrap">
         ` + svgInbox + `
         <span class="nav-run-badge" id="_nav-inbox-badge"></span>
+      </span>
+    </a>
+    <a href="/agent" ` + cls("agent") + ` title="Agent Chat">
+      <span class="nav-item-wrap">
+        ` + svgAgent + `
+        <span class="nav-run-badge" id="_nav-agent-badge"></span>
       </span>
     </a>
     <button type="button" class="nav-compose-btn" title="New note (Ctrl+N)"
@@ -192,13 +192,13 @@ func navHTML(active string) string {
       if (window.__vaultrAnyModalOpen && window.__vaultrAnyModalOpen()) return;
       window.location.href = '/home';
     });
-    window.__vaultrHotkeys.register('nav-agent', '2', function() {
-      if (window.__vaultrAnyModalOpen && window.__vaultrAnyModalOpen()) return;
-      window.location.href = '/agent';
-    });
-    window.__vaultrHotkeys.register('nav-inbox', '3', function() {
+    window.__vaultrHotkeys.register('nav-inbox', '2', function() {
       if (window.__vaultrAnyModalOpen && window.__vaultrAnyModalOpen()) return;
       window.location.href = '/agent/inbox';
+    });
+    window.__vaultrHotkeys.register('nav-agent', '3', function() {
+      if (window.__vaultrAnyModalOpen && window.__vaultrAnyModalOpen()) return;
+      window.location.href = '/agent';
     });
     window.__vaultrHotkeys.register('refresh', 'r', function() {
       if (typeof window.__vaultrBackgroundRefresh === 'function') {

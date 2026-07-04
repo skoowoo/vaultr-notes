@@ -20,7 +20,7 @@
 - [Discord](#discord)
 - [LLM-Wiki 编译器](#llm-wiki-编译器)
 - [个人记忆（Memory）](#个人记忆memory)
-- [Skills](#skills)
+- [Skills](#skills)（[完整指南](./docs/skills_zh.md)）
 - [自定义 AI 行为](#自定义-ai-行为)
 - [快捷键](#快捷键)
 
@@ -439,6 +439,8 @@ vaultr skills remove podwise
 删除 skill 目录、清理所有软链接。
 
 Vaultr 启动时自动加载 `~/.vaultr/skills/` 下的所有 skill。在 **Settings → Skills** 中可以单独启用或禁用某个 skill。
+
+每个内置 skill 的具体功能和提示词示例，见 [Skills 使用指南](./docs/skills_zh.md)。
 
 ## 自定义 AI 行为
 

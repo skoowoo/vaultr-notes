@@ -22,7 +22,7 @@
 - [Discord](#discord)
 - [LLM-Wiki Compiler](#llm-wiki-compiler)
 - [Personal Memory](#personal-memory)
-- [Skills](#skills)
+- [Skills](#skills) ([full guide](./docs/skills.md))
 - [Customizing AI Behavior](#customizing-ai-behavior)
 - [Shortcuts](#shortcuts)
 
@@ -443,6 +443,7 @@ Removes the skill directory and any active symlinks.
 
 Vaultr picks up all skills in `~/.vaultr/skills/` automatically on startup. Enable or disable individual skills in **Settings → Skills**.
 
+For what each built-in skill does and example prompts, see the [Skills Guide](./docs/skills.md).
 
 ## Customizing AI Behavior
 

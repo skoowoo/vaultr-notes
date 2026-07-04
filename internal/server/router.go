@@ -4,6 +4,7 @@ import (
 	"log/slog"
 	"net/http"
 	"regexp"
+	"strings"
 
 	"github.com/hardhacker/vaultr/internal/agent"
 	"github.com/hardhacker/vaultr/internal/config"
@@ -69,6 +70,9 @@ func newRouter(
 				return
 			}
 			if inboxStore == nil {
+				return
+			}
+			if strings.TrimSpace(result.LastMessage) == "" {
 				return
 			}
 			level := inbox.LevelSuccess
