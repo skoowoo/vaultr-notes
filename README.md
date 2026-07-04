@@ -244,7 +244,7 @@ Add one or more triggers to a mate and it runs automatically whenever a matching
 | `note_updated`       | Any existing note is modified                 |
 | `note_deleted`       | Any note is deleted                           |
 | `short_note_created` | A short-note entry is appended                |
-| `scheduled`          | On a configured interval or daily time        |
+| `scheduled`          | On a configured interval, daily time, or weekly time |
 | `wechat_message`     | A WeChat direct message is received           |
 | `discord_message`    | A Discord DM is received                      |
 | `compile_requested`  | An LLM wiki compilation is manually triggered |

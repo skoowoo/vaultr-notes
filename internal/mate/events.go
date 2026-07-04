@@ -34,7 +34,7 @@ var BuiltinEvents = []EventDef{
 	{MateEventNoteUpdated, "Note Updated", "Fires when any existing note is modified"},
 	{MateEventNoteDeleted, "Note Deleted", "Fires when any note is deleted"},
 	{MateEventShortNoteCreated, "Short Note Created", "Fires each time a short note entry is appended"},
-	{MateEventScheduled, "Scheduled", "Fires on a configured interval or daily time"},
+	{MateEventScheduled, "Scheduled", "Fires on a configured interval, daily time, or weekly time"},
 	{MateEventWechatMessage, "WeChat Message", "Fires when a WeChat direct message is received"},
 	{MateEventDiscordMessage, "Discord Message", "Fires when a Discord DM is received"},
 	{MateEventCompileRequested, "Compile Requested", "Fires when the user manually triggers knowledge compilation for a note — path carries the note to compile"},

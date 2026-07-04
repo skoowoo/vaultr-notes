@@ -573,6 +573,9 @@ const settingsModalCSS = `
     .mate-schedule-preset:active:not(.active) { box-shadow: none; transform: translate(2px, 2px); }
     .mate-schedule-preset.active { color: var(--fg); border-color: var(--card-bd); background: var(--accent); box-shadow: var(--px-d1) var(--px-shadow); }
     .mate-schedule-custom-label { display: block; font-size: var(--text-xs); color: var(--muted); margin-bottom: 0.3rem; }
+    .mate-weekday-toggles { align-items: center; margin-bottom: 0.4rem; }
+    .mate-schedule-kind-seg { margin-bottom: 0.85rem; }
+    .mate-schedule-kind-body { margin-bottom: 0.85rem; }
     .mate-color-palette { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-top: 0.35rem; }
     .mate-color-swatch {
       width: 26px; height: 26px; cursor: pointer; flex-shrink: 0;
@@ -1312,19 +1315,60 @@ func settingsModalHTML() string {
                               <div class="mate-trigger-block mate-trigger-schedule">
                                 <div class="mate-block-label">
                                   <span class="mate-block-title">Schedule</span>
-                                  <span class="mate-block-hint">Server local time. Minimum interval: 15 minutes.</span>
+                                  <span class="mate-block-hint">Choose how this trigger repeats, then pick a preset below.</span>
                                 </div>
-                                <div class="mate-schedule-presets">
-                                  <template x-for="p in mateSchedulePresets" :key="p.value">
-                                    <button type="button" class="mate-schedule-preset"
-                                            :class="(t.schedule || '') === p.value ? 'active' : ''"
-                                            @click="t.schedule = p.value"
-                                            x-text="p.label"></button>
-                                  </template>
+                                <div class="theme-seg mate-schedule-kind-seg">
+                                  <button type="button" class="theme-seg-btn" :class="{active: scheduleKindOf(t)==='every'}" @click="setScheduleKind(t, 'every')">Every</button>
+                                  <button type="button" class="theme-seg-btn" :class="{active: scheduleKindOf(t)==='daily'}" @click="setScheduleKind(t, 'daily')">Daily</button>
+                                  <button type="button" class="theme-seg-btn" :class="{active: scheduleKindOf(t)==='weekly'}" @click="setScheduleKind(t, 'weekly')">Weekly</button>
                                 </div>
-                                <label class="mate-schedule-custom-label">Custom</label>
+
+                                <template x-if="scheduleKindOf(t) === 'every'">
+                                  <div class="mate-schedule-kind-body">
+                                    <div class="mate-schedule-presets">
+                                      <template x-for="p in mateIntervalPresets" :key="p.value">
+                                        <button type="button" class="mate-schedule-preset"
+                                                :class="(t.schedule || '') === p.value ? 'active' : ''"
+                                                @click="t.schedule = p.value"
+                                                x-text="p.label"></button>
+                                      </template>
+                                    </div>
+                                    <span class="mate-block-hint">Minimum interval: 15 minutes. For a different interval, edit it directly in Raw below.</span>
+                                  </div>
+                                </template>
+
+                                <template x-if="scheduleKindOf(t) === 'daily'">
+                                  <div class="mate-schedule-kind-body">
+                                    <div class="mate-schedule-presets">
+                                      <template x-for="p in mateDailyPresets" :key="p.value">
+                                        <button type="button" class="mate-schedule-preset"
+                                                :class="(t.schedule || '') === p.value ? 'active' : ''"
+                                                @click="t.schedule = p.value"
+                                                x-text="p.label"></button>
+                                      </template>
+                                    </div>
+                                    <span class="mate-block-hint">Server local time. For a different time, edit it directly in Raw below.</span>
+                                  </div>
+                                </template>
+
+                                <template x-if="scheduleKindOf(t) === 'weekly'">
+                                  <div class="mate-schedule-kind-body">
+                                    <label class="mate-schedule-custom-label">Days</label>
+                                    <div class="mate-schedule-presets mate-weekday-toggles">
+                                      <template x-for="d in mateWeekdayDefs" :key="d.abbr">
+                                        <button type="button" class="mate-schedule-preset"
+                                                :class="weeklyDaysOf(t).indexOf(d.abbr) >= 0 ? 'active' : ''"
+                                                @click="toggleWeeklyDay(t, d.abbr)"
+                                                x-text="d.label"></button>
+                                      </template>
+                                    </div>
+                                    <span class="mate-block-hint">Server local time, defaults to 09:00. For a different time, edit it directly in Raw below.</span>
+                                  </div>
+                                </template>
+
+                                <label class="mate-schedule-custom-label">Raw</label>
                                 <input class="mate-form-input" type="text" x-model="t.schedule"
-                                       placeholder="every 1h  or  daily 09:00">
+                                       placeholder="every 1h · daily 09:00 · weekly mon,wed 09:00">
                               </div>
                             </template>
                             <template x-if="!isScheduledTrigger(t) && !isWechatTrigger(t) && !isAgentRunCompletedTrigger(t)">
@@ -1589,11 +1633,22 @@ const settingsCtrlJS = `
         { token: '{Content}', desc: 'Last assistant message from the completed run' },
         { token: '{Now}', desc: 'Trigger time (RFC3339)' },
       ],
-      mateSchedulePresets: [
+      mateIntervalPresets: [
         { label: 'Every hour', value: 'every 1h' },
         { label: 'Every 6 hours', value: 'every 6h' },
+      ],
+      mateDailyPresets: [
         { label: 'Daily 09:00', value: 'daily 09:00' },
         { label: 'Daily 21:00', value: 'daily 21:00' },
+      ],
+      mateWeekdayDefs: [
+        { abbr: 'mon', label: 'Mon' },
+        { abbr: 'tue', label: 'Tue' },
+        { abbr: 'wed', label: 'Wed' },
+        { abbr: 'thu', label: 'Thu' },
+        { abbr: 'fri', label: 'Fri' },
+        { abbr: 'sat', label: 'Sat' },
+        { abbr: 'sun', label: 'Sun' },
       ],
       mateColors: ['var(--p0)','var(--p1)','var(--p2)','var(--p3)'],
 
@@ -1984,6 +2039,51 @@ const settingsCtrlJS = `
           trigger.eventTypes = [et];
           trigger.schedule = '';
         }
+      },
+
+      scheduleKindOf(t) {
+        const s = (t.schedule || '').trim().toLowerCase();
+        if (s.startsWith('every ')) return 'every';
+        if (s.startsWith('weekly ')) return 'weekly';
+        return 'daily';
+      },
+
+      setScheduleKind(t, kind) {
+        if (this.scheduleKindOf(t) === kind) return;
+        if (kind === 'every') t.schedule = 'every 1h';
+        else if (kind === 'daily') t.schedule = 'daily 09:00';
+        else if (kind === 'weekly') t.schedule = 'weekly mon 09:00';
+      },
+
+      weeklyDaysOf(t) {
+        const s = (t.schedule || '').trim().toLowerCase();
+        if (!s.startsWith('weekly ')) return [];
+        const parts = s.split(/\s+/);
+        if (parts.length < 2 || parts[1] === 'none') return [];
+        return parts[1].split(',').map(function(d) { return d.trim(); }).filter(Boolean);
+      },
+
+      weeklyTimeOf(t) {
+        const s = (t.schedule || '').trim().toLowerCase();
+        if (!s.startsWith('weekly ')) return '09:00';
+        const parts = s.split(/\s+/);
+        return parts.length >= 3 ? parts[2] : '09:00';
+      },
+
+      // dayField falls back to the "none" sentinel (instead of an empty string) when the
+      // last selected day is removed, so the schedule string stays prefixed "weekly " and
+      // scheduleKindOf() keeps the Weekly tab active rather than falling back to Daily.
+      toggleWeeklyDay(t, abbr) {
+        const order = this.mateWeekdayDefs.map(function(d) { return d.abbr; });
+        let days = this.weeklyDaysOf(t);
+        if (days.indexOf(abbr) >= 0) {
+          days = days.filter(function(d) { return d !== abbr; });
+        } else {
+          days = days.concat([abbr]);
+        }
+        days.sort(function(a, b) { return order.indexOf(a) - order.indexOf(b); });
+        const time = this.weeklyTimeOf(t);
+        t.schedule = 'weekly ' + (days.length ? days.join(',') : 'none') + ' ' + time;
       },
 
       insertMateVar(ti, token, event) {
