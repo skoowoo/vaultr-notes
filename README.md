@@ -1,4 +1,4 @@
-# Vaultr: The Simplest Way to Build AI Workflows Around Your Notes.
+# Vaultr: AI-native note-taking app compatible with Obsidian. AI agents organize and help you use your notes.
 
 [中文文档](./README_ZH.md)
 
@@ -238,16 +238,16 @@ Mate Bots are custom AI agents you define in **Settings → Mate Bots**. Each ma
 
 Add one or more triggers to a mate and it runs automatically whenever a matching event fires. Vaultr ships with these built-in events:
 
-| Event                | When it fires                                 |
-| -------------------- | --------------------------------------------- |
-| `note_created`       | Any new note is created in the vault          |
-| `note_updated`       | Any existing note is modified                 |
-| `note_deleted`       | Any note is deleted                           |
-| `short_note_created` | A short-note entry is appended                |
+| Event                | When it fires                                        |
+| -------------------- | ---------------------------------------------------- |
+| `note_created`       | Any new note is created in the vault                 |
+| `note_updated`       | Any existing note is modified                        |
+| `note_deleted`       | Any note is deleted                                  |
+| `short_note_created` | A short-note entry is appended                       |
 | `scheduled`          | On a configured interval, daily time, or weekly time |
-| `wechat_message`     | A WeChat direct message is received           |
-| `discord_message`    | A Discord DM is received                      |
-| `compile_requested`  | An LLM wiki compilation is manually triggered |
+| `wechat_message`     | A WeChat direct message is received                  |
+| `discord_message`    | A Discord DM is received                             |
+| `compile_requested`  | An LLM wiki compilation is manually triggered        |
 
 #### Backing Agents
 
