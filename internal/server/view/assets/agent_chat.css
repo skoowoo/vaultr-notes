@@ -98,7 +98,6 @@
       cursor: pointer;
       white-space: nowrap;
       user-select: none;
-      box-shadow: var(--px-d2) var(--px-shadow);
     }
 
     .mate-chip-avatar {
@@ -123,7 +122,6 @@
       color: var(--fg);
       border-color: var(--card-bd);
       box-shadow: var(--px-d1) var(--px-shadow);
-      transform: translate(1px, 1px);
     }
 
     .mate-chip:active:not(.is-active) {
