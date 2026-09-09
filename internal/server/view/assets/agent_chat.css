@@ -307,7 +307,6 @@
       padding: 0.15rem 0.4rem;
       background: var(--bg);
       border: 2px solid var(--card-bd);
-      box-shadow: var(--px-d1) var(--px-shadow);
       font-size: 0.68rem;
       font-family: var(--font-mono);
       line-height: 1.4;

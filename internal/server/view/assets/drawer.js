@@ -1786,6 +1786,21 @@
     return true;
   });
 
+  // Mod-T toggles the selection-format tooltip (see tooltip.js) — replaces
+  // the old auto-popup-on-select behavior, which read as too noisy.
+  window.__vaultrHotkeys.registerRaw('drawer-format-tooltip', function(e, mod) {
+    if (!mod || e.shiftKey || e.altKey || e.key.toLowerCase() !== 't') return;
+    var _drawer = window.__vaultrDrawer;
+    if (!_drawer || !_drawer.drawerOpen) return;
+    var ea = document.getElementById('drawer-edit-area');
+    var ae = document.activeElement;
+    if (!ea || !ae || !ea.contains(ae)) return;
+    if (!window.__vaultrToggleFormatTooltip) return;
+    e.preventDefault();
+    window.__vaultrToggleFormatTooltip();
+    return true;
+  });
+
   // Intercept mouse back/forward buttons (button 3/4) to switch drawer tabs.
   window.addEventListener('mousedown', function(e) {
     var _drawer = window.__vaultrDrawer;

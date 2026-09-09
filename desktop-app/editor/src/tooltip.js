@@ -286,48 +286,32 @@ export const tooltipPlugin = $prose(() => new Plugin({
 
     let pmView  = null;
     let visible = false;
-    // Track the PM selection at mousedown so we can detect whether the user
-    // actually made a new selection (drag) vs. just clicking in the edit area
-    // while an old non-empty selection happened to exist.
-    let selectionAtMousedown = null;
+
+    // Making a selection no longer pops the tooltip by itself — that read as
+    // noisy. It now only opens on an explicit ask: right-click (contextmenu)
+    // on a non-empty selection, or the Mod-T shortcut (see __vaultrToggleFormatTooltip,
+    // wired to a hotkey in drawer.js).
 
     function onMouseDown(e) {
       if (!pmView) return;
       const editArea = document.getElementById('drawer-edit-area');
       const inEditor = pmView.dom.contains(e.target) ||
                        (editArea && editArea.contains(e.target));
-      selectionAtMousedown = inEditor ? pmView.state.selection : null;
       if (visible && !inEditor && !el.contains(e.target)) {
         hide(false);
       }
     }
 
-    function onMouseUp(e) {
-      setTimeout(() => {
-        if (!pmView || pmView.state.selection.empty) return;
-        // Respond to interactions inside the PM editor OR its scroll container
-        // (#drawer-edit-area). When content is short and the user releases the
-        // mouse in the empty space below the text, e.target is the container
-        // element rather than a node inside pmView.dom, so we accept both.
-        const editArea = document.getElementById('drawer-edit-area');
-        const inEditor = pmView.dom.contains(e.target) ||
-                         (editArea && editArea.contains(e.target));
-        if (!inEditor) return;
-        // Only show when the user actually created a new selection this gesture.
-        // If the selection is identical to what it was at mousedown the user
-        // clicked (or clicked outside pmView.dom) without dragging — skip.
-        if (selectionAtMousedown && pmView.state.selection.eq(selectionAtMousedown)) return;
-        // New mouse selection: always reposition from scratch.
-        if (visible) { window.__vaultrEscPop?.('format-tooltip'); visible = false; }
-        render(pmView);
-      }, 0);
-    }
-
-    function onKeyUp() {
-      if (!pmView || pmView.state.selection.empty) return;
-      // Only respond when focus is inside the PM editor.
-      if (!pmView.dom.contains(document.activeElement)) return;
-      if (!visible) render(pmView);
+    function onContextMenu(e) {
+      if (!pmView) return;
+      const editArea = document.getElementById('drawer-edit-area');
+      const inEditor = pmView.dom.contains(e.target) ||
+                       (editArea && editArea.contains(e.target));
+      if (!inEditor || pmView.state.selection.empty) return;
+      e.preventDefault();
+      // Always reposition from scratch for a fresh right-click.
+      if (visible) { window.__vaultrEscPop?.('format-tooltip'); visible = false; }
+      render(pmView);
     }
 
     function onScroll() {
@@ -335,10 +319,16 @@ export const tooltipPlugin = $prose(() => new Plugin({
       positionTooltip(el, pmView);
     }
 
-    document.addEventListener('mousedown', onMouseDown, true);
-    document.addEventListener('mouseup',   onMouseUp,   true);
-    document.addEventListener('keyup',     onKeyUp,     true);
-    document.addEventListener('scroll',    onScroll,    true);
+    document.addEventListener('mousedown',   onMouseDown,   true);
+    document.addEventListener('contextmenu', onContextMenu, true);
+    document.addEventListener('scroll',      onScroll,      true);
+
+    // Keyboard-shortcut entry point (Mod-T, registered in drawer.js).
+    window.__vaultrToggleFormatTooltip = function() {
+      if (!pmView || pmView.state.selection.empty) return;
+      if (visible) { hide(false); return; }
+      render(pmView);
+    };
 
     function hide(collapseSelection) {
       if (!visible) return;
@@ -535,7 +525,7 @@ export const tooltipPlugin = $prose(() => new Plugin({
       update(view, prevState) {
         pmView = view;
         if (view.state.selection.empty) { hide(false); return; }
-        // Never initiate a new show from state updates — only mouseup/keyup do that.
+        // Never initiate a new show from state updates — only contextmenu/Mod-T do that.
         if (!visible) return;
         const selSame = prevState && prevState.selection.eq(view.state.selection);
         const docSame = prevState && prevState.doc.eq(view.state.doc);
@@ -545,10 +535,10 @@ export const tooltipPlugin = $prose(() => new Plugin({
       destroy() {
         hide(false);
         el.remove();
-        document.removeEventListener('mousedown', onMouseDown, true);
-        document.removeEventListener('mouseup',   onMouseUp,   true);
-        document.removeEventListener('keyup',     onKeyUp,     true);
-        document.removeEventListener('scroll',    onScroll,    true);
+        document.removeEventListener('mousedown',   onMouseDown,   true);
+        document.removeEventListener('contextmenu', onContextMenu, true);
+        document.removeEventListener('scroll',      onScroll,      true);
+        if (window.__vaultrToggleFormatTooltip) delete window.__vaultrToggleFormatTooltip;
       },
     };
   },
