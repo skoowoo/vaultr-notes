@@ -130,7 +130,7 @@ Hover: box-shadow: var(--px-d3) var(--px-shadow)   ← 原地浮起，无位移
 
 ⚠️ **hover 时不改变背景色、不改变边框色、不产生位移**。只加阴影。
 
-适用：`.card`、`.folder-card`（Home）、`.note-card`（Library）、`.img-card`（Images）
+适用：`.card`、`.folder-card`（Home）、`.home-note-row`（Home）、`.img-card`（Images）
 
 ---
 
@@ -333,7 +333,7 @@ active:  background: var(--accent) (#eab308)；color: #111111
 ```
 
 **适用组件：**
-- `.tags-col .tag-card`（Library 左侧标签/索引列）
+- `.home-side-item.is-active` / `.home-side-child.is-active`（Home 侧边栏选中项）
 - `.settings-sidebar-item`（Settings 弹窗左侧导航）
 - `.graph-index-item`（Graph 页索引列）
 
@@ -357,7 +357,6 @@ active:  background: var(--accent) (#eab308)；color: #111111
 - `.conv-seg` / `.conv-seg-btn`（Chat / Trigger 切换）
 - `.theme-seg` / `.theme-seg-btn`（Light / Dark / Neo 主题切换）
 - `.mate-et-pill`（事件类型选择）
-- `.tags-col .col-mode-tab`（Library 侧边栏模式切换）
 - `.graph-index-item.active`（Graph 索引侧边栏选中项）
 - `.effect-card.active`（视觉效果卡选中）
 - `.settings-sidebar-item.active`（设置侧边栏选中项）

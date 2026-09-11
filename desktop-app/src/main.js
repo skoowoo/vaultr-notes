@@ -18,7 +18,7 @@ serverManager.register({
   setAutoStart:   (v) => setAutoStart(v),
 });
 
-const SECTIONS = ["home", "agent"];
+const SECTIONS = ["home"];
 
 /** @returns {import("electron").NativeImage | null} */
 function getAppIconImage() {
@@ -60,7 +60,7 @@ const views = {};
 let activeSection = null;
 // Track the most-recently applied theme background so detached views can be
 // pre-synced before they are made visible (prevents flash-of-wrong-theme).
-let currentViewBgColor = '#0f0f0f';
+let currentViewBgColor = '#010102';
 
 // ── Inbox notifications (direct SSE from main process) ─────────────────────────
 // Fires once per new /api/inbox message, regardless of producer (mate trigger
@@ -241,9 +241,10 @@ function showSection(name, opts = {}) {
 
   if (fullUrl) {
     // Compare against the view's actual current URL, not an assumed section base —
-    // a section's view can be sitting on a sub-page (e.g. /agent/inbox) rather than
-    // its nominal root (/agent), so the base URL alone can't tell us whether a
-    // reload is needed.
+    // a section's view can be sitting on a sub-page (home has its own client-side
+    // sidebar navigation, so its URL rarely changes, but the check still matters
+    // generically) rather than its nominal root, so the base URL alone can't tell
+    // us whether a reload is needed.
     const currentUrl = view.webContents.getURL();
     if (fullUrl !== currentUrl) {
       const onDone = () => {
@@ -283,7 +284,7 @@ function resetToStartScreen() {
 }
 
 function showStartScreen() {
-  startView = new WebContentsView({ webPreferences: makeWebPrefs(), backgroundColor: '#181715' });
+  startView = new WebContentsView({ webPreferences: makeWebPrefs(), backgroundColor: '#010102' });
 
   startView.webContents.setWindowOpenHandler(({ url }) => {
     shell.openExternal(url);
@@ -344,7 +345,7 @@ function setupSectionView(view, sectionName) {
 function createSectionViews(url) {
   serverUrl = url;
   for (const section of SECTIONS) {
-    const view = new WebContentsView({ webPreferences: makeWebPrefs(), backgroundColor: '#181715' });
+    const view = new WebContentsView({ webPreferences: makeWebPrefs(), backgroundColor: '#010102' });
     view.webContents.loadURL(url + "/" + section);
     setupSectionView(view, section);
     views[section] = view;
@@ -366,22 +367,12 @@ function createWindow() {
     minWidth: 960,
     minHeight: 640,
     title: "Vaultr",
-    backgroundColor: "#191919",
+    backgroundColor: "#010102",
     titleBarStyle: process.platform === "darwin" ? "hiddenInset" : "default",
     ...(icon ? { icon } : {}),
   });
 
   win.on("resize", resizeViews);
-
-  // After switching away and back, refresh section views that are safe to reload
-  // (external vault changes while the app was in the background).
-  let windowHadBlur = false;
-  win.on("blur", () => { windowHadBlur = true; });
-  win.on("focus", () => {
-    if (!windowHadBlur) return;
-    windowHadBlur = false;
-    void scheduleSyncVaultDataAcrossSectionViews();
-  });
 
   // Reset module-level state when the window is closed so that re-opening
   // (via macOS dock activate) starts with a clean slate.
@@ -713,8 +704,6 @@ app.whenReady().then(() => {
   app.on("activate", () => {
     if (!win || win.isDestroyed()) {
       createWindow();
-    } else if (process.platform === "darwin") {
-      void scheduleSyncVaultDataAcrossSectionViews();
     }
   });
 });

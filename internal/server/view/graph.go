@@ -1,10 +1,7 @@
 package view
 
 import (
-	"bytes"
 	"encoding/json"
-	"fmt"
-	"html/template"
 	"net/http"
 	"strings"
 
@@ -31,32 +28,7 @@ type graphAPIData struct {
 	Edges []graphAPIEdge `json:"edges"`
 }
 
-// ─── page template data ────────────────────────────────────────────────────────
-
-type graphPageData struct {
-	IndexNotes []noteItem
-}
-
 // ─── handlers ──────────────────────────────────────────────────────────────────
-
-// KnowledgeGraph handles GET /graph — the full knowledge graph page.
-func (vh *ViewHandler) KnowledgeGraph(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
-	indexNotes := vh.listIndexItems()
-	data := graphPageData{IndexNotes: indexNotes}
-
-	var buf bytes.Buffer
-	if err := graphPageTemplate.Execute(&buf, data); err != nil {
-		http.Error(w, fmt.Sprintf("render: %s", err), http.StatusInternalServerError)
-		return
-	}
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	_, _ = w.Write(buf.Bytes())
-}
 
 // KnowledgeGraphRebuild handles POST /api/graph/rebuild
 // Rebuilds the knowledge_links table from the current vault filesystem.
@@ -176,152 +148,3 @@ func (vh *ViewHandler) KnowledgeGraphData(w http.ResponseWriter, r *http.Request
 		http.Error(w, "encode: "+err.Error(), http.StatusInternalServerError)
 	}
 }
-
-// ─── template ──────────────────────────────────────────────────────────────────
-
-var graphPageHTML = `<!DOCTYPE html>
-<html lang="en" data-theme="neo">
-` + headHTML(headOpts{title: "Knowledge Graph — Vaultr", withFonts: true, withTW: true, withAlpine: true, withHTMX: true}) + `
-  <script src="/static/vendor/cytoscape.min.js"></script>
-  <script src="/static/vendor/layout-base.js"></script>
-  <script src="/static/vendor/cose-base.js"></script>
-  <script src="/static/vendor/cytoscape-fcose.min.js"></script>
-  <style>
-` + appTokensCSS + `
-` + navCSS + neoCSS + topbarCSS + drawerCSS + noteSharedCSS + noteEditorCSS + searchOverlayStyles + confirmDialogCSS + shortDialogCSS + settingsModalCSS + graphCSS + `
-  </style>
-</head>
-<body x-data="graphCtrl()" style="margin:0;padding:0;overflow:hidden">
-` + searchOnlyOverlayHTML + confirmDialogHTML + shortDialogHTML + settingsModalHTML() + `
-
-  <header class="lib-topbar">
-    <div class="lib-topbar-left">
-      <button type="button" class="lib-back-btn" title="Back" onclick="window.history.length > 1 ? history.back() : (location.href='/home')">` + topbarIconBack + `<span class="lib-back-label">back</span></button>
-    </div>
-    <div class="lib-topbar-spacer"></div>
-` + topbarActionsHTML("refresh()", "Refresh graph", "loading && 'spinning'", "{ mode: 'knowledge' }") + `
-  </header>
-
-  <div class="graph-body">
-` + navHTML("graph") + `
-
-    <div class="graph-content">
-      <!-- ── Columns — index sidebar + canvas ─────────────────── -->
-      <div class="graph-columns">
-        <div class="graph-index-col">
-          <div class="graph-index-head">
-            <span class="graph-index-head-title">Index</span>
-            {{if .IndexNotes}}<span class="graph-index-head-count">{{len .IndexNotes}}</span>{{end}}
-          </div>
-          <div class="graph-index-items">
-            {{range .IndexNotes}}
-            <div class="graph-index-item"
-                 :class="{active: indexPath === '{{.Path}}'}"
-                 @click="selectIndex('{{.Path}}')">
-              <span class="graph-index-item-name">{{if .Title}}{{.Title}}{{else}}{{.Name}}{{end}}</span>
-              {{if .DepCount}}<span class="graph-index-item-count">{{.DepCount}}</span>{{end}}
-            </div>
-            {{end}}
-            {{if not .IndexNotes}}
-            <div class="graph-index-empty">No index notes</div>
-            {{end}}
-          </div>
-        </div>
-
-        <div class="graph-main">
-          <div style="position:relative;flex:1;display:flex;flex-direction:column;overflow:hidden">
-            <div id="graph-canvas" style="flex:1;width:100%"></div>
-
-            <!-- Zoom controls -->
-            <div class="graph-zoom-controls">
-              <button type="button" class="graph-zoom-btn" title="Zoom in" @click="zoomIn()">
-                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" d="M12 5v14M5 12h14"/>
-                </svg>
-              </button>
-              <div class="graph-zoom-divider"></div>
-              <button type="button" class="graph-zoom-btn" title="Zoom out" @click="zoomOut()">
-                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" d="M5 12h14"/>
-                </svg>
-              </button>
-              <div class="graph-zoom-divider"></div>
-              <button type="button" class="graph-zoom-btn" title="Fit all nodes" @click="zoomFit()">
-                <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M8 3H5a2 2 0 0 0-2 2v3"/>
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M21 8V5a2 2 0 0 0-2-2h-3"/>
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M3 16v3a2 2 0 0 0 2 2h3"/>
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M16 21h3a2 2 0 0 0 2-2v-3"/>
-                </svg>
-              </button>
-            </div>
-
-            <!-- Node info panel — floating card, top-right -->
-            <div class="graph-node-panel" :class="{ open: !!nodePanel }">
-              <div class="graph-node-panel-row">
-                <span class="graph-node-panel-type"
-                      x-show="nodePanel && nodePanel.entityType"
-                      x-text="nodePanel ? nodePanel.entityType : ''"></span>
-                <span class="graph-node-panel-edges"
-                      x-text="nodePanel ? (nodePanel.edgeCount + (nodePanel.edgeCount === 1 ? ' link' : ' links')) : ''"></span>
-                <button type="button" class="graph-node-panel-close" @click="closeNodePanel()" title="Close">
-                  <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" d="M18 6 6 18"/>
-                    <path stroke-linecap="round" d="m6 6 12 12"/>
-                  </svg>
-                </button>
-              </div>
-              <div class="graph-node-panel-title" x-text="nodePanel ? nodePanel.label : ''"></div>
-              <button type="button" class="graph-node-open-btn"
-                      @click="nodePanel && openNodeInDrawer(nodePanel.path, nodePanel.label, nodePanel.entityType)">
-                Open
-                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M15 3h6v6"/>
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M10 14 21 3"/>
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
-                </svg>
-              </button>
-            </div>
-
-            <div class="graph-loading" x-show="loading" x-cloak>
-              <span>Loading graph…</span>
-            </div>
-
-            <div class="graph-zero" x-show="!loading && empty" x-cloak>
-              <div class="graph-zero-icon">
-                <svg fill="none" stroke="currentColor" stroke-width="1.25" viewBox="0 0 48 48">
-                  <circle cx="24" cy="12" r="4.5"/>
-                  <circle cx="10" cy="36" r="4.5"/>
-                  <circle cx="38" cy="36" r="4.5"/>
-                  <line x1="24" y1="16.5" x2="10.8" y2="31.7" stroke-linecap="round"/>
-                  <line x1="24" y1="16.5" x2="37.2" y2="31.7" stroke-linecap="round"/>
-                  <line x1="14.5" y1="36" x2="33.5" y2="36" stroke-linecap="round"/>
-                </svg>
-              </div>
-              <div class="graph-zero-title">No knowledge notes yet</div>
-              <div class="graph-zero-desc">Knowledge notes and their connections will appear here once the compile agent has run on your raw notes.</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-` + drawerHTML + `
-  <div id="graph-tooltip" class="graph-tooltip"></div>
-
-  <script>
-  document.addEventListener('alpine:init', () => {
-` + alpineStoresScript + `
-  });
-
-` + keysJS + pathAcScript + drawerScript + searchOverlayScript + confirmDialogJS + shortDialogJS + settingsCtrlJS + `
-
-  ` + graphJS + `
-  </script>
-` + noteSharedJS + `
-</body>
-</html>
-`
-
-var graphPageTemplate = template.Must(template.New("graph").Parse(graphPageHTML))

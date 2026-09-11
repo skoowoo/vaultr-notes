@@ -35,6 +35,7 @@
       display: flex;
       min-height: 0;
       overflow: hidden;
+      border-radius: 0;
     }
 
     .chat-main {
@@ -44,6 +45,7 @@
       flex-direction: column;
       overflow: hidden;
       background: var(--bg);
+      border-radius: 0;
     }
 
     /* ── Mate chips bar ─────────────────────────────────────────── */
@@ -53,7 +55,8 @@
       align-items: center;
       gap: 0.5rem;
       padding: 0.25rem 1.25rem;
-      border-bottom: 2px solid var(--hr);
+      border-bottom: var(--bd-w) solid var(--border);
+      border-radius: 0; /* flush chrome strip */
       background: var(--bg);
     }
 
@@ -81,18 +84,20 @@
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      border-radius: 0;
     }
 
     .mate-chip {
       flex-shrink: 0;
       padding: 0.2rem 0.85rem 0.2rem 0.3rem;
-      height: 32px;
+      height: var(--btn-h);
       display: inline-flex;
       align-items: center;
       gap: 0.5rem;
       font-size: var(--text-sm);
       font-weight: 500;
-      border: 2px solid var(--card-bd);
+      border: var(--bd-w) solid var(--border-strong);
+      border-radius: var(--r-full);
       background: transparent;
       color: var(--muted);
       cursor: pointer;
@@ -106,7 +111,7 @@
       border-radius: 50%;
       flex-shrink: 0;
       background: var(--accent);
-      color: #000;
+      color: var(--accent-fg);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -120,26 +125,17 @@
     .mate-chip:hover {
       background: transparent;
       color: var(--fg);
-      border-color: var(--card-bd);
-      box-shadow: var(--px-d1) var(--px-shadow);
+      border-color: var(--border-strong);
     }
 
     .mate-chip:active:not(.is-active) {
-      box-shadow: none;
-      transform: translate(3px, 3px);
+      opacity: 0.85;
     }
 
     .mate-chip.is-active {
-      background: var(--accent);
-      border: 2px solid var(--card-bd) !important;
-      color: var(--fg);
-      box-shadow: var(--px-d1) var(--px-shadow);
-      transform: none;
-    }
-
-    .mate-chip.is-active .mate-chip-avatar {
-      background: rgba(0, 0, 0, 0.15);
-      color: var(--fg);
+      background: var(--control-active-bg);
+      border: var(--bd-w) solid var(--border-strong) !important;
+      color: var(--control-active-fg);
     }
 
     .mates-empty-hint {
@@ -151,35 +147,30 @@
     /* Reset-chat button */
     .new-chat-btn {
       flex-shrink: 0;
-      width: 28px;
-      height: 28px;
+      width: var(--action-btn-sz);
+      height: var(--action-btn-sz);
       display: flex;
       align-items: center;
       justify-content: center;
-      border: 2px solid var(--card-bd);
+      border: var(--bd-w) solid var(--border-strong);
       cursor: pointer;
       background: var(--bg);
       color: var(--muted);
-      box-shadow: var(--px-d2) var(--px-shadow);
     }
 
     .new-chat-btn:hover:not(:disabled) {
-      background: var(--bg);
+      background: var(--card-hov);
       color: var(--fg);
-      border-color: var(--card-bd);
-      box-shadow: var(--px-d1) var(--px-shadow);
-      transform: translate(1px, 1px);
+      border-color: var(--border-strong);
     }
 
     .new-chat-btn:active:not(:disabled) {
-      box-shadow: none;
-      transform: translate(3px, 3px);
+      opacity: 0.85;
     }
 
     .new-chat-btn:disabled {
       opacity: 0.25;
       cursor: not-allowed;
-      box-shadow: none;
     }
 
     .new-chat-btn svg {
@@ -192,7 +183,7 @@
       flex-shrink: 0;
       display: inline-flex;
       background: transparent;
-      border: 2px solid var(--card-bd);
+      border: var(--bd-w) solid var(--border-strong);
       padding: 2px;
       gap: 2px;
     }
@@ -216,9 +207,8 @@
     }
 
     .conv-seg-btn.active {
-      background: var(--seg-act-bg);
-      color: var(--seg-act-fg);
-      box-shadow: none;
+      background: var(--control-active-bg);
+      color: var(--control-active-fg);
     }
 
     /* ── Messages ───────────────────────────────────────────────── */
@@ -306,7 +296,8 @@
       justify-content: center;
       padding: 0.15rem 0.4rem;
       background: var(--bg);
-      border: 2px solid var(--card-bd);
+      border: var(--bd-w) solid var(--border-strong);
+      border-radius: var(--r-xs);
       font-size: 0.68rem;
       font-family: var(--font-mono);
       line-height: 1.4;
@@ -345,13 +336,13 @@
       max-width: 100%;
       padding: 0.6rem 0.875rem;
       background: var(--bg);
-      border: 2px solid var(--card-bd);
+      border: var(--bd-w) solid var(--border-strong);
+      border-radius: var(--r-md);
       color: var(--fg);
       font-size: var(--text-base);
       line-height: 1.82;
       white-space: pre-wrap;
       word-break: break-word;
-      box-shadow: var(--px-d2) var(--px-shadow);
     }
 
     .msg-assistant-wrap {
@@ -373,8 +364,9 @@
       height: 28px;
       flex-shrink: 0;
       background: var(--accent);
-      color: #fff;
-      border: 2px solid var(--card-bd);
+      color: var(--accent-fg);
+      border: var(--bd-w) solid var(--border-strong);
+      border-radius: var(--r-full);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -401,7 +393,7 @@
       font-size: var(--text-xs);
       font-weight: 500;
       padding: 1px 6px;
-      border-radius: 9999px;
+      border-radius: var(--r-full);
       flex-shrink: 0;
       background: rgba(var(--accent-rgb), 0.12);
       color: var(--accent);
@@ -446,7 +438,8 @@
 
     /* Thinking */
     .seg-thinking {
-      border-left: 2px solid var(--hr);
+      border-left: var(--bd-w) solid var(--border);
+      border-radius: 0;
       padding-left: 0.7rem;
     }
 
@@ -494,7 +487,7 @@
       align-items: center;
       gap: 0.3rem;
       padding: 3px 10px;
-      border-radius: 9999px;
+      border-radius: var(--r-full);
       background: var(--code-bg);
       font-size: var(--text-sm);
       font-weight: 500;
@@ -547,7 +540,7 @@
     .seg-tool-result-content {
       padding: 0.45rem 0.65rem;
       background: var(--bg);
-      border: 2px solid var(--card-bd);
+      border: var(--bd-w) solid var(--border-strong);
       font-size: var(--text-xs);
       font-family: var(--font-mono);
       color: var(--muted);
@@ -568,7 +561,7 @@
     .seg-console {
       padding: 0.4rem 0.65rem;
       background: var(--bg);
-      border: 2px solid var(--card-bd);
+      border: var(--bd-w) solid var(--border-strong);
       font-family: var(--font-mono);
       font-size: var(--text-xs);
       color: var(--muted);
@@ -583,7 +576,7 @@
     .seg-error {
       padding: 0.4rem 0.65rem;
       background: var(--s-err-bg);
-      border: 2px solid var(--s-err-bd);
+      border: var(--bd-w) solid var(--s-err-bd);
       font-size: var(--text-xs);
       color: var(--s-err);
       white-space: pre-wrap;
@@ -618,7 +611,7 @@
       justify-content: center;
       width: 22px;
       height: 22px;
-      border-radius: 6px;
+      border-radius: var(--r-xs);
       border: none;
       background: transparent;
       color: var(--muted);
@@ -674,9 +667,8 @@
       margin: 0;
       padding: 4px 0;
       list-style: none;
-      background: var(--bg);
-      border: 2px solid var(--card-bd);
-      box-shadow: var(--px-d1) var(--px-shadow);
+      background: var(--surface-soft);
+      border: var(--bd-w) solid var(--border-strong);
       z-index: 200;
     }
     .chat-path-ac.open { display: block; }
@@ -697,9 +689,9 @@
       position: relative;
       width: 100%;
       background: var(--bg);
-      border: 2px solid var(--card-bd);
+      border: var(--bd-w) solid var(--border-strong);
+      border-radius: var(--r-md);
       overflow: hidden;
-      box-shadow: var(--px-d2) var(--px-shadow);
     }
 
     .chat-input-hint {
@@ -720,8 +712,7 @@
     }
 
     .chat-input-card:focus-within {
-      border-color: var(--card-bd);
-      box-shadow: var(--px-d3) var(--px-shadow);
+      border-color: var(--accent);
     }
 
     .chat-textarea {
@@ -769,29 +760,26 @@
     }
 
     .chat-send-circle {
-      width: 32px;
-      height: 32px;
+      width: var(--btn-h);
+      height: var(--btn-h);
       flex-shrink: 0;
       display: flex;
       align-items: center;
       justify-content: center;
-      border: 2px solid var(--card-bd);
+      border: var(--bd-w) solid var(--border-strong);
+      border-radius: var(--r-full);
       cursor: pointer;
       background: var(--accent);
-      color: var(--fg);
-      box-shadow: var(--px-d2) var(--px-shadow);
+      color: var(--accent-fg);
     }
 
     .chat-send-circle:hover:not(:disabled) {
-      background: var(--accent);
-      box-shadow: var(--px-d1) var(--px-shadow);
-      transform: translate(1px, 1px);
+      background: var(--accent-hov);
     }
 
     .chat-send-circle:active:not(:disabled) {
       background: var(--accent-hov);
-      box-shadow: none;
-      transform: translate(3px, 3px);
+      opacity: 0.85;
     }
 
     .chat-send-circle:disabled {
@@ -806,28 +794,25 @@
     }
 
     .chat-stop-circle {
-      width: 32px;
-      height: 32px;
+      width: var(--btn-h);
+      height: var(--btn-h);
       flex-shrink: 0;
       display: flex;
       align-items: center;
       justify-content: center;
-      border: 2px solid var(--card-bd);
+      border: var(--bd-w) solid var(--border-strong);
+      border-radius: var(--r-full);
       cursor: pointer;
       background: var(--p2);
-      color: var(--fg);
-      box-shadow: var(--px-d1) var(--px-shadow);
+      color: var(--inverse-ink);
     }
 
     .chat-stop-circle:hover {
-      background: var(--p2);
-      box-shadow: var(--px-d0) var(--px-shadow);
-      transform: translate(1px, 1px);
+      opacity: 0.85;
     }
 
     .chat-stop-circle:active {
-      box-shadow: none;
-      transform: translate(2px, 2px);
+      opacity: 0.7;
     }
 
     .chat-stop-circle svg {
@@ -974,18 +959,18 @@
       padding: 0.5rem 0.75rem 0.5rem 0.875rem;
       font-size: var(--text-sm);
       font-weight: 500;
-      box-shadow: var(--px-d2) var(--px-shadow);
+      border-radius: var(--r-md);
     }
 
     .run-toast-ok {
       background: var(--s-ok-bg);
-      border: 2px solid var(--s-ok-bd);
+      border: var(--bd-w) solid var(--s-ok-bd);
       color: var(--s-ok);
     }
 
     .run-toast-err {
       background: var(--s-err-bg);
-      border: 2px solid var(--s-err-bd);
+      border: var(--bd-w) solid var(--s-err-bd);
       color: var(--s-err);
     }
 
@@ -1025,7 +1010,6 @@
       background-position: right 0.4rem center;
       background-size: 6px 4px;
       padding-right: 1.2rem;
-      box-shadow: var(--px-d1) var(--px-shadow);
     }
 
     /* ── Conversation sidebar ──────────────────────────────────── */
@@ -1038,7 +1022,7 @@
     }
 
     .conv-item.is-active {
-      box-shadow: inset 3px 0 0 var(--accent);
+      background: var(--control-active-bg);
     }
 
     .conv-item-del {
@@ -1049,17 +1033,3 @@
       transition: none !important;
     }
 
-    /* ── Notif play button ─────────────────────────────────────── */
-    .notif-play-btn {
-      box-shadow: var(--px-d1) var(--px-shadow);
-    }
-
-    .notif-play-btn:hover:not(:disabled) {
-      box-shadow: var(--px-d0) var(--px-shadow);
-      transform: translate(1px, 1px);
-    }
-
-    .notif-play-btn:active:not(:disabled) {
-      box-shadow: none;
-      transform: translate(2px, 2px);
-    }

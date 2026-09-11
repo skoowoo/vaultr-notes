@@ -1723,7 +1723,6 @@
   window.__vaultrEditorShellHref = function() {
     try {
       var seg = location.pathname.replace(/^\/+/,'').split('/')[0];
-      if (seg==='library') return '/library'; if (seg==='home') return '/home';
       return '/'+(seg||'home');
     } catch(_) { return '/home'; }
   };

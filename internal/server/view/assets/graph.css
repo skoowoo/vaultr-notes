@@ -1,26 +1,30 @@
     /* ── Graph page layout ───────────────────────────────────── */
     .graph-body {
       display: flex; height: calc(100vh - var(--topbar-h)); overflow: hidden;
+      border-radius: 0;
       background: var(--bg);
     }
 
     /* Content area: everything to the right of the nav strip */
     .graph-content {
       flex: 1; display: flex; flex-direction: column; min-width: 0; overflow: hidden;
+      border-radius: 0;
     }
 
     /* Columns row: index sidebar + canvas, fills remaining height below toolbar */
     .graph-columns {
       flex: 1; display: flex; min-height: 0; overflow: hidden;
+      border-radius: 0;
     }
 
-    /* ── Index sidebar — mirrors library tags-col nav-item style ── */
+    /* ── Index sidebar ─────────────────────────────────────────── */
     .graph-index-col {
       flex: 0 0 220px;
       max-width: 220px;
       display: flex;
       flex-direction: column;
-      border-right: 2px solid var(--hr);
+      border-right: var(--bd-w) solid var(--border);
+      border-radius: 0; /* edge-docked column */
       min-height: 0;
       background: var(--surface-soft);
     }
@@ -32,7 +36,8 @@
       align-items: center;
       gap: 0.45rem;
       padding: 0 0.75rem;
-      border-bottom: 2px solid var(--hr);
+      border-bottom: var(--bd-w) solid var(--border);
+      border-radius: 0; /* flush chrome strip */
       background: var(--surface-soft);
     }
 
@@ -50,6 +55,7 @@
       color: var(--cnt-tx);
       background: var(--cnt-bg);
       padding: 0.07em 0.4em;
+      border-radius: var(--r-full);
       font-variant-numeric: tabular-nums;
     }
 
@@ -75,7 +81,7 @@
       justify-content: space-between;
       padding: 0.4rem 0.65rem;
       background: transparent;
-      border: 2px solid transparent;
+      border: var(--bd-w) solid transparent;
       cursor: pointer;
       gap: 0.4rem;
       user-select: none;
@@ -83,15 +89,13 @@
 
     .graph-index-item:hover {
       background: var(--bg);
-      border-color: var(--card-bd);
-      box-shadow: var(--px-d1) var(--px-shadow);
+      border-color: var(--border-strong);
     }
 
     .graph-index-item.active {
-      background: var(--accent);
-      color: var(--fg);
-      border-color: var(--card-bd);
-      box-shadow: var(--px-d1) var(--px-shadow);
+      background: var(--control-active-bg);
+      color: var(--control-active-fg);
+      border-color: var(--border-strong);
     }
 
     .graph-index-item-name {
@@ -101,12 +105,12 @@
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      border-radius: 0;
       flex: 1;
       min-width: 0;
     }
 
     .graph-index-item.active .graph-index-item-name {
-      color: var(--fg);
       font-weight: var(--fw-semibold);
     }
 
@@ -117,6 +121,7 @@
       color: var(--cnt-tx);
       background: var(--cnt-bg);
       padding: 0.07em 0.4em;
+      border-radius: var(--r-full);
       font-variant-numeric: tabular-nums;
     }
 
@@ -142,7 +147,8 @@
       align-items: center;
       gap: 0.5rem;
       padding: 0 1rem;
-      border-bottom: 2px solid var(--hr);
+      border-bottom: var(--bd-w) solid var(--border);
+      border-radius: 0; /* flush chrome strip */
       background: var(--bg);
       user-select: none;
     }
@@ -151,9 +157,9 @@
       display: inline-flex;
       align-items: center;
       gap: 0.32rem;
-      height: 26px;
+      height: var(--btn-h-xs);
       padding: 0 0.65rem;
-      border: 2px solid var(--card-bd);
+      border: var(--bd-w) solid var(--border-strong);
       background: transparent;
       color: var(--muted);
       font-size: var(--text-xs);
@@ -187,17 +193,16 @@
       display: flex;
       flex-direction: row;
       gap: 2px;
-      background: var(--bg);
-      border: 2px solid var(--card-bd);
+      background: var(--surface-soft);
+      border: var(--bd-w) solid var(--border-strong);
       padding: 3px;
-      box-shadow: var(--px-d1) var(--px-shadow);
     }
 
     .graph-zoom-btn {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      width: 28px; height: 28px;
+      width: var(--action-btn-sz); height: var(--action-btn-sz);
       border: none;
       background: transparent;
       color: var(--muted);
@@ -209,7 +214,8 @@
 
     .graph-zoom-divider {
       width: 2px;
-      background: var(--card-bd);
+      background: var(--border-strong);
+      border-radius: 0;
       margin: 4px 1px;
     }
 
@@ -259,10 +265,11 @@
     /* ── Node tooltip ────────────────────────────────────────── */
     .graph-tooltip {
       position: fixed; z-index: 100; pointer-events: none;
-      background: var(--bg); border: 2px solid var(--card-bd);
+      background: var(--surface-soft); border: var(--bd-w) solid var(--border-strong);
+      border-radius: var(--r-xs);
       padding: 0.4rem 0.65rem;
       font-size: var(--text-sm); color: var(--fg);
-      box-shadow: var(--px-d2) var(--px-shadow); white-space: nowrap;
+      white-space: nowrap;
       opacity: 0; transition: opacity 80ms;
     }
 
@@ -274,9 +281,9 @@
       top: 12px; right: 12px;
       z-index: 20;
       width: 220px;
-      background: var(--bg);
-      border: 2px solid var(--card-bd);
-      box-shadow: var(--px-d3) var(--px-shadow);
+      background: var(--surface-soft);
+      border: var(--bd-w) solid var(--border-strong);
+      border-radius: var(--r-md);
       padding: 0.7rem 0.8rem;
       display: flex;
       flex-direction: column;
@@ -302,7 +309,8 @@
       color: var(--fg);
       background: var(--entity-type-bg);
       padding: 0.15em 0.5em;
-      border: 2px solid var(--card-bd);
+      border: var(--bd-w) solid var(--border-strong);
+      border-radius: var(--r-full);
       white-space: nowrap;
       text-transform: lowercase;
       letter-spacing: var(--ls-cap);
@@ -338,36 +346,33 @@
       line-height: var(--lh-snug);
       word-break: break-word;
       padding-bottom: 0.55rem;
-      border-bottom: 2px solid var(--card-bd);
+      border-bottom: var(--bd-w) solid var(--border-strong);
+      border-radius: 0;
     }
 
-    /* primary button §6.1: full width, brand yellow, d2 阴影，hover 位移 */
+    /* primary button: full width, accent fill, flat — no shadow, hover/active shift background only */
     .graph-node-open-btn {
       display: flex;
       align-items: center;
       justify-content: center;
       gap: 0.35rem;
       width: 100%;
-      height: 32px;
+      height: var(--btn-h);
       padding: 0;
-      border: 2px solid var(--card-bd);
+      border: var(--bd-w) solid var(--border-strong);
       background: var(--accent);
-      color: var(--fg);
-      font-size: var(--text-sm);
+      color: var(--accent-fg);
+      font-size: var(--text-base);
       font-weight: var(--fw-medium);
       font-family: var(--font-ui);
       cursor: pointer;
-      box-shadow: var(--px-d2) var(--px-shadow);
     }
 
     .graph-node-open-btn:hover {
-      background: var(--accent);
-      box-shadow: var(--px-d1) var(--px-shadow);
-      transform: translate(1px, 1px);
+      background: var(--accent-hov);
     }
     .graph-node-open-btn:active {
-      background: var(--accent);
-      box-shadow: none;
-      transform: translate(3px, 3px);
+      background: var(--accent-hov);
+      opacity: 0.85;
     }
     .graph-node-open-btn svg { width: 11px; height: 11px; flex-shrink: 0; }

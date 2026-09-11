@@ -1,35 +1,41 @@
 
-  (function() {
-    var overlay  = document.getElementById('info-dialog');
-    var titleEl  = document.getElementById('info-dialog-title');
-    var bodyEl   = document.getElementById('info-dialog-body');
-    var closeBtn = document.getElementById('info-dialog-close');
+  function infoDialogCtrl() {
+    return window.vaultrOverlay('info', {
+      title: '',
+      bodyHTML: '',
+      closeLabel: 'Got it',
+      isError: false,
 
-    function closeInfo() {
-      if (window.__vaultrEscPop) window.__vaultrEscPop('info');
-      overlay.style.display = 'none';
-      bodyEl.innerHTML = '';
-    }
-    closeBtn.addEventListener('click', closeInfo);
-    overlay.addEventListener('click', function(e) {
-      if (e.target === overlay) closeInfo();
+      init() { window._infoDialogCtrl = this; },
+
+      show(opts) {
+        opts = opts || {};
+        this.title     = opts.title      || '';
+        this.bodyHTML   = opts.bodyHTML   || '';
+        this.closeLabel = opts.closeLabel || 'Got it';
+        this.isError    = !!opts.isError;
+        var _self = this;
+        this.openOverlay(function() { _self.close(); });
+      },
+
+      close() {
+        this.closeOverlay();
+        this.bodyHTML = '';
+      },
     });
+  }
 
-    window.showInfo = function(opts) {
-      titleEl.textContent  = opts.title      || '';
-      bodyEl.innerHTML     = opts.bodyHTML   || '';
-      closeBtn.textContent = opts.closeLabel || 'Got it';
-      closeBtn.classList.toggle('error', !!opts.isError);
-      overlay.style.display = 'flex';
-      if (window.__vaultrEscPush) window.__vaultrEscPush('info', closeInfo);
-    };
+  // Global helpers — call from any page that includes infoDialogHTML.
+  window.showInfo = function(opts) {
+    if (!window._infoDialogCtrl) return;
+    window._infoDialogCtrl.show(opts);
+  };
 
-    window.showError = function(message, title) {
-      window.showInfo({
-        title:      title   || 'Error',
-        bodyHTML:   '<p>' + (message || 'An unexpected error occurred.') + '</p>',
-        closeLabel: 'OK',
-        isError:    true,
-      });
-    };
-  })();
+  window.showError = function(message, title) {
+    window.showInfo({
+      title:      title   || 'Error',
+      bodyHTML:   '<p>' + (message || 'An unexpected error occurred.') + '</p>',
+      closeLabel: 'OK',
+      isError:    true,
+    });
+  };

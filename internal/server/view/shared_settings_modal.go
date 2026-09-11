@@ -7,32 +7,32 @@ const settingsModalCSS = `
     .settings-modal-overlay {
       position: fixed; inset: 0; z-index: 1000;
       background: var(--overlay-bg);
+      backdrop-filter: var(--glass-scrim-filter);
+      -webkit-backdrop-filter: var(--glass-scrim-filter);
+      border-radius: 0; /* full-viewport scrim — never rounds */
       display: flex; align-items: center; justify-content: center;
     }
     .settings-modal-panel {
       width: 1040px; max-width: calc(100vw - 2rem);
       height: 720px; max-height: calc(100vh - 2rem);
-      background: var(--bg); border: 2px solid var(--hr);
+      background: var(--glass-bg);
+      backdrop-filter: var(--glass-filter);
+      -webkit-backdrop-filter: var(--glass-filter);
+      border: var(--bd-w) solid var(--border);
+      border-radius: var(--r-xl);
       display: flex; flex-direction: column; overflow: hidden;
-      box-shadow: var(--px-d3) var(--px-shadow);
     }
 
     .settings-modal-bar {
       flex-shrink: 0; display: flex; align-items: center; justify-content: space-between;
-      height: 40px; padding: 0 1rem; border-bottom: 2px solid var(--hr);
+      height: 40px; padding: 0 1rem; border-bottom: var(--bd-w) solid var(--border);
+      border-radius: 0; /* flush chrome strip */
       user-select: none;
     }
     .settings-modal-title { font-size: var(--text-sm); font-weight: 600; color: var(--fg); }
-    .settings-modal-close-btn {
-      display: flex; align-items: center; justify-content: center;
-      width: 28px; height: 28px;
-      border: none; background: transparent; color: var(--muted);
-      cursor: pointer;
-    }
-    .settings-modal-close-btn:hover { background: var(--icon-hov); color: var(--fg); }
-    .settings-modal-close-btn svg { width: 15px; height: 15px; }
     .settings-modal-inner {
       flex: 1; min-height: 0; display: flex; overflow: hidden;
+      border-radius: 0;
     }
 
     /* ── Settings inner layout ───────────────────────────────── */
@@ -40,23 +40,24 @@ const settingsModalCSS = `
 
     /* ── Primary sidebar ──────────────────────────────────────── */
     .settings-sidebar {
-      flex-shrink: 0; width: 196px; border-right: 2px solid var(--hr);
+      flex-shrink: 0; width: 196px; border-right: var(--bd-w) solid var(--border);
+      border-radius: 0; /* internal seam within the modal */
       background: var(--surface-soft);
       padding: 1rem 0.5rem; display: flex; flex-direction: column;
       gap: 2px; user-select: none;
     }
     .settings-sidebar-item {
       display: flex; align-items: center; gap: 0.5rem; width: 100%;
-      padding: 0.42rem 0.75rem; border: 2px solid transparent;
+      padding: 0.42rem 0.75rem; border: var(--bd-w) solid transparent;
       background: transparent; font-size: var(--text-base); font-weight: 500;
       color: var(--muted); cursor: pointer; text-align: left;
     }
-    .settings-sidebar-item:hover { color: var(--fg); background: var(--bg); border-color: var(--card-bd); box-shadow: var(--px-d1) var(--px-shadow); }
-    .settings-sidebar-item.active { color: var(--fg); background: var(--accent); border-color: var(--card-bd); box-shadow: var(--px-d1) var(--px-shadow) !important; }
+    .settings-sidebar-item:hover { color: var(--fg); background: var(--bg); border-color: var(--border-strong); }
+    .settings-sidebar-item.active { color: var(--control-active-fg); background: var(--control-active-bg); border-color: var(--border-strong); }
     .settings-sidebar-item svg { width: 14px; height: 14px; flex-shrink: 0; }
 
     /* ── Content area ─────────────────────────────────────────── */
-    .settings-content { flex: 1; min-width: 0; display: flex; flex-direction: column; overflow: hidden; }
+    .settings-content { flex: 1; min-width: 0; display: flex; flex-direction: column; overflow: hidden; border-radius: 0; }
 
     /* ── Pane ─────────────────────────────────────────────────── */
     .settings-pane { flex: 1; overflow-y: auto; padding: 1.75rem 1.5rem 3rem; }
@@ -71,40 +72,38 @@ const settingsModalCSS = `
     .settings-field-desc { font-size: var(--text-xs); color: var(--muted); margin-top: 0.4rem; line-height: 1.5; }
     .settings-field-row { display: flex; gap: 0.5rem; align-items: center; }
     .settings-input {
-      flex: 1; min-width: 0; background: var(--bg); border: 2px solid var(--card-bd);
-      height: 32px; padding: 0 0.75rem; font-size: var(--text-sm); color: var(--fg);
+      flex: 1; min-width: 0; background: var(--bg); border: var(--bd-w) solid var(--border-strong);
+      height: var(--btn-h); padding: 0 0.75rem; font-size: var(--text-sm); color: var(--fg);
       outline: none; font-family: var(--font-mono);
-      box-shadow: var(--px-d2) var(--px-shadow);
     }
     .settings-input:focus { border-color: var(--accent); }
     .settings-apply-btn, .cfg-save-btn, .agents-toolbar-btn {
-      height: 32px; padding: 0 0.875rem;
-      border: 2px solid var(--card-bd); color: var(--fg);
-      font-size: var(--text-sm); font-weight: 500; cursor: pointer; white-space: nowrap;
+      height: var(--btn-h); padding: 0 0.875rem;
+      border: var(--bd-w) solid var(--border-strong); color: var(--fg);
+      font-size: var(--text-base); font-weight: 500; cursor: pointer; white-space: nowrap;
       display: inline-flex; align-items: center; gap: 0.35rem;
-      box-shadow: var(--px-d2) var(--px-shadow);
     }
     /* Primary CTA: accent fill */
-    .settings-apply-btn, .cfg-save-btn { background: var(--accent); }
+    .settings-apply-btn, .cfg-save-btn { background: var(--accent); color: var(--accent-fg); }
     /* Toolbar auxiliary: neutral */
     .agents-toolbar-btn { background: var(--bg); }
     .settings-apply-btn:hover:not(:disabled),
-    .cfg-save-btn:hover:not(:disabled),
-    .agents-toolbar-btn:hover:not(:disabled) { border-color: var(--card-bd); box-shadow: var(--px-d1) var(--px-shadow); transform: translate(1px, 1px); }
+    .cfg-save-btn:hover:not(:disabled) { background: var(--accent-hov); }
+    .agents-toolbar-btn:hover:not(:disabled) { border-color: var(--border-strong); background: var(--card-hov); }
     .settings-apply-btn:active:not(:disabled),
     .cfg-save-btn:active:not(:disabled),
-    .agents-toolbar-btn:active:not(:disabled) { box-shadow: none; transform: translate(3px, 3px); }
+    .agents-toolbar-btn:active:not(:disabled) { opacity: 0.85; }
     .settings-apply-btn:disabled,
     .cfg-save-btn:disabled,
     .agents-toolbar-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-    .settings-apply-btn--danger { background: var(--p1); color: var(--fg); border-color: var(--card-bd); }
-    .settings-apply-btn--danger:hover:not(:disabled) { background: var(--p1); border-color: var(--card-bd); }
+    .settings-apply-btn--danger { background: var(--s-err); color: var(--s-err-fg); border-color: var(--border-strong); }
+    .settings-apply-btn--danger:hover:not(:disabled) { opacity: 0.85; }
     .settings-error { margin-top: 0.4rem; font-size: var(--text-xs); color: var(--s-err); }
 
     /* ── Effect segmented control ────────────────────────────── */
     .theme-seg {
       display: inline-flex; background: transparent;
-      border: 2px solid var(--card-bd); padding: 2px; gap: 2px;
+      border: var(--bd-w) solid var(--border-strong); padding: 2px; gap: 2px;
     }
     .theme-seg-btn {
       display: flex; align-items: center; gap: 0.375rem;
@@ -114,8 +113,7 @@ const settingsModalCSS = `
     }
     .theme-seg-btn:hover { color: var(--fg); background: var(--icon-hov); }
     .theme-seg-btn.active {
-      background: var(--seg-act-bg); color: var(--seg-act-fg);
-      box-shadow: none;
+      background: var(--control-active-bg); color: var(--control-active-fg);
     }
     .theme-seg-btn svg { width: 13px; height: 13px; flex-shrink: 0; }
 
@@ -125,7 +123,7 @@ const settingsModalCSS = `
       flex-shrink: 0; display: flex; align-items: center;
       justify-content: space-between; flex-wrap: wrap;
       gap: 0.75rem 1rem; margin-top: 2rem; padding-top: 1.25rem;
-      border-top: 2px solid var(--hr); max-width: 640px;
+      border-top: var(--bd-w) solid var(--border); border-radius: 0; max-width: 640px;
     }
     .cfg-action-left { display: flex; align-items: center; gap: 0.75rem; flex: 1; min-width: 0; }
     .cfg-action-right { display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0; }
@@ -133,20 +131,21 @@ const settingsModalCSS = `
     .cfg-status-err {
       font-size: var(--text-xs); color: var(--s-err); font-weight: 500;
       overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+      border-radius: 0;
     }
     .cfg-restart-note { font-size: var(--text-xs); color: var(--muted); }
     .cfg-dirty-badge {
       font-size: var(--text-xs); color: var(--muted); background: var(--code-bg);
       border: 1px solid var(--code-bd); padding: 0.12rem 0.5rem;
+      border-radius: var(--r-full);
     }
     .cfg-discard-btn {
-      height: 32px; padding: 0 0.875rem;
-      border: 2px solid var(--card-bd); background: var(--bg); color: var(--muted);
-      font-size: var(--text-sm); font-weight: 500; cursor: pointer;
-      box-shadow: var(--px-d2) var(--px-shadow);
+      height: var(--btn-h); padding: 0 0.875rem;
+      border: var(--bd-w) solid var(--border-strong); background: var(--bg); color: var(--muted);
+      font-size: var(--text-base); font-weight: 500; cursor: pointer;
     }
-    .cfg-discard-btn:hover { color: var(--fg); background: var(--bg); border-color: var(--card-bd); box-shadow: var(--px-d1) var(--px-shadow); transform: translate(1px, 1px); }
-    .cfg-discard-btn:active { box-shadow: none; transform: translate(3px, 3px); }
+    .cfg-discard-btn:hover { color: var(--fg); background: var(--card-hov); border-color: var(--border-strong); }
+    .cfg-discard-btn:active { opacity: 0.85; }
     .cfg-pane-area { flex: 1; min-height: 0; position: relative; overflow: hidden; }
     .cfg-pane {
       position: absolute; inset: 0; overflow-y: auto;
@@ -155,10 +154,11 @@ const settingsModalCSS = `
     .cfg-fields { max-width: 640px; display: flex; flex-direction: column; }
     .cfg-section {
       max-width: 640px; margin-bottom: 0.45rem;
-      border: 2px solid var(--card-bd);
-      background: transparent; overflow: hidden; box-shadow: none;
+      border: var(--bd-w) solid var(--border-strong);
+      border-radius: var(--r-lg);
+      background: transparent; overflow: hidden;
     }
-    .cfg-section.is-open { background: var(--card-hov); border-color: var(--hr); }
+    .cfg-section.is-open { background: var(--card-hov); border-color: var(--border); }
     .cfg-section-head {
       display: flex; align-items: flex-start; justify-content: space-between;
       gap: 0.75rem; width: 100%; margin: 0; padding: 0.7rem 0.9rem;
@@ -166,7 +166,7 @@ const settingsModalCSS = `
       text-align: left; color: inherit;
     }
     .cfg-section-head:hover { background: var(--card-hov); }
-    .cfg-section.is-open .cfg-section-head { border-bottom: 2px solid var(--hr); }
+    .cfg-section.is-open .cfg-section-head { border-bottom: var(--bd-w) solid var(--border); border-radius: 0; }
     .cfg-section-head-text { min-width: 0; flex: 1; }
     .cfg-section-title {
       font-size: var(--text-sm); font-weight: 600; letter-spacing: -0.01em;
@@ -194,7 +194,7 @@ const settingsModalCSS = `
       grid-template-columns: 1fr 220px;
       grid-template-areas: "meta ctrl" "desc desc";
       column-gap: 1rem; padding: 0.88rem 0;
-      border-bottom: 2px solid var(--hr); align-items: center;
+      border-bottom: var(--bd-w) solid var(--border); border-radius: 0; align-items: center;
     }
     .cfg-field.multiline {
       grid-template-columns: 1fr;
@@ -216,7 +216,7 @@ const settingsModalCSS = `
       font-family: var(--font-mono);
     }
     .cfg-field-desc { grid-area: desc; font-size: var(--text-xs); color: var(--muted); margin: 0.35rem 0 0; line-height: 1.5; }
-    .cfg-wechat-auth { padding: 0.88rem 0 0; border-top: 2px solid var(--hr); }
+    .cfg-wechat-auth { padding: 0.88rem 0 0; border-top: var(--bd-w) solid var(--border); border-radius: 0; }
     .cfg-wechat-auth-head {
       display: flex; align-items: center; justify-content: space-between;
       gap: 0.75rem; margin-bottom: 0.65rem;
@@ -224,18 +224,18 @@ const settingsModalCSS = `
     .cfg-wechat-auth-title { font-size: var(--text-sm); font-weight: 500; color: var(--body); }
     .cfg-wechat-badge {
       font-size: var(--text-sm); font-weight: 500;
-      padding: 3px 10px; border-radius: 0;
+      padding: 3px 10px; border-radius: var(--r-full);
       color: var(--muted); background: var(--code-bg);
     }
     .cfg-wechat-badge.connected { color: var(--s-ok); background: var(--s-ok-bg); }
     .cfg-wechat-meta { font-size: var(--text-xs); color: var(--muted); line-height: 1.55; margin: 0 0 0.75rem; }
     .cfg-wechat-meta code {
-      font-size: var(--text-2xs); padding: 0.05rem 0.3rem; border-radius: 0;
+      font-size: var(--text-2xs); padding: 0.05rem 0.3rem; border-radius: var(--r-xs);
       background: var(--code-bg); border: 1px solid var(--code-bd);
     }
     .cfg-wechat-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
     .cfg-wechat-qr {
-      margin-top: 0.85rem; padding: 0.75rem; border: 2px solid var(--code-bd);
+      margin-top: 0.85rem; padding: 0.75rem; border: var(--bd-w) solid var(--code-bd);
       background: var(--code-bg); text-align: center;
     }
     .cfg-wechat-qr img { width: 180px; height: 180px; object-fit: contain; background: #fff; }
@@ -243,48 +243,48 @@ const settingsModalCSS = `
     .cfg-wechat-err { font-size: var(--text-xs); color: var(--s-err); margin-top: 0.5rem; }
     .cfg-wechat-ok { font-size: var(--text-xs); color: var(--s-ok); margin-top: 0.5rem; }
     .cfg-input {
-      width: 100%; background: var(--bg); border: 2px solid var(--card-bd);
-      height: 32px; padding: 0 0.65rem;
+      width: 100%; background: var(--bg); border: var(--bd-w) solid var(--border-strong);
+      height: var(--btn-h); padding: 0 0.65rem;
       font-size: var(--text-sm); color: var(--fg); outline: none;
       font-family: var(--font-mono);
-      box-shadow: var(--px-d2) var(--px-shadow);
     }
     .cfg-input:focus { border-color: var(--accent); }
     select.cfg-input { cursor: pointer; }
     input[type="number"].cfg-input { width: 110px; }
     .cfg-textarea {
       width: 100%; resize: vertical; min-height: 60px;
-      background: var(--bg); border: 2px solid var(--card-bd);
+      background: var(--bg); border: var(--bd-w) solid var(--border-strong);
       padding: 0.6rem 0.65rem;
       font-size: var(--text-sm); color: var(--fg); outline: none;
       font-family: var(--font-mono); line-height: 1.5;
-      box-shadow: var(--px-d2) var(--px-shadow);
     }
     .cfg-textarea:focus { border-color: var(--accent); }
     .cfg-reveal-wrap { display: flex; gap: 0.375rem; align-items: center; width: 100%; }
     .cfg-reveal-btn {
-      flex-shrink: 0; width: 32px; height: 32px; padding: 0;
+      flex-shrink: 0; width: var(--btn-h); height: var(--btn-h); padding: 0;
       display: flex; align-items: center; justify-content: center;
-      background: var(--bg); border: 2px solid var(--card-bd);
+      background: var(--bg); border: var(--bd-w) solid var(--border-strong);
+      border-radius: var(--r-xs);
       cursor: pointer; color: var(--muted);
-      box-shadow: var(--px-d1) var(--px-shadow);
     }
-    .cfg-reveal-btn:hover { color: var(--fg); background: var(--bg); border-color: var(--card-bd); box-shadow: var(--px-d0) var(--px-shadow); transform: translate(1px, 1px); }
-    .cfg-reveal-btn:active { box-shadow: none; transform: translate(2px, 2px); }
+    .cfg-reveal-btn:hover { color: var(--fg); background: var(--card-hov); border-color: var(--border-strong); }
+    .cfg-reveal-btn:active { opacity: 0.85; }
     .cfg-reveal-btn svg { width: 13px; height: 13px; }
     .cfg-toggle { display: inline-flex; align-items: center; cursor: pointer; }
     .cfg-toggle input[type="checkbox"] { display: none; }
     .cfg-toggle-pill {
       width: 36px; height: 20px; background: var(--bg);
-      border: 2px solid var(--card-bd);
-      position: relative; box-shadow: none;
+      border: var(--bd-w) solid var(--border-strong);
+      border-radius: var(--r-full);
+      position: relative;
     }
     .cfg-toggle-pill::after {
       content: ''; position: absolute; width: 12px; height: 12px;
-      background: var(--card-bd); top: 2px; left: 3px;
+      background: var(--border-strong); top: 2px; left: 3px;
+      border-radius: var(--r-full);
     }
-    .cfg-toggle input:checked + .cfg-toggle-pill { background: var(--accent); border-color: var(--card-bd); }
-    .cfg-toggle input:checked + .cfg-toggle-pill::after { transform: translateX(14px); background: var(--card-bd); }
+    .cfg-toggle input:checked + .cfg-toggle-pill { background: var(--accent); border-color: var(--border-strong); }
+    .cfg-toggle input:checked + .cfg-toggle-pill::after { transform: translateX(14px); background: var(--border-strong); }
     .cfg-loader { font-size: var(--text-xs); color: var(--muted); padding: 2rem 0; }
     .cfg-err-msg { font-size: var(--text-xs); color: var(--s-err); padding: 2rem 0; }
 
@@ -297,10 +297,11 @@ const settingsModalCSS = `
     .agents-summary { font-size: var(--text-xs); color: var(--muted); }
     .agents-list { display: flex; flex-direction: column; gap: 0.45rem; }
     .agent-card {
-      border: 2px solid var(--card-bd);
+      border: var(--bd-w) solid var(--border-strong);
+      border-radius: var(--r-lg);
       background: var(--bg); padding: 1rem 1.25rem;
       display: flex; flex-direction: column; gap: 0.625rem;
-      box-shadow: none; min-width: 0; overflow: hidden;
+      min-width: 0; overflow: hidden;
     }
     .agent-card:hover { background: var(--card-hov); }
     .agent-card.unavailable { opacity: 0.48; }
@@ -313,17 +314,19 @@ const settingsModalCSS = `
     .agent-card-name {
       font-size: var(--text-sm); font-weight: 600; color: var(--fg);
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      border-radius: 0;
       flex-shrink: 0; max-width: 220px;
     }
     .agent-card-id {
       font-family: var(--font-mono);
       font-size: var(--text-xs); color: var(--fg); opacity: 0.6;
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      border-radius: 0;
       flex: 1; min-width: 0;
     }
     .agent-status-badge {
       font-size: var(--text-xs); font-weight: 500;
-      padding: 2px 8px; border-radius: 0; flex-shrink: 0;
+      padding: 2px 8px; border-radius: var(--r-full); flex-shrink: 0;
       background: var(--code-bg); color: var(--muted); white-space: nowrap;
     }
     .agent-status-badge.ok { color: var(--s-ok); background: var(--s-ok-bg); }
@@ -336,6 +339,7 @@ const settingsModalCSS = `
       font-family: var(--font-mono);
       font-size: var(--text-xs); color: var(--muted);
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      border-radius: 0;
     }
     .agent-meta-path { flex: 1; min-width: 0; max-width: 340px; }
     /* row 3: model pills — always its own row */
@@ -344,7 +348,7 @@ const settingsModalCSS = `
       padding-left: 1.1rem; min-width: 0; overflow: hidden;
     }
     .agent-model-pill {
-      font-size: var(--text-2xs); font-weight: 500; padding: 1px 7px; border-radius: 0;
+      font-size: var(--text-2xs); font-weight: 500; padding: 1px 7px; border-radius: var(--r-full);
       background: var(--code-bg); color: var(--muted);
       white-space: nowrap; max-width: 160px; overflow: hidden; text-overflow: ellipsis;
     }
@@ -363,11 +367,12 @@ const settingsModalCSS = `
       font-family: var(--font-mono); font-size: var(--text-2xs);
       color: var(--muted); opacity: 0.75;
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      border-radius: 0;
       flex: 1; min-width: 0;
     }
     .agent-cli-copy {
       flex-shrink: 0; height: 20px; padding: 0 7px;
-      border: 2px solid var(--code-bd);
+      border: var(--bd-w) solid var(--code-bd);
       background: transparent; color: var(--muted);
       font-size: var(--text-2xs); font-family: var(--font-mono); cursor: pointer;
       white-space: nowrap;
@@ -378,13 +383,13 @@ const settingsModalCSS = `
     /* ── Editor effects ───────────────────────────────────────── */
     .effect-card {
       display: flex; flex-direction: column; align-items: flex-start;
-      padding: 0.38rem 0.8rem; border: 2px solid var(--code-bd);
+      padding: 0.38rem 0.8rem; border: var(--bd-w) solid var(--code-bd);
       background: var(--code-bg); cursor: pointer; min-width: 86px;
-      text-align: left; box-shadow: var(--px-d1) var(--px-shadow);
+      text-align: left;
     }
-    .effect-card:hover { border-color: var(--muted); background: var(--card-hov); box-shadow: var(--px-d0) var(--px-shadow); transform: translate(1px, 1px); }
-    .effect-card:active:not(.active) { box-shadow: none; transform: translate(2px, 2px); }
-    .effect-card.active { border-color: var(--card-bd); background: var(--seg-act-bg); color: var(--seg-act-fg); box-shadow: none; transform: none; }
+    .effect-card:hover { border-color: var(--muted); background: var(--card-hov); }
+    .effect-card:active:not(.active) { opacity: 0.85; }
+    .effect-card.active { border-color: var(--border-strong); background: var(--control-active-bg); color: var(--control-active-fg); }
     .effect-card-name { font-size: var(--text-sm); font-weight: 600; color: var(--fg); }
     .effect-card-desc { font-size: var(--text-xs); color: var(--muted); margin-top: 0.1rem; white-space: nowrap; }
 
@@ -395,21 +400,21 @@ const settingsModalCSS = `
     .notif-saved { font-size: var(--text-xs); color: var(--s-ok); margin: 0; font-weight: 500; }
     .notif-sound-row { display: flex; align-items: center; gap: 0.5rem; max-width: 280px; }
     .notif-play-btn {
-      flex-shrink: 0; width: 32px; height: 32px; padding: 0;
+      flex-shrink: 0; width: var(--btn-h); height: var(--btn-h); padding: 0;
       display: flex; align-items: center; justify-content: center;
-      background: var(--bg); border: 2px solid var(--card-bd);
+      background: var(--bg); border: var(--bd-w) solid var(--border-strong);
+      border-radius: var(--r-xs);
       cursor: pointer; color: var(--muted);
-      box-shadow: var(--px-d1) var(--px-shadow);
     }
-    .notif-play-btn:hover:not(:disabled) { color: var(--fg); background: var(--bg); border-color: var(--card-bd); box-shadow: var(--px-d0) var(--px-shadow); transform: translate(1px, 1px); }
-    .notif-play-btn:active:not(:disabled) { box-shadow: none; transform: translate(2px, 2px); }
+    .notif-play-btn:hover:not(:disabled) { color: var(--fg); background: var(--card-hov); border-color: var(--border-strong); }
+    .notif-play-btn:active:not(:disabled) { opacity: 0.85; }
     .notif-play-btn:disabled { opacity: 0.35; cursor: not-allowed; }
     .notif-play-btn svg { width: 13px; height: 13px; }
     .shortcuts-fields { max-width: 640px; }
     .shortcuts-list { display: flex; flex-direction: column; }
     .shortcuts-row {
       display: flex; align-items: center; justify-content: space-between;
-      padding: 0.55rem 0; border-bottom: 2px solid var(--card-bd); gap: 1rem;
+      padding: 0.55rem 0; border-bottom: var(--bd-w) solid var(--border-strong); border-radius: 0; gap: 1rem;
     }
     .shortcuts-list .shortcuts-row:last-child { border-bottom: none; }
     .shortcuts-row-meta { min-width: 0; flex: 1; }
@@ -419,10 +424,10 @@ const settingsModalCSS = `
     .kbd {
       display: inline-flex; align-items: center;
       padding: 0.18rem 0.42rem;
-      background: var(--bg); border: 2px solid var(--card-bd);
+      border-radius: var(--r-xs);
+      background: var(--bg); border: var(--bd-w) solid var(--border-strong);
       font-family: var(--font-mono);
       font-size: var(--text-xs); color: var(--fg); white-space: nowrap; line-height: 1.4;
-      box-shadow: var(--px-d1) var(--px-shadow);
     }
 
     /* ── Mates pane ───────────────────────────────────────────── */
@@ -431,43 +436,42 @@ const settingsModalCSS = `
     .mates-list { display: flex; flex-direction: column; gap: 0.45rem; }
     .mates-empty { font-size: var(--text-sm); color: var(--muted); padding: 1.5rem 0; }
     .mate-card {
-      border: 2px solid var(--card-bd);
+      border: var(--bd-w) solid var(--border-strong);
+      border-radius: var(--r-lg);
       background: var(--bg); padding: 0.875rem 1.25rem;
       display: flex; align-items: flex-start; gap: 0.875rem;
-      box-shadow: none;
     }
     .mate-card:hover { background: var(--card-hov); }
     .mate-card.disabled-card { opacity: 0.45; }
     .mate-avatar {
       flex-shrink: 0; width: 36px; height: 36px; border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
-      font-size: 0.875rem; font-weight: 700; color: #000;
+      font-size: 0.875rem; font-weight: 700; color: var(--inverse-ink);
       background: var(--muted); user-select: none;
-      border: 2px solid var(--card-bd);
-      box-shadow: var(--px-d1) var(--px-shadow);
+      border: var(--bd-w) solid var(--border-strong);
     }
     .mate-card-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.3rem; }
     .mate-card-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.5rem; min-width: 0; }
-    .mate-card-name { font-size: var(--text-sm); font-weight: 600; color: var(--fg); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; min-width: 0; padding-top: 0.1rem; }
+    .mate-card-name { font-size: var(--text-sm); font-weight: 600; color: var(--fg); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border-radius: 0; flex: 1; min-width: 0; padding-top: 0.1rem; }
     .mate-card-desc { font-size: var(--text-xs); color: var(--muted); line-height: 1.5; }
     .mate-card-actions { display: flex; gap: 0.3rem; flex-shrink: 0; }
     .mate-card-tags { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.15rem; }
     .mate-badge {
-      font-size: var(--text-xs); font-weight: 500; padding: 2px 8px; border-radius: 0;
+      font-size: var(--text-xs); font-weight: 500; padding: 2px 8px; border-radius: var(--r-full);
       background: var(--code-bg); color: var(--muted);
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px;
     }
     .mate-badge.trigger { color: var(--s-ok); background: var(--s-ok-bg); }
     .mate-act-btn {
-      height: 26px; padding: 0 0.6rem;
-      border: 2px solid var(--card-bd); background: transparent;
+      height: var(--btn-h-xs); padding: 0 0.65rem;
+      border: var(--bd-w) solid var(--border-strong); background: transparent;
       color: var(--muted); font-size: var(--text-xs); font-weight: 500;
-      cursor: pointer; box-shadow: var(--px-d1) var(--px-shadow);
+      cursor: pointer;
     }
-    .mate-act-btn:hover { color: var(--fg); background: transparent; box-shadow: var(--px-d0) var(--px-shadow); transform: translate(1px, 1px); }
-    .mate-act-btn:active { box-shadow: none; transform: translate(2px, 2px); }
-    .mate-act-btn.del { background: var(--p1); border-color: var(--card-bd); color: var(--fg); }
-    .mate-act-btn.del:hover { background: var(--p1); border-color: var(--card-bd); color: var(--fg); }
+    .mate-act-btn:hover { color: var(--fg); background: var(--card-hov); }
+    .mate-act-btn:active { opacity: 0.85; }
+    .mate-act-btn.del { background: var(--s-err); border-color: var(--border-strong); color: var(--s-err-fg); }
+    .mate-act-btn.del:hover { opacity: 0.85; }
     .mate-form-wrap { max-width: 780px; }
     .mate-form-header { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 2rem; }
     .mate-back-btn {
@@ -486,12 +490,12 @@ const settingsModalCSS = `
     .mate-form-section:first-child { padding-top: 0; }
     .mate-form-section-triggers { gap: 1rem; }
     .mate-form-section-title {
-      font-size: var(--text-xs); font-weight: 700; letter-spacing: 0.05em;
+      font-size: var(--text-xs); font-weight: var(--fw-medium); letter-spacing: 0.05em;
       text-transform: uppercase; color: var(--fg); margin: 0;
       display: flex; align-items: center; gap: 0.6rem; white-space: nowrap;
     }
     .mate-form-section-title::after {
-      content: ''; flex: 1; height: 2px; background: var(--card-bd);
+      content: ''; flex: 1; height: 2px; background: var(--border-strong); border-radius: 0;
     }
     .mate-trigger-section-top { display: flex; flex-direction: column; gap: 0.4rem; }
     .mate-section-desc { font-size: var(--text-sm); color: var(--muted); line-height: 1.5; margin: 0; }
@@ -499,12 +503,12 @@ const settingsModalCSS = `
     .mate-form-row > * { flex: 1; min-width: 0; }
     .mate-form-label { display: block; font-size: var(--text-sm); font-weight: 600; color: var(--fg); margin-bottom: 0.4rem; }
     .mate-form-input, .mate-form-select, .mate-form-textarea {
-      width: 100%; background: var(--bg); border: 2px solid var(--card-bd);
+      width: 100%; background: var(--bg); border: var(--bd-w) solid var(--border-strong);
       padding: 0.6rem 0.75rem;
       font-size: var(--text-sm); color: var(--fg); outline: none;
-      font-family: inherit; box-shadow: var(--px-d2) var(--px-shadow);
+      font-family: inherit;
     }
-    .mate-form-input:focus, .mate-form-select:focus, .mate-form-textarea:focus { border-color: var(--card-bd); box-shadow: var(--px-d3) var(--px-shadow); }
+    .mate-form-input:focus, .mate-form-select:focus, .mate-form-textarea:focus { border-color: var(--accent); }
     .mate-form-textarea { resize: vertical; overflow: hidden; line-height: 1.55; }
     .mate-trigger-section-hdr {
       display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;
@@ -518,7 +522,7 @@ const settingsModalCSS = `
     .mate-trigger-add:hover { color: var(--fg); }
     .mate-triggers-empty {
       font-size: var(--text-sm); color: var(--muted); line-height: 1.5;
-      padding: 1.1rem 1rem; border: 2px solid var(--code-bd);
+      padding: 1.1rem 1rem; border: var(--bd-w) solid var(--code-bd);
       text-align: center; font-style: italic; opacity: 0.6;
     }
     .mate-var-panel { margin-bottom: 0.5rem; }
@@ -528,26 +532,27 @@ const settingsModalCSS = `
     }
     .mate-var-chips { display: flex; flex-wrap: wrap; gap: 0.35rem; }
     .mate-var-chip {
-      display: inline-flex; align-items: center; height: 26px; padding: 0 0.6rem;
-      border: 2px solid var(--card-bd); background: var(--bg);
-      cursor: pointer; box-shadow: var(--px-d1) var(--px-shadow);
+      display: inline-flex; align-items: center; height: var(--btn-h-xs); padding: 0 0.6rem;
+      border: var(--bd-w) solid var(--border-strong); background: var(--bg);
+      border-radius: var(--r-full);
+      cursor: pointer;
     }
-    .mate-var-chip:hover { border-color: var(--card-bd); background: transparent; box-shadow: var(--px-d0) var(--px-shadow); transform: translate(1px, 1px); }
-    .mate-var-chip:active { box-shadow: none; transform: translate(2px, 2px); }
+    .mate-var-chip:hover { border-color: var(--border-strong); background: transparent; }
+    .mate-var-chip:active { opacity: 0.85; }
     .mate-var-chip code {
       font-family: var(--font-mono);
       font-size: var(--text-xs); font-weight: 600; color: var(--fg); opacity: 0.8;
     }
     .mate-trigger-list { display: flex; flex-direction: column; gap: 1rem; }
     .mate-trigger-card {
-      background: var(--bg); border: 2px solid var(--card-bd);
+      background: var(--bg); border: var(--bd-w) solid var(--border-strong);
+      border-radius: var(--r-lg);
       padding: 1rem 1.15rem 1.15rem;
       display: flex; flex-direction: column; gap: 1rem;
-      box-shadow: var(--px-d1) var(--px-shadow);
     }
     .mate-trigger-hdr {
       display: flex; align-items: center; justify-content: space-between;
-      padding-bottom: 0.75rem; border-bottom: 2px solid var(--card-bd);
+      padding-bottom: 0.75rem; border-bottom: var(--bd-w) solid var(--border-strong); border-radius: 0;
     }
     .mate-trigger-label { font-size: var(--text-sm); font-weight: 600; color: var(--fg); }
     .mate-trigger-hdr-actions { display: flex; align-items: center; gap: 0.65rem; }
@@ -564,14 +569,14 @@ const settingsModalCSS = `
     .mate-prompt-textarea { font-family: var(--font-mono); font-size: var(--text-sm); }
     .mate-schedule-presets { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.65rem; }
     .mate-schedule-preset {
-      height: 28px; padding: 0 0.65rem;
-      border: 2px solid var(--card-bd); background: transparent;
+      height: var(--btn-h-xs); padding: 0 0.65rem;
+      border: var(--bd-w) solid var(--border-strong); background: transparent;
       color: var(--muted); font-size: var(--text-xs); font-weight: 500;
-      cursor: pointer; box-shadow: var(--px-d1) var(--px-shadow);
+      cursor: pointer;
     }
-    .mate-schedule-preset:hover:not(.active) { color: var(--fg); border-color: var(--card-bd); background: transparent; box-shadow: var(--px-d0) var(--px-shadow); transform: translate(1px, 1px); }
-    .mate-schedule-preset:active:not(.active) { box-shadow: none; transform: translate(2px, 2px); }
-    .mate-schedule-preset.active { color: var(--fg); border-color: var(--card-bd); background: var(--accent); box-shadow: var(--px-d1) var(--px-shadow); }
+    .mate-schedule-preset:hover:not(.active) { color: var(--fg); border-color: var(--border-strong); background: transparent; }
+    .mate-schedule-preset:active:not(.active) { opacity: 0.85; }
+    .mate-schedule-preset.active { color: var(--control-active-fg); border-color: var(--border-strong); background: var(--control-active-bg); }
     .mate-schedule-custom-label { display: block; font-size: var(--text-xs); color: var(--muted); margin-bottom: 0.3rem; }
     .mate-weekday-toggles { align-items: center; margin-bottom: 0.4rem; }
     .mate-schedule-kind-seg { margin-bottom: 0.85rem; }
@@ -582,51 +587,47 @@ const settingsModalCSS = `
       border: none;
       box-shadow: 0 0 0 2px transparent, 0 0 0 4px transparent;
     }
-    .mate-color-swatch:hover { transform: none; }
-    .mate-color-swatch.active { box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--card-bd); }
+    .mate-color-swatch.active { box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--border-strong); }
     .mate-form-footer {
       display: flex; align-items: center; gap: 0.5rem;
-      margin-top: 0.25rem; padding-top: 1.1rem; border-top: 2px solid var(--card-bd);
+      margin-top: 0.25rem; padding-top: 1.1rem; border-top: var(--bd-w) solid var(--border-strong); border-radius: 0;
     }
     .mate-save-btn {
-      height: 32px; padding: 0 1rem;
-      border: 2px solid var(--card-bd); background: var(--accent); color: var(--fg);
-      font-size: var(--text-sm); font-weight: 600; cursor: pointer;
-      box-shadow: var(--px-d2) var(--px-shadow);
+      height: var(--btn-h); padding: 0 0.875rem;
+      border: var(--bd-w) solid var(--border-strong); background: var(--accent); color: var(--accent-fg);
+      font-size: var(--text-base); font-weight: 500; cursor: pointer;
     }
-    .mate-save-btn:hover:not(:disabled) { background: var(--bg); border-color: var(--card-bd); box-shadow: var(--px-d1) var(--px-shadow); transform: translate(1px, 1px); }
-    .mate-save-btn:active:not(:disabled) { box-shadow: none; transform: translate(3px, 3px); }
+    .mate-save-btn:hover:not(:disabled) { background: var(--bg); border-color: var(--border-strong); }
+    .mate-save-btn:active:not(:disabled) { opacity: 0.85; }
     .mate-save-btn:disabled { opacity: 0.4; cursor: not-allowed; }
     .mate-cancel-btn {
-      height: 32px; padding: 0 0.875rem;
-      border: 2px solid var(--card-bd); background: transparent;
-      color: var(--muted); font-size: var(--text-sm); cursor: pointer;
-      box-shadow: var(--px-d2) var(--px-shadow);
+      height: var(--btn-h); padding: 0 0.875rem;
+      border: var(--bd-w) solid var(--border-strong); background: transparent;
+      color: var(--muted); font-size: var(--text-base); font-weight: 500; cursor: pointer;
     }
-    .mate-cancel-btn:hover { color: var(--fg); background: var(--bg); border-color: var(--card-bd); box-shadow: var(--px-d1) var(--px-shadow); transform: translate(1px, 1px); }
-    .mate-cancel-btn:active { box-shadow: none; transform: translate(3px, 3px); }
+    .mate-cancel-btn:hover { color: var(--fg); background: var(--bg); border-color: var(--border-strong); }
+    .mate-cancel-btn:active { opacity: 0.85; }
     .mate-form-err { flex: 1; font-size: var(--text-xs); color: var(--s-err); }
 
     /* ── Custom select ─────────────────────────────────────────── */
     .cselect { position: relative; width: 100%; }
     .cselect-btn {
       width: 100%; display: flex; align-items: center; justify-content: space-between;
-      gap: 0.4rem; height: 32px; padding: 0 0.75rem;
-      background: var(--bg); border: 2px solid var(--card-bd);
+      gap: 0.4rem; height: var(--btn-h); padding: 0 0.75rem;
+      background: var(--bg); border: var(--bd-w) solid var(--border-strong);
       cursor: pointer; text-align: left;
-      font-size: var(--text-sm); font-family: inherit; color: var(--fg);
-      box-shadow: var(--px-d2) var(--px-shadow);
+      font-size: var(--text-base); font-family: inherit; color: var(--fg);
     }
-    .cselect-btn:focus { outline: none; border-color: var(--card-bd); box-shadow: var(--px-d3) var(--px-shadow); }
-    .cselect-btn.open { border-color: var(--card-bd); box-shadow: var(--px-d3) var(--px-shadow); }
-    .cselect-btn-text { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .cselect-btn:focus { outline: none; border-color: var(--accent); }
+    .cselect-btn.open { border-color: var(--accent); }
+    .cselect-btn-text { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border-radius: 0; }
     .cselect-btn svg { width: 11px; height: 11px; flex-shrink: 0; color: var(--muted); }
     .cselect-btn.open svg { transform: rotate(180deg); }
     .cselect-dropdown {
       position: absolute; top: calc(100% + 3px); left: 0; right: 0; z-index: 120;
-      background: var(--bg); border: 2px solid var(--card-bd);
+      background: var(--surface-soft); border: var(--bd-w) solid var(--border-strong);
+      border-radius: var(--r-md);
       overflow: hidden;
-      box-shadow: var(--px-d3) var(--px-shadow);
       max-height: 220px; overflow-y: auto;
     }
     .cselect-option {
@@ -636,7 +637,7 @@ const settingsModalCSS = `
       color: var(--fg);
     }
     .cselect-option:hover { background: var(--card-hov); }
-    .cselect-option.sel { color: var(--fg); }
+    .cselect-option.sel { background: var(--control-active-bg); color: var(--control-active-fg); }
     .cselect-option-dot {
       width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
       background: var(--fg); opacity: 0;
@@ -650,16 +651,16 @@ const settingsModalCSS = `
     }
     .skills-desc code {
       font-family: var(--font-mono); font-size: var(--text-xs);
-      padding: 0.05rem 0.35rem;
-      background: var(--code-bg); border: 2px solid var(--card-bd);
+      padding: 0.05rem 0.35rem; border-radius: var(--r-xs);
+      background: var(--code-bg); border: var(--bd-w) solid var(--border-strong);
     }
     .skills-list { display: flex; flex-direction: column; gap: 0.45rem; }
     .skills-empty { font-size: var(--text-sm); color: var(--muted); padding: 1.5rem 0; }
     .skill-card {
-      border: 2px solid var(--card-bd);
+      border: var(--bd-w) solid var(--border-strong);
+      border-radius: var(--r-lg);
       background: var(--bg); padding: 0.75rem 1.25rem;
       display: flex; align-items: center; justify-content: space-between; gap: 1rem;
-      box-shadow: none;
     }
     .skill-card:hover { background: var(--card-hov); }
     .skill-card.not-installed .skill-card-left { opacity: 0.7; }
@@ -672,27 +673,28 @@ const settingsModalCSS = `
     .skill-name { font-size: var(--text-sm); font-weight: 600; color: var(--fg); }
     .skill-default-badge {
       font-size: var(--text-xs); font-weight: 500; padding: 2px 8px;
-      border-radius: 0; background: var(--code-bg); color: var(--muted);
+      border-radius: var(--r-full); background: var(--code-bg); color: var(--muted);
     }
     .skill-toggling { opacity: 0.55; pointer-events: none; }
     .skill-repo-link {
       font-size: var(--text-xs); color: var(--muted); font-family: var(--font-mono);
       text-decoration: none; opacity: 0.65;
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 260px;
+      border-radius: 0;
       transition: color 100ms, opacity 100ms;
     }
     .skill-repo-link:hover { color: var(--accent); opacity: 1; }
     .skill-act-btn {
-      height: 26px; padding: 0 0.65rem;
-      border: 2px solid var(--card-bd); background: var(--bg);
+      height: var(--btn-h-xs); padding: 0 0.65rem;
+      border: var(--bd-w) solid var(--border-strong); background: var(--bg);
       color: var(--fg); font-size: var(--text-xs); font-weight: 500;
-      cursor: pointer; box-shadow: var(--px-d1) var(--px-shadow); white-space: nowrap;
+      cursor: pointer; white-space: nowrap;
     }
-    .skill-act-btn:hover:not(:disabled) { box-shadow: var(--px-d0) var(--px-shadow); transform: translate(1px, 1px); }
-    .skill-act-btn:active:not(:disabled) { box-shadow: none; transform: translate(2px, 2px); }
+    .skill-act-btn:hover:not(:disabled) { background: var(--card-hov); }
+    .skill-act-btn:active:not(:disabled) { opacity: 0.85; }
     .skill-act-btn:disabled { opacity: 0.45; cursor: not-allowed; }
-    .skill-act-btn--del { background: var(--p1); color: var(--fg); border-color: var(--card-bd); }
-    .skill-act-btn--del:hover:not(:disabled) { background: var(--p1); }
+    .skill-act-btn--del { background: var(--s-err); color: var(--s-err-fg); border-color: var(--border-strong); }
+    .skill-act-btn--del:hover:not(:disabled) { opacity: 0.85; }
 
     /* ── Placeholder text ────────────────────────────────────── */
     .mate-form-input::placeholder,
@@ -714,10 +716,10 @@ func settingsModalHTML() string {
     <div class="settings-modal-panel" @mousedown.stop>
       <div class="settings-modal-bar">
         <span class="settings-modal-title">Settings</span>
-        <button class="settings-modal-close-btn" @click="$store.settingsModal.open = false" type="button">
+        <button class="icon-btn-close" @click="$store.settingsModal.open = false" type="button">
           <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6"/>
-            <path stroke-linecap="round" stroke-linejoin="round" d="m6 6 12 12"/>
+            <path stroke-linecap="round" d="M18 6 6 18"/>
+            <path stroke-linecap="round" d="m6 6 12 12"/>
           </svg>
         </button>
       </div>
@@ -1375,7 +1377,7 @@ func settingsModalHTML() string {
                               <div class="mate-trigger-block mate-trigger-paths">
                                 <div class="mate-block-label">
                                   <span class="mate-block-title">Path Prefixes <span style="font-weight:400;opacity:0.6;">(optional)</span></span>
-                                  <span class="mate-block-hint">Only fire when the event path starts with one of these prefixes. Leave empty to match all paths. One prefix per line, e.g. <code style="font-size:var(--text-2xs);padding:0 3px;background:var(--code-bg);border-radius:2px;">/journal/</code></span>
+                                  <span class="mate-block-hint">Only fire when the event path starts with one of these prefixes. Leave empty to match all paths. One prefix per line, e.g. <code style="font-size:var(--text-2xs);padding:0 3px;background:var(--code-bg);border-radius:var(--r-xs);">/journal/</code></span>
                                 </div>
                                 <textarea class="mate-form-textarea"
                                           rows="2"

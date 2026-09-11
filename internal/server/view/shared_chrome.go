@@ -1,67 +1,47 @@
 package view
 
-// navCSS is the stylesheet for the shared left navigation strip.
-// Drop it inside a page's <style> block.
+// navCSS is the stylesheet for the shared left navigation strip. Deliberately
+// neutral — this rail is pure function (new note, drawer, short note,
+// search, settings). Its is-active state uses the same --control-active-bg/fg
+// surface lift as every other "currently selected" indicator app-wide (see
+// shared_tokens.go); only the compose button breaks from that, as the app's
+// one primary CTA. Drop it inside a page's <style> block.
 const navCSS = `
     /* ── Left nav ─────────────────────────────────────────────── */
     .lib-nav {
       flex-shrink: 0; width: var(--nav-w); height: 100%;
-      background: var(--nav-bg); border-right: 2px solid var(--hr);
+      background: var(--surface-soft); border-right: var(--bd-w) solid var(--border);
+      border-radius: 0; /* edge-docked chrome, flush to the viewport — never rounds */
       display: flex; flex-direction: column; align-items: center;
-      padding: var(--space-lg) 0; gap: var(--space-xs);
+      padding: 14px 0; gap: 6px;
       view-transition-name: page-nav;
     }
     .nav-item {
       display: flex; align-items: center; justify-content: center;
       width: var(--nav-item-sz); height: var(--nav-item-sz);
-      color: rgba(0,0,0,0.52);
+      color: var(--muted); border-radius: var(--r-sm);
       text-decoration: none; border: none; background: transparent; padding: 0;
     }
-    .nav-item:hover { color: var(--fg); background: rgba(0,0,0,0.1); }
-    .nav-item.active { background: var(--seg-act-bg); color: var(--seg-act-fg); box-shadow: var(--px-d1) var(--px-shadow); }
-    .nav-item svg { width: 19px; height: 19px; }
+    .nav-item:hover { color: var(--fg); background: var(--card-hov); }
+    .nav-item.is-active { background: var(--control-active-bg); color: var(--control-active-fg); }
+    .nav-item svg { width: 14px; height: 14px; }
     .nav-spacer { flex: 1; }
     .lib-nav, .nav-item { user-select: none; }
-    .nav-item-wrap { position: relative; display: flex; align-items: center; justify-content: center; }
+    /* The one deliberately bolder icon — new note is the primary action, so
+       it's the app's one button-primary: accent fill, exactly like the
+       drawer's publish button and every other primary CTA. Circular and a
+       touch smaller than the other nav slots so it reads as a compact
+       accent mark rather than a heavy block. */
     .nav-compose-btn {
       display: flex; align-items: center; justify-content: center;
-      width: 30px; height: 30px; margin-top: var(--space-sm);
-      background: var(--nav-act);
+      width: var(--action-btn-sz); height: var(--action-btn-sz);
+      background: var(--accent); border-radius: 50%;
       border: none;
-      color: rgba(0,0,0,0.55); cursor: pointer; padding: 0;
+      color: var(--accent-fg); cursor: pointer; padding: 0;
       user-select: none;
     }
-    .nav-compose-btn:hover { background: var(--seg-act-bg); color: var(--seg-act-fg); }
-    .nav-compose-btn svg { width: 17px; height: 17px; flex-shrink: 0; }
-    .nav-run-badge {
-      display: none; position: absolute; top: -4px; right: -4px;
-      min-width: 14px; height: 14px; padding: 0 3px;
-      background-color: var(--seg-act-bg);
-      color: var(--accent);
-      font-size: var(--text-2xs); font-weight: var(--fw-semibold); line-height: 14px;
-      text-align: center;
-    }`
-
-// svgHome is the Lucide "Layers" icon used for the Home nav item.
-const svgHome = `<svg fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z"/>
-        <path stroke-linecap="round" stroke-linejoin="round" d="M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12"/>
-        <path stroke-linecap="round" stroke-linejoin="round" d="M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17"/>
-      </svg>`
-
-// svgAgent is the Lucide "Users" icon used for the Mate nav item.
-const svgAgent = `<svg fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
-        <circle cx="9" cy="7" r="4"/>
-        <path stroke-linecap="round" stroke-linejoin="round" d="M16 3.128a4 4 0 0 1 0 7.744"/>
-        <path stroke-linecap="round" stroke-linejoin="round" d="M22 21v-2a4 4 0 0 0-3-3.87"/>
-      </svg>`
-
-// svgInbox is the Lucide "Inbox" icon used for the Inbox nav item.
-const svgInbox = `<svg fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24">
-        <polyline points="22 12 16 12 14 15 10 15 8 12 2 12" stroke-linecap="round" stroke-linejoin="round"/>
-        <path stroke-linecap="round" stroke-linejoin="round" d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>
-      </svg>`
+    .nav-compose-btn:hover { background: var(--accent-hov); }
+    .nav-compose-btn svg { width: 14px; height: 14px; flex-shrink: 0; }`
 
 // svgCompose is the Lucide "Plus" icon used for the quick new-note button.
 const svgCompose = `<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14M5 12h14"/></svg>`
@@ -84,16 +64,17 @@ const topbarCSS = `
     .lib-topbar {
       flex-shrink: 0; height: var(--topbar-h);
       display: flex; align-items: center;
-      padding: 0 1rem; border-bottom: 2px solid var(--hr); background: var(--bg);
+      padding: 0 1rem; border-bottom: var(--bd-w) solid var(--border); background: var(--bg);
+      border-radius: 0; /* edge-docked chrome, flush to the viewport — never rounds */
       user-select: none;
     }
-    .lib-topbar-left { display: flex; align-items: center; gap: 0.5rem; min-width: 0; }
     .lib-topbar-spacer { flex: 1; min-width: 0; }
     .lib-topbar-actions { display: flex; align-items: center; gap: 0.5rem; min-width: 0; }
     .lib-status {
       display: inline-flex; align-items: center; gap: 0.28rem; padding: 0 7px;
       color: var(--muted); font-size: var(--text-sm); line-height: 1;
-      border: 1px solid var(--hr); height: 22px;
+      border: 1px solid var(--border); height: 22px;
+      border-radius: var(--r-full);
     }
     .lib-status-value { color: var(--muted); opacity: 0.8; font-weight: 500; font-variant-numeric: tabular-nums; }
     .lib-status-label { letter-spacing: 0.01em; }
@@ -102,103 +83,52 @@ const topbarCSS = `
       width: var(--action-btn-sz); height: var(--action-btn-sz); padding: 0; border: none;
       background: transparent; color: var(--muted); cursor: pointer;
     }
-    .lib-action-btn:hover, .lib-action-btn.is-active { color: var(--fg); background: var(--icon-hov); }
-    .lib-action-btn.is-active { color: var(--accent); }
+    .lib-action-btn:hover { color: var(--fg); background: var(--icon-hov); }
+    .lib-action-btn.is-active { color: var(--control-active-fg); background: var(--control-active-bg); }
     .lib-action-btn svg { width: 15px; height: 15px; flex-shrink: 0; }
     .lib-action-btn .lib-ai-px { display: none; }
-    .lib-back-btn .lib-ai-px { display: none; }
     .lib-action-btn.spinning svg { animation: lib-spin 0.6s linear infinite; }
     @keyframes lib-spin { to { transform: rotate(360deg); } }
-    .lib-back-btn {
-      display: inline-flex; align-items: center; gap: 0.3rem;
-      height: var(--action-btn-sz); padding: 0 0.5rem 0 0.35rem;
-      border: none; background: transparent;
-      color: var(--muted); cursor: pointer; text-decoration: none;
-      font-size: var(--text-base); font-weight: 500; white-space: nowrap;
-    }
-    .lib-back-btn:hover { color: var(--fg); background: var(--icon-hov); }
-    .lib-back-btn svg { width: 15px; height: 15px; flex-shrink: 0; }
     html.macos .lib-topbar { -webkit-app-region: drag; padding-left: 76px; cursor: default; }
     html.macos .lib-topbar button,
     html.macos .lib-topbar a { -webkit-app-region: no-drag; }`
 
-// navHTML returns the complete <nav class="lib-nav">…</nav> HTML block.
-// active should be the page's own name: "home", "agent", "inbox", "graph", "settings",
-// or a sub-page name ("images", "shorts", "dir", "library") — sub-pages highlight their parent.
-// Inbox is nested under /agent (shares its Electron section view) but gets its own nav icon
-// and active state, distinct from Agent Chat.
-func navHTML(active string) string {
-	// sub-pages of Home highlight the Home nav item
-	if active == "images" || active == "shorts" || active == "dir" || active == "library" || active == "folders" || active == "graph" {
-		active = "home"
-	}
-	cls := func(page string) string {
-		if page == active {
-			return `class="nav-item active"`
-		}
-		return `class="nav-item"`
-	}
+// navHTML returns the complete <nav class="lib-nav">…</nav> HTML block. Home
+// is the app's only page now — everything else (Inbox, Agent Chat, Graph,
+// Images, Shorts, folders) lives behind its sidebar (see home.html) — so this
+// no longer takes an "active page" param: the first nav item doesn't navigate
+// anywhere, it opens the same search overlay as the topbar's search button.
+func navHTML() string {
 	return `  <nav class="lib-nav">
-    <a href="/home" ` + cls("home") + ` title="Home">
-      ` + svgHome + `
-    </a>
-    <a href="/agent/inbox" ` + cls("inbox") + ` title="Inbox">
-      <span class="nav-item-wrap">
-        ` + svgInbox + `
-        <span class="nav-run-badge" id="_nav-inbox-badge"></span>
-      </span>
-    </a>
-    <a href="/agent" ` + cls("agent") + ` title="Agent Chat">
-      <span class="nav-item-wrap">
-        ` + svgAgent + `
-        <span class="nav-run-badge" id="_nav-agent-badge"></span>
-      </span>
-    </a>
     <button type="button" class="nav-compose-btn" title="New note (Ctrl+N)"
             onclick="window.__vaultrDrawer && void window.__vaultrDrawer.openNewInDrawer('','')">
       ` + svgCompose + `
     </button>
+    <button type="button" class="nav-item"
+            :class="{ 'is-active': drawerOpen }"
+            :title="/Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent) ? 'Reading drawer (⌘E)' : 'Reading drawer (Ctrl+E)'"
+            @click="drawerOpen = !drawerOpen">
+      ` + svgPanel + `
+    </button>
+    <button type="button" class="nav-item" title="New short note (Ctrl+.)"
+            onclick="window.openShortDialog && window.openShortDialog()">
+      ` + svgShort + `
+    </button>
+    <button type="button" class="nav-item"
+            :title="/Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent) ? 'Search (⌘K)' : 'Search (Ctrl+K)'"
+            @click="window.dispatchEvent(new CustomEvent('open-search'))">
+      ` + svgSearch + `
+    </button>
     <div class="nav-spacer"></div>
-    <button type="button" ` + cls("settings") + ` title="Settings" @click="$store.settingsModal.open = true; $el.blur()">
+    <button type="button" class="nav-item" title="Settings" @click="$store.settingsModal.open = true; $el.blur()">
       ` + svgSettings + `
     </button>
   </nav>
   <script>
-  (function(){
-    var _t = null;
-    function _setBadge(id, n) {
-      var b = document.getElementById(id);
-      if (!b) return;
-      b.textContent = n > 9 ? '9+' : String(n);
-      b.style.display = n > 0 ? 'block' : 'none';
-    }
-    function _poll() {
-      fetch('/api/runs/active').then(function(r){return r.json();}).then(function(d){
-        _setBadge('_nav-agent-badge', (d && d.count) ? d.count : 0);
-      }).catch(function(){});
-      fetch('/api/inbox/unread-count').then(function(r){return r.json();}).then(function(d){
-        _setBadge('_nav-inbox-badge', (d && d.count) ? d.count : 0);
-      }).catch(function(){});
-      _t = setTimeout(_poll, 3000);
-    }
-    document.addEventListener('visibilitychange', function(){
-      if (document.hidden) { clearTimeout(_t); _t = null; }
-      else { _poll(); }
-    });
-    if (!document.hidden) { _poll(); }
-  })();
   document.addEventListener('DOMContentLoaded', function() {
-    window.__vaultrHotkeys.register('nav-home', '1', function() {
+    window.__vaultrHotkeys.register('nav-search', '1', function() {
       if (window.__vaultrAnyModalOpen && window.__vaultrAnyModalOpen()) return;
-      window.location.href = '/home';
-    });
-    window.__vaultrHotkeys.register('nav-inbox', '2', function() {
-      if (window.__vaultrAnyModalOpen && window.__vaultrAnyModalOpen()) return;
-      window.location.href = '/agent/inbox';
-    });
-    window.__vaultrHotkeys.register('nav-agent', '3', function() {
-      if (window.__vaultrAnyModalOpen && window.__vaultrAnyModalOpen()) return;
-      window.location.href = '/agent';
+      window.dispatchEvent(new CustomEvent('open-search'));
     });
     window.__vaultrHotkeys.register('refresh', 'r', function() {
       if (typeof window.__vaultrBackgroundRefresh === 'function') {
@@ -212,34 +142,20 @@ func navHTML(active string) string {
 }
 
 // topbarActionsHTML returns the shared right-side action button group used on
-// every page: drawer toggle → short note → search → reload.
+// every page: just reload. The drawer toggle, short-note trigger, and search
+// that used to live here have all moved to the left nav rail (see navHTML)
+// alongside the rest of the app's global actions.
 //
 //   - reloadClick: JS expression for the reload @click (e.g. "refresh()", "window.location.reload()")
 //   - reloadTitle: tooltip text (e.g. "Refresh", "Refresh home")
 //   - reloadExtraClass: Alpine :class value for the reload button; pass "" for none (graph passes "loading && 'spinning'")
-//   - searchExtraDetail: extra detail object for the open-search CustomEvent; pass "" for none (graph passes "{ mode: 'knowledge' }")
-func topbarActionsHTML(reloadClick, reloadTitle, reloadExtraClass, searchExtraDetail string) string {
-	const macCheck = `/Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent)`
-
+func topbarActionsHTML(reloadClick, reloadTitle, reloadExtraClass string) string {
 	reloadClassAttr := ""
 	if reloadExtraClass != "" {
 		reloadClassAttr = ` :class="` + reloadExtraClass + `"`
 	}
 
-	searchEvent := "new CustomEvent('open-search')"
-	if searchExtraDetail != "" {
-		searchEvent = "new CustomEvent('open-search', { detail: " + searchExtraDetail + " })"
-	}
-
 	return `    <div class="lib-topbar-actions">
-      <button type="button" class="lib-action-btn"
-              :class="{ 'is-active': drawerOpen }"
-              :title="` + macCheck + ` ? 'Reading drawer (⌘E)' : 'Reading drawer (Ctrl+E)'"
-              @click="drawerOpen = !drawerOpen">` + topbarIconPanel + `</button>
-      ` + shortTriggerButton + `
       <button type="button" class="lib-action-btn"` + reloadClassAttr + ` title="` + reloadTitle + `" @click="` + reloadClick + `">` + topbarIconReload + `</button>
-      <button type="button" class="lib-action-btn"
-              :title="` + macCheck + ` ? 'Search (⌘K)' : 'Search (Ctrl+K)'"
-              @click="window.dispatchEvent(` + searchEvent + `)">` + topbarIconSearch + `</button>
     </div>`
 }

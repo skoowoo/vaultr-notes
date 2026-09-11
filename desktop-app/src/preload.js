@@ -10,7 +10,6 @@ contextBridge.exposeInMainWorld("vaultrDesktop", {
   getServerUrl: () => ipcRenderer.invoke("get-server-url"),
   setServerUrl: (url) => ipcRenderer.invoke("set-server-url", url),
   restartServer: () => ipcRenderer.invoke("restart-vaultr-server"),
-  navigateToLibrary: () => ipcRenderer.invoke("navigate-library"),
   syncVaultDataAcrossSections: () => ipcRenderer.invoke("sync-vault-data-across-sections"),
   setViewBgColor: (color) => ipcRenderer.send("set-view-bg-color", color),
   setWindowButtonVisibility: (visible) => ipcRenderer.send("set-window-button-visibility", visible),

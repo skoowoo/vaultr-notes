@@ -4,10 +4,17 @@ const searchOverlayStyles = `
     /* ── Search UI ─────────────────────────────────────── */
     .srch-panel {
       border-color: var(--srch-panel-bd) !important;
-      border-width: 2px;
-      box-shadow: var(--srch-panel-shadow);
+      border-width: var(--bd-w);
+      background: var(--glass-bg);
+      backdrop-filter: var(--glass-filter);
+      -webkit-backdrop-filter: var(--glass-filter);
     }
-    .srch-row   { border-color: var(--srch-row-bd) !important; border-bottom-width: 2px; background: var(--srch-row-bg); }
+    .srch-backdrop {
+      background: var(--srch-backdrop);
+      backdrop-filter: var(--glass-scrim-filter);
+      -webkit-backdrop-filter: var(--glass-scrim-filter);
+    }
+    .srch-row   { border-color: var(--srch-row-bd) !important; border-bottom-width: var(--bd-w); border-radius: 0; }
     .srch-icon  { color: var(--srch-ic); transition: color 150ms; }
     .srch-row:focus-within .srch-icon { color: var(--accent); }
     .srch-input {
@@ -21,45 +28,21 @@ const searchOverlayStyles = `
     .srch-kbd {
       color: var(--srch-kbd-fg);
       border-color: var(--srch-kbd-bd);
+      border-radius: var(--r-xs);
       font-family: var(--font-ui);
       font-size: var(--text-2xs);
       letter-spacing: 0.03em;
       line-height: 1;
     }
-    .srch-btn {
-      color: var(--muted);
-      border-color: var(--srch-panel-bd);
-      font-family: var(--font-ui);
-      box-shadow: var(--px-d1) var(--px-shadow);
-    }
-    .srch-btn:hover {
-      color: var(--fg);
-      border-color: var(--srch-panel-bd);
-      background: var(--bg);
-      box-shadow: var(--px-d0) var(--px-shadow);
-      transform: translate(1px, 1px);
-    }
-    .srch-btn:active {
-      box-shadow: none;
-      transform: translate(2px, 2px);
-    }
-    .srch-shortcut {
-      font-family: var(--font-ui);
-      font-size: var(--text-2xs);
-      letter-spacing: 0.04em;
-      color: var(--muted);
-    }
     #search-results a {
       position: relative;
-      border: 2px solid transparent;
+      border: var(--bd-w) solid transparent;
     }
     #search-results a::before {
       display: none;
     }
     #search-results a.is-active {
       background: var(--srch-av);
-      border-color: var(--card-bd);
-      box-shadow: var(--px-d1) var(--px-shadow);
     }
     .sr-name  { color: var(--fg); font-size: var(--text-base); font-weight: 500; letter-spacing: 0; }
     .sr-dir   { color: var(--sr-dir); font-size: var(--text-xs); }
@@ -85,13 +68,14 @@ const searchOverlayStyles = `
       font-family: var(--font-ui);
     }
     .srch-footer {
-      border-color: var(--hr) !important;
-      border-top-width: 2px;
+      border-color: var(--border) !important;
+      border-top-width: var(--bd-w);
+      border-radius: 0;
     }
     .srch-hint {
       font-size: var(--text-xs);
       font-family: var(--font-ui);
-      color: var(--sr-tm);
+      color: var(--muted);
       letter-spacing: 0.01em;
     }
     .srch-hint kbd {
@@ -99,7 +83,8 @@ const searchOverlayStyles = `
       font-family: var(--font-ui);
       font-size: var(--text-2xs);
       color: var(--srch-kbd-fg);
-      border: 2px solid var(--srch-kbd-bd);
+      border: var(--bd-w) solid var(--srch-kbd-bd);
+      border-radius: var(--r-xs);
       padding: 1px 5px;
       line-height: 1.4;
     }
@@ -111,7 +96,8 @@ const searchOverlayStyles = `
     .srch-preview-pane .frag-cover {
       margin-bottom: 1rem;
       padding-bottom: 0.75rem;
-      border-bottom: 2px solid var(--hr);
+      border-bottom: var(--bd-w) solid var(--border);
+      border-radius: 0;
     }
     .srch-preview-pane .frag-dir,
     .srch-preview-pane .cover-dir {
@@ -136,11 +122,11 @@ const searchOverlayStyles = `
     .srch-prev-hint {
       display: flex; height: 100%;
       align-items: center; justify-content: center;
-      color: var(--sr-dir); font-size: var(--text-sm); font-style: italic;
+      color: var(--muted); font-size: var(--text-sm); font-style: italic;
     }
     .srch-prev-spin {
       padding: 1.25rem 1.5rem;
-      color: var(--sr-dir); font-size: var(--text-sm);
+      color: var(--muted); font-size: var(--text-sm);
     }
     /* ── Mode system ─────────────────────────────────────── */
     .srch-icon-area {
@@ -166,23 +152,16 @@ const searchOverlayStyles = `
       font-weight: 400;
       opacity: 0.7;
     }
-    .srch-mode-menu { border-color: var(--hr) !important; border-bottom-width: 2px; }
+    .srch-mode-menu { border-color: var(--border) !important; border-bottom-width: var(--bd-w); border-radius: 0; }
     .srch-mode-item {
       color: var(--fg);
       font-family: var(--font-ui);
     }
-    .srch-mode-item.is-active { background: var(--seg-act-bg); color: var(--seg-act-fg); }
+    .srch-mode-item.is-active { background: var(--control-active-bg); color: var(--control-active-fg); }
     .srch-mode-name { font-size: var(--text-sm); font-weight: 500; min-width: 5rem; }
-    .srch-mode-desc { font-size: var(--text-xs); color: var(--sr-dir); }
-    .srch-mode-footer { border-color: var(--hr) !important; border-top-width: 2px; }
-    .srch-hint-sep { color: var(--sr-tm); opacity: 0.4; }
-    .srch-key {
-      font-family: var(--font-mono);
-      font-size: var(--text-xs);
-      color: var(--fg);
-      opacity: 0.65;
-      letter-spacing: 0;
-    }
+    .srch-mode-desc { font-size: var(--text-xs); color: var(--muted); }
+    .srch-mode-footer { border-color: var(--border) !important; border-top-width: var(--bd-w); border-radius: 0; }
+    .srch-hint-sep { color: var(--muted); opacity: 0.4; }
 `
 
 const searchOverlayPanelHTML = `
@@ -198,8 +177,7 @@ const searchOverlayPanelHTML = `
          class="pointer-events-auto absolute left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-[860px]"
          style="top:calc(50% - 284px)">
 
-      <div class="srch-panel rounded-xl overflow-hidden border"
-           style="background:var(--srch-bg)">
+      <div class="srch-panel rounded-xl overflow-hidden border">
 
         <!-- Input row -->
         <div class="srch-row flex items-center gap-3 px-4 border-b" style="height:68px">
@@ -277,12 +255,12 @@ const searchOverlayPanelHTML = `
           <!-- Left: results list -->
           <div id="search-results" @click="onResultClick($event)" @mousemove="onResultHover($event)"
                class="flex flex-col gap-0.5 p-2 overflow-y-auto flex-shrink-0 [scrollbar-width:none]"
-               style="width:300px; border-right:2px solid var(--hr); padding:0.5rem; gap:0"></div>
+               style="width:300px; border-right: var(--bd-w) solid var(--border); border-radius:0; padding:0.5rem; gap:0"></div>
 
           <!-- Right: note preview -->
           <div id="search-preview"
                class="flex-1 overflow-y-auto
-                      [scrollbar-width:thin] [scrollbar-color:var(--card-bd)_transparent]">
+                      [scrollbar-width:thin] [scrollbar-color:var(--border-strong)_transparent]">
             <div class="srch-prev-hint">Navigate results to preview</div>
           </div>
         </div>
@@ -290,13 +268,13 @@ const searchOverlayPanelHTML = `
         <!-- Footer hints — shown only when body is visible -->
         <div class="srch-footer flex items-center gap-4 px-4 border-t" x-show="hasQuery" style="height:var(--btn-h-sm)">
           <span class="srch-hint flex items-center gap-1.5">
-            <span class="srch-key">↑↓</span> navigate
+            <kbd>↑↓</kbd> navigate
           </span>
           <span class="srch-hint flex items-center gap-1.5">
-            <span class="srch-key">↵</span> open
+            <kbd>↵</kbd> open
           </span>
           <span class="srch-hint flex items-center gap-1.5">
-            <span class="srch-key" x-text="isMac ? '⌘↵' : 'Ctrl+↵'"></span> copy path
+            <kbd x-text="isMac ? '⌘↵' : 'Ctrl+↵'"></kbd> copy path
           </span>
         </div>
       </div>
@@ -311,8 +289,7 @@ const searchOverlayPanelHTML = `
          x-transition:leave-start="opacity-100"
          x-transition:leave-end="opacity-0"
          :class="show ? 'pointer-events-auto' : 'pointer-events-none'"
-         class="fixed inset-0 -z-10"
-         style="background:var(--srch-backdrop)"></div>
+         class="srch-backdrop fixed inset-0 -z-10"></div>
 `
 
 const searchOnlyOverlayHTML = `

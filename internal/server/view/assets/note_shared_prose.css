@@ -35,10 +35,10 @@
     .prose > p:first-of-type { font-size: 1em; line-height: 1.75; color: var(--prose-body); }
 
     /* Explicit list-style-type counters Tailwind preflight's reset */
-    .prose ul  { padding-left: 1.4em; list-style-type: square; }
+    .prose ul  { padding-left: 1.4em; list-style-type: disc; }
     .prose ol  { padding-left: 1.6em; list-style-type: decimal; }
-    .prose ul ul  { list-style-type: square; }
-    .prose ul ul ul { list-style-type: square; }
+    .prose ul ul  { list-style-type: disc; }
+    .prose ul ul ul { list-style-type: disc; }
     .prose ul > li::marker { color: var(--ul-mk); }
     .prose ol > li::marker { color: var(--ol-mk); font-size: 0.85em; }
 
@@ -77,6 +77,7 @@
     .prose blockquote p::before, .prose blockquote p::after { content: none; }
     .prose pre {
       background: var(--pre-bg); border: 1px solid var(--pre-bd);
+      border-radius: var(--r-sm);
       padding: 1.25rem 1.5rem; overflow-x: auto; line-height: 1.65;
       margin: 1.5em 0;
     }
@@ -90,6 +91,7 @@
       font-family: var(--font-mono);
       color: var(--code-tx); background: var(--code-bg);
       border: 1px solid var(--code-bd);
+      border-radius: var(--r-xs);
       padding: 0.15em 0.42em; font-size: 0.85em;
     }
     .prose :not(pre) > code::before, .prose :not(pre) > code::after { content: none; }
@@ -110,8 +112,8 @@
     }
     .prose td:last-child { border-right: none; }
     .prose tr:last-child td { border-bottom: none; }
-    .prose hr { border: none; border-top: 1px solid var(--hr); margin: 2em 0; }
-    .prose img { border: 1px solid var(--tbl-bd); max-width: 100%; height: auto; }
+    .prose hr { border: none; border-top: 1px solid var(--border); margin: 2em 0; }
+    .prose img { border: 1px solid var(--tbl-bd); border-radius: var(--r-sm); max-width: 100%; height: auto; }
 
     /* ── Task list (GFM - [ ] / - [x]) ──────────────────────────── */
     /* goldmark renders plain <li><input type="checkbox"> with no class */
@@ -121,7 +123,7 @@
       -webkit-appearance: none; appearance: none;
       display: inline-block; vertical-align: middle;
       width: 14px; height: 14px;
-      border: 1.5px solid var(--ul-mk); border-radius: 0;
+      border: 1.5px solid var(--ul-mk); border-radius: var(--r-xs);
       background: transparent; position: relative;
       margin-right: 0.45em; margin-top: -0.1em; cursor: default;
       flex-shrink: 0;
@@ -145,11 +147,15 @@
     }
     .prose a[href^="/notes?"]::before,
     .ProseMirror span[data-wl]::before {
-      content: ''; display: inline-block; width: 10px; height: 11px;
+      content: ''; display: inline-block; width: 11px; height: 13px;
       margin-right: 0.2em; vertical-align: middle; margin-top: -0.1em;
+      border-radius: 0; /* CSS-mask icon glyph, not a shape — never clip it */
       background-color: var(--muted);
-      -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 13'%3E%3Cpath d='M0 0H7L10 3V13H0Z' fill='black'/%3E%3C/svg%3E");
-      mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 13'%3E%3Cpath d='M0 0H7L10 3V13H0Z' fill='black'/%3E%3C/svg%3E");
+      /* Lucide "file" icon (matches the outline style of every other icon in the
+         app), delivered as a mask so it can pick up var(--muted) like a real
+         inline SVG would — not hand-drawn. */
+      -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z'/%3E%3Cpath d='M14 2v4a2 2 0 0 0 2 2h4'/%3E%3C/svg%3E");
+      mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z'/%3E%3Cpath d='M14 2v4a2 2 0 0 0 2 2h4'/%3E%3C/svg%3E");
       -webkit-mask-size: 100% 100%; mask-size: 100% 100%;
       -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
     }

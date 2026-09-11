@@ -12,15 +12,20 @@
       justify-content: center;
       padding: 1.5rem;
       background: var(--overlay-bg);
+      backdrop-filter: var(--glass-scrim-filter);
+      -webkit-backdrop-filter: var(--glass-scrim-filter);
+      border-radius: 0; /* full-viewport scrim — never rounds */
     }
 
     .confirm-card {
-      background: var(--bg);
-      border: 2px solid var(--card-bd);
+      background: var(--glass-bg);
+      backdrop-filter: var(--glass-filter);
+      -webkit-backdrop-filter: var(--glass-filter);
+      border: var(--bd-w) solid var(--border-strong);
+      border-radius: var(--r-xl);
       padding: 1.5rem 1.5rem 1.25rem;
       max-width: 360px;
       width: 100%;
-      box-shadow: var(--px-d3) var(--px-shadow);
     }
 
     .confirm-card.is-wide {
@@ -61,50 +66,49 @@
 
     .confirm-card.is-wide .confirm-btn {
       padding: 0 0.65rem;
-      font-size: var(--text-sm);
+      font-size: var(--text-base);
       white-space: nowrap;
     }
 
     .confirm-btn {
-      height: 30px;
+      height: var(--btn-h);
       padding: 0 0.875rem;
-      font-size: var(--text-sm);
+      font-size: var(--text-base);
       font-weight: 500;
       cursor: pointer;
       font-family: inherit;
       flex: 0 0 auto;
-      box-shadow: var(--px-d2) var(--px-shadow);
-    }
-
-    .confirm-btn:hover:not(:disabled) {
-      box-shadow: var(--px-d1) var(--px-shadow);
-      transform: translate(1px, 1px);
     }
 
     .confirm-btn:active:not(:disabled) {
-      box-shadow: none;
-      transform: translate(3px, 3px);
+      opacity: 0.85;
     }
 
     .confirm-btn-cancel {
       background: transparent;
       color: var(--muted);
-      border: 2px solid var(--card-bd);
+      border: var(--bd-w) solid var(--border-strong);
     }
 
     .confirm-btn-cancel:hover {
       color: var(--fg);
+      background: var(--card-hov);
     }
 
     .confirm-btn-confirm {
       border: none;
-      color: #fff;
     }
 
     .confirm-btn-confirm.is-danger {
       background: var(--s-err);
+      color: var(--s-err-fg);
     }
 
     .confirm-btn-confirm:not(.is-danger) {
       background: var(--accent);
+      color: var(--accent-fg);
+    }
+
+    .confirm-btn-confirm:not(.is-danger):hover:not(:disabled) {
+      background: var(--accent-hov);
     }

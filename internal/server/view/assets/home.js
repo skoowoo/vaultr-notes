@@ -1,196 +1,1654 @@
 
-// ── Search result selection: open in editor drawer ───────────────────────
+// ── Search result selection ────────────────────────────────────────────────
+// While the graph section is showing, focus the matching node instead of
+// opening the drawer (mirrors graph.js's override for the standalone page);
+// otherwise open the note in the drawer as usual.
 window.handleSearchResultSelection = function (el) {
   if (!el || !el.dataset) return false;
-  var focusURL = el.dataset.focusUrl || '';
-  if (!focusURL) return false;
-  try {
-    var u = new URL(focusURL, window.location.origin);
-    var path = u.searchParams.get('path');
-    if (!path) return false;
-    var nameEl = el.querySelector('.sr-name');
-    var title = nameEl ? nameEl.textContent.trim() : (path.split('/').pop().replace(/\.md$/, '') || 'Note');
-    if (window.__vaultrDrawer) {
-      void window.__vaultrDrawer.openNoteInDrawer(path, title,
-        el.dataset.noteIsKnowledge === 'true', false, el.dataset.noteIsIndex === 'true',
-        el.dataset.noteCanCompile === 'true');
+  var path = el.dataset.previewPath || '';
+  if (!path) return false;
+
+  var hd = window._homeData;
+  if (hd && hd.cy && hd.activeKey.indexOf('graph:') === 0) {
+    var node = hd.cy.getElementById(path);
+    if (node && !node.empty()) {
+      if (hd._focusedPath === path) hd._clearFocus();
+      else hd._applyFocus(node);
       return true;
     }
-  } catch (e) { return false; }
+    // Not in the currently-loaded graph — fall through to open in drawer.
+  }
+
+  var nameEl = el.querySelector('.sr-name');
+  var title = nameEl ? nameEl.textContent.trim() : (path.split('/').pop().replace(/\.md$/, '') || 'Note');
+  if (window.__vaultrDrawer) {
+    void window.__vaultrDrawer.openNoteInDrawer(path, title,
+      el.dataset.noteIsKnowledge === 'true', false, el.dataset.noteIsIndex === 'true',
+      el.dataset.noteCanCompile === 'true');
+    return true;
+  }
   return false;
 };
 
+// ── Images gallery embedded in the list pane (lightbox + select mode) ─────
+// (Mirrors images.js's globals/controller for the standalone /images page.)
+var _lbOpen = null; // set by homeCtrl.init; receives the lightbox data object
+
+window._imgSelectMode = false;
+window._imgUpdateSelected = null;
+
+window.openImageLightbox = function (el) {
+  if (window._imgSelectMode) {
+    el.classList.toggle('is-selected');
+    if (window._imgUpdateSelected) window._imgUpdateSelected();
+    return;
+  }
+  var d = el.dataset;
+  var notes = [];
+  try {
+    var parsed = JSON.parse(d.imgNotes || '[]');
+    if (Array.isArray(parsed)) notes = parsed;
+  } catch (_) { /* ignore */ }
+  if (_lbOpen) _lbOpen({
+    src: d.imgSrc, name: d.imgName, dir: d.imgDir,
+    size: d.imgSize, time: d.imgTime, ext: d.imgExt,
+    notes: notes,
+  });
+};
+
+function extToType(ext) {
+  var m = {
+    '.jpg': 'JPEG Image', '.jpeg': 'JPEG Image', '.png': 'PNG Image',
+    '.gif': 'GIF Image', '.webp': 'WebP Image', '.avif': 'AVIF Image', '.svg': 'SVG Vector',
+  };
+  return m[(ext || '').toLowerCase()] || ((ext || '').toUpperCase().replace('.', '') + ' Image');
+}
+
 // ── Home partial refresh via HTMX ────────────────────────────────────────
-function homeRefresh() {
+// Refreshes the sidebar's counts + folder list (OOB), then re-fetches
+// whichever section is currently shown in the list pane — only the browser
+// knows that, so it can't be folded into the OOB response itself.
+// htmx's default settle behavior copies "class"/"style" from an OOB swap's
+// old element onto the new one (for CSS-transition continuity), then strips
+// them again after the settle delay. That collides with Alpine's own
+// reactive style="display:none" on x-show: htmx would immediately erase the
+// inline style Alpine had just set on the freshly swapped-in
+// #home-side-graph-body/#home-side-folders-body, leaving it visible
+// regardless of graphOpen/foldersOpen — i.e. the sidebar group reads as
+// auto-expanded after every /home/refresh. Nothing here relies on htmx's
+// class/style settle animation, so just disable it.
+htmx.config.attributesToSettle = [];
+
+function doHomeRefresh() {
   htmx.ajax('GET', '/home/refresh', { target: document.body, swap: 'none' });
+  if (window._homeData) {
+    if (typeof window._homeData.reloadActiveSection === 'function') window._homeData.reloadActiveSection();
+    if (typeof window._homeData.refreshUnreadCount === 'function') window._homeData.refreshUnreadCount();
+  }
+}
+
+// Matches internal/inbox.defaultListLimit — the server-side page size used
+// when a request omits ?limit=. Kept in sync manually since the client
+// needs to know a full page was returned to decide whether more exist.
+// (Mirrors inbox.go's inboxJS constant of the same name for the standalone
+// /agent/inbox page.)
+var INBOX_PAGE_SIZE = 50;
+
+// ── Chat path autocomplete (mirrors agent_chat.js's module-level helpers
+// for the standalone /agent page) ──────────────────────────────────────────
+// parseCtx for the chat textarea: trigger when the cursor is inside a
+// slash-prefixed token that follows whitespace (or is at start of input).
+function __vaultrChatAcParseCtx(val, caret) {
+  val = typeof val === 'string' ? val : '';
+  if (caret == null || caret > val.length) caret = val.length;
+  var left = val.slice(0, caret);
+  var tokenStart = 0;
+  for (var i = left.length - 1; i >= 0; i--) {
+    if (/[\s]/.test(left[i])) { tokenStart = i + 1; break; }
+  }
+  var token = left.slice(tokenStart);
+  if (!token.startsWith('/')) return null;
+  var slash = token.lastIndexOf('/');
+  var partial = token.slice(slash + 1);
+  if (partial.indexOf('.') !== -1) return null;
+  var dirPath = slash === 0 ? '/' : token.slice(0, slash);
+  return { dirPath: dirPath, partial: partial, replaceStart: tokenStart + slash + 1 };
+}
+
+var __vaultrChatPathAc = null;
+
+// Rebinds the autocomplete + its DOM listeners to whatever #chat-textarea/
+// #chat-path-ac currently exist — must be re-run every time the chat section
+// is swapped back into #home-list-pane, since those are fresh elements each
+// time (see initChatSection() below).
+function __vaultrSetupChatAc() {
+  __vaultrChatPathAc = __vaultrPathAcCreate({
+    getInput: function () { return document.getElementById('chat-textarea'); },
+    getList: function () { return document.getElementById('chat-path-ac'); },
+    parseCtx: __vaultrChatAcParseCtx,
+    onApply: function (input, newVal, caretPos) {
+      input.value = newVal;
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      input.setSelectionRange(caretPos, caretPos);
+      input.focus();
+    },
+    escKey: 'chat-ac',
+  });
+
+  var ta = document.getElementById('chat-textarea');
+  if (!ta) return;
+  ta.addEventListener('input', function () { __vaultrChatPathAc.refresh(); });
+  ta.addEventListener('click', function () { __vaultrChatPathAc.refresh(); });
+  ta.addEventListener('keyup', function (ev) {
+    if (ev.key === 'ArrowLeft' || ev.key === 'ArrowRight' || ev.key === 'Home' || ev.key === 'End')
+      __vaultrChatPathAc.refresh();
+  });
+  ta.addEventListener('blur', function () {
+    setTimeout(function () {
+      var list = document.getElementById('chat-path-ac');
+      if (list && !list.contains(document.activeElement)) __vaultrChatPathAc.close();
+    }, 180);
+  });
 }
 
 // ── Home Alpine controller ────────────────────────────────────────────────
 function homeCtrl() {
-  return Object.assign(drawerCtrl(), {
+  var ctrl = Object.assign(drawerCtrl(), {
+    activeKey: 'pinned',
+    foldersOpen: true,
+    graphOpen: false,
+    chatsOpen: true,
+    _lastURL: '/home/section?type=pinned',
+    lightbox: null,
+    selectMode: false,
+    selectedCount: 0,
+    // ── Graph (mirrors graph.js's graphCtrl state) ─────────────────────────
+    loading: false,
+    empty: false,
+    graphIndexPath: '',
+    cy: null,
+    _graphTooltip: null,
+    _focusedPath: '',
+    nodePanel: null,
+    // ── Inbox (mirrors inbox.go's inboxCtrl for the standalone /agent/inbox page) ──
+    inboxMessages: [],
+    inboxLoading: true,
+    inboxLoadingMore: false,
+    inboxHasMore: true,
+    inboxFilter: 'all',
+    inboxSelected: null,
+    inboxSheetOpen: false,
+    unreadCount: 0,
+    // ── Chat (mirrors agent_chat.js's agentChatCtrl for the standalone /agent page) ──
+    mates: [],
+    selectedMateId: '',
+    conversationId: '',
+    messages: [],
+    mateEventDefs: [],
+    inputText: '',
+    isRunning: false,
+    currentRunId: null,
+    timeTick: 0,
+    isMac: /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent),
+    _chatBootstrapped: false,
+    _timeTicker: null,
+    toastText: '',
+    toastKind: 'ok',
+    toastVisible: false,
+    _toastTimer: null,
+    _runPollerTimer: null,
+    _runPollerSeq: 0,
+    _syncTimer: null,
+    _syncSeq: 0,
+    _lastMsgMs: 0,
+    _mdCache: new Map(),
+    convType: 'chat',
+    convTypes: [
+      { value: 'chat', label: 'Chat' },
+      { value: 'trigger', label: 'Trigger' },
+    ],
     init() {
       this.initDrawer();
       window._homeData = this;
+      _lbOpen = (data) => { this.lightbox = data; };
+      window._imgUpdateSelected = () => {
+        this.selectedCount = document.querySelectorAll('.img-card.is-selected').length;
+      };
+      if (window.cytoscapeFcose && window.cytoscape) {
+        try { cytoscape.use(cytoscapeFcose); } catch (_) { /* already registered */ }
+      }
+      this._graphTooltip = document.getElementById('graph-tooltip');
+      // The unread badge in the sidebar must stay correct regardless of
+      // which section is currently open, so both the initial count and the
+      // live SSE subscription start unconditionally here.
+      this.refreshUnreadCount();
+      this.initInboxStream();
+      // Relative message timestamps ("2m ago") in the chat panel must keep
+      // advancing even while a different sidebar section is showing, so this
+      // also starts unconditionally rather than waiting for the first visit
+      // to Chats (mirrors agent_chat.js's own init()-time ticker).
+      this.timeTick = Date.now();
+      this._timeTicker = setInterval(() => { this.timeTick = Date.now(); }, 30000);
+      this.$watch('timeTick', () => this._refreshTimes());
+      // The mates list now lives in the sidebar's Chats group (home.html),
+      // so it has to be populated regardless of whether Chats has ever been
+      // opened — initChatSection() awaits this same promise before restoring
+      // the last-selected mate the first time the section itself is opened.
+      this._matesLoadPromise = Promise.all([this.loadMates(), this.loadMateEvents()]);
       // Home is always safe: partial HTMX refresh is non-destructive.
       window.__vaultrShellSafeForBackgroundReload = function () { return true; };
       // Electron main calls this instead of wc.reload() when syncing sections.
-      window.__vaultrBackgroundRefresh = homeRefresh;
+      window.__vaultrBackgroundRefresh = doHomeRefresh;
+      // Same as the shared default (shared_theme.go), except the no-Electron
+      // fallback refreshes the active section in place instead of reloading
+      // the whole page — otherwise saving a short via the dialog would kick
+      // the user back to Pinned.
+      window.__vaultrAfterVaultMutation = async function () {
+        var api = window.vaultrDesktop;
+        if (api && api.syncVaultDataAcrossSections) { await api.syncVaultDataAcrossSections(); return; }
+        if (window._homeData) window._homeData.reloadActiveSection();
+      };
     },
-    refresh() { homeRefresh(); },
+    refresh() { doHomeRefresh(); },
+
+    // ── Images: select mode + bulk delete (mirrors images.js's imgCtrl) ────
+    enterSelectMode() {
+      this.lightbox = null;
+      this.selectMode = true;
+      window._imgSelectMode = true;
+    },
+    exitSelectMode() {
+      this.selectMode = false;
+      window._imgSelectMode = false;
+      document.querySelectorAll('.img-card.is-selected').forEach((c) => c.classList.remove('is-selected'));
+      this.selectedCount = 0;
+    },
+    async deleteSelected() {
+      var cards = Array.from(document.querySelectorAll('.img-card.is-selected'));
+      if (!cards.length) return;
+      var n = cards.length;
+      var ok = await window.showConfirm({
+        titleHTML: '<span class="confirm-title-icon"><svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4h10M5 4V3a1 1 0 011-1h2a1 1 0 011 1v1M12 4l-1 8H3L2 4"/><path d="M6 7v3M8 7v3"/></svg></span>Delete ' + n + ' image' + (n > 1 ? 's' : ''),
+        message: 'Permanently delete ' + n + ' image' + (n > 1 ? 's' : '') + '? This cannot be undone.',
+        confirmLabel: 'Delete',
+        danger: true,
+      });
+      if (!ok) return;
+      var results = await Promise.allSettled(cards.map((card) =>
+        fetch('/api/images/delete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ dir: card.dataset.imgDir, name: card.dataset.imgName }),
+        }).then((r) => ({ ok: r.ok, card }))
+      ));
+      var removed = 0;
+      results.forEach((r) => {
+        if (r.status === 'fulfilled' && r.value.ok) { r.value.card.remove(); removed++; }
+      });
+      this.exitSelectMode();
+      var grid = document.getElementById('img-grid');
+      if (grid && !grid.querySelector('.img-card') && !grid.querySelector('.img-sentinel')) {
+        var empty = document.createElement('div');
+        empty.className = 'img-empty';
+        empty.textContent = 'No images found';
+        grid.appendChild(empty);
+      }
+    },
+    closeLightbox() { this.lightbox = null; },
+    extToType,
+    async deleteLightboxImage() {
+      var lb = this.lightbox;
+      if (!lb || !lb.name || lb.dir == null || lb.dir === undefined) return;
+      var linkHint = (lb.notes && lb.notes.length)
+        ? (' It is still referenced from ' + lb.notes.length + ' note(s); those embeds will break.')
+        : '';
+      var ok = await window.showConfirm({
+        titleHTML: '<span class="confirm-title-icon"><svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4h10M5 4V3a1 1 0 011-1h2a1 1 0 011 1v1M12 4l-1 8H3L2 4"/><path d="M6 7v3M8 7v3"/></svg></span>Delete image',
+        message: 'Permanently delete "' + lb.name + '" from the vault?' + linkHint,
+        confirmLabel: 'Delete',
+        danger: true,
+      });
+      if (!ok) return;
+      try {
+        var resp = await fetch('/api/images/delete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ dir: lb.dir, name: lb.name }),
+        });
+        if (!resp.ok) {
+          var msg = (await resp.text()).trim() || 'Delete failed.';
+          window.showError(msg, 'Delete failed');
+          return;
+        }
+        var dir = lb.dir, name = lb.name;
+        this.closeLightbox();
+        var grid = document.getElementById('img-grid');
+        if (grid) {
+          grid.querySelectorAll('.img-card').forEach(function (c) {
+            if (c.dataset.imgDir === dir && c.dataset.imgName === name) c.remove();
+          });
+          if (!grid.querySelector('.img-card') && !grid.querySelector('.img-sentinel') && !grid.querySelector('.img-empty')) {
+            var empty = document.createElement('div');
+            empty.className = 'img-empty';
+            empty.textContent = 'No images found';
+            grid.appendChild(empty);
+          }
+        }
+      } catch (e) {
+        window.showError((e && e.message) ? e.message : 'Delete failed.', 'Delete failed');
+      }
+    },
+    // Close lightbox first, then open the note in the drawer after the
+    // leave animation (160 ms) finishes so the two panels don't collide.
+    async openLinkedNote(noteName) {
+      this.lightbox = null;
+      try {
+        var resp = await fetch('/api/notes/resolve', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: noteName + '.md' }),
+        });
+        if (!resp.ok) return;
+        var data = await resp.json();
+        var matches = data.matches;
+        if (!Array.isArray(matches) || matches.length === 0) return;
+        var n = matches[0];
+        var notePath = n.dir === '/' ? '/' + n.name : n.dir + '/' + n.name;
+        await new Promise(function (r) { setTimeout(r, 180); });
+        if (window.__vaultrDrawer) {
+          void window.__vaultrDrawer.openNoteInDrawer(notePath, noteName, false, !!n.pinned);
+        }
+      } catch (e) { /* ignore */ }
+    },
+
+    // ── Graph (mirrors graph.js's graphCtrl methods) ───────────────────────
+    async loadGraph() {
+      this.loading = true;
+      this.empty = false;
+      this._focusedPath = '';
+      this.nodePanel = null;
+      var url = '/api/graph/data';
+      if (this.graphIndexPath) url += '?index=' + encodeURIComponent(this.graphIndexPath);
+      try {
+        var resp = await fetch(url);
+        if (!resp.ok) { this.loading = false; return; }
+        var data = await resp.json();
+        this._renderGraph(data);
+      } catch (e) {
+        console.error('graph load:', e);
+      }
+      this.loading = false;
+    },
+
+    _applyFocus(node) {
+      this._focusedPath = node.data('path');
+      this.cy.stop();
+      this.cy.elements().unselect();
+      node.select();
+      this.cy.elements().addClass('faded');
+      node.removeClass('faded');
+      var connected = node.connectedEdges();
+      connected.removeClass('faded');
+      connected.connectedNodes().removeClass('faded');
+      this.cy.animate({ center: { eles: node } }, { duration: 200 });
+
+      var neighborNodes = connected.connectedNodes().filter(function (n) {
+        return n.id() !== node.id();
+      });
+      var connectedData = [];
+      neighborNodes.forEach(function (n) {
+        connectedData.push({
+          path: n.data('path'),
+          label: n.data('label'),
+          entityType: n.data('entityType') || '',
+        });
+      });
+      this.nodePanel = {
+        path: node.data('path'),
+        label: node.data('label'),
+        entityType: node.data('entityType') || '',
+        edgeCount: connected.length,
+        connected: connectedData,
+      };
+    },
+
+    _clearFocus() {
+      this._focusedPath = '';
+      if (this.cy) {
+        this.cy.stop();
+        this.cy.elements().unselect();
+        this.cy.elements().removeClass('faded');
+      }
+      this.nodePanel = null;
+    },
+
+    closeNodePanel() { this._clearFocus(); },
+
+    openNodeInDrawer(path, label) {
+      var drawer = window.__vaultrDrawer;
+      if (!drawer) return;
+      drawer.openNoteInDrawer(path, label || path, true, false, false, false);
+    },
+
+    _hexToRgba(hex, alpha) {
+      hex = hex.replace(/^#/, '');
+      if (hex.length === 3) hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
+      var r = parseInt(hex.slice(0, 2), 16);
+      var g = parseInt(hex.slice(2, 4), 16);
+      var b = parseInt(hex.slice(4, 6), 16);
+      return 'rgba(' + r + ',' + g + ',' + b + ',' + alpha + ')';
+    },
+
+    _entityTypeColors: {
+      'concept': '#facc15', 'person': '#60a5fa', 'product': '#34d399', 'company': '#fb923c',
+      'project': '#a78bfa', 'topic': '#f472b6', 'brand': '#f87171', 'business-model': '#6366f1',
+      'book': '#38bdf8', 'tool': '#14b8a6', 'framework': '#06b6d4', 'technique': '#a855f7',
+      'strategy': '#ef4444', 'protocol': '#22d3ee', 'product-platform': '#34d399', 'startup': '#f59e0b',
+      'role': '#84cc16', 'market': '#fdba74', 'opensource-project': '#22c55e', 'service': '#2dd4bf',
+      'event': '#f43f5e', 'disease': '#dc2626', 'community': '#60a5fa',
+    },
+
+    _tagPaletteColor(tag) {
+      if (this._entityTypeColors[tag]) return this._entityTypeColors[tag];
+      var palette = ['#60a5fa', '#f472b6', '#a78bfa', '#34d399', '#facc15', '#fb923c', '#22d3ee', '#f87171'];
+      var h = 0;
+      for (var i = 0; i < tag.length; i++) h = (Math.imul(31, h) + tag.charCodeAt(i)) | 0;
+      return palette[Math.abs(h) % palette.length];
+    },
+
+    _tagColor(tag) {
+      if (!tag) {
+        var s = getComputedStyle(document.documentElement);
+        return s.getPropertyValue('--bg').trim() || '#1a1a1a';
+      }
+      return this._hexToRgba(this._tagPaletteColor(tag), 0.30);
+    },
+
+    _tagBorder(tag) {
+      if (!tag) {
+        var s = getComputedStyle(document.documentElement);
+        return s.getPropertyValue('--border-strong').trim() || 'rgba(244,244,245,0.09)';
+      }
+      return this._tagPaletteColor(tag);
+    },
+
+    _renderGraph(data) {
+      var container = document.getElementById('graph-canvas');
+      if (!container) return;
+
+      var oldCy = this.cy; this.cy = null; if (oldCy) oldCy.destroy();
+      this._focusedPath = '';
+
+      if (!data.nodes || data.nodes.length === 0) {
+        this.empty = true;
+        return;
+      }
+      this.empty = false;
+
+      var self = this;
+
+      var css = getComputedStyle(document.documentElement);
+      var nodeLabelColor = css.getPropertyValue('--fg').trim() || '#f4f4f5';
+      var bgColor = css.getPropertyValue('--bg').trim() || '#0f0f0f';
+      var accentColor = css.getPropertyValue('--accent').trim() || '#cc785c';
+      var mutedHex = css.getPropertyValue('--muted').trim() || '#71717a';
+      var edgeFallback = /^#[0-9a-f]{6}$/i.test(mutedHex)
+        ? self._hexToRgba(mutedHex, 0.28)
+        : 'rgba(113,113,122,0.28)';
+
+      var degreeMap = {};
+      (data.nodes || []).forEach(function (n) { degreeMap[n.id] = 0; });
+      (data.edges || []).forEach(function (e) {
+        if (degreeMap[e.source] !== undefined) degreeMap[e.source]++;
+        if (degreeMap[e.target] !== undefined) degreeMap[e.target]++;
+      });
+      function nodeSize(id) {
+        var deg = degreeMap[id] || 0;
+        return Math.round(Math.min(80, 22 + Math.log2(deg + 1) * 10));
+      }
+
+      var nodeEntityType = {};
+      (data.nodes || []).forEach(function (n) { nodeEntityType[n.id] = n.entity_type || ''; });
+
+      var elements = [];
+      data.nodes.forEach(function (n) {
+        var deg = degreeMap[n.id] || 0;
+        elements.push({
+          data: {
+            id: n.id, label: n.label, path: n.path,
+            entityType: n.entity_type || '', tags: n.tags || [],
+            degree: deg, nodeSize: nodeSize(n.id),
+          }
+        });
+      });
+      (data.edges || []).forEach(function (e) {
+        var et = nodeEntityType[e.source] || '';
+        var borderHex = self._tagBorder(et);
+        var edgeColor = /^#[0-9a-f]{6}$/i.test(borderHex)
+          ? self._hexToRgba(borderHex, 0.20)
+          : edgeFallback;
+        elements.push({ data: { source: e.source, target: e.target, edgeColor: edgeColor } });
+      });
+
+      var nc = (data.nodes || []).length;
+      var layoutQuality = nc <= 80 ? 'proof' : nc <= 400 ? 'default' : 'draft';
+      var layoutNumIter = nc <= 80 ? 1500 : nc <= 300 ? 2000 : nc <= 600 ? 1200 : 800;
+      var layoutRepulsion = Math.max(2500, Math.min(nc * 100, 28000));
+      var layoutEdgeLen = Math.max(80, Math.min(350, 60 + nc * 2));
+      var layoutGravity = Math.max(0.10, 0.30 - nc * 0.002);
+      var layoutGravRange = Math.max(3.5, Math.min(8.0, 3.5 + nc * 0.03));
+      var layoutTilePad = Math.max(20, Math.min(60, 10 + nc * 0.5));
+
+      this.cy = cytoscape({
+        container: container,
+        elements: elements,
+        style: [
+          {
+            selector: 'node',
+            style: {
+              'background-color': function (ele) { return self._tagColor(ele.data('entityType')); },
+              'border-color': function (ele) { return self._tagBorder(ele.data('entityType')); },
+              'border-width': 1.5,
+              'label': 'data(label)',
+              'color': nodeLabelColor,
+              'font-size': function (ele) {
+                return Math.max(10, Math.min(13, 10 + ele.data('degree') * 0.2)) + 'px';
+              },
+              'font-family': 'Inter,-apple-system,sans-serif',
+              'text-valign': 'bottom',
+              'text-halign': 'center',
+              'text-margin-y': 5,
+              'text-max-width': '120px',
+              'text-wrap': 'ellipsis',
+              'min-zoomed-font-size': 12,
+              'text-background-opacity': 0,
+              'text-shadow-blur': 6,
+              'text-shadow-color': bgColor,
+              'text-shadow-opacity': 0.9,
+              'text-shadow-offset-x': 0,
+              'text-shadow-offset-y': 0,
+              'width': 'data(nodeSize)',
+              'height': 'data(nodeSize)',
+              'z-index': 10,
+              'cursor': 'pointer',
+            }
+          },
+          { selector: 'node:selected', style: { 'border-color': '#000000', 'border-width': 3.5, 'z-index': 20 } },
+          { selector: 'node.faded', style: { 'opacity': 0.18 } },
+          {
+            selector: 'edge',
+            style: {
+              'width': 1.2,
+              'line-color': 'data(edgeColor)',
+              'target-arrow-color': 'data(edgeColor)',
+              'target-arrow-shape': 'triangle',
+              'curve-style': 'bezier',
+              'arrow-scale': 0.85,
+              'opacity': 0.85,
+              'z-index': 1,
+            }
+          },
+          { selector: 'edge.faded', style: { 'opacity': 0.05 } },
+        ],
+        layout: {
+          name: 'fcose',
+          quality: layoutQuality,
+          randomize: true,
+          animate: true,
+          animationDuration: 400,
+          animationEasing: 'ease-out',
+          fit: true,
+          padding: 48,
+          nodeDimensionsIncludeLabels: true,
+          uniformNodeDimensions: false,
+          packComponents: true,
+          step: 'all',
+          gravity: layoutGravity,
+          gravityRange: layoutGravRange,
+          initialEnergyOnIncremental: 0.5,
+          nodeRepulsion: layoutRepulsion,
+          idealEdgeLength: layoutEdgeLen,
+          edgeElasticity: 0.45,
+          nestingFactor: 0.1,
+          numIter: layoutNumIter,
+          tile: true,
+          tilingPaddingVertical: layoutTilePad,
+          tilingPaddingHorizontal: layoutTilePad,
+          gravityCompound: 1.0,
+          gravityRangeCompound: 1.5,
+        },
+        wheelSensitivity: 0.3,
+        minZoom: 0.05,
+        maxZoom: 4,
+      });
+
+      this.cy.on('tap', 'node', function (evt) {
+        var node = evt.target;
+        var path = node.data('path');
+        if (!path) return;
+        if (self._focusedPath === path) {
+          self._clearFocus();
+          setTimeout(function () { node.unselect(); }, 0);
+        } else {
+          self._applyFocus(node);
+        }
+      });
+
+      this.cy.on('tap', function (evt) {
+        if (evt.target === self.cy) self._clearFocus();
+      });
+
+      var tooltip = this._graphTooltip;
+      if (tooltip) {
+        this.cy.on('mouseover', 'node', function (evt) {
+          tooltip.textContent = evt.target.data('label') || '';
+          tooltip.classList.add('visible');
+        });
+        this.cy.on('mousemove', 'node', function (evt) {
+          tooltip.style.left = (evt.originalEvent.clientX + 14) + 'px';
+          tooltip.style.top = (evt.originalEvent.clientY - 8) + 'px';
+        });
+        this.cy.on('mouseout', 'node', function () {
+          tooltip.classList.remove('visible');
+        });
+      }
+    },
+
+    zoomIn() {
+      if (!this.cy) return;
+      var cx = this.cy.width() / 2, cy = this.cy.height() / 2;
+      this.cy.zoom({ level: this.cy.zoom() * 1.3, renderedPosition: { x: cx, y: cy } });
+    },
+    zoomOut() {
+      if (!this.cy) return;
+      var cx = this.cy.width() / 2, cy = this.cy.height() / 2;
+      this.cy.zoom({ level: this.cy.zoom() / 1.3, renderedPosition: { x: cx, y: cy } });
+    },
+    zoomFit() {
+      if (!this.cy) return;
+      this.cy.fit(undefined, 48);
+    },
+
+    toggleGraph() { this.graphOpen = !this.graphOpen; },
+
+    selectGraphIndex(path) {
+      this.activeKey = 'graph:' + path;
+      this.graphIndexPath = path;
+      var url = '/home/section?type=graph';
+      if (path) url += '&index=' + encodeURIComponent(path);
+      this._load(url);
+    },
+
+    toggleFolders() { this.foldersOpen = !this.foldersOpen; },
+
+    selectSection(key, url) {
+      this.activeKey = key;
+      this._load(url);
+    },
+
+    selectFolder(path, url) {
+      this.activeKey = 'dir:' + path;
+      this.foldersOpen = true;
+      this._load(url);
+    },
+
+    _load(url) {
+      this._lastURL = url;
+      // Leaving whatever section was showing: any open image lightbox,
+      // select-mode state, graph instance, or inbox sheet refers to elements
+      // that are about to be replaced (or, for the sheet, just shouldn't
+      // stay open over a different section).
+      this.lightbox = null;
+      if (this.selectMode) this.exitSelectMode();
+      if (this.cy) { this.cy.destroy(); this.cy = null; }
+      this.nodePanel = null;
+      this.inboxSheetOpen = false;
+      var pane = document.getElementById('home-list-pane');
+      if (pane) pane.scrollTop = 0;
+      htmx.ajax('GET', url, { target: '#home-list-pane', swap: 'innerHTML' });
+    },
+
+    reloadActiveSection() {
+      htmx.ajax('GET', this._lastURL, { target: '#home-list-pane', swap: 'innerHTML' });
+    },
+
+    // ── Inbox: message list + unread badge + read-only sheet ───────────────
+    initInboxStream() {
+      // Subscribes to /api/inbox/notifications (internal/inbox.Bus) so a
+      // message created while home is open updates the badge/list live
+      // instead of waiting for a manual refresh — mirrors inbox.go's
+      // inboxCtrl.initStream(), but runs regardless of which sidebar section
+      // is active since the unread badge is always visible.
+      if (typeof EventSource === 'undefined') return;
+      var es = new EventSource('/api/inbox/notifications');
+      es.addEventListener('message', (e) => {
+        var msg;
+        try { msg = JSON.parse(e.data); } catch (err) { return; }
+        if (this.inboxMessages.some((m) => m.id === msg.id)) return;
+        this.inboxMessages.unshift(msg);
+        if (!msg.isRead) this.unreadCount++;
+      });
+    },
+    visibleInboxMessages() {
+      if (this.inboxFilter === 'all') return this.inboxMessages;
+      return this.inboxMessages.filter((m) => this.inboxFilter === 'unread' ? !m.isRead : m.isRead);
+    },
+    setInboxFilter(f) {
+      this.inboxFilter = f;
+      // A filter can shrink the rendered list below the container's height,
+      // which would never fire a scroll event — pull in more pages until
+      // either the list overflows or the server runs dry.
+      this.maybeFillInboxList();
+    },
+    loadInbox() {
+      this.inboxLoading = true;
+      this.inboxHasMore = true;
+      return fetch('/api/inbox').then(function (r) { return r.json(); }).then((data) => {
+        this.inboxMessages = data.messages || [];
+        this.inboxHasMore = this.inboxMessages.length >= INBOX_PAGE_SIZE;
+      }).catch(function () {}).then(() => {
+        this.inboxLoading = false;
+        this.refreshUnreadCount();
+        this.maybeFillInboxList();
+      });
+    },
+    loadMoreInbox() {
+      if (this.inboxLoadingMore || !this.inboxHasMore) return Promise.resolve();
+      this.inboxLoadingMore = true;
+      var offset = this.inboxMessages.length;
+      return fetch('/api/inbox?offset=' + offset).then(function (r) { return r.json(); }).then((data) => {
+        var page = data.messages || [];
+        var seen = new Set(this.inboxMessages.map((m) => m.id));
+        page.forEach((m) => { if (!seen.has(m.id)) this.inboxMessages.push(m); });
+        this.inboxHasMore = page.length >= INBOX_PAGE_SIZE;
+      }).catch(function () {}).then(() => {
+        this.inboxLoadingMore = false;
+      });
+    },
+    onInboxListScroll(e) {
+      if (this.inboxLoadingMore || !this.inboxHasMore) return;
+      var el = e.target;
+      if (el.scrollTop + el.clientHeight >= el.scrollHeight - 120) this.loadMoreInbox();
+    },
+    async maybeFillInboxList() {
+      await this.$nextTick();
+      var el = document.getElementById('home-inbox-list');
+      if (!el || !this.inboxHasMore || this.inboxLoadingMore) return;
+      if (el.scrollHeight <= el.clientHeight + 4) {
+        await this.loadMoreInbox();
+        this.maybeFillInboxList();
+      }
+    },
+    refreshUnreadCount() {
+      return fetch('/api/inbox/unread-count').then(function (r) { return r.json(); }).then((data) => {
+        this.unreadCount = data.count || 0;
+      }).catch(function () {});
+    },
+    selectInboxMessage(m) {
+      this.inboxSelected = m;
+      this.inboxSheetOpen = true;
+      if (!m.isRead) this.markInboxRead(m);
+    },
+    closeInboxSheet() {
+      this.inboxSheetOpen = false;
+    },
+    async markInboxRead(m) {
+      m.isRead = true;
+      this.unreadCount = Math.max(0, this.unreadCount - 1);
+      try { await fetch('/api/inbox/' + m.id + '/read', { method: 'POST' }); } catch (e) { /* ignore */ }
+    },
+    async markAllInboxRead() {
+      this.inboxMessages.forEach((m) => { m.isRead = true; });
+      this.unreadCount = 0;
+      try { await fetch('/api/inbox/read-all', { method: 'POST' }); } catch (e) { /* ignore */ }
+    },
+    relTime(iso) {
+      const d = new Date(iso);
+      const diffSec = Math.floor((Date.now() - d.getTime()) / 1000);
+      if (diffSec < 60) return 'now';
+      if (diffSec < 3600) return Math.floor(diffSec / 60) + 'm';
+      if (diffSec < 86400) return Math.floor(diffSec / 3600) + 'h';
+      return Math.floor(diffSec / 86400) + 'd';
+    },
+    fullTime(iso) {
+      try { return new Date(iso).toLocaleString(); } catch (e) { return iso; }
+    },
+    // Mirrors agent_chat.js/inbox.go's renderMarkdown(): same wiki-link
+    // handling and sanitize allowlist, so message bodies render identically
+    // across the inbox sheet and assistant chat replies. Caches settled text
+    // (skipped while a chat reply is still streaming, since content changes
+    // every delta) — mirrors agent_chat.js's _mdCache behavior verbatim.
+    renderMarkdown(text) {
+      if (!text || typeof text !== 'string') return '';
+      var useCache = !this.isRunning;
+      if (useCache) {
+        var cached = this._mdCache.get(text);
+        if (cached !== undefined) return cached;
+      }
+      var processed = text.replace(/\[\[([^\]\[|]+?)(?:\|([^\]\[]+?))?\]\]/g, function (_, target, display) {
+        target = target.trim();
+        display = (display || target).trim();
+        var name = target.endsWith('.md') ? target : target + '.md';
+        return '[' + display + '](/notes?name=' + encodeURIComponent(name) + ')';
+      });
+      processed = processed.replace(/(?<!~)~(?!~)/g, '\\~');
+      var html;
+      if (typeof marked === 'undefined') {
+        html = processed.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      } else {
+        html = marked.parse(processed);
+        if (typeof DOMPurify !== 'undefined') {
+          html = DOMPurify.sanitize(html, {
+            ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 's', 'del', 'code', 'pre', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+                           'ul', 'ol', 'li', 'blockquote', 'a', 'hr', 'table', 'thead', 'tbody', 'tr', 'th', 'td', 'img'],
+            ALLOWED_ATTR: ['href', 'title', 'src', 'alt'],
+          });
+        }
+      }
+      if (useCache) {
+        if (this._mdCache.size >= 300) {
+          // Evict oldest 50 entries (Map preserves insertion order) instead of
+          // clearing all at once to avoid re-rendering every visible message.
+          var iter = this._mdCache.keys();
+          for (var ei = 0; ei < 50; ei++) {
+            var nxt = iter.next();
+            if (nxt.done) break;
+            this._mdCache.delete(nxt.value);
+          }
+        }
+        this._mdCache.set(text, html);
+      }
+      return html;
+    },
+
+    // ── Chat: mates, conversations, streaming replies (mirrors agent_chat.js's
+    // agentChatCtrl for the standalone /agent page) ────────────────────────
+    // Runs the network bootstrap (mates, last-selected mate, its conversation)
+    // exactly once — re-running it every time the user switches back to the
+    // Chats sidebar item would clobber an in-progress streaming reply. The
+    // autocomplete/wiki-link DOM listeners, though, must be rebound every
+    // time: #chat-textarea/#chat-scroll are fresh elements after each swap.
+    initChatSection() {
+      __vaultrSetupChatAc();
+      var chatScroll = document.getElementById('chat-scroll');
+      if (chatScroll) {
+        chatScroll.addEventListener('click', (e) => {
+          var a = e.target.closest('a');
+          if (!a) return;
+          var href = a.getAttribute('href') || '';
+          if (!href.startsWith('/notes?')) return;
+          e.preventDefault();
+          try {
+            var name = new URLSearchParams(href.split('?')[1] || '').get('name') || '';
+            if (name && typeof __vaultrDrawerOpenWikiLink === 'function') {
+              void __vaultrDrawerOpenWikiLink(name.replace(/\.md$/, ''));
+            }
+          } catch (_) { /* ignore */ }
+        });
+      }
+      // Arriving via the parent "Chats" button (not a specific mate's child
+      // row) lands here with activeKey === 'chat'. Unlike Graph's parent
+      // ("all"), chat has no distinct all-mates view — whatever mate ends up
+      // showing should always be the one highlighted in the sidebar.
+      if (this.activeKey === 'chat' && this.selectedMateId) {
+        this.activeKey = 'chat:' + this.selectedMateId;
+      }
+      if (this._chatBootstrapped) return;
+      this._chatBootstrapped = true;
+      (async () => {
+        await this._matesLoadPromise;
+        var lastMateId = sessionStorage.getItem('vaultr_mate_id');
+        var target = lastMateId ? this.mates.find((m) => m.id === lastMateId) : null;
+        this.selectedMateId = (target || this.mates[0] || {}).id || '';
+        if (this.selectedMateId) {
+          this.activeKey = 'chat:' + this.selectedMateId;
+          void this.refreshMateConversation(this.selectedMateId);
+        }
+      })();
+    },
+
+    toggleChats() { this.chatsOpen = !this.chatsOpen; },
+
+    // Selecting a mate from the sidebar's Chats children. Works whether or
+    // not the chat pane is currently mounted: selectMate() only touches JS
+    // state + fetches (scrollToBottom() no-ops without #chat-scroll), so
+    // picking a mate from, say, Pinned just pre-loads its conversation; if
+    // the chat section isn't showing yet, this also navigates to it.
+    selectChatMate(mateId) {
+      this.activeKey = 'chat:' + mateId;
+      // We're handling mate selection ourselves here — mark bootstrap done
+      // so initChatSection() (triggered by the _load() below) doesn't also
+      // restore-and-refetch the same mate a second time.
+      this._chatBootstrapped = true;
+      this.selectMate(mateId);
+      if (document.getElementById('chat-scroll')) {
+        this._lastURL = '/home/section?type=chat';
+      } else {
+        this._load('/home/section?type=chat');
+      }
+    },
+
+    async loadMates() {
+      try {
+        var resp = await fetch('/api/mates');
+        if (!resp.ok) return;
+        this.mates = ((await resp.json()).mates || []).filter((m) => m.enabled);
+      } catch (_) { /* ignore */ }
+    },
+
+    async loadMateEvents() {
+      try {
+        var resp = await fetch('/api/mate-events');
+        if (!resp.ok) return;
+        this.mateEventDefs = (await resp.json()).events || [];
+      } catch (_) { /* ignore */ }
+    },
+
+    triggerEventLabel(type) {
+      var d = this.mateEventDefs.find((e) => e.type === type);
+      return d ? d.label : type;
+    },
+
+    async refreshMateConversation(mateId) {
+      if (this.isRunning || !mateId) return;
+      try {
+        var resp = await fetch('/api/conversations?mateId=' + encodeURIComponent(mateId) + '&type=' + encodeURIComponent(this.convType), { cache: 'no-store' });
+        if (!resp.ok) return;
+        var convs = (await resp.json()).conversations || [];
+        this.conversationId = convs.length > 0 ? convs[0].id : '';
+        if (this.conversationId) {
+          await this.loadMessages(this.conversationId);
+        } else {
+          this.messages = [];
+        }
+      } catch (_) { /* ignore */ }
+    },
+
+    formatStoredMessages(msgs) {
+      var out = [];
+      for (var i = 0; i < msgs.length; i++) {
+        var m = msgs[i];
+        if (m.role === 'user') {
+          out.push({
+            id: m.id,
+            role: 'user', content: m.content,
+            createdAt: m.createdAt ? new Date(m.createdAt).getTime() : 0,
+          });
+        } else {
+          var at = m.updatedAt ? new Date(m.updatedAt).getTime() : (m.createdAt ? new Date(m.createdAt).getTime() : 0);
+          out.push({
+            id: m.id,
+            role: 'assistant', agentId: m.agentId, mateId: m.mateId,
+            triggerEvent: m.triggerEvent || '',
+            segments: m.content ? [{ type: 'text', content: m.content }] : [],
+            status: m.status || 'succeeded',
+            startTime: 0, duration: 0,
+            createdAt: m.createdAt ? new Date(m.createdAt).getTime() : 0,
+            completedAt: at,
+            copied: false,
+          });
+        }
+      }
+      return out;
+    },
+
+    async loadMessages(convId) {
+      try {
+        var resp = await fetch('/api/conversations/' + convId, { cache: 'no-store' });
+        if (!resp.ok) return;
+        var msgs = (await resp.json()).messages || [];
+        this.messages = this.formatStoredMessages(msgs);
+        this._refreshTimes();
+        this.$nextTick(() => { this.scrollToBottom(); });
+        var lastMs = 0;
+        for (var i = 0; i < msgs.length; i++) {
+          var t = msgs[i].updatedAt ? new Date(msgs[i].updatedAt).getTime() : 0;
+          if (t > lastMs) lastMs = t;
+        }
+        this._lastMsgMs = lastMs;
+        this._startSyncPoller(convId);
+      } catch (_) { /* ignore */ }
+    },
+
+    selectMate(id) {
+      if (this.isRunning) return;
+      if (id !== this.selectedMateId) {
+        this._cancelPoller();
+        this.conversationId = '';
+        this.messages = [];
+      }
+      this.selectedMateId = id;
+      sessionStorage.setItem('vaultr_mate_id', id);
+      void this.refreshMateConversation(id);
+    },
+
+    async newChat() {
+      if (this.isRunning || !this.selectedMateId) return;
+      // Don't create a new conversation when the current one is already empty.
+      if (this.messages.length === 0) return;
+      this._cancelPoller();
+      var d = new Date();
+      var title = d.getFullYear() + '-' +
+        String(d.getMonth() + 1).padStart(2, '0') + '-' +
+        String(d.getDate()).padStart(2, '0') + ' ' +
+        String(d.getHours()).padStart(2, '0') + ':' +
+        String(d.getMinutes()).padStart(2, '0');
+      try {
+        var resp = await fetch('/api/conversations', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ mateId: this.selectedMateId, title: title }),
+        });
+        if (resp.ok) {
+          var data = await resp.json();
+          this.conversationId = data.conversation.id;
+          this.messages = [];
+        }
+      } catch (_) { /* ignore */ }
+      var ta = document.getElementById('chat-textarea');
+      if (ta) { ta.style.height = ''; ta.focus(); }
+    },
+
+    convTypeLabel(t) {
+      var found = this.convTypes.find((c) => c.value === t);
+      return found ? found.label : t;
+    },
+
+    setConvType(t) {
+      if (t === this.convType) return;
+      this._cancelPoller();
+      this.convType = t;
+      this.conversationId = '';
+      this.messages = [];
+      if (this.selectedMateId) void this.refreshMateConversation(this.selectedMateId);
+    },
+
+    async send() {
+      var text = this.inputText.trim();
+      if (!text || this.isRunning || !this.selectedMateId) return;
+      var mate = this.selectedMate;
+      if (!mate) return;
+
+      // Lazy-create conversation on first message.
+      if (!this.conversationId) {
+        try {
+          var cresp = await fetch('/api/conversations', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ mateId: mate.id, title: '' }),
+          });
+          if (cresp.ok) {
+            this.conversationId = (await cresp.json()).conversation.id;
+          }
+        } catch (_) { /* ignore */ }
+        if (!this.conversationId) return;
+      }
+
+      this.inputText = '';
+      var ta = document.getElementById('chat-textarea');
+      if (ta) ta.style.height = '';
+      this.isRunning = true;
+
+      var _genId = function () {
+        return (typeof crypto !== 'undefined' && crypto.randomUUID)
+          ? crypto.randomUUID()
+          : (Date.now().toString(36) + Math.random().toString(36).slice(2));
+      };
+      var _userMsgId = _genId();
+      var _assistantMsgId = _genId();
+
+      var _userTs = Date.now();
+      this.messages.push({ id: _userMsgId, role: 'user', content: text, createdAt: _userTs, _fmtTime: this.formatTime(_userTs) });
+      this.messages.push({
+        id: _assistantMsgId,
+        role: 'assistant', agentId: mate.agentId, mateId: mate.id,
+        segments: [], status: 'running',
+        startTime: Date.now(), duration: 0, completedAt: 0, copied: false,
+      });
+      var msgIdx = this.messages.length - 1;
+      this.$nextTick(() => { this.scrollToBottom(); });
+
+      var sseGotEnd = true;
+      try {
+        var resp = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ mateId: mate.id, message: text, conversationId: this.conversationId, userMessageId: _userMsgId, assistantMessageId: _assistantMsgId }),
+        });
+        if (!resp.ok) {
+          var errText = await resp.text();
+          this.messages[msgIdx].segments.push({ type: 'error', message: errText || 'Request failed' });
+          this.messages[msgIdx].status = 'failed';
+          return;
+        }
+        sseGotEnd = await this.consumeSSE(resp, msgIdx);
+        // For cursor-agent: reload from DB after streaming ends to guarantee the
+        // displayed text matches the authoritative DB content (text_snapshot), catching
+        // any remaining divergence edge cases not handled during streaming.
+        if (sseGotEnd && this.conversationId && mate.agentId === 'cursor-agent') {
+          await this.syncLastMsgFromDB(this.conversationId, msgIdx);
+        }
+      } catch (e) {
+        if (msgIdx < this.messages.length) {
+          this.messages[msgIdx].segments.push({ type: 'error', message: e.message || 'Connection error' });
+          this.messages[msgIdx].status = 'failed';
+        }
+      } finally {
+        // SSE dropped without an end event — agent is still running on server; poll for completion.
+        if (!sseGotEnd && this.currentRunId) this.spawnRunPoller(this.currentRunId, msgIdx);
+        this.isRunning = false;
+        this.currentRunId = null;
+        this.scrollToBottom();
+      }
+    },
+
+    // syncLastMsgFromDB replaces the streamed text segments of the assistant message at
+    // msgIdx with the authoritative text from the DB, correcting any streaming artifacts.
+    // Non-text segments (tool_use, thinking) are preserved in place.
+    async syncLastMsgFromDB(convId, msgIdx) {
+      try {
+        var resp = await fetch('/api/conversations/' + convId, { cache: 'no-store' });
+        if (!resp.ok) return;
+        var dbMsgs = (await resp.json()).messages || [];
+        var dbMsg = null;
+        for (var i = dbMsgs.length - 1; i >= 0; i--) {
+          if (dbMsgs[i].role === 'assistant' && dbMsgs[i].content) { dbMsg = dbMsgs[i]; break; }
+        }
+        if (!dbMsg) return;
+        var cur = this.messages[msgIdx];
+        if (!cur || cur.role !== 'assistant') return;
+        var nonText = (cur.segments || []).filter((s) => s.type !== 'text');
+        cur.segments = nonText.concat([{ type: 'text', content: dbMsg.content }]);
+      } catch (_) { /* ignore */ }
+    },
+
+    async consumeSSE(resp, msgIdx) {
+      var reader = resp.body.getReader();
+      var decoder = new TextDecoder();
+      var buf = '';
+      var gotEnd = false;
+      try {
+        while (true) {
+          var chunk = await reader.read();
+          if (chunk.done) break;
+          buf += decoder.decode(chunk.value, { stream: true });
+          var blocks = buf.split('\n\n');
+          buf = blocks.pop();
+          for (var bi = 0; bi < blocks.length; bi++) {
+            var block = blocks[bi];
+            if (!block.trim()) continue;
+            var event = '', rawData = '';
+            var lines = block.split('\n');
+            for (var li = 0; li < lines.length; li++) {
+              var line = lines[li];
+              if (line.startsWith('event: ')) event = line.slice(7).trim();
+              else if (line.startsWith('data: ')) rawData = line.slice(6);
+            }
+            if (event === 'end') gotEnd = true;
+            if (event && rawData) { this.handleSSEEvent(event, rawData, msgIdx); this.scrollToBottom(); }
+          }
+        }
+      } finally {
+        try { reader.releaseLock(); } catch (_) { /* ignore */ }
+      }
+      return gotEnd;
+    },
+
+    handleSSEEvent(event, rawData, msgIdx) {
+      var data;
+      try { data = JSON.parse(rawData); } catch (_) { return; }
+      var msg = this.messages[msgIdx];
+      if (!msg) return;
+      switch (event) {
+        case 'start': if (data.runId) this.currentRunId = data.runId; break;
+        case 'heartbeat': break;
+        case 'agent': this.handleAgentSegment(data, msgIdx); break;
+        case 'stdout': case 'stderr': {
+          var chunk = (data.chunk || '').replace(/\n$/, '');
+          if (!chunk) break;
+          var segs = msg.segments, last = segs.length ? segs[segs.length - 1] : null;
+          if (last && last.type === 'console') { last.content += '\n' + chunk; }
+          else { segs.push({ type: 'console', content: chunk }); }
+          break;
+        }
+        case 'error': msg.segments.push({ type: 'error', message: data.message || 'Error' }); break;
+        case 'end':
+          msg.status = data.status || 'succeeded';
+          msg.duration = Date.now() - msg.startTime;
+          msg.completedAt = Date.now();
+          msg._fmtTime = this.formatTime(msg.completedAt);
+          if (document.hidden) this.showCompletionToast(msg.status, this.getMateNameForMsg(msg));
+          break;
+      }
+    },
+
+    handleAgentSegment(data, msgIdx) {
+      var segs = this.messages[msgIdx].segments;
+      var last = segs.length ? segs[segs.length - 1] : null;
+      switch (data.type) {
+        case 'text_delta': {
+          var d = data.delta || ''; if (!d) break;
+          if (last && last.type === 'text') { last.content += d; }
+          else { segs.push({ type: 'text', content: d }); }
+          break;
+        }
+        case 'text_replace': {
+          // cursor-agent reformatted mid-stream: update last text segment in-place
+          // (avoids a DOM remove+create flash) and remove any earlier text segments.
+          var newText = data.text || '';
+          var lastTi = -1;
+          for (var rti = segs.length - 1; rti >= 0; rti--) {
+            if (segs[rti].type === 'text') { lastTi = rti; break; }
+          }
+          if (lastTi >= 0) {
+            for (var rti2 = lastTi - 1; rti2 >= 0; rti2--) {
+              if (segs[rti2].type === 'text') { segs.splice(rti2, 1); lastTi--; }
+            }
+            segs[lastTi].content = newText;
+          } else if (newText) {
+            segs.push({ type: 'text', content: newText });
+          }
+          break;
+        }
+        case 'thinking_start': {
+          if (!last || last.type !== 'thinking') {
+            segs.push({ type: 'thinking', content: '', open: false });
+          }
+          break;
+        }
+        case 'thinking_delta': {
+          var td = data.delta || ''; if (!td) break;
+          if (last && last.type === 'thinking') { last.content += td; }
+          else { segs.push({ type: 'thinking', content: td, open: false }); }
+          break;
+        }
+        case 'tool_use': {
+          var toolName = data.name || 'tool', mergeTarget = null;
+          for (var k = segs.length - 1; k >= 0; k--) {
+            var sk = segs[k];
+            if (sk.type === 'status') continue;
+            if (sk.type === 'tool_use' && sk.name === toolName && sk.results.length >= sk.count) mergeTarget = sk;
+            break;
+          }
+          if (mergeTarget) { mergeTarget.count++; }
+          else { segs.push({ type: 'tool_use', name: toolName, count: 1, results: [], open: false }); }
+          break;
+        }
+        case 'tool_result': {
+          var trContent = data.content || '';
+          if (typeof trContent !== 'string') trContent = JSON.stringify(trContent);
+          var pending = null;
+          for (var ti = segs.length - 1; ti >= 0; ti--) {
+            if (segs[ti].type === 'tool_use' && segs[ti].results.length < segs[ti].count) { pending = segs[ti]; break; }
+            if (segs[ti].type === 'text' || segs[ti].type === 'error') break;
+          }
+          if (pending) { pending.results.push(trContent); }
+          else { segs.push({ type: 'tool_result', content: trContent, open: false }); }
+          break;
+        }
+        case 'status': {
+          var label = (data.label || '').trim(); if (!label || label === 'running' || label === 'requesting') break;
+          if (last && last.type === 'status') { last.label = label; }
+          else { segs.push({ type: 'status', label: label }); }
+          break;
+        }
+        case 'error': segs.push({ type: 'error', message: data.message || 'Agent error' }); break;
+        case 'raw': {
+          var rawLine = (data.line || '').replace(/\n$/, ''); if (!rawLine) break;
+          if (last && last.type === 'console') { last.content += '\n' + rawLine; }
+          else { segs.push({ type: 'console', content: rawLine }); }
+          break;
+        }
+      }
+    },
+
+    async cancel() {
+      var id = this.currentRunId;
+      if (!id) return;
+      try { await fetch('/api/runs/' + id + '/cancel', { method: 'POST' }); } catch (_) { /* ignore */ }
+    },
+
+    scrollToBottom() { var el = document.getElementById('chat-scroll'); if (el) el.scrollTop = el.scrollHeight; },
+
+    handleKeydown(e) {
+      if (__vaultrChatPathAc && __vaultrChatPathAc.handleKeydown(e)) return;
+      if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); void this.send(); }
+    },
+
+    autoResize(el) { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 140) + 'px'; },
+
+    formatDuration(ms) {
+      if (!ms) return '';
+      return ms < 1000 ? ms + 'ms' : (ms / 1000).toFixed(1) + 's';
+    },
+
+    msgAt(msg) {
+      return msg.completedAt || msg.createdAt || 0;
+    },
+
+    _refreshTimes() {
+      for (var i = 0; i < this.messages.length; i++) {
+        var m = this.messages[i];
+        var ts = this.msgAt(m);
+        if (ts) m._fmtTime = this.formatTime(ts);
+      }
+    },
+
+    formatTime(ts) {
+      if (!ts) return '';
+      var now = Date.now();
+      var diff = now - ts;
+      if (diff < 0) diff = 0;
+      var sec = Math.floor(diff / 1000);
+      if (sec < 45) return 'now';
+      var min = Math.floor(sec / 60);
+      if (min < 60) return min + 'm ago';
+      var hr = Math.floor(min / 60);
+      if (hr < 24) return hr + 'h ago';
+
+      var d = new Date(ts);
+      var clock = this.formatClock(d);
+      var today = new Date(now);
+      var yesterday = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1);
+      if (this.sameCalendarDay(d, yesterday)) return 'Yesterday, ' + clock;
+
+      var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      var datePart = months[d.getMonth()] + ' ' + d.getDate();
+      if (d.getFullYear() !== today.getFullYear()) datePart += ', ' + d.getFullYear();
+      return datePart + ', ' + clock;
+    },
+
+    formatClock(d) {
+      var h = d.getHours(), m = d.getMinutes();
+      var ap = h >= 12 ? 'PM' : 'AM';
+      h = h % 12;
+      if (h === 0) h = 12;
+      return h + ':' + String(m).padStart(2, '0') + ' ' + ap;
+    },
+
+    sameCalendarDay(a, b) {
+      return a.getFullYear() === b.getFullYear() &&
+        a.getMonth() === b.getMonth() &&
+        a.getDate() === b.getDate();
+    },
+
+    async copyMateText(msg) {
+      var text = (msg.segments || [])
+        .filter((s) => s.type === 'text')
+        .map((s) => s.content || '')
+        .join('').trim();
+      if (!text) return;
+      try {
+        await navigator.clipboard.writeText(text);
+        msg.copied = true;
+        setTimeout(() => { msg.copied = false; }, 2000);
+      } catch (_) { /* ignore */ }
+    },
+
+    getMateNameForMsg(msg) {
+      var m = this.mates.find((m2) => m2.id === msg.mateId);
+      return m ? m.name : (msg.agentId || 'Agent');
+    },
+
+    getMateColor(mateId) {
+      var m = this.mates.find((m2) => m2.id === mateId);
+      return (m && m.color) ? m.color : '';
+    },
+
+    mateInitials(name) {
+      if (!name) return '?';
+      return name.trim().slice(0, 1).toUpperCase();
+    },
+
+    insertPath(e) {
+      var path = (e && e.detail && e.detail.path) || '';
+      if (!path) return;
+      var ta = document.getElementById('chat-textarea');
+      var start = ta ? ta.selectionStart : this.inputText.length;
+      var end = ta ? ta.selectionEnd : start;
+      var bt = String.fromCharCode(96);
+      var before = this.inputText.slice(0, start);
+      var after = this.inputText.slice(end);
+      var leadSp = before.length > 0 && before[before.length - 1] !== ' ' ? ' ' : '';
+      var tailSp = after.length > 0 && after[0] !== ' ' ? ' ' : '';
+      var insert = leadSp + bt + path + bt + tailSp;
+      this.inputText = this.inputText.slice(0, start) + insert + this.inputText.slice(end);
+      this.$nextTick(() => {
+        if (ta) {
+          ta.selectionStart = ta.selectionEnd = start + insert.length;
+          ta.focus();
+          this.autoResize(ta);
+        }
+      });
+    },
+
+    showCompletionToast(status, mateName) {
+      this.toastText = (mateName || 'Agent') + (status === 'succeeded' ? ' finished' : ' failed');
+      this.toastKind = status === 'succeeded' ? 'ok' : 'err';
+      this.toastVisible = true;
+      if (this._toastTimer) clearTimeout(this._toastTimer);
+      this._toastTimer = setTimeout(() => { this.toastVisible = false; }, 6000);
+    },
+
+    _cancelPoller() {
+      if (this._runPollerTimer) { clearTimeout(this._runPollerTimer); this._runPollerTimer = null; }
+      this._runPollerSeq++;
+    },
+
+    _cancelSyncPoller() {
+      if (this._syncTimer) { clearTimeout(this._syncTimer); this._syncTimer = null; }
+      this._syncSeq++;
+    },
+
+    _startSyncPoller(convId) {
+      this._cancelSyncPoller();
+      var self = this;
+      var mySeq = self._syncSeq;
+      function poll() {
+        if (self._syncSeq !== mySeq) return;
+        if (self.isRunning || !convId || document.visibilityState !== 'visible') {
+          self._syncTimer = setTimeout(poll, 5000);
+          return;
+        }
+        var mateId = self.selectedMateId;
+        var convType = self.convType;
+        // Check if a newer conversation was created (e.g. WeChat /new)
+        fetch('/api/conversations?mateId=' + encodeURIComponent(mateId) + '&type=' + encodeURIComponent(convType), { cache: 'no-store' })
+          .then((r) => r.ok ? r.json() : null)
+          .then((data) => {
+            if (self._syncSeq !== mySeq) return;
+            var convs = (data && data.conversations) || [];
+            if (convs.length > 0 && convs[0].id !== convId) {
+              // Active conversation switched; refreshMateConversation will restart the poller
+              void self.refreshMateConversation(mateId);
+              return;
+            }
+            // Same conversation — fetch new messages only
+            fetch('/api/conversations/' + convId + '?since=' + self._lastMsgMs, { cache: 'no-store' })
+              .then((r2) => r2.ok ? r2.json() : null)
+              .then((data2) => {
+                if (self._syncSeq !== mySeq) return;
+                var msgs = (data2 && data2.messages) || [];
+                if (msgs.length > 0) {
+                  var newMsgs = self.formatStoredMessages(msgs);
+                  var changed = false;
+                  for (var i = 0; i < newMsgs.length; i++) {
+                    var nm = newMsgs[i];
+                    var existingIdx = -1;
+                    if (nm.id) {
+                      for (var k = 0; k < self.messages.length; k++) {
+                        if (self.messages[k].id === nm.id) { existingIdx = k; break; }
+                      }
+                    }
+                    if (existingIdx >= 0) {
+                      var ex = self.messages[existingIdx];
+                      var prevStatus = ex.status;
+                      ex.content = nm.content;
+                      ex.status = nm.status;
+                      // If the message was already terminal in memory with rich live-streamed
+                      // segments (thinking, tool_use, etc.), preserve them — DB only stores
+                      // final text, so blindly replacing would wipe all streaming artifacts.
+                      // Only replace segments when the message was still running (just completed)
+                      // or when there are no rich segments to preserve.
+                      var hasRichSegs = (ex.segments || []).some((s) => s.type !== 'text');
+                      if (prevStatus !== 'running' && hasRichSegs) {
+                        var richSegs = (ex.segments || []).filter((s) => s.type !== 'text');
+                        var dbTextSegs = (nm.segments || []).filter((s) => s.type === 'text');
+                        ex.segments = richSegs.concat(dbTextSegs);
+                      } else {
+                        ex.segments = nm.segments;
+                      }
+                      ex.completedAt = nm.completedAt;
+                      ex._fmtTime = nm._fmtTime;
+                      if (nm.triggerEvent) ex.triggerEvent = nm.triggerEvent;
+                    } else {
+                      self.messages.push(nm);
+                    }
+                    changed = true;
+                  }
+                  var lastTs = 0;
+                  for (var j = 0; j < msgs.length; j++) {
+                    var t = msgs[j].updatedAt ? new Date(msgs[j].updatedAt).getTime() : 0;
+                    if (t > lastTs) lastTs = t;
+                  }
+                  if (lastTs > self._lastMsgMs) self._lastMsgMs = lastTs;
+                  if (changed) {
+                    self._refreshTimes();
+                    self.$nextTick(() => { self.scrollToBottom(); });
+                  }
+                }
+                self._syncTimer = setTimeout(poll, 5000);
+              })
+              .catch(() => {
+                if (self._syncSeq !== mySeq) return;
+                self._syncTimer = setTimeout(poll, 5000);
+              });
+          })
+          .catch(() => {
+            if (self._syncSeq !== mySeq) return;
+            self._syncTimer = setTimeout(poll, 5000);
+          });
+      }
+      self._syncTimer = setTimeout(poll, 5000);
+    },
+
+    spawnRunPoller(runId, msgIdx) {
+      this._cancelPoller();
+      var self = this;
+      var mySeq = self._runPollerSeq;
+      var n = 0;
+      function poll() {
+        if (self._runPollerSeq !== mySeq) return;
+        if (n++ > 720) return; // 1 h at 5 s intervals
+        fetch('/api/runs/' + runId, { cache: 'no-store' })
+          .then((r) => r.ok ? r.json() : null)
+          .then((run) => {
+            if (self._runPollerSeq !== mySeq) return;
+            if (!run) { self._runPollerTimer = setTimeout(poll, 5000); return; }
+            var s = run.status;
+            if (s === 'succeeded' || s === 'failed' || s === 'canceled') {
+              self._runPollerTimer = null;
+              var st = s === 'succeeded' ? 'succeeded' : 'failed';
+              var msg = msgIdx < self.messages.length ? self.messages[msgIdx] : null;
+              if (msg && msg.status === 'running') {
+                msg.status = st;
+                msg.completedAt = run.updatedAt || Date.now();
+                msg._fmtTime = self.formatTime(msg.completedAt);
+                self.scrollToBottom();
+              }
+              self.showCompletionToast(st, msg ? self.getMateNameForMsg(msg) : null);
+            } else {
+              self._runPollerTimer = setTimeout(poll, 5000);
+            }
+          })
+          .catch(() => {
+            if (self._runPollerSeq !== mySeq) return;
+            self._runPollerTimer = setTimeout(poll, 5000);
+          });
+      }
+      self._runPollerTimer = setTimeout(poll, 3000);
+    },
+
+    isLastThinkingInMsg(msg, j) {
+      var segs = msg.segments || [];
+      for (var k = segs.length - 1; k >= 0; k--) {
+        if (segs[k].type === 'thinking') return k === j;
+      }
+      return false;
+    },
+
+    destroyChat() {
+      if (this._timeTicker) { clearInterval(this._timeTicker); this._timeTicker = null; }
+      if (this._toastTimer) { clearTimeout(this._toastTimer); this._toastTimer = null; }
+      this._cancelPoller();
+      this._cancelSyncPoller();
+    },
   });
+
+  // Object.assign flattens getters — define computed props properly so Alpine tracks them.
+  Object.defineProperties(ctrl, {
+    selectedMate: {
+      get() { var id = this.selectedMateId; return this.mates.find((m) => m.id === id) || null; },
+      configurable: true, enumerable: true,
+    },
+  });
+  return ctrl;
 }
 
-// ── Compose entry cards ───────────────────────────────────────────────────
-(function () {
-  var newCard = document.getElementById('home-new-card');
-  var importCard = document.getElementById('home-import-card');
-  var fileInput = document.getElementById('home-compose-file-input');
-  if (!newCard || !importCard || !fileInput) return;
-  newCard.onclick = function () {
-    if (window.__vaultrDrawer) void window.__vaultrDrawer.openNewInDrawer('', '');
-  };
-  importCard.onclick = function () { fileInput.click(); };
-  fileInput.onchange = function (e) {
-    var file = e.target.files && e.target.files[0];
-    if (!file) return;
-    var reader = new FileReader();
-    reader.onload = function (ev) {
-      if (window.__vaultrDrawer)
-        void window.__vaultrDrawer.openNewInDrawer(ev.target.result, file.name);
-    };
-    reader.readAsText(file, 'UTF-8');
-    fileInput.value = '';
-  };
-})();
-
-// ── Hero background image ─────────────────────────────────────────────────
-(function () {
-  var wrapper = document.querySelector('.home-hero-wrapper');
-  var pickBtn = document.getElementById('hero-bg-pick');
-  var clearBtn = document.getElementById('hero-bg-clear');
-  var fileInput = document.getElementById('hero-bg-input');
-  if (!wrapper || !pickBtn || !clearBtn || !fileInput) return;
-
-  var KEY = 'vaultr-hero-bg';
-  var KEY_Y = 'vaultr-hero-bg-y';
-  var hasBg = false;
-  var isLocked = true;
-  var offsetY = 0;
-  var naturalW = 0, naturalH = 0;
-  var isDragging = false, dragStartY = 0, dragStartOffset = 0;
-
-  var lockBtn = document.getElementById('hero-bg-lock');
-  var lockSvg = document.getElementById('hero-bg-lock-svg');
-  var unlockSvg = document.getElementById('hero-bg-unlock-svg');
-
-  function clampOffset(val) {
-    var sectionH = wrapper.offsetHeight;
-    var sectionW = wrapper.offsetWidth;
-    var scaledH = naturalW > 0 ? Math.round((naturalH / naturalW) * sectionW) : sectionH;
-    var min = Math.min(0, -(scaledH - sectionH));
-    return Math.max(min, Math.min(0, val));
-  }
-
-  function setPosition(y) {
-    offsetY = y;
-    wrapper.style.backgroundPosition = 'center ' + y + 'px';
-  }
-
-  function updateCursor() {
-    wrapper.style.cursor = (hasBg && !isLocked) ? 'grab' : '';
-  }
-
-  function setLocked(locked) {
-    isLocked = locked;
-    lockSvg.style.display = locked ? '' : 'none';
-    unlockSvg.style.display = locked ? 'none' : '';
-    lockBtn.title = locked ? 'Unlock to drag background' : 'Lock background position';
-    if (locked) lockBtn.classList.remove('is-active');
-    else lockBtn.classList.add('is-active');
-    updateCursor();
-  }
-
-  function applyBg(dataUrl, savedY) {
-    var preload = document.getElementById('hero-bg-preload');
-    if (preload) preload.remove();
-    if (dataUrl) {
-      var y = typeof savedY === 'number' ? savedY : 0;
-      wrapper.style.backgroundImage = 'url(' + dataUrl + ')';
-      wrapper.style.backgroundSize = '100% auto';
-      wrapper.style.backgroundRepeat = 'no-repeat';
-      wrapper.style.backgroundPosition = 'center ' + y + 'px';
-      hasBg = true;
-      lockBtn.style.display = '';
-      clearBtn.style.display = '';
-      var img = new Image();
-      img.onload = function () {
-        naturalW = img.naturalWidth;
-        naturalH = img.naturalHeight;
-        setPosition(clampOffset(y));
-      };
-      img.src = dataUrl;
-    } else {
-      wrapper.style.backgroundImage = '';
-      wrapper.style.backgroundSize = '';
-      wrapper.style.backgroundRepeat = '';
-      wrapper.style.backgroundPosition = '';
-      hasBg = false;
-      naturalW = naturalH = offsetY = 0;
-      lockBtn.style.display = 'none';
-      clearBtn.style.display = 'none';
-      setLocked(true);
+// Keep _lastURL in sync with whatever actually last loaded #home-list-pane —
+// including requests that don't go through selectSection/selectFolder, like
+// the shorts month rail's declarative hx-get — so refresh() and
+// reloadActiveSection() pick up on it too. Also: the graph/inbox/chat
+// sections' markup is static (server-rendered the same regardless of query
+// params), so once it lands in the DOM this is what actually kicks off the
+// client-side fetch + render — mirrors graph.js's init()-time loadGraph()
+// call, which has no equivalent trigger here since Alpine doesn't re-run
+// init() on swap.
+document.body.addEventListener('htmx:afterSwap', function (e) {
+  var target = e.detail && e.detail.target;
+  if (!target || target.id !== 'home-list-pane' || !window._homeData) return;
+  var xhr = e.detail.xhr;
+  if (!xhr || !xhr.responseURL) return;
+  try {
+    var u = new URL(xhr.responseURL);
+    window._homeData._lastURL = u.pathname + u.search;
+    if (document.getElementById('graph-canvas')) {
+      window._homeData.graphIndexPath = u.searchParams.get('index') || '';
+      window._homeData.loadGraph();
     }
-    updateCursor();
+    if (document.getElementById('home-inbox-list')) {
+      window._homeData.loadInbox();
+    }
+    if (document.getElementById('chat-scroll')) {
+      window._homeData.initChatSection();
+    }
+  } catch (err) { /* ignore */ }
+});
+
+// ── Shorts entries embedded in the list pane: intercept internal links ────
+// Wikilinks (/notes?…) → open in drawer editor; external → new tab.
+// (Mirrors shorts.js's listener for the standalone /shorts page.)
+document.addEventListener('click', function (e) {
+  var a = e.target.closest ? e.target.closest('a') : null;
+  if (!a || !a.closest('.shorts-entry-prose')) return;
+  var href = a.getAttribute('href');
+  if (!href) return;
+  e.preventDefault();
+  e.stopPropagation();
+  if (href.indexOf('/notes?') === 0) {
+    try {
+      var u = new URL(href, window.location.origin);
+      var name = u.searchParams.get('name') || '';
+      var path = u.searchParams.get('path') || '';
+      if (path && window.__vaultrDrawer) {
+        var title = a.textContent.trim() || path.split('/').pop().replace(/\.md$/, '');
+        void window.__vaultrDrawer.openNoteInDrawer(path, title, false, false);
+      } else if (name) {
+        void __vaultrDrawerOpenWikiLink(name.replace(/\.md$/, ''));
+      }
+    } catch (_) { /* ignore */ }
+  } else if (/^https?:\/\//.test(href)) {
+    window.open(href, '_blank', 'noopener,noreferrer');
   }
+}, true);
 
-  var saved = localStorage.getItem(KEY);
-  var savedY = parseFloat(localStorage.getItem(KEY_Y)) || 0;
-  if (saved) applyBg(saved, savedY);
-
-  pickBtn.onclick = function () { fileInput.click(); };
-
-  lockBtn.onclick = function () { setLocked(!isLocked); };
-
-  clearBtn.onclick = function () {
-    localStorage.removeItem(KEY);
-    localStorage.removeItem(KEY_Y);
-    applyBg(null);
-  };
-
-  fileInput.onchange = function (e) {
-    var file = e.target.files && e.target.files[0];
-    if (!file) return;
-    var reader = new FileReader();
-    reader.onload = function (ev) {
-      var dataUrl = ev.target.result;
-      localStorage.setItem(KEY, dataUrl);
-      localStorage.removeItem(KEY_Y);
-      applyBg(dataUrl, 0);
-    };
-    reader.readAsDataURL(file);
-    fileInput.value = '';
-  };
-
-  // ── Vertical drag to reposition background ───────────────────
-  wrapper.addEventListener('mousedown', function (e) {
-    if (!hasBg || isLocked) return;
-    if (e.target.closest('.hero-bg-zone')) return;
-    isDragging = true;
-    dragStartY = e.clientY;
-    dragStartOffset = offsetY;
-    wrapper.style.cursor = 'grabbing';
-    e.preventDefault();
-  });
-
-  document.addEventListener('mousemove', function (e) {
-    if (!isDragging) return;
-    setPosition(clampOffset(dragStartOffset + (e.clientY - dragStartY)));
-  });
-
-  document.addEventListener('mouseup', function () {
-    if (!isDragging) return;
-    isDragging = false;
-    updateCursor();
-    localStorage.setItem(KEY_Y, offsetY);
-  });
-})();

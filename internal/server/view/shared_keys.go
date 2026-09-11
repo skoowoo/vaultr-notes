@@ -12,6 +12,15 @@ package view
 // ESC stack — window.__vaultrEscPush / __vaultrEscPop
 //   Overlays push a named closer when they open and pop it when they close.
 //   Escape dismisses only the topmost entry (strict LIFO order).
+//
+// Overlay base — window.vaultrOverlay(escId, extra)
+//   Shared Alpine x-data factory for every dialog/overlay (confirm, info,
+//   short note, …): bundles an `open` flag with the ESC-stack bookkeeping so
+//   a dialog can't leave a stale entry on the stack by forgetting to call
+//   __vaultrEscPush/Pop by hand. openOverlay()/closeOverlay() always move
+//   both together; extra's own methods are merged on top and may still read/
+//   write `open` directly for cases (e.g. an animated close) where hiding
+//   needs to lag behind the ESC-stack pop.
 const keysJS = `
   (function() {
     var _isMac = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
@@ -69,4 +78,23 @@ const keysJS = `
       _stk[_stk.length - 1].close();
     }, true);
   })();
+
+  window.vaultrOverlay = function(escId, extra) {
+    var base = {
+      open: false,
+      openOverlay: function(onEscClose) {
+        this.open = true;
+        var self = this;
+        if (window.__vaultrEscPush) {
+          window.__vaultrEscPush(escId, onEscClose || function() { self.closeOverlay(); });
+        }
+      },
+      closeOverlay: function() {
+        this.open = false;
+        if (window.__vaultrEscPop) window.__vaultrEscPop(escId);
+      },
+    };
+    for (var k in extra) base[k] = extra[k];
+    return base;
+  };
 `

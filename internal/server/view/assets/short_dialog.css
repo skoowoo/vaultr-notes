@@ -4,6 +4,7 @@
       display: flex; align-items: flex-start; justify-content: center;
       padding-top: 28vh;
       background: var(--bg);
+      border-radius: 0; /* full-viewport surface — never rounds */
       animation: short-fade-in 300ms ease both;
     }
     #short-dialog.is-closing {

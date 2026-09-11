@@ -2,9 +2,9 @@
     /* ── Frontmatter card (editor) ───────────────────────────────── */
     .ProseMirror [data-fm] { margin-bottom: 1.75rem; }
     .ProseMirror [data-fm] .fm-card {
-      background: transparent; border: 1px solid var(--hr);
+      background: transparent; border: 1px solid var(--border);
+      border-radius: var(--r-sm);
       padding: 0.6rem 0.875rem 0.75rem;
-      box-shadow: var(--px-d2) var(--px-shadow);
     }
     .ProseMirror [data-fm] .fm-card-hd {
       display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;
@@ -28,7 +28,7 @@
     }
     .ProseMirror [data-fm] .fm-done-btn {
       flex-shrink: 0; border: none;
-      background: var(--accent); color: #fff;
+      background: var(--accent); color: var(--accent-fg);
       font-size: 0.7rem; font-weight: 500;
       cursor: pointer; padding: 0.25em 0.65em; font-family: inherit;
     }
@@ -41,13 +41,13 @@
       margin: 0; padding: 0;
       background: transparent; color: var(--fg);
       border: none; outline: none; resize: vertical;
-      font-family: "JetBrains Mono", ui-monospace, monospace;
+      font-family: var(--font-mono);
       font-size: var(--text-xs); line-height: 1.6;
     }
 
     /* ── Editorial prose typography (editor) ─────────────────────
-       Slightly "workspace" feel vs reading: Inter headings, cooler neutrals
-       from #milkdown token overrides, uniform first paragraph. */
+       Same Cal Sans headings as the reading view; cooler neutrals from
+       #milkdown token overrides, uniform first paragraph. */
     .ProseMirror {
       color: var(--prose-body);
       font-family: var(--font-sans);
@@ -95,7 +95,7 @@
        (empty list item), so the cursor anchor stays on line 1 instead of drifting down. */
     .ProseMirror li > p > br.ProseMirror-trailingBreak:not(:only-child) { display: none; }
     .ProseMirror > p:first-of-type { font-size: 1em; line-height: 1.75; color: var(--prose-body); }
-    .ProseMirror ul  { padding-left: 1.4em; list-style-type: square; margin-bottom: 0; }
+    .ProseMirror ul  { padding-left: 1.4em; list-style-type: disc; margin-bottom: 0; }
     .ProseMirror ol  { padding-left: 1.6em; list-style-type: decimal; margin-bottom: 0; }
     /* Block rhythm — declared after ul/ol/table resets so adjacency rule wins the cascade. */
     .ProseMirror > * + p,
@@ -103,8 +103,8 @@
     .ProseMirror > * + blockquote,
     .ProseMirror > * + table { margin-top: 1em; }
     .ProseMirror blockquote > * + * { margin-top: 0.85em; }
-    .ProseMirror ul ul  { list-style-type: square; }
-    .ProseMirror ul ul ul { list-style-type: square; }
+    .ProseMirror ul ul  { list-style-type: disc; }
+    .ProseMirror ul ul ul { list-style-type: disc; }
     .ProseMirror ul > li::marker { color: var(--ul-mk); }
     .ProseMirror ol > li::marker { color: var(--ol-mk); font-size: 0.85em; }
     .ProseMirror strong { color: var(--prose-strong); font-weight: 600; }
@@ -142,19 +142,21 @@
     .ProseMirror blockquote p::before, .ProseMirror blockquote p::after { content: none; }
     .ProseMirror pre {
       background: var(--pre-bg); border: 1px solid var(--pre-bd);
+      border-radius: var(--r-sm);
       padding: 1.25rem 1.5rem; overflow-x: auto; line-height: 1.65;
       margin: 1em 0;
     }
     .ProseMirror pre code {
-      font-family: "JetBrains Mono", ui-monospace, monospace;
+      font-family: var(--font-mono);
       color: var(--pre-tx); background: transparent !important;
       border: none !important; padding: 0 !important;
       font-size: var(--text-base); font-weight: 400; border-radius: 0;
     }
     .ProseMirror :not(pre) > code {
-      font-family: "JetBrains Mono", ui-monospace, monospace;
+      font-family: var(--font-mono);
       color: var(--code-tx); background: var(--code-bg);
       border: 1px solid var(--code-bd);
+      border-radius: var(--r-xs);
       padding: 0.15em 0.42em; font-size: 0.85em;
     }
     .ProseMirror :not(pre) > code::before, .ProseMirror :not(pre) > code::after { content: none; }
@@ -175,8 +177,8 @@
     }
     .ProseMirror td:last-child { border-right: none; }
     .ProseMirror tr:last-child td { border-bottom: none; }
-    .ProseMirror hr { border: none; border-top: 1px solid var(--hr); margin: 2em 0; }
-    .ProseMirror img { border: 1px solid var(--tbl-bd); max-width: 100%; height: auto; }
+    .ProseMirror hr { border: none; border-top: 1px solid var(--border); margin: 2em 0; }
+    .ProseMirror img { border: 1px solid var(--tbl-bd); border-radius: var(--r-sm); max-width: 100%; height: auto; }
 
     /* ── Task list (GFM editor) ─────────────────────────────────────── */
     .ProseMirror li[data-item-type="task"] { list-style: none; position: relative; padding-left: 1.6em; }
@@ -186,7 +188,7 @@
       content: '';
       position: absolute; left: 0; top: 0.38em;
       width: 14px; height: 14px;
-      border: 1.5px solid var(--ul-mk); border-radius: 0;
+      border: 1.5px solid var(--ul-mk); border-radius: var(--r-xs);
       background: transparent;
       transition: none;
     }

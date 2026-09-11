@@ -319,7 +319,7 @@ function register(opts = {}) {
             method: "GET",
             hostname: parsed.hostname,
             port: parsed.port || (parsed.protocol === "https:" ? 443 : 80),
-            path: "/library",
+            path: "/home",
             timeout: 3000,
           },
           (res) => { res.resume(); resolve(true); }
@@ -329,7 +329,7 @@ function register(opts = {}) {
           resolve(false);
         });
         req.on("timeout", () => {
-          diagLogCheckFailThrottled(url, "timeout GET /library (3s)");
+          diagLogCheckFailThrottled(url, "timeout GET /home (3s)");
           req.destroy();
           resolve(false);
         });

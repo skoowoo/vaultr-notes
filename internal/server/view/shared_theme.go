@@ -1,11 +1,18 @@
 package view
 
-// themeBootstrapScript is placed in <head> to apply the neo theme before first
-// paint. Hardcoded to neo — the only supported theme.
+// themeBootstrapScript is placed in <head>, before first paint. Dark-mode
+// tokens live on bare :root (shared_tokens.go) — Linear's near-black canvas
+// is the shipped default — with the light adaptation applying via
+// :root[data-theme="light"] or an unforced OS light preference. There's no
+// user-facing toggle yet (TODO: once one exists, read the stored preference
+// here and set data-theme explicitly before first paint instead of relying
+// on matchMedia), so this only has to agree with the same
+// prefers-color-scheme check the CSS itself uses.
 const themeBootstrapScript = `  <script>(function(){
-  try{if(localStorage.getItem('theme')==='pixel')localStorage.setItem('theme','neo');}catch(_){}
-  document.documentElement.setAttribute('data-theme','neo');
-  if(window.vaultrDesktop&&window.vaultrDesktop.setViewBgColor)window.vaultrDesktop.setViewBgColor('#ffffff');
+  if(window.vaultrDesktop&&window.vaultrDesktop.setViewBgColor){
+    var light=window.matchMedia&&window.matchMedia('(prefers-color-scheme: light)').matches;
+    window.vaultrDesktop.setViewBgColor(light?'#fcfcfc':'#010102');
+  }
 })()</script>`
 
 // electronBootstrapScript adds the 'electron' and 'macos' classes to <html>
@@ -22,11 +29,10 @@ const electronShellSafeReloadScript = `  <script>(function(){
       var path=location.pathname||'';
       var seg=path.replace(/^\/+/,'').split('/')[0];
       if(seg==='edit')return false;
-      if(seg!=='home'&&seg!=='library')return false;
+      if(seg!=='home')return false;
       if(window.__vaultrSearchOpen)return false;
       var dr=window.__vaultrDrawer;
       if(dr&&dr.drawerOpen)return false;
-      if(typeof libData!=='undefined'&&libData&&(libData.selectedTag||libData.selectedFocus))return false;
       if(seg==='home'){
         var rawTab=document.getElementById('t-raw');
         if(rawTab&&rawTab.classList.contains('on'))return false;
