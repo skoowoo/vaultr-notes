@@ -60,7 +60,7 @@ const views = {};
 let activeSection = null;
 // Track the most-recently applied theme background so detached views can be
 // pre-synced before they are made visible (prevents flash-of-wrong-theme).
-let currentViewBgColor = '#010102';
+let currentViewBgColor = '#08080b';
 
 // ── Inbox notifications (direct SSE from main process) ─────────────────────────
 // Fires once per new /api/inbox message, regardless of producer (mate trigger
@@ -284,7 +284,7 @@ function resetToStartScreen() {
 }
 
 function showStartScreen() {
-  startView = new WebContentsView({ webPreferences: makeWebPrefs(), backgroundColor: '#010102' });
+  startView = new WebContentsView({ webPreferences: makeWebPrefs(), backgroundColor: '#08080b' });
 
   startView.webContents.setWindowOpenHandler(({ url }) => {
     shell.openExternal(url);
@@ -345,7 +345,7 @@ function setupSectionView(view, sectionName) {
 function createSectionViews(url) {
   serverUrl = url;
   for (const section of SECTIONS) {
-    const view = new WebContentsView({ webPreferences: makeWebPrefs(), backgroundColor: '#010102' });
+    const view = new WebContentsView({ webPreferences: makeWebPrefs(), backgroundColor: '#08080b' });
     view.webContents.loadURL(url + "/" + section);
     setupSectionView(view, section);
     views[section] = view;
@@ -367,7 +367,7 @@ function createWindow() {
     minWidth: 960,
     minHeight: 640,
     title: "Vaultr",
-    backgroundColor: "#010102",
+    backgroundColor: "#08080b",
     titleBarStyle: process.platform === "darwin" ? "hiddenInset" : "default",
     ...(icon ? { icon } : {}),
   });
@@ -493,7 +493,7 @@ ipcMain.on("set-window-button-visibility", (_event, visible) => {
   try { if (win) win.setWindowButtonVisibility(!!visible); } catch (_) {}
 });
 
-ipcMain.on("set-view-bg-color", (event, color) => {
+ipcMain.on("set-view-bg-color", (event, color, theme) => {
   // Always track the latest theme bg so showSection() can pre-sync detached views.
   currentViewBgColor = color;
 
@@ -510,13 +510,20 @@ ipcMain.on("set-view-bg-color", (event, color) => {
   // matchMedia change events from Chromium while they are off-screen.  Push a
   // lightweight data-theme sync into every view that didn't originate this call
   // so their HTML is already correct when they are next made visible.
+  //
+  // `theme` is exactly the data-theme value shared_theme.go's
+  // window.__vaultrApplyTheme just set on the originating view: 'light',
+  // 'dark', or '' for auto (attribute removed, bare :root default +
+  // prefers-color-scheme fallback takes over). Passed through as-is rather
+  // than re-derived from `color`, since color alone can't distinguish an
+  // explicit "dark" choice from "auto" resolving to dark.
   const senderWc = event.sender;
   for (const v of Object.values(views)) {
     if (v.webContents.isDestroyed() || v.webContents === senderWc) continue;
     v.webContents.executeJavaScript(`(function(){
       try{
-        var theme='neo';
-        document.documentElement.setAttribute('data-theme',theme);
+        if (${JSON.stringify(theme || "")}) { document.documentElement.setAttribute('data-theme', ${JSON.stringify(theme || "")}); }
+        else { document.documentElement.removeAttribute('data-theme'); }
       }catch(_){}
     })()`).catch(() => {});
   }

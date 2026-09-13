@@ -18,14 +18,13 @@
     }
 
     .confirm-card {
-      background: var(--glass-bg);
-      backdrop-filter: var(--glass-filter);
-      -webkit-backdrop-filter: var(--glass-filter);
+      background: var(--bg);
       border: var(--bd-w) solid var(--border-strong);
       border-radius: var(--r-xl);
       padding: 1.5rem 1.5rem 1.25rem;
       max-width: 360px;
       width: 100%;
+      box-shadow: var(--shadow-lg) var(--shadow-color);
     }
 
     .confirm-card.is-wide {

@@ -208,6 +208,14 @@
       display: flex; flex-direction: column; align-items: center; justify-content: center;
       gap: 14px; text-align: center; padding: 80px 0;
     }
+    /* Matches .graph-zero-icon's treatment (48px, muted, 0.35 opacity) — the
+       shared "full-section empty state" icon sizing app-wide. */
+    .shorts-empty-icon {
+      width: 48px; height: 48px;
+      color: var(--muted);
+      opacity: 0.35;
+    }
+    .shorts-empty-icon svg { width: 100%; height: 100%; }
     .shorts-empty-label {
       font-size: var(--text-sm); color: var(--muted);
       font-weight: var(--fw-regular); margin: 0;
@@ -229,4 +237,3 @@
     .shorts-empty-btn svg { width: 14px; height: 14px; flex-shrink: 0; }
 
     ::-webkit-scrollbar { display: none; }
-    .lib-nav, .nav-item { user-select: none; }

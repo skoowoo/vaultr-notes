@@ -2,6 +2,24 @@
   <!-- Sidebar + note list ─────────────────────────────────────────── -->
   <div class="home-shell">
     <aside class="home-side" id="home-side">
+      <div class="home-side-top">
+        <button type="button" class="icon-btn-ghost"
+                :title="/Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent) ? 'Search (⌘K)' : 'Search (Ctrl+K)'"
+                @click="window.dispatchEvent(new CustomEvent('open-search'))">
+          <svg fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24">
+            <circle cx="11" cy="11" r="8" /><path stroke-linecap="round" stroke-linejoin="round" d="m21 21-4.34-4.34" />
+          </svg>
+        </button>
+      </div>
+
+      <button type="button" class="home-side-new-btn" title="New note (Ctrl+N)"
+              onclick="window.__vaultrDrawer && void window.__vaultrDrawer.openNewInDrawer('','')">
+        <svg fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14M5 12h14" />
+        </svg>
+        <span>New Note</span>
+      </button>
+
       <nav class="home-side-nav">
 
         <button type="button" class="home-side-item" :class="{'is-active': activeKey === 'inbox'}"
@@ -30,22 +48,79 @@
             </svg>
             <span class="home-side-label">Agents</span>
             <svg class="home-side-chevron" :class="{'is-open': chatsOpen}" @click.stop="toggleChats()"
-                 fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                 fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" d="m9 18 6-6-6-6" />
             </svg>
           </button>
-          <div class="home-side-children" id="home-side-chats-body" x-show="chatsOpen" x-cloak>
-            <template x-for="m in mates" :key="m.id">
-              <button type="button" class="home-side-child" :class="{'is-active': activeKey === 'chat:' + m.id}"
-                      @click="selectChatMate(m.id)">
-                <span class="home-side-child-avatar" :style="m.color ? 'background:' + m.color : ''"
-                      x-text="mateInitials(m.name)"></span>
-                <span class="home-side-child-name" x-text="m.name"></span>
-              </button>
-            </template>
-            <div class="home-side-empty" x-show="mates.length === 0">No mates yet</div>
+          <div class="home-side-children" id="home-side-chats-body" :class="{'is-open': chatsOpen}" x-cloak>
+            <div class="home-side-children-inner">
+              <template x-for="m in mates" :key="m.id">
+                <button type="button" class="home-side-child" :class="{'is-active': activeKey === 'chat:' + m.id}"
+                        @click="selectChatMate(m.id)">
+                  <span class="home-side-child-avatar" :style="m.color ? 'background:' + m.color : ''"
+                        x-text="mateInitials(m.name)"></span>
+                  <span class="home-side-child-name" x-text="m.name"></span>
+                </button>
+              </template>
+              <div class="home-side-empty" x-show="mates.length === 0">No mates yet</div>
+            </div>
           </div>
         </div>
+
+        <div class="home-side-sep"></div>
+
+        <div class="home-side-group">
+          <button type="button" class="home-side-item home-side-item--parent"
+                  :class="{'is-active': activeKey === 'graph:'}"
+                  @click="selectGraphIndex('')">
+            <svg class="home-side-icon" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"
+                 stroke-linejoin="round" viewBox="0 0 24 24">
+              <circle cx="12" cy="4.5" r="2.5" />
+              <path d="m10.2 6.3-3.9 3.9" />
+              <circle cx="4.5" cy="12" r="2.5" />
+              <path d="M7 12h10" />
+              <circle cx="19.5" cy="12" r="2.5" />
+              <path d="m13.8 17.7 3.9-3.9" />
+              <circle cx="12" cy="19.5" r="2.5" />
+            </svg>
+            <span class="home-side-label">Graph</span>
+            <svg class="home-side-chevron" :class="{'is-open': graphOpen}" @click.stop="toggleGraph()"
+                 fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="m9 18 6-6-6-6" />
+            </svg>
+          </button>
+          <div class="home-side-children" id="home-side-graph-body" :class="{'is-open': graphOpen}" x-cloak>
+            <div class="home-side-children-inner">
+              {{range .IndexNotes}}
+              <button type="button" class="home-side-child" :class="{'is-active': activeKey === 'graph:{{.Path}}'}"
+                      @click="selectGraphIndex('{{.Path}}')">
+                <span class="home-side-child-name">{{label .}}</span>
+              </button>
+              {{end}}
+            </div>
+          </div>
+        </div>
+
+        <button type="button" class="home-side-item" :class="{'is-active': activeKey === 'knowledge'}"
+                @click="selectSection('knowledge', '/home/section?type=knowledge')">
+          <svg class="home-side-icon" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"
+               stroke-linejoin="round" viewBox="0 0 24 24">
+            <path d="M12 7v14" />
+            <path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z" />
+          </svg>
+          <span class="home-side-label">Knowledge</span>
+        </button>
+
+        <button type="button" class="home-side-item" :class="{'is-active': activeKey === 'memory'}"
+                @click="selectSection('memory', '/home/section?type=memory')">
+          <svg class="home-side-icon" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"
+               stroke-linejoin="round" viewBox="0 0 24 24">
+            <ellipse cx="12" cy="5" rx="9" ry="3" />
+            <path d="M3 5V19A9 3 0 0 0 21 19V5" />
+            <path d="M3 12A9 3 0 0 0 21 12" />
+          </svg>
+          <span class="home-side-label">Memory</span>
+        </button>
 
         <div class="home-side-sep"></div>
 
@@ -90,36 +165,6 @@
         </button>
 
         <div class="home-side-group">
-          <button type="button" class="home-side-item home-side-item--parent"
-                  :class="{'is-active': activeKey === 'graph:'}"
-                  @click="selectGraphIndex('')">
-            <svg class="home-side-icon" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"
-                 stroke-linejoin="round" viewBox="0 0 24 24">
-              <circle cx="12" cy="4.5" r="2.5" />
-              <path d="m10.2 6.3-3.9 3.9" />
-              <circle cx="4.5" cy="12" r="2.5" />
-              <path d="M7 12h10" />
-              <circle cx="19.5" cy="12" r="2.5" />
-              <path d="m13.8 17.7 3.9-3.9" />
-              <circle cx="12" cy="19.5" r="2.5" />
-            </svg>
-            <span class="home-side-label">Knowledge Graph</span>
-            <svg class="home-side-chevron" :class="{'is-open': graphOpen}" @click.stop="toggleGraph()"
-                 fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="m9 18 6-6-6-6" />
-            </svg>
-          </button>
-          <div class="home-side-children" id="home-side-graph-body" x-show="graphOpen" x-cloak>
-            {{range .IndexNotes}}
-            <button type="button" class="home-side-child" :class="{'is-active': activeKey === 'graph:{{.Path}}'}"
-                    @click="selectGraphIndex('{{.Path}}')">
-              <span class="home-side-child-name">{{label .}}</span>
-            </button>
-            {{end}}
-          </div>
-        </div>
-
-        <div class="home-side-group">
           <button type="button" class="home-side-item home-side-item--parent" @click="toggleFolders()">
             <svg class="home-side-icon" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"
                  stroke-linejoin="round" viewBox="0 0 24 24">
@@ -127,26 +172,47 @@
             </svg>
             <span class="home-side-label">Folders</span>
             <svg class="home-side-chevron" :class="{'is-open': foldersOpen}" fill="none" stroke="currentColor"
-                 stroke-width="2" viewBox="0 0 24 24">
+                 stroke-width="1.7" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" d="m9 18 6-6-6-6" />
             </svg>
           </button>
-          <div class="home-side-children" id="home-side-folders-body" x-show="foldersOpen" x-cloak>
-            {{range .Folders}}
-            <button type="button" class="home-side-child" :class="{'is-active': activeKey === 'dir:{{.Dir}}'}"
-                    @click="selectFolder('{{.Dir}}', '/home/section?type=folder&path={{encdir .Dir}}')">
-              <svg class="home-side-child-icon" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"
-                   stroke-linejoin="round" viewBox="0 0 24 24">
-                <path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z" />
-              </svg>
-              <span class="home-side-child-name">{{folderLabel .Dir}}</span>
-            </button>
-            {{end}}
-            {{if not .Folders}}<div class="home-side-empty">No folders</div>{{end}}
+          <div class="home-side-children" id="home-side-folders-body" :class="{'is-open': foldersOpen}" x-cloak>
+            <div class="home-side-children-inner">
+              {{range .Folders}}
+              <button type="button" class="home-side-child" :class="{'is-active': activeKey === 'dir:{{.Dir}}'}"
+                      @click="selectFolder('{{.Dir}}', '/home/section?type=folder&path={{encdir .Dir}}')">
+                <svg class="home-side-child-icon" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"
+                     stroke-linejoin="round" viewBox="0 0 24 24">
+                  <path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z" />
+                </svg>
+                <span class="home-side-child-name">{{folderLabel .Dir}}</span>
+              </button>
+              {{end}}
+              {{if not .Folders}}<div class="home-side-empty">No folders</div>{{end}}
+            </div>
           </div>
         </div>
 
       </nav>
+
+      <div class="home-side-bottom">
+        <button type="button" class="icon-btn-ghost home-side-bottom-btn" title="Settings"
+                @click="$store.settingsModal.open = true; $el.blur()">
+          <svg fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915" />
+            <circle cx="12" cy="12" r="3" />
+          </svg>
+        </button>
+        <button type="button" class="icon-btn-ghost home-side-bottom-btn" :class="{'is-active': drawerOpen}"
+                :title="/Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent) ? 'Reading drawer (⌘E)' : 'Reading drawer (Ctrl+E)'"
+                @click="drawerOpen = !drawerOpen">
+          <svg fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24">
+            <rect x="3" y="3" width="18" height="18" rx="2" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 3v18" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="m10 15-3-3 3-3" />
+          </svg>
+        </button>
+      </div>
     </aside>
 
     <main class="home-list-pane" id="home-list-pane">

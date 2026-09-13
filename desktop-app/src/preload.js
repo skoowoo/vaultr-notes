@@ -11,7 +11,7 @@ contextBridge.exposeInMainWorld("vaultrDesktop", {
   setServerUrl: (url) => ipcRenderer.invoke("set-server-url", url),
   restartServer: () => ipcRenderer.invoke("restart-vaultr-server"),
   syncVaultDataAcrossSections: () => ipcRenderer.invoke("sync-vault-data-across-sections"),
-  setViewBgColor: (color) => ipcRenderer.send("set-view-bg-color", color),
+  setViewBgColor: (color, theme) => ipcRenderer.send("set-view-bg-color", color, theme),
   setWindowButtonVisibility: (visible) => ipcRenderer.send("set-window-button-visibility", visible),
   drafts: {
     list:   ()         => ipcRenderer.invoke("draft:list"),

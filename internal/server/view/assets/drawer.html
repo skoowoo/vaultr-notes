@@ -7,16 +7,16 @@
       <!-- ① Tab bar -->
       <div class="drawer-tab-bar">
         <div class="drawer-tab-bar-start">
-          <button type="button" class="drawer-expand-btn"
+          <button type="button" class="icon-btn-ghost drawer-expand-btn"
                   @click.stop="drawerExpanded = !drawerExpanded; $el.blur()"
                   :title="drawerExpanded ? 'Exit focus mode (⌘\\)' : 'Focus mode (⌘\\)'">
             <!-- enter focus: corners pointing outward -->
-            <svg x-show="!drawerExpanded" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+            <svg x-show="!drawerExpanded" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
               <path d="M4 9V5h4"/><path d="M20 9V5h-4"/>
               <path d="M4 15v4h4"/><path d="M20 15v4h-4"/>
             </svg>
             <!-- exit focus: corners pointing inward -->
-            <svg x-show="drawerExpanded" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+            <svg x-show="drawerExpanded" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
               <path d="M9 5v4H5"/><path d="M15 5v4h4"/>
               <path d="M9 19v-4H5"/><path d="M15 19v-4h4"/>
             </svg>
@@ -28,7 +28,7 @@
                     @click.stop="drawerSwitchTab(i)" role="tab" :title="tab.title">
               <span class="drawer-tab-title" x-text="tab.title"></span>
               <span class="drawer-tab-draft-icon" x-show="!tab.path" title="Draft" aria-hidden="true">
-                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <svg fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M12 20h9"/>
                   <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>
                 </svg>
@@ -46,8 +46,8 @@
           </template>
         </div>
         <div class="drawer-tab-bar-end">
-          <button type="button" class="icon-btn-close" title="Close (Esc)" @click.stop="drawerOpen = false">
-            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <button type="button" class="icon-btn-ghost" title="Close (Esc)" @click.stop="drawerOpen = false">
+            <svg fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24">
               <path stroke-linecap="round" d="M18 6 6 18"/>
               <path stroke-linecap="round" d="m6 6 12 12"/>
             </svg>
@@ -66,8 +66,8 @@
                    aria-autocomplete="list" aria-controls="drawer-path-ac">
             <ul class="drawer-path-ac" id="drawer-path-ac" role="listbox" aria-expanded="false" hidden></ul>
           </div>
-          <button type="button" class="drawer-source-btn" title="Toggle source">
-            <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+          <button type="button" class="icon-btn drawer-source-btn" title="Toggle source">
+            <svg fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" d="m18 16 4-4-4-4"/>
               <path stroke-linecap="round" stroke-linejoin="round" d="m6 8-4 4 4 4"/>
               <path stroke-linecap="round" stroke-linejoin="round" d="m14.5 4-5 16"/>
@@ -84,30 +84,30 @@
           <svg class="ssi-pending" width="8" height="8" viewBox="0 0 8 8" fill="currentColor">
             <circle cx="4" cy="4" r="3.5"/>
           </svg>
-          <svg class="ssi-saved" width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg class="ssi-saved" width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M2 7l4 4 6-6"/>
           </svg>
         </span>
         <div class="drawer-tool-actions" x-show="activeTab >= 0 && (!tabs[activeTab] || tabs[activeTab].path)">
-          <button type="button" class="drawer-compile-btn"
+          <button type="button" class="icon-btn drawer-compile-btn"
                   x-show="tabs[activeTab] && tabs[activeTab].canCompile"
                   @click.stop="compileDrawerNote($event)"
                   title="Compile to knowledge note">
-            <svg fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+            <svg fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
               <path d="M15 4V2"/><path d="M15 16v-2"/><path d="M8 9h2"/><path d="M20 9h2"/><path d="M17.8 11.8 19 13"/><path d="M15 9h.01"/><path d="M17.8 6.2 19 5"/><path d="m3 21 9-9"/><path d="M12.2 6.2 11 5"/>
             </svg>
           </button>
-          <button type="button" class="frag-pin-btn"
+          <button type="button" class="icon-btn frag-pin-btn"
                   :class="{ active: tabs[activeTab] && tabs[activeTab].pinned }"
                   x-show="tabs[activeTab] && tabs[activeTab].path"
                   @click.stop="togglePinActiveNote()"
                   :title="tabs[activeTab] && tabs[activeTab].pinned ? 'Unpin note' : 'Pin note'">
-            <svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+            <svg fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
               <path d="M17 3a2 2 0 0 1 2 2v15a1 1 0 0 1-1.496.868l-4.512-2.578a2 2 0 0 0-1.984 0l-4.512 2.578A1 1 0 0 1 5 20V5a2 2 0 0 1 2-2z"/>
             </svg>
           </button>
-          <button type="button" class="drawer-source-btn" title="Toggle source">
-            <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+          <button type="button" class="icon-btn drawer-source-btn" title="Toggle source">
+            <svg fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" d="m18 16 4-4-4-4"/>
               <path stroke-linecap="round" stroke-linejoin="round" d="m6 8-4 4 4 4"/>
               <path stroke-linecap="round" stroke-linejoin="round" d="m14.5 4-5 16"/>
@@ -116,12 +116,12 @@
           <div class="drawer-more-wrap" x-data="{ moreOpen: false }"
                @mousedown.window="moreOpen = false"
                @drawer:close-more.document="moreOpen = false">
-            <button type="button" class="drawer-more-btn"
+            <button type="button" class="icon-btn drawer-more-btn"
                     @mousedown.stop
                     @click.stop="moreOpen = !moreOpen"
                     :class="{ active: moreOpen }"
                     title="More actions">
-              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <svg fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24">
                 <circle cx="12" cy="5" r="1" fill="currentColor" stroke="none"/>
                 <circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/>
                 <circle cx="12" cy="19" r="1" fill="currentColor" stroke="none"/>

@@ -3,7 +3,7 @@
       position: fixed; inset: 0; z-index: 200;
       pointer-events: none; background: transparent;
       border-radius: 0; /* full-viewport scrim — never rounds */
-      transition: background 220ms ease;
+      transition: background var(--motion-slow) ease;
     }
     .drawer-overlay.open { pointer-events: auto; background: var(--drawer-overlay-bg); }
     .drawer-panel {
@@ -13,10 +13,14 @@
       display: flex; flex-direction: column; overflow: hidden;
       transform: translateX(24px);
       opacity: 0;
+      /* Slide-in choreography keeps its own hand-tuned durations/easing
+         (deliberately slower than --motion-slow, to let the panel read as
+         sliding rather than popping) — only the width-resize sub-property
+         matches the shared slow tier exactly. */
       transition:
         transform 280ms cubic-bezier(0.25, 0.8, 0.25, 1),
         opacity 260ms ease,
-        width 220ms cubic-bezier(0.25, 0.8, 0.25, 1);
+        width var(--motion-slow) cubic-bezier(0.25, 0.8, 0.25, 1);
     }
     .drawer-overlay.open .drawer-panel { transform: translateX(0); opacity: 1; }
     .drawer-panel.expanded { width: 100vw; border-left: none; }
@@ -105,7 +109,7 @@
       width: 100%; background: transparent; border: none; outline: none;
       font-size: var(--text-xs); color: var(--muted);
       font-family: var(--font-mono);
-      transition: color 120ms;
+      transition: color var(--motion-fast);
     }
     .drawer-path-input:focus { color: var(--fg); }
     .drawer-path-input.invalid { color: var(--s-err); }
@@ -124,6 +128,7 @@
       color: var(--fg); cursor: pointer; user-select: none;
     }
     .drawer-path-ac li:hover, .drawer-path-ac li[aria-selected="true"] { background: var(--card-hov); }
+    .drawer-path-ac li:not(.path-ac-muted):active { opacity: 0.85; }
     .drawer-path-ac li.path-ac-muted { color: var(--muted); cursor: default; font-style: italic; }
     .drawer-path-ac li.path-ac-muted:hover { background: transparent; }
     .drawer-publish-btn {
@@ -176,24 +181,9 @@
     .ssi-saved { color: var(--accent); animation: ssi-fadein 0.25s ease; }
     @keyframes ssi-fadein { from { opacity: 0; transform: scale(0.7); } to { opacity: 1; transform: scale(1); } }
     /* ── More menu ──────────────────────────────────────────────── */
+    /* .drawer-more-btn uses the shared .icon-btn component (base.css) —
+       nothing unique to add here beyond the menu it opens. */
     .drawer-more-wrap { position: relative; flex-shrink: 0; }
-    .drawer-more-btn {
-      display: flex; align-items: center; justify-content: center;
-      width: var(--action-btn-sz); height: var(--action-btn-sz);
-      border-radius: var(--r-xs);
-      border: var(--bd-w) solid var(--border-strong); background: transparent;
-      color: var(--muted); cursor: pointer;
-    }
-    .drawer-more-btn:hover {
-      color: var(--fg); background: var(--icon-hov); border-color: var(--border-strong);
-    }
-    .drawer-more-btn:active:not(.active) {
-      background: var(--tint-md);
-    }
-    .drawer-more-btn.active {
-      color: var(--control-active-fg); background: var(--control-active-bg); border-color: var(--border-strong);
-    }
-    .drawer-more-btn svg { width: 14px; height: 14px; }
     .drawer-more-menu {
       position: absolute; top: calc(100% + 6px); right: 0; z-index: 50;
       min-width: 130px; padding: 0.25rem;
@@ -211,58 +201,18 @@
     .drawer-more-item svg { width: 13px; height: 13px; flex-shrink: 0; }
     .drawer-more-item:hover { color: var(--fg); background: var(--icon-hov); }
     .drawer-more-item-danger:hover { color: var(--s-err); background: var(--s-err-bg); }
-    .frag-pin-btn {
-      display: flex; align-items: center; justify-content: center;
-      width: var(--action-btn-sz); height: var(--action-btn-sz);
-      border-radius: var(--r-xs);
-      border: var(--bd-w) solid var(--border-strong); background: transparent;
-      color: var(--muted); cursor: pointer;
-    }
-    .frag-pin-btn:hover {
-      color: var(--fg); background: var(--icon-hov); border-color: var(--border-strong);
-    }
-    .frag-pin-btn:active {
-      background: var(--tint-md);
-    }
-    .frag-pin-btn.active {
-      color: var(--control-active-fg); background: var(--control-active-bg); border-color: var(--border-strong);
-    }
+    /* .frag-pin-btn/.drawer-compile-btn/.drawer-source-btn all use the
+       shared .icon-btn component (base.css) for their base shape, hover,
+       press, and active states — only what's genuinely unique to each
+       stays here. */
     .frag-pin-btn.active svg { fill: currentColor; }
-    .frag-pin-btn svg { width: 14px; height: 14px; }
-    .drawer-compile-btn {
-      display: flex; align-items: center; justify-content: center;
-      width: var(--action-btn-sz); height: var(--action-btn-sz);
-      border-radius: var(--r-xs);
-      border: var(--bd-w) solid var(--border-strong); background: transparent;
-      color: var(--muted); cursor: pointer;
-    }
-    .drawer-compile-btn:hover:not(:disabled) {
-      color: var(--fg); background: var(--icon-hov); border-color: var(--border-strong);
-    }
-    .drawer-compile-btn:active:not(:disabled) { background: var(--tint-md); }
     .drawer-compile-btn:disabled { cursor: progress; }
     .drawer-compile-btn.success {
       color: var(--s-ok); border-color: var(--s-ok-bd); background: var(--s-ok-bg);
       opacity: 0.7;
     }
-    .drawer-compile-btn svg { width: 14px; height: 14px; }
     @keyframes drawer-compile-pulse { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; } }
     .drawer-compile-btn.is-compiling { animation: drawer-compile-pulse 1.2s ease-in-out infinite; }
-    .drawer-source-btn {
-      display: flex; align-items: center; justify-content: center;
-      width: var(--action-btn-sz); height: var(--action-btn-sz);
-      border-radius: var(--r-xs);
-      border: var(--bd-w) solid var(--border-strong); background: transparent;
-      color: var(--muted); cursor: pointer; flex-shrink: 0;
-    }
-    .drawer-source-btn:hover {
-      color: var(--fg); background: var(--icon-hov); border-color: var(--border-strong);
-    }
-    .drawer-source-btn:active { background: var(--tint-md); }
-    .drawer-source-btn.active {
-      color: var(--control-active-fg); background: var(--control-active-bg); border-color: var(--border-strong);
-    }
-    .drawer-source-btn svg { width: 14px; height: 14px; }
 
     /* ── Editor areas ────────────────────────────────────────────── */
     #drawer-edit-area {
@@ -350,7 +300,7 @@
     html.macos .drawer-overlay.open .drawer-expand-btn,
     html.macos .drawer-overlay.open .drawer-tab,
     html.macos .drawer-overlay.open .drawer-tab-close,
-    html.macos .drawer-overlay.open .icon-btn-close { -webkit-app-region: no-drag; }
+    html.macos .drawer-overlay.open .icon-btn-ghost { -webkit-app-region: no-drag; }
     html.macos .drawer-overlay.open.drawer-is-opening .drawer-tab-bar { -webkit-app-region: no-drag; }
 
     /* ── Drawer scrollbars ───────────────────────────────────────── */
@@ -388,7 +338,11 @@
       padding: 5px 6px;
       border-radius: var(--r-xs);
       background: var(--surface-soft); border: var(--bd-w) solid var(--border-strong);
+      box-shadow: var(--shadow-sm) var(--shadow-color);
       pointer-events: auto;
+      /* .mdt-chip / .mdt-fmt--active below — same --surface-soft-ambient fix
+         as .home-side (home.css): repoint --control-active-bg locally. */
+      --control-active-bg: var(--control-active-bg-on-soft);
     }
     .mdt-chip {
       display: inline-flex; align-items: center; justify-content: center;

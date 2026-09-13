@@ -1,0 +1,133 @@
+    /* ── Cross-document view transitions (MPA navigation) ──────── */
+    /* Opts all pages into smooth cross-fade between full-page navigations.
+       Eliminates the white-flash that appears when location.href is used.
+       Ignored gracefully by browsers that don't support it (pre-Chrome 126). */
+    @view-transition {
+      navigation: auto;
+    }
+
+    /* ── Global structural rules ────────────────────────────────── */
+    /* Page-wide resets and shared components with no natural per-component
+       home — applied unconditionally across every page (embedded once via
+       baseCSS in home.go), rather than duplicated file by file. */
+
+    /* Baseline corner radius — DESIGN.md's rounded.md (8px) default for
+       buttons/inputs. Not !important: components below override with
+       their own value; anything else lands on this instead of a hard
+       90° corner. */
+    *, *::before, *::after {
+      border-radius: var(--r-md);
+    }
+    * {
+      caret-color: var(--fg);
+    }
+    /* html/body are page canvas, never a "shape" — every page sets
+       overflow:hidden on body, so the 8px default would clip chrome flush
+       to the viewport edge into an unwanted rounded notch. */
+    html, body {
+      border-radius: 0;
+    }
+    /* SVG icons default to overflow:hidden in the UA stylesheet, so the 8px
+       default was clipping icon corners; replaced elements (img/canvas/
+       video/iframe, e.g. the graph's cytoscape canvas) clip to
+       border-radius too — same fix for both. */
+    svg, svg *, img, canvas, video, iframe {
+      border-radius: 0;
+    }
+
+    /* Inter as the global UI font (token defined in shared_tokens.go) */
+    body {
+      font-family: var(--font-ui);
+    }
+
+    /* <button> doesn't get a pointer cursor by default (only <a href>
+       does); most buttons here never set cursor themselves, so cover it
+       site-wide instead of patching each component. */
+    button:not(:disabled), [role="button"]:not([aria-disabled="true"]) {
+      cursor: pointer;
+    }
+    button:disabled, [role="button"][aria-disabled="true"] {
+      cursor: default;
+    }
+
+    /* ── Shared icon-only action buttons, two variants, both defaulting to
+       --action-btn-sz (28px).
+
+       .icon-btn-ghost — borderless, hover fills with --icon-hov. For any
+       borderless icon action (dismiss/close, graph zoom controls, etc.).
+       --sm modifier drops to 24px for tighter contexts.
+
+       .icon-btn — bordered, plus a filled .active state for toggle-style
+       controls (pin, compile, source toggle) that need to show "currently
+       on", not just hover. Consolidates what used to be five near-identical
+       per-component rules. ── */
+    .icon-btn-ghost {
+      display: flex; align-items: center; justify-content: center;
+      width: var(--action-btn-sz); height: var(--action-btn-sz);
+      border: none; background: transparent; color: var(--muted);
+      cursor: pointer; padding: 0; flex-shrink: 0;
+    }
+    .icon-btn-ghost:hover { color: var(--fg); background: var(--icon-hov); }
+    .icon-btn-ghost svg { width: 14px; height: 14px; flex-shrink: 0; }
+    .icon-btn-ghost--sm { width: 24px; height: 24px; }
+
+    .icon-btn {
+      display: flex; align-items: center; justify-content: center;
+      width: var(--action-btn-sz); height: var(--action-btn-sz);
+      border-radius: var(--r-xs);
+      border: var(--bd-w) solid var(--border-strong); background: transparent;
+      color: var(--muted); cursor: pointer; flex-shrink: 0;
+    }
+    .icon-btn:hover { color: var(--fg); background: var(--icon-hov); border-color: var(--border-strong); }
+    .icon-btn:active:not(.active) { background: var(--tint-md); }
+    .icon-btn.active { color: var(--control-active-fg); background: var(--control-active-bg); border-color: var(--border-strong); }
+    .icon-btn svg { width: 14px; height: 14px; flex-shrink: 0; }
+
+    /* ── Shared segmented "pick one of N" toggle — bordered pill container +
+       flat buttons, filled .active state. One definition backs every
+       picker app-wide (Inbox filter, chat mode toggle, settings pickers) so
+       they can't drift apart in size. ── */
+    .seg { flex-shrink: 0; display: inline-flex; background: transparent; border: var(--bd-w) solid var(--border-strong); padding: 2px; gap: 2px; }
+    .seg-btn {
+      display: flex; align-items: center; gap: 0.375rem;
+      padding: 0.3rem 0.6rem; border: none; background: transparent;
+      font-family: inherit; font-size: var(--text-sm); font-weight: var(--fw-medium);
+      color: var(--muted); cursor: pointer; white-space: nowrap;
+      /* Inter's "normal" line-height resolves much taller than the
+         font-size suggests — pin it so the button isn't taller than its
+         padding implies. */
+      line-height: 1;
+    }
+    .seg-btn:hover { color: var(--fg); background: var(--card-hov); }
+    .seg-btn.active { background: var(--control-active-bg); color: var(--control-active-fg); }
+    .seg-btn svg { width: 13px; height: 13px; flex-shrink: 0; }
+
+    /* ── Shared visible scrollbar — most panes hide the bar via a blanket
+       `*::-webkit-scrollbar { display: none; }`, but a handful of primary
+       scrolling panes need one. Same recipe everywhere (5px, transparent
+       track, --scrollbar-thumb/-hov) so no page reinvents its own. A class
+       selector here outranks the hide rule regardless of file order
+       (0,0,1,1 vs 0,0,0,1). ── */
+    .home-list-body,
+    .home-inbox-list,
+    .chat-scroll,
+    .img-scroll {
+      scrollbar-width: thin;
+      scrollbar-color: var(--scrollbar-thumb) transparent;
+    }
+    .home-list-body::-webkit-scrollbar,
+    .home-inbox-list::-webkit-scrollbar,
+    .chat-scroll::-webkit-scrollbar,
+    .img-scroll::-webkit-scrollbar { width: 5px; }
+    .home-list-body::-webkit-scrollbar-track,
+    .home-inbox-list::-webkit-scrollbar-track,
+    .chat-scroll::-webkit-scrollbar-track,
+    .img-scroll::-webkit-scrollbar-track { background: transparent; }
+    .home-list-body::-webkit-scrollbar-thumb,
+    .home-inbox-list::-webkit-scrollbar-thumb,
+    .chat-scroll::-webkit-scrollbar-thumb,
+    .img-scroll::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); }
+    .home-list-body::-webkit-scrollbar-thumb:hover,
+    .home-inbox-list::-webkit-scrollbar-thumb:hover,
+    .chat-scroll::-webkit-scrollbar-thumb:hover,
+    .img-scroll::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hov); }

@@ -15,21 +15,24 @@ const settingsModalCSS = `
     .settings-modal-panel {
       width: 1040px; max-width: calc(100vw - 2rem);
       height: 720px; max-height: calc(100vh - 2rem);
-      background: var(--glass-bg);
-      backdrop-filter: var(--glass-filter);
-      -webkit-backdrop-filter: var(--glass-filter);
+      background: var(--bg);
       border: var(--bd-w) solid var(--border);
       border-radius: var(--r-xl);
+      box-shadow: var(--shadow-lg) var(--shadow-color);
       display: flex; flex-direction: column; overflow: hidden;
+      /* Anchors .settings-modal-close, now that there's no title bar for it
+         to sit in. */
+      position: relative;
     }
 
-    .settings-modal-bar {
-      flex-shrink: 0; display: flex; align-items: center; justify-content: space-between;
-      height: 40px; padding: 0 1rem; border-bottom: var(--bd-w) solid var(--border);
-      border-radius: 0; /* flush chrome strip */
-      user-select: none;
+    /* Floats over whichever pane is showing, same corner offset as the
+       app's other floating chrome (graph's zoom controls/node panel use the
+       same 12px). No title bar above it any more — .settings-sidebar
+       (below) now runs the full height of the panel instead of starting
+       under a 40px bar, so this is the only thing left in that space. */
+    .settings-modal-close {
+      position: absolute; top: 12px; right: 12px; z-index: 5;
     }
-    .settings-modal-title { font-size: var(--text-sm); font-weight: 600; color: var(--fg); }
     .settings-modal-inner {
       flex: 1; min-height: 0; display: flex; overflow: hidden;
       border-radius: 0;
@@ -45,15 +48,30 @@ const settingsModalCSS = `
       background: var(--surface-soft);
       padding: 1rem 0.5rem; display: flex; flex-direction: column;
       gap: 2px; user-select: none;
+      /* .settings-sidebar-item.active below just consumes the generic
+         --control-active-bg — but since this container's own background is
+         --surface-soft rather than --bg, the token is locally repointed at
+         --control-active-bg-on-soft (shared_tokens.go) so the selected item
+         still reads as a clear lift. Same fix as .home-side (home.css). */
+      --control-active-bg: var(--control-active-bg-on-soft);
     }
+    /* Hover/active states mirror .home-side-item (home.css) exactly — same
+       --card-hov hover fill, same --control-active-bg/fg + transparent
+       border on active, same --r-sm corner radius — so the two sidebars
+       (home's section nav, this modal's section nav) read as one component
+       everywhere they appear, not two near-identical reimplementations. */
     .settings-sidebar-item {
       display: flex; align-items: center; gap: 0.5rem; width: 100%;
       padding: 0.42rem 0.75rem; border: var(--bd-w) solid transparent;
+      border-radius: var(--r-sm);
       background: transparent; font-size: var(--text-base); font-weight: 500;
-      color: var(--muted); cursor: pointer; text-align: left;
+      color: var(--nav-fg); cursor: pointer; text-align: left;
     }
-    .settings-sidebar-item:hover { color: var(--fg); background: var(--bg); border-color: var(--border-strong); }
-    .settings-sidebar-item.active { color: var(--control-active-fg); background: var(--control-active-bg); border-color: var(--border-strong); }
+    .settings-sidebar-item:hover { color: var(--fg); background: var(--card-hov); }
+    .settings-sidebar-item.active {
+      color: var(--control-active-fg); background: var(--control-active-bg);
+      border-color: transparent; font-weight: 600;
+    }
     .settings-sidebar-item svg { width: 14px; height: 14px; flex-shrink: 0; }
 
     /* ── Content area ─────────────────────────────────────────── */
@@ -100,22 +118,8 @@ const settingsModalCSS = `
     .settings-apply-btn--danger:hover:not(:disabled) { opacity: 0.85; }
     .settings-error { margin-top: 0.4rem; font-size: var(--text-xs); color: var(--s-err); }
 
-    /* ── Effect segmented control ────────────────────────────── */
-    .theme-seg {
-      display: inline-flex; background: transparent;
-      border: var(--bd-w) solid var(--border-strong); padding: 2px; gap: 2px;
-    }
-    .theme-seg-btn {
-      display: flex; align-items: center; gap: 0.375rem;
-      padding: 0.28rem 0.85rem; border: none;
-      background: transparent; font-size: var(--text-sm); font-weight: 500;
-      color: var(--muted); cursor: pointer;
-    }
-    .theme-seg-btn:hover { color: var(--fg); background: var(--icon-hov); }
-    .theme-seg-btn.active {
-      background: var(--control-active-bg); color: var(--control-active-fg);
-    }
-    .theme-seg-btn svg { width: 13px; height: 13px; flex-shrink: 0; }
+    /* Theme/Enter-Effect/schedule-kind pickers use the shared .seg/.seg-btn
+       component (base.css) instead of their own copy. */
 
     /* ── Server config ────────────────────────────────────────── */
     .cfg-content { flex: 1; min-width: 0; display: flex; flex-direction: column; overflow: hidden; }
@@ -627,8 +631,12 @@ const settingsModalCSS = `
       position: absolute; top: calc(100% + 3px); left: 0; right: 0; z-index: 120;
       background: var(--surface-soft); border: var(--bd-w) solid var(--border-strong);
       border-radius: var(--r-md);
+      box-shadow: var(--shadow-sm) var(--shadow-color);
       overflow: hidden;
       max-height: 220px; overflow-y: auto;
+      /* .cselect-option.sel below — same --surface-soft-ambient fix as
+         .home-side (home.css): repoint --control-active-bg locally. */
+      --control-active-bg: var(--control-active-bg-on-soft);
     }
     .cselect-option {
       width: 100%; display: flex; align-items: center; gap: 0.45rem;
@@ -681,7 +689,7 @@ const settingsModalCSS = `
       text-decoration: none; opacity: 0.65;
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 260px;
       border-radius: 0;
-      transition: color 100ms, opacity 100ms;
+      transition: color var(--motion-fast), opacity var(--motion-fast);
     }
     .skill-repo-link:hover { color: var(--accent); opacity: 1; }
     .skill-act-btn {
@@ -705,7 +713,8 @@ const settingsModalCSS = `
       color: var(--muted); opacity: 0.38; font-style: italic;
     }`
 
-// settingsModalHTML returns the settings modal DOM. Include once per page that has navHTML.
+// settingsModalHTML returns the settings modal DOM. Include once per page —
+// opened via the sidebar's bottom-row Settings button (see home.html).
 func settingsModalHTML() string {
 	return `
   <div id="vaultr-settings-modal"
@@ -714,23 +723,29 @@ func settingsModalHTML() string {
        x-cloak
        class="settings-modal-overlay">
     <div class="settings-modal-panel" @mousedown.stop>
-      <div class="settings-modal-bar">
-        <span class="settings-modal-title">Settings</span>
-        <button class="icon-btn-close" @click="$store.settingsModal.open = false" type="button">
-          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" d="M18 6 6 18"/>
-            <path stroke-linecap="round" d="m6 6 12 12"/>
-          </svg>
-        </button>
-      </div>
+      <button class="icon-btn-ghost settings-modal-close" @click="$store.settingsModal.open = false" type="button">
+        <svg fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24">
+          <path stroke-linecap="round" d="M18 6 6 18"/>
+          <path stroke-linecap="round" d="m6 6 12 12"/>
+        </svg>
+      </button>
       <div class="settings-modal-inner">
 
         <!-- Primary sidebar -->
         <nav class="settings-sidebar">
           <button class="settings-sidebar-item"
+                  :class="{active: tab === 'appearance'}"
+                  @click="tab = 'appearance'">
+            <svg fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M12 18a6 6 0 0 0 0-12z" fill="currentColor" stroke="none"/>
+            </svg>
+            Appearance
+          </button>
+          <button class="settings-sidebar-item"
                   :class="{active: tab === 'server'}"
                   @click="tab = 'server'">
-            <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+            <svg fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24">
               <rect width="20" height="8" x="2" y="2" rx="2"/>
               <rect width="20" height="8" x="2" y="14" rx="2"/>
               <path stroke-linecap="round" d="M6 6h.01"/>
@@ -739,18 +754,9 @@ func settingsModalHTML() string {
             Server
           </button>
           <button class="settings-sidebar-item"
-                  :class="{active: tab === 'effect'}"
-                  @click="tab = 'effect'">
-            <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M13 21h8"/>
-              <path stroke-linecap="round" stroke-linejoin="round" d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/>
-            </svg>
-            Editor
-          </button>
-          <button class="settings-sidebar-item"
                   :class="{active: tab === 'mates'}"
                   @click="tab = 'mates'">
-            <svg fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+            <svg fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
               <path d="M12 6V2H8"/>
               <path d="M15 11v2"/>
               <path d="M2 12h2"/>
@@ -763,7 +769,7 @@ func settingsModalHTML() string {
           <button class="settings-sidebar-item"
                   :class="{active: tab === 'skills'}"
                   @click="tab = 'skills'">
-            <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+            <svg fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z"/>
               <path stroke-linecap="round" stroke-linejoin="round" d="M20 2v4"/>
               <path stroke-linecap="round" stroke-linejoin="round" d="M22 4h-4"/>
@@ -774,7 +780,7 @@ func settingsModalHTML() string {
           <button class="settings-sidebar-item"
                   :class="{active: tab === 'agents'}"
                   @click="tab = 'agents'">
-            <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+            <svg fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" d="M12 20v2"/>
               <path stroke-linecap="round" stroke-linejoin="round" d="M12 2v2"/>
               <path stroke-linecap="round" stroke-linejoin="round" d="M17 20v2"/>
@@ -796,7 +802,7 @@ func settingsModalHTML() string {
                   x-show="isElectron"
                   :class="{active: tab === 'notifications'}"
                   @click="tab = 'notifications'">
-            <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+            <svg fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/>
               <path stroke-linecap="round" stroke-linejoin="round" d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>
             </svg>
@@ -805,7 +811,7 @@ func settingsModalHTML() string {
           <button class="settings-sidebar-item"
                   :class="{active: tab === 'shortcuts'}"
                   @click="tab = 'shortcuts'">
-            <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+            <svg fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24">
               <path stroke-linecap="round" d="M10 8h.01"/>
               <path stroke-linecap="round" d="M12 12h.01"/>
               <path stroke-linecap="round" d="M14 8h.01"/>
@@ -822,14 +828,23 @@ func settingsModalHTML() string {
 
         <div class="settings-content">
 
-          <!-- Editor tab -->
-          <div class="settings-pane" x-show="tab === 'effect'">
+          <!-- Appearance tab -->
+          <div class="settings-pane" x-show="tab === 'appearance'">
             <div class="settings-fields">
               <div>
+                <label class="settings-field-label">Theme</label>
+                <div class="seg">
+                  <button class="seg-btn" :class="{active: themePref==='light'}" @click="setTheme('light')">Light</button>
+                  <button class="seg-btn" :class="{active: themePref==='dark'}" @click="setTheme('dark')">Dark</button>
+                  <button class="seg-btn" :class="{active: themePref==='auto'}" @click="setTheme('auto')">Auto</button>
+                </div>
+                <p class="settings-field-desc">Light, dark, or match your system setting. Takes effect immediately.</p>
+              </div>
+              <div>
                 <label class="settings-field-label">Enter Effect</label>
-                <div class="theme-seg">
-                  <button class="theme-seg-btn" :class="{active: effectPref==='none'}" @click="setEffect('none')">None</button>
-                  <button class="theme-seg-btn" :class="{active: effectPref==='particles'}" @click="setEffect('particles')">Particles</button>
+                <div class="seg">
+                  <button class="seg-btn" :class="{active: effectPref==='none'}" @click="setEffect('none')">None</button>
+                  <button class="seg-btn" :class="{active: effectPref==='particles'}" @click="setEffect('particles')">Particles</button>
                 </div>
                 <p class="settings-field-desc">Visual effect when pressing Enter in the editor. Takes effect immediately.</p>
               </div>
@@ -886,7 +901,7 @@ func settingsModalHTML() string {
                       <div class="cfg-section-head-meta">
                         <span class="cfg-section-dirty-dot" x-show="sectionHasDirty(section)" title="Unsaved changes in this section"></span>
                         <span class="cfg-section-chev" :class="{open: openSection === section}">
-                          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                          <svg fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
                           </svg>
                         </span>
@@ -938,10 +953,10 @@ func settingsModalHTML() string {
                                   <button type="button" class="cfg-reveal-btn"
                                           @click.stop="toggleReveal(field.key)"
                                           :title="revealed[field.key] ? 'Hide' : 'Reveal'">
-                                    <svg x-show="!revealed[field.key]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                                    <svg x-show="!revealed[field.key]" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24">
                                       <path stroke-linecap="round" stroke-linejoin="round" d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/>
                                     </svg>
-                                    <svg x-show="revealed[field.key]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                                    <svg x-show="revealed[field.key]" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24">
                                       <path stroke-linecap="round" stroke-linejoin="round" d="M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49"/>
                                       <path stroke-linecap="round" stroke-linejoin="round" d="M14.084 14.158a3 3 0 0 1-4.242-4.242"/>
                                       <path stroke-linecap="round" stroke-linejoin="round" d="M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143"/>
@@ -1129,7 +1144,7 @@ func settingsModalHTML() string {
                         <div class="cselect" x-data="{ csOpen: false }" @click.outside="csOpen = false" style="flex:1;min-width:0">
                           <button type="button" class="cselect-btn" :class="{open: csOpen}" @click="csOpen = !csOpen" @keydown.escape="csOpen = false">
                             <span class="cselect-btn-text" x-text="notifySoundLabel(notifySettings.sound)"></span>
-                            <svg fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                            <svg fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
                           </button>
                           <div class="cselect-dropdown" x-show="csOpen">
                             <button type="button" class="cselect-option" :class="notifySettings.sound==='beep'?'sel':''" @click="notifySettings.sound='beep'; saveNotifySettings(); csOpen=false"><span class="cselect-option-dot"></span><span>System beep</span></button>
@@ -1146,7 +1161,7 @@ func settingsModalHTML() string {
                         <button type="button" class="notif-play-btn" title="Preview sound"
                                 :disabled="notifySettings.sound === 'none'"
                                 @click="window.vaultrDesktop?.inboxNotify?.previewSound(notifySettings.sound)">
-                          <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 4v16l13-8z"/></svg>
+                          <svg fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 4v16l13-8z"/></svg>
                         </button>
                       </div>
                       <p class="settings-field-desc">Sound played when a new inbox message arrives.</p>
@@ -1168,7 +1183,7 @@ func settingsModalHTML() string {
               <div>
                 <div class="mates-toolbar">
                   <button class="agents-toolbar-btn" @click="newMate()">
-                    <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                    <svg fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14"/>
                       <path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14"/>
                     </svg>
@@ -1319,10 +1334,10 @@ func settingsModalHTML() string {
                                   <span class="mate-block-title">Schedule</span>
                                   <span class="mate-block-hint">Choose how this trigger repeats, then pick a preset below.</span>
                                 </div>
-                                <div class="theme-seg mate-schedule-kind-seg">
-                                  <button type="button" class="theme-seg-btn" :class="{active: scheduleKindOf(t)==='every'}" @click="setScheduleKind(t, 'every')">Every</button>
-                                  <button type="button" class="theme-seg-btn" :class="{active: scheduleKindOf(t)==='daily'}" @click="setScheduleKind(t, 'daily')">Daily</button>
-                                  <button type="button" class="theme-seg-btn" :class="{active: scheduleKindOf(t)==='weekly'}" @click="setScheduleKind(t, 'weekly')">Weekly</button>
+                                <div class="seg mate-schedule-kind-seg">
+                                  <button type="button" class="seg-btn" :class="{active: scheduleKindOf(t)==='every'}" @click="setScheduleKind(t, 'every')">Every</button>
+                                  <button type="button" class="seg-btn" :class="{active: scheduleKindOf(t)==='daily'}" @click="setScheduleKind(t, 'daily')">Daily</button>
+                                  <button type="button" class="seg-btn" :class="{active: scheduleKindOf(t)==='weekly'}" @click="setScheduleKind(t, 'weekly')">Weekly</button>
                                 </div>
 
                                 <template x-if="scheduleKindOf(t) === 'every'">
@@ -1559,7 +1574,7 @@ const settingsCtrlJS = `
     return {
       _inited: false,
       isElectron: !!window.vaultrDesktop,
-      tab: 'server',
+      tab: 'appearance',
       serverUrl: '',
       urlSaving: false,
       urlError: '',
@@ -1673,6 +1688,17 @@ const settingsCtrlJS = `
       effectPref: localStorage.getItem('vaultr-editor-effect') || 'particles',
       setEffect(key) { this.effectPref = key; localStorage.setItem('vaultr-editor-effect', key); },
 
+      // themePref mirrors what themeBootstrapScript already resolved at
+      // first paint (light/dark/auto) — switching here just persists the
+      // new choice and re-runs that same resolution logic immediately via
+      // window.__vaultrApplyTheme (defined once in <head>, shared by both).
+      themePref: localStorage.getItem('vaultr-theme') || 'auto',
+      setTheme(key) {
+        this.themePref = key;
+        localStorage.setItem('vaultr-theme', key);
+        if (window.__vaultrApplyTheme) window.__vaultrApplyTheme(key);
+      },
+
       isMac: /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent),
       customKeys: JSON.parse(localStorage.getItem('vaultr-custom-keys') || '{}'),
       shortcutDefs: [
@@ -1683,9 +1709,6 @@ const settingsCtrlJS = `
         { id: 'toggle-editor',  label: 'Toggle Editor',          desc: 'Open or close the editor panel',            mac: '⌘E',   win: 'Ctrl+E' },
         { id: 'close-tab',      label: 'Close Editor Tab',       desc: 'Close the active tab in the editor',        mac: '⌘W',   win: 'Ctrl+W' },
         { id: 'expand-editor',  label: 'Expand / Shrink Editor', desc: 'Toggle editor between 80% and 100% width',  mac: '⌘\\',  win: 'Ctrl+\\' },
-        { id: 'nav-home',       label: 'Go to Notes',            desc: 'Navigate to the Notes page',                mac: '⌘1',   win: 'Ctrl+1' },
-        { id: 'nav-inbox',      label: 'Go to Inbox',            desc: 'Navigate to the Inbox page',                mac: '⌘2',   win: 'Ctrl+2' },
-        { id: 'nav-agent',      label: 'Go to Agent Chat',       desc: 'Navigate to the Agent Chat page',           mac: '⌘3',   win: 'Ctrl+3' },
         { id: 'refresh',        label: 'Refresh',                desc: 'Reload the current page',                   mac: '⌘R',   win: 'Ctrl+R' },
         { id: 'open-settings',  label: 'Settings',               desc: 'Open the settings dialog',                  mac: '⌘,',   win: 'Ctrl+,' },
       ],
@@ -2362,18 +2385,18 @@ func cselectHTML(labelExpr, body string) string {
 	return `<div class="cselect" x-data="{ csOpen: false }" @click.outside="csOpen = false">` +
 		`<button type="button" class="cselect-btn" :class="{open: csOpen}" @click="csOpen = !csOpen" @keydown.escape="csOpen = false">` +
 		`<span class="cselect-btn-text" x-text="` + labelExpr + `"></span>` +
-		`<svg fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>` +
+		`<svg fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>` +
 		`</button><div class="cselect-dropdown" x-show="csOpen">` + body + `</div></div>`
 }
 
 func mateBackBtnHTML(onclick, label string) string {
 	return `<button class="mate-back-btn" type="button" @click="` + onclick + `">` +
-		`<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>` +
+		`<svg fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>` +
 		label + `</button>`
 }
 
 func toolbarRefreshBtnHTML(loadingExpr, onclick, busyLabel string) string {
 	return `<button class="agents-toolbar-btn" :class="{spinning: ` + loadingExpr + `}" @click="` + onclick + `" :disabled="` + loadingExpr + `">` +
-		`<svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path stroke-linecap="round" stroke-linejoin="round" d="M3 3v5h5"/><path stroke-linecap="round" stroke-linejoin="round" d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path stroke-linecap="round" stroke-linejoin="round" d="M16 16h5v5"/></svg>` +
+		`<svg fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path stroke-linecap="round" stroke-linejoin="round" d="M3 3v5h5"/><path stroke-linecap="round" stroke-linejoin="round" d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path stroke-linecap="round" stroke-linejoin="round" d="M16 16h5v5"/></svg>` +
 		`<span x-text="` + loadingExpr + ` ? '` + busyLabel + `' : 'Refresh'"></span></button>`
 }

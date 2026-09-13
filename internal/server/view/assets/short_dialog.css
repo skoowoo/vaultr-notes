@@ -37,9 +37,13 @@
       position: absolute; top: 0; left: 0; right: 0;
       height: 8rem; pointer-events: none; z-index: 2;
       background: linear-gradient(to bottom, var(--bg) 0%, transparent 100%);
-      opacity: 0; transition: opacity 250ms;
+      opacity: 0; transition: opacity var(--motion-slow);
     }
     #short-dialog .short-fade-top.is-visible { opacity: 1; }
+    /* The save-confirm/textarea fades below are deliberately slower than
+       --motion-slow — zen mode's whole point is an unhurried pace, so these
+       keep their own hand-tuned durations rather than joining the shared
+       scale. */
     #short-dialog .short-save-confirm {
       position: absolute; top: 0; left: var(--zen-pad);
       color: var(--muted); opacity: 0;

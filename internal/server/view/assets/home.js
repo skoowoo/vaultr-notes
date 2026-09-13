@@ -30,6 +30,19 @@ window.handleSearchResultSelection = function (el) {
   return false;
 };
 
+// ── Per-section list/grid layout preference ────────────────────────────────
+// Knowledge/Memory/Pinned/Folders each get their own list-vs-grid choice
+// (all folders share the single 'folder' bucket), persisted as one JSON
+// object under a single localStorage key.
+function loadListViewModes() {
+  var defaults = { knowledge: 'list', memory: 'list', pinned: 'list', folder: 'list' };
+  try {
+    return Object.assign(defaults, JSON.parse(localStorage.getItem('vaultr-list-view') || '{}'));
+  } catch (_) {
+    return defaults;
+  }
+}
+
 // ── Images gallery embedded in the list pane (lightbox + select mode) ─────
 // (Mirrors images.js's globals/controller for the standalone /images page.)
 var _lbOpen = null; // set by homeCtrl.init; receives the lightbox data object
@@ -155,6 +168,10 @@ function __vaultrSetupChatAc() {
 function homeCtrl() {
   var ctrl = Object.assign(drawerCtrl(), {
     activeKey: 'pinned',
+    // Each of Knowledge/Memory/Pinned/Folders keeps its own list-vs-grid
+    // choice (all folders share the single 'folder' bucket, rather than one
+    // per directory) — see listViewKey()/currentListView()/setListView().
+    listViewModes: loadListViewModes(),
     foldersOpen: true,
     graphOpen: false,
     chatsOpen: true,
@@ -210,6 +227,13 @@ function homeCtrl() {
     init() {
       this.initDrawer();
       window._homeData = this;
+      window.__vaultrHotkeys.register('refresh', 'r', function () {
+        if (typeof window.__vaultrBackgroundRefresh === 'function') {
+          window.__vaultrBackgroundRefresh();
+        } else {
+          window.location.reload();
+        }
+      });
       _lbOpen = (data) => { this.lightbox = data; };
       window._imgUpdateSelected = () => {
         this.selectedCount = document.querySelectorAll('.img-card.is-selected').length;
@@ -250,6 +274,18 @@ function homeCtrl() {
       };
     },
     refresh() { doHomeRefresh(); },
+    // Maps the active sidebar selection to its list/grid preference bucket —
+    // every folder (activeKey 'dir:...') shares one 'folder' bucket rather
+    // than getting one per directory.
+    listViewKey() {
+      if (this.activeKey.indexOf('dir:') === 0) return 'folder';
+      return this.activeKey;
+    },
+    currentListView() { return this.listViewModes[this.listViewKey()] || 'list'; },
+    setListView(mode) {
+      this.listViewModes[this.listViewKey()] = mode;
+      try { localStorage.setItem('vaultr-list-view', JSON.stringify(this.listViewModes)); } catch (_) { /* ignore */ }
+    },
 
     // ── Images: select mode + bulk delete (mirrors images.js's imgCtrl) ────
     enterSelectMode() {
@@ -573,7 +609,7 @@ function homeCtrl() {
               'cursor': 'pointer',
             }
           },
-          { selector: 'node:selected', style: { 'border-color': '#000000', 'border-width': 3.5, 'z-index': 20 } },
+          { selector: 'node:selected', style: { 'border-color': accentColor, 'border-width': 3.5, 'z-index': 20 } },
           { selector: 'node.faded', style: { 'opacity': 0.18 } },
           {
             selector: 'edge',
@@ -1086,7 +1122,11 @@ function homeCtrl() {
 
       this.inputText = '';
       var ta = document.getElementById('chat-textarea');
-      if (ta) ta.style.height = '';
+      if (ta) {
+        ta.style.height = '';
+        var card = ta.closest('.chat-input-card');
+        if (card) card.classList.remove('is-multiline');
+      }
       this.isRunning = true;
 
       var _genId = function () {
@@ -1315,7 +1355,15 @@ function homeCtrl() {
       if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); void this.send(); }
     },
 
-    autoResize(el) { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 140) + 'px'; },
+    autoResize(el) {
+      el.style.height = 'auto';
+      el.style.height = Math.min(el.scrollHeight, 140) + 'px';
+      var card = el.closest('.chat-input-card');
+      if (!card) return;
+      var cs = getComputedStyle(el);
+      var singleLineH = (parseFloat(cs.lineHeight) || 20) + parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
+      card.classList.toggle('is-multiline', el.scrollHeight > singleLineH + 1);
+    },
 
     formatDuration(ms) {
       if (!ms) return '';

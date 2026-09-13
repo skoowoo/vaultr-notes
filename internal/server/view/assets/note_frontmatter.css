@@ -9,7 +9,7 @@
       text-transform: uppercase; color: var(--cover-dir);
     }
     .fm-summary::-webkit-details-marker { display: none; }
-    .fm-arrow { font-size: 0.7em; transition: transform 150ms; display: inline-block; }
+    .fm-arrow { font-size: 0.7em; transition: transform var(--motion-base); display: inline-block; }
     .fm-grid {
       display: grid; grid-template-columns: max-content minmax(0, 1fr);
       gap: 0.3rem 1.5rem; padding-bottom: 1.25rem;

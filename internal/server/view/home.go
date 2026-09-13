@@ -6,7 +6,6 @@ import (
 	"html/template"
 	"net/http"
 	"net/url"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -40,12 +39,11 @@ func (vh *ViewHandler) Home(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	folders, err := vh.vault.ListAllDirs()
+	folders, err := vh.vault.ListDirs()
 	if err != nil {
 		http.Error(w, "home: list dirs: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
-	sortDirsSystemLast(folders)
 
 	indexNotes := vh.listIndexItems()
 
@@ -99,13 +97,27 @@ func (vh *ViewHandler) homeSectionData(r *http.Request, itemsOnly bool) (homeSec
 		data.EmptyMsg = "No notes in this folder"
 		data.NextURL = homeSectionMoreURL("folder", dirPath, nextNs)
 		if !itemsOnly {
-			dirs, _ := vh.vault.ListAllDirs()
-			for _, d := range dirs {
-				if d.Dir == dirPath {
-					data.Count = d.Count
-					break
-				}
-			}
+			data.Count = vh.dirNoteCount(dirPath)
+		}
+	case "memory":
+		dirPath := "/_memory"
+		var nextNs int64
+		data.Items, nextNs = vh.listDirNoteItems(dirPath, beforeNs, homeListPageSize)
+		data.Title = "Memory"
+		data.EmptyMsg = "No memory notes yet"
+		data.NextURL = homeSectionMoreURL("memory", "", nextNs)
+		if !itemsOnly {
+			data.Count = vh.dirNoteCount(dirPath)
+		}
+	case "knowledge":
+		dirPath := "/" + strings.Trim(vh.knowledgeDir(), "/")
+		var nextNs int64
+		data.Items, nextNs = vh.listDirNoteItems(dirPath, beforeNs, homeListPageSize)
+		data.Title = "Knowledge"
+		data.EmptyMsg = "No knowledge notes yet"
+		data.NextURL = homeSectionMoreURL("knowledge", "", nextNs)
+		if !itemsOnly {
+			data.Count = vh.dirNoteCount(dirPath)
 		}
 	default: // "pinned"
 		pinned, err := vh.vault.ListPinnedNotes()
@@ -118,6 +130,30 @@ func (vh *ViewHandler) homeSectionData(r *http.Request, itemsOnly bool) (homeSec
 		data.Count = len(data.Items)
 	}
 	return data, nil
+}
+
+// knowledgeDir returns the configured vault-relative knowledge directory
+// (e.g. "_knowledge"), falling back to the documented default when cfg is
+// unset (mirrors graph.go's KnowledgeGraphRebuild).
+func (vh *ViewHandler) knowledgeDir() string {
+	if vh.cfg != nil && vh.cfg.Vault.KnowledgeDir != "" {
+		return vh.cfg.Vault.KnowledgeDir
+	}
+	return "_knowledge"
+}
+
+// dirNoteCount looks up dirPath's note count from the full (unfiltered)
+// directory list — used for Memory/Knowledge, whose underscore-prefixed
+// paths are deliberately excluded from ListDirs() (see Home's .Folders),
+// and for a regular folder's sidebar count.
+func (vh *ViewHandler) dirNoteCount(dirPath string) int {
+	dirs, _ := vh.vault.ListAllDirs()
+	for _, d := range dirs {
+		if d.Dir == dirPath {
+			return d.Count
+		}
+	}
+	return 0
 }
 
 func homeSectionMoreURL(typ, path string, nextNs int64) string {
@@ -316,7 +352,7 @@ var homeTemplateFuncs = template.FuncMap{
 }
 
 const homeSectionRowsHTML = `{{define "rows"}}{{range .Items}}
-<div class="home-note-row" @click="__vaultrOpenNote($event.currentTarget)"
+<div class="home-list-card home-note-row" @click="__vaultrOpenNote($event.currentTarget)"
      data-note-path="{{.Path}}" data-note-title="{{label .}}"
      data-note-is-knowledge="{{.IsKnowledge}}" data-note-is-index="{{.IsIndex}}"
      data-note-can-compile="{{.CanCompile}}" data-note-pinned="{{.Pinned}}">
@@ -324,10 +360,7 @@ const homeSectionRowsHTML = `{{define "rows"}}{{range .Items}}
     <span class="home-note-row-title">{{label .}}</span>
     <div class="home-note-row-badges">
       {{if .Pinned}}<span class="home-note-badge home-note-badge--pin" title="Pinned"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M17 3a2 2 0 0 1 2 2v15a1 1 0 0 1-1.496.868l-4.512-2.578a2 2 0 0 0-1.984 0l-4.512 2.578A1 1 0 0 1 5 20V5a2 2 0 0 1 2-2z"/></svg></span>{{end}}
-      {{if .IsKnowledge}}<span class="home-note-badge home-note-badge--k" title="Knowledge">K</span>{{end}}
-      {{if .IsShort}}<span class="home-note-badge home-note-badge--s" title="Short">S</span>{{end}}
-      {{if .IsIndex}}<span class="home-note-badge home-note-badge--i" title="Index">I</span>{{end}}
-      {{if .IsCompiled}}<span class="home-note-badge home-note-badge--done" title="Compiled"><svg fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span>{{end}}
+      {{if .IsCompiled}}<span class="home-note-badge home-note-badge--done" title="Compiled"><svg fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span>{{end}}
     </div>
   </div>
   <div class="home-note-row-meta">
@@ -344,8 +377,24 @@ const homeSectionRowsHTML = `{{define "rows"}}{{range .Items}}
 const homeSectionFullHTML = `{{define "full"}}<div class="home-list-head">
   <span class="home-list-title" id="home-list-title">{{.Title}}</span>
   <span class="home-list-count" id="home-list-count">{{.Count}}</span>
+  <div class="home-list-head-spacer"></div>
+  <div class="seg">
+    <button type="button" class="seg-btn" :class="currentListView() === 'list' ? 'active' : ''"
+            @click="setListView('list')" title="List view">
+      <svg fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+        <path d="M3 6h18" /><path d="M3 12h18" /><path d="M3 18h18" />
+      </svg>
+    </button>
+    <button type="button" class="seg-btn" :class="currentListView() === 'grid' ? 'active' : ''"
+            @click="setListView('grid')" title="Grid view">
+      <svg fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+        <rect width="7" height="7" x="3" y="3" rx="1" /><rect width="7" height="7" x="14" y="3" rx="1" />
+        <rect width="7" height="7" x="14" y="14" rx="1" /><rect width="7" height="7" x="3" y="14" rx="1" />
+      </svg>
+    </button>
+  </div>
 </div>
-<div class="home-list-body" id="home-list-body">{{template "rows" .}}</div>{{end}}`
+<div class="home-list-body" id="home-list-body" :class="{'is-grid': currentListView() === 'grid'}">{{template "rows" .}}</div>{{end}}`
 
 var homeSectionTemplate = template.Must(
 	template.Must(
@@ -364,7 +413,7 @@ const homeShortsSectionHTML = `<div class="shorts-stream-layout">
       <button type="button" class="shorts-compose"
               onclick="window.openShortDialog && window.openShortDialog()">
         Write a short...
-        <svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+        <svg fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
       </button>
       <div id="shorts-stream-groups">
         {{range .Groups}}
@@ -377,10 +426,13 @@ const homeShortsSectionHTML = `<div class="shorts-stream-layout">
         {{end}}
         {{else}}
         <div class="shorts-empty-state">
+          <div class="shorts-empty-icon">
+            <svg fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M13 21h8"/><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/></svg>
+          </div>
           <p class="shorts-empty-label">No shorts yet</p>
           <button type="button" class="shorts-empty-btn"
                   onclick="window.openShortDialog && window.openShortDialog()">
-            <svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></svg>Write a short
+            <svg fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></svg>Write a short
           </button>
         </div>
         {{end}}
@@ -418,9 +470,10 @@ var homeShortsSectionTemplate = template.Must(template.New("home-shorts-section"
 // verbatim — same markup, ids, and hx-get pagination target as the
 // standalone /images page, just without its own .img-main wrapper (the
 // #home-list-pane flex column already plays that role).
-const homeImagesSectionHTML = `<div class="img-toolbar">
+const homeImagesSectionHTML = `<div class="home-list-head">
+  <div class="home-list-head-spacer"></div>
   <button type="button" class="toolbar-toggle" x-show="!selectMode" @click="enterSelectMode()">
-    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2"/><path stroke-linecap="round" stroke-linejoin="round" d="m9 12 2 2 4-4"/></svg>
+    <svg fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2"/><path stroke-linecap="round" stroke-linejoin="round" d="m9 12 2 2 4-4"/></svg>
     Select
   </button>
   <div class="toolbar-select-group" x-show="selectMode" style="display:none">
@@ -443,10 +496,10 @@ const homeImagesSectionHTML = `<div class="img-toolbar">
          data-img-notes="{{.LinkedNotesJSON}}">
       <div class="img-thumb-wrap">
         <img class="img-thumb" src="{{.ThumbURL}}" alt="{{.Name}}" loading="lazy" decoding="async">
-        <div class="img-select-check"><svg fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></div>
+        <div class="img-select-check"><svg fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></div>
         {{- if .LinkedNotes}}
         <div class="img-link-badge">
-          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"/><path stroke-linecap="round" stroke-linejoin="round" d="M14 2v5a1 1 0 0 0 1 1h5"/></svg>
+          <svg fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"/><path stroke-linecap="round" stroke-linejoin="round" d="M14 2v5a1 1 0 0 0 1 1h5"/></svg>
           {{len .LinkedNotes}}
         </div>
         {{- end}}
@@ -502,10 +555,10 @@ const homeImagesLightboxHTML = `
           <button type="button" class="lb-delete-btn" title="Delete image"
                   x-show="lightbox"
                   @click="deleteLightboxImage()">
-            <svg fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M3 6h18"/><path stroke-linecap="round" stroke-linejoin="round" d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path stroke-linecap="round" stroke-linejoin="round" d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path stroke-linecap="round" stroke-linejoin="round" d="M10 11v6"/><path stroke-linecap="round" stroke-linejoin="round" d="M14 11v6"/></svg>
+            <svg fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M3 6h18"/><path stroke-linecap="round" stroke-linejoin="round" d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path stroke-linecap="round" stroke-linejoin="round" d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path stroke-linecap="round" stroke-linejoin="round" d="M10 11v6"/><path stroke-linecap="round" stroke-linejoin="round" d="M14 11v6"/></svg>
           </button>
-          <button type="button" class="icon-btn-close icon-btn-close--sm" @click="closeLightbox()" title="Close (Esc)">
-            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M18 6 6 18"/><path stroke-linecap="round" d="m6 6 12 12"/></svg>
+          <button type="button" class="icon-btn-ghost icon-btn-ghost--sm" @click="closeLightbox()" title="Close (Esc)">
+            <svg fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path stroke-linecap="round" d="M18 6 6 18"/><path stroke-linecap="round" d="m6 6 12 12"/></svg>
           </button>
         </div>
         <div class="lb-sidebar-body">
@@ -516,7 +569,7 @@ const homeImagesLightboxHTML = `
                 <div class="lb-note-card" @click="openLinkedNote(note)">
                   <svg class="lb-note-card-icon" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"/><path stroke-linecap="round" stroke-linejoin="round" d="M14 2v5a1 1 0 0 0 1 1h5"/></svg>
                   <span class="lb-note-card-name" x-text="note"></span>
-                  <svg class="lb-note-card-arrow" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <svg class="lb-note-card-arrow" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 18l6-6-6-6"/>
                   </svg>
                 </div>
@@ -562,20 +615,20 @@ const homeGraphSectionHTML = `<div class="graph-main">
     <div id="graph-canvas" style="flex:1;width:100%"></div>
 
     <div class="graph-zoom-controls">
-      <button type="button" class="graph-zoom-btn" title="Zoom in" @click="zoomIn()">
-        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+      <button type="button" class="icon-btn-ghost graph-zoom-btn" title="Zoom in" @click="zoomIn()">
+        <svg fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24">
           <path stroke-linecap="round" d="M12 5v14M5 12h14"/>
         </svg>
       </button>
       <div class="graph-zoom-divider"></div>
-      <button type="button" class="graph-zoom-btn" title="Zoom out" @click="zoomOut()">
-        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+      <button type="button" class="icon-btn-ghost graph-zoom-btn" title="Zoom out" @click="zoomOut()">
+        <svg fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24">
           <path stroke-linecap="round" d="M5 12h14"/>
         </svg>
       </button>
       <div class="graph-zoom-divider"></div>
-      <button type="button" class="graph-zoom-btn" title="Fit all nodes" @click="zoomFit()">
-        <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+      <button type="button" class="icon-btn-ghost graph-zoom-btn" title="Fit all nodes" @click="zoomFit()">
+        <svg fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" d="M8 3H5a2 2 0 0 0-2 2v3"/>
           <path stroke-linecap="round" stroke-linejoin="round" d="M21 8V5a2 2 0 0 0-2-2h-3"/>
           <path stroke-linecap="round" stroke-linejoin="round" d="M3 16v3a2 2 0 0 0 2 2h3"/>
@@ -591,8 +644,8 @@ const homeGraphSectionHTML = `<div class="graph-main">
               x-text="nodePanel ? nodePanel.entityType : ''"></span>
         <span class="graph-node-panel-edges"
               x-text="nodePanel ? (nodePanel.edgeCount + (nodePanel.edgeCount === 1 ? ' link' : ' links')) : ''"></span>
-        <button type="button" class="graph-node-panel-close" @click="closeNodePanel()" title="Close">
-          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <button type="button" class="icon-btn-ghost graph-node-panel-close" @click="closeNodePanel()" title="Close">
+          <svg fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24">
             <path stroke-linecap="round" d="M18 6 6 18"/>
             <path stroke-linecap="round" d="m6 6 12 12"/>
           </svg>
@@ -602,7 +655,7 @@ const homeGraphSectionHTML = `<div class="graph-main">
       <button type="button" class="graph-node-open-btn"
               @click="nodePanel && openNodeInDrawer(nodePanel.path, nodePanel.label, nodePanel.entityType)">
         Open
-        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <svg fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" d="M15 3h6v6"/>
           <path stroke-linecap="round" stroke-linejoin="round" d="M10 14 21 3"/>
           <path stroke-linecap="round" stroke-linejoin="round" d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
@@ -640,23 +693,23 @@ const homeGraphSectionHTML = `<div class="graph-main">
 // Selecting a card opens the read-only message sheet (homeInboxSheetHTML),
 // not the note-editor drawer.
 const homeInboxSectionHTML = `<div class="home-inbox-section">
-  <div class="home-inbox-head">
+  <div class="home-list-head">
     <span class="home-list-title">Inbox</span>
     <span class="home-list-count" x-show="unreadCount > 0" x-text="unreadCount + ' unread'"></span>
-    <div class="home-inbox-head-spacer"></div>
-    <div class="home-inbox-filter-seg">
-      <button type="button" class="home-inbox-filter-seg-btn" :class="inboxFilter === 'all' ? 'active' : ''" @click="setInboxFilter('all')">All</button>
-      <button type="button" class="home-inbox-filter-seg-btn" :class="inboxFilter === 'unread' ? 'active' : ''" @click="setInboxFilter('unread')">Unread</button>
-      <button type="button" class="home-inbox-filter-seg-btn" :class="inboxFilter === 'read' ? 'active' : ''" @click="setInboxFilter('read')">Read</button>
+    <div class="home-list-head-spacer"></div>
+    <div class="seg">
+      <button type="button" class="seg-btn" :class="inboxFilter === 'all' ? 'active' : ''" @click="setInboxFilter('all')">All</button>
+      <button type="button" class="seg-btn" :class="inboxFilter === 'unread' ? 'active' : ''" @click="setInboxFilter('unread')">Unread</button>
+      <button type="button" class="seg-btn" :class="inboxFilter === 'read' ? 'active' : ''" @click="setInboxFilter('read')">Read</button>
     </div>
-    <button type="button" class="home-inbox-mark-all-btn" title="Mark all read" x-show="unreadCount > 0" @click="markAllInboxRead()">` + svgCheck + `</button>
+    <button type="button" class="icon-btn home-inbox-mark-all-btn" title="Mark all read" x-show="unreadCount > 0" @click="markAllInboxRead()">` + svgCheck + `</button>
   </div>
   <div class="home-inbox-list" id="home-inbox-list" @scroll="onInboxListScroll($event)">
     <template x-if="!inboxLoading && visibleInboxMessages().length === 0">
       <div class="home-list-empty" x-text="inboxFilter === 'unread' ? 'All caught up — no unread messages.' : (inboxFilter === 'read' ? 'No read messages yet.' : 'No messages yet.')"></div>
     </template>
     <template x-for="m in visibleInboxMessages()" :key="m.id">
-      <div class="home-inbox-card" :class="{ 'is-unread': !m.isRead }" @click="selectInboxMessage(m)">
+      <div class="home-list-card home-inbox-card" :class="{ 'is-unread': !m.isRead }" @click="selectInboxMessage(m)">
         <div class="home-inbox-unread-dot"></div>
         <div class="home-inbox-card-content">
           <div class="home-inbox-card-top">
@@ -684,8 +737,8 @@ const homeInboxSheetHTML = `
     <div class="inbox-sheet-panel">
       <div class="inbox-sheet-head">
         <span class="inbox-sheet-title" x-text="inboxSelected ? (inboxSelected.title || inboxSelected.source) : ''"></span>
-        <button type="button" class="inbox-sheet-close" @click="closeInboxSheet()" title="Close (Esc)">
-          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M18 6 6 18"/><path stroke-linecap="round" d="m6 6 12 12"/></svg>
+        <button type="button" class="icon-btn-ghost inbox-sheet-close" @click="closeInboxSheet()" title="Close (Esc)">
+          <svg fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path stroke-linecap="round" d="M18 6 6 18"/><path stroke-linecap="round" d="m6 6 12 12"/></svg>
         </button>
       </div>
       <div class="inbox-sheet-meta">
@@ -710,22 +763,22 @@ const homeChatSectionHTML = `<div class="chat-main">
   <!-- ── Mate bar (mate selection itself now lives in the sidebar's Chats
        group — see home.html — this keeps only the description, conv-type
        toggle, and new-chat button) ────────────────────────────── -->
-  <div class="mate-chips-bar">
+  <div class="home-list-head">
     <span class="mate-bar-desc" x-show="selectedMate && selectedMate.description"
       x-text="selectedMate ? selectedMate.description : ''"></span>
-    <div class="chat-bar-spacer"></div>
+    <div class="home-list-head-spacer"></div>
 
     <!-- ── Conv type segmented control ───────────────────── -->
-    <div class="conv-seg" x-show="selectedMateId">
+    <div class="seg" x-show="selectedMateId">
       <template x-for="t in convTypes" :key="t.value">
-        <button class="conv-seg-btn" :class="convType === t.value ? 'active' : ''" @click="setConvType(t.value)"
+        <button class="seg-btn" :class="convType === t.value ? 'active' : ''" @click="setConvType(t.value)"
           type="button" x-text="t.label"></button>
       </template>
     </div>
 
     <button class="new-chat-btn" type="button" title="New chat"
       :disabled="isRunning || !selectedMateId || messages.length === 0 || convType !== 'chat'" @click="newChat()">
-      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+      <svg fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14M5 12h14" />
       </svg>
     </button>
@@ -733,6 +786,7 @@ const homeChatSectionHTML = `<div class="chat-main">
 
   <!-- ── Messages ─────────────────────────────────────────────── -->
   <div class="chat-scroll" id="chat-scroll">
+   <div class="chat-scroll-inner">
 
     <template x-if="messages.length === 0">
       <div class="chat-empty">
@@ -797,7 +851,7 @@ const homeChatSectionHTML = `<div class="chat-main">
                       <button class="seg-thinking-toggle"
                         :class="{'open': seg.open, 'is-streaming': msg.status === 'running' && isLastThinkingInMsg(msg, j)}"
                         @click="seg.open = !seg.open" type="button">
-                        <svg fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                        <svg fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" d="M9 18l6-6-6-6" />
                         </svg>
                         Thinking
@@ -817,7 +871,7 @@ const homeChatSectionHTML = `<div class="chat-main">
                         <div class="seg-tool-result">
                           <button class="seg-tool-result-toggle" :class="seg.open ? 'open' : ''"
                             @click="seg.open = !seg.open" type="button">
-                            <svg fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                            <svg fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24">
                               <path stroke-linecap="round" stroke-linejoin="round" d="M9 18l6-6-6-6" />
                             </svg>
                             <span x-text="seg.count > 1 ? seg.name + ' ×' + seg.count : seg.name"></span>
@@ -839,7 +893,7 @@ const homeChatSectionHTML = `<div class="chat-main">
                     <div class="seg-tool-result">
                       <button class="seg-tool-result-toggle" :class="seg.open ? 'open' : ''"
                         @click="seg.open = !seg.open" type="button">
-                        <svg fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                        <svg fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" d="M9 18l6-6-6-6" />
                         </svg>
                         Result
@@ -870,7 +924,7 @@ const homeChatSectionHTML = `<div class="chat-main">
                 <button class="msg-copy-btn" type="button" title="Copy reply" :class="msg.copied ? 'copied' : ''"
                   @click="copyMateText(msg)">
                   <template x-if="!msg.copied">
-                    <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                    <svg fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24">
                       <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
                       <path stroke-linecap="round" stroke-linejoin="round"
                         d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
@@ -893,6 +947,7 @@ const homeChatSectionHTML = `<div class="chat-main">
       </div>
     </template>
 
+   </div><!-- .chat-scroll-inner -->
   </div><!-- .chat-scroll -->
 
   <!-- ── Input (chat only) ────────────────────────────────────── -->
@@ -907,22 +962,18 @@ const homeChatSectionHTML = `<div class="chat-main">
         <textarea class="chat-textarea" id="chat-textarea" rows="1" placeholder="" x-model="inputText"
           :disabled="isRunning || !selectedMateId" @keydown="handleKeydown($event)"
           @input="autoResize($event.target)"></textarea>
-        <div class="chat-input-bar">
-          <span class="chat-shortcut-hint" x-text="isMac ? '⌘↵ send' : 'Ctrl+↵ send'"></span>
-          <div class="chat-input-bar-right">
-            <button x-show="!isRunning" type="button" class="chat-send-circle"
-              :disabled="!inputText.trim() || !selectedMateId" @click="send()">
-              <svg fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M12 19V5M5 12l7-7 7 7" />
-              </svg>
-            </button>
-            <button x-show="isRunning" type="button" class="chat-stop-circle" @click="cancel()">
-              <svg fill="currentColor" viewBox="0 0 24 24">
-                <rect x="5" y="5" width="14" height="14" rx="2" />
-              </svg>
-            </button>
-          </div>
-        </div>
+        <span class="chat-shortcut-hint" x-text="isMac ? '⌘↵' : 'Ctrl+↵'"></span>
+        <button x-show="!isRunning" type="button" class="chat-send-circle"
+          :disabled="!inputText.trim() || !selectedMateId" @click="send()">
+          <svg fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 19V5M5 12l7-7 7 7" />
+          </svg>
+        </button>
+        <button x-show="isRunning" type="button" class="chat-stop-circle" @click="cancel()">
+          <svg fill="currentColor" viewBox="0 0 24 24">
+            <rect x="5" y="5" width="14" height="14" rx="2" />
+          </svg>
+        </button>
       </div>
     </div><!-- .chat-ac-wrap -->
   </div>
@@ -939,23 +990,12 @@ const homeChatToastHTML = `
     style="display:none">
     <span x-text="toastText"></span>
     <button class="run-toast-dismiss" @click="toastVisible = false" type="button" title="Dismiss">
-      <svg fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+      <svg fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6" />
         <path stroke-linecap="round" stroke-linejoin="round" d="m6 6 12 12" />
       </svg>
     </button>
   </div>`
-
-// sortDirsSystemLast stably sorts dirs so that underscore-prefixed system
-// directories (_knowledge, _shorts, etc. — see dirHasUnderscoreView) sort
-// after every regular directory, preserving each group's existing (dir-path
-// ascending, from ListAllDirs) relative order.
-func sortDirsSystemLast(dirs []storage.DirSummary) {
-	sort.SliceStable(dirs, func(i, j int) bool {
-		iSys, jSys := dirHasUnderscoreView(dirs[i].Dir), dirHasUnderscoreView(dirs[j].Dir)
-		return iSys != jSys && !iSys
-	})
-}
 
 func noteItemsFromNotes(notes []storage.Note) []noteItem {
 	items := make([]noteItem, 0, len(notes))
@@ -979,18 +1019,13 @@ var homePageHTML = `<!DOCTYPE html>
   </script>
   <style>
 ` + appTokensCSS + `
-` + infoDialogCSS + navCSS + neoCSS + topbarCSS + homeCSS + shortsCSS + imagesCSS + graphCSS + agentChatCSS + drawerCSS + noteSharedCSS + noteEditorCSS + searchOverlayStyles + confirmDialogCSS + shortDialogCSS + settingsModalCSS + `
+` + infoDialogCSS + baseCSS + homeCSS + shortsCSS + imagesCSS + graphCSS + agentChatCSS + drawerCSS + noteSharedCSS + noteEditorCSS + searchOverlayStyles + confirmDialogCSS + shortDialogCSS + settingsModalCSS + `
   </style>
 </head>
 <body x-data="homeCtrl()" @vaultr:insert-path.window="insertPath($event)">
 ` + searchOnlyOverlayHTML + confirmDialogHTML + infoDialogHTML + shortDialogHTML + settingsModalHTML() + homeImagesLightboxHTML + homeInboxSheetHTML + homeChatToastHTML + `
-  <header class="lib-topbar">
-    <div class="lib-topbar-spacer"></div>
-` + topbarActionsHTML("refresh()", "Refresh home", "") + `
-  </header>
-
   <div class="lib-body">
-` + navHTML() + homeMainHTML + `
+` + homeMainHTML + `
   </div>
 
 ` + drawerHTML + `
@@ -1023,12 +1058,11 @@ func (vh *ViewHandler) HomeRefresh(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	folders, err := vh.vault.ListAllDirs()
+	folders, err := vh.vault.ListDirs()
 	if err != nil {
 		http.Error(w, "home/refresh: list dirs: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
-	sortDirsSystemLast(folders)
 
 	indexNotes := vh.listIndexItems()
 
@@ -1046,25 +1080,29 @@ func (vh *ViewHandler) HomeRefresh(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write(buf.Bytes())
 }
 
-var homeRefreshTemplate = template.Must(template.New("home-refresh").Funcs(homeTemplateFuncs).Parse(`<div id="home-side-folders-body" class="home-side-children" x-show="foldersOpen" x-cloak hx-swap-oob="true">
-  {{range .Folders}}
-  <button type="button" class="home-side-child" :class="{'is-active': activeKey === 'dir:{{.Dir}}'}"
-          @click="selectFolder('{{.Dir}}','/home/section?type=folder&path={{encdir .Dir}}')">
-    <svg class="home-side-child-icon" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"
-         stroke-linejoin="round" viewBox="0 0 24 24">
-      <path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z" />
-    </svg>
-    <span class="home-side-child-name">{{folderLabel .Dir}}</span>
-  </button>
-  {{end}}
-  {{if not .Folders}}<div class="home-side-empty">No folders</div>{{end}}
+var homeRefreshTemplate = template.Must(template.New("home-refresh").Funcs(homeTemplateFuncs).Parse(`<div id="home-side-folders-body" class="home-side-children" :class="{'is-open': foldersOpen}" x-cloak hx-swap-oob="true">
+  <div class="home-side-children-inner">
+    {{range .Folders}}
+    <button type="button" class="home-side-child" :class="{'is-active': activeKey === 'dir:{{.Dir}}'}"
+            @click="selectFolder('{{.Dir}}','/home/section?type=folder&path={{encdir .Dir}}')">
+      <svg class="home-side-child-icon" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"
+           stroke-linejoin="round" viewBox="0 0 24 24">
+        <path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z" />
+      </svg>
+      <span class="home-side-child-name">{{folderLabel .Dir}}</span>
+    </button>
+    {{end}}
+    {{if not .Folders}}<div class="home-side-empty">No folders</div>{{end}}
+  </div>
 </div>
-<div id="home-side-graph-body" class="home-side-children" x-show="graphOpen" x-cloak hx-swap-oob="true">
-  {{range .IndexNotes}}
-  <button type="button" class="home-side-child" :class="{'is-active': activeKey === 'graph:{{.Path}}'}"
-          @click="selectGraphIndex('{{.Path}}')">
-    <span class="home-side-child-name">{{label .}}</span>
-  </button>
-  {{end}}
+<div id="home-side-graph-body" class="home-side-children" :class="{'is-open': graphOpen}" x-cloak hx-swap-oob="true">
+  <div class="home-side-children-inner">
+    {{range .IndexNotes}}
+    <button type="button" class="home-side-child" :class="{'is-active': activeKey === 'graph:{{.Path}}'}"
+            @click="selectGraphIndex('{{.Path}}')">
+      <span class="home-side-child-name">{{label .}}</span>
+    </button>
+    {{end}}
+  </div>
 </div>
 `))

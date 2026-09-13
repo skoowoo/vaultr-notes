@@ -5,9 +5,16 @@ const searchOverlayStyles = `
     .srch-panel {
       border-color: var(--srch-panel-bd) !important;
       border-width: var(--bd-w);
-      background: var(--glass-bg);
-      backdrop-filter: var(--glass-filter);
-      -webkit-backdrop-filter: var(--glass-filter);
+      background: var(--bg);
+      box-shadow: var(--shadow-md) var(--shadow-color);
+      transition: border-color var(--motion-fast) ease;
+    }
+    /* Whole palette picks up the accent border the moment anything inside
+       it has focus — the input is autofocused on open, so this reads as
+       "the panel itself is the active control", the same affordance a
+       single text-input gets elsewhere in the app. */
+    .srch-panel:focus-within {
+      border-color: var(--accent) !important;
     }
     .srch-backdrop {
       background: var(--srch-backdrop);
@@ -15,28 +22,20 @@ const searchOverlayStyles = `
       -webkit-backdrop-filter: var(--glass-scrim-filter);
     }
     .srch-row   { border-color: var(--srch-row-bd) !important; border-bottom-width: var(--bd-w); border-radius: 0; }
-    .srch-icon  { color: var(--srch-ic); transition: color 150ms; }
+    .srch-icon  { color: var(--srch-ic); transition: color var(--motion-fast); }
     .srch-row:focus-within .srch-icon { color: var(--accent); }
     .srch-input {
       color: var(--fg);
-      caret-color: var(--fg);
+      caret-color: var(--accent);
       font-size: var(--text-body);
       font-family: var(--font-ui);
-      letter-spacing: 0;
+      letter-spacing: -0.006em;
     }
     .srch-input::placeholder { color: var(--srch-ph); }
-    .srch-kbd {
-      color: var(--srch-kbd-fg);
-      border-color: var(--srch-kbd-bd);
-      border-radius: var(--r-xs);
-      font-family: var(--font-ui);
-      font-size: var(--text-2xs);
-      letter-spacing: 0.03em;
-      line-height: 1;
-    }
     #search-results a {
       position: relative;
       border: var(--bd-w) solid transparent;
+      transition: background var(--motion-fast) ease;
     }
     #search-results a::before {
       display: none;
@@ -44,7 +43,7 @@ const searchOverlayStyles = `
     #search-results a.is-active {
       background: var(--srch-av);
     }
-    .sr-name  { color: var(--fg); font-size: var(--text-base); font-weight: 500; letter-spacing: 0; }
+    .sr-name  { color: var(--fg); font-size: var(--text-base); font-weight: 500; letter-spacing: -0.006em; }
     .sr-dir   { color: var(--sr-dir); font-size: var(--text-xs); }
     .sr-time  {
       color: var(--sr-tm);
@@ -56,7 +55,7 @@ const searchOverlayStyles = `
       text-align: right;
       justify-self: end;
     }
-    .sr-icon  { color: var(--sr-ic); transition: color 100ms; }
+    .sr-icon  { color: var(--sr-ic); transition: color var(--motion-fast); }
     #search-results a.is-active .sr-name,
     #search-results a.is-active .sr-dir,
     #search-results a.is-active .sr-time,
@@ -64,7 +63,6 @@ const searchOverlayStyles = `
     .sr-empty {
       color: var(--sr-em);
       font-size: var(--text-sm);
-      font-style: italic;
       font-family: var(--font-ui);
     }
     .srch-footer {
@@ -78,12 +76,17 @@ const searchOverlayStyles = `
       color: var(--muted);
       letter-spacing: 0.01em;
     }
+    /* Keycap treatment — background only, no border. A bordered chip next
+       to the panel's own bordered edges/dividers read as visual clutter;
+       a flat fill is enough to mark these as small tactile keys. */
     .srch-hint kbd {
       display: inline-flex; align-items: center; justify-content: center;
+      min-width: 1.1em;
       font-family: var(--font-ui);
       font-size: var(--text-2xs);
       color: var(--srch-kbd-fg);
-      border: var(--bd-w) solid var(--srch-kbd-bd);
+      background: var(--surface-soft);
+      border: none;
       border-radius: var(--r-xs);
       padding: 1px 5px;
       line-height: 1.4;
@@ -103,7 +106,7 @@ const searchOverlayStyles = `
     .srch-preview-pane .cover-dir {
       font-size: var(--text-xs);
       font-weight: 500;
-      letter-spacing: 0.08em;
+      letter-spacing: var(--ls-cap);
       text-transform: uppercase;
       color: var(--sr-dir);
       margin: 0 0 0.3rem;
@@ -122,7 +125,7 @@ const searchOverlayStyles = `
     .srch-prev-hint {
       display: flex; height: 100%;
       align-items: center; justify-content: center;
-      color: var(--muted); font-size: var(--text-sm); font-style: italic;
+      color: var(--muted-soft); font-size: var(--text-sm);
     }
     .srch-prev-spin {
       padding: 1.25rem 1.5rem;
@@ -133,29 +136,35 @@ const searchOverlayStyles = `
       cursor: pointer;
       padding: 3px 2px;
       min-width: 24px;
+      transition: background var(--motion-fast) ease;
     }
     .srch-icon-area:hover { background: var(--icon-hov); }
-    .srch-icon-area.has-mode .srch-icon { color: var(--fg); }
+    /* Icon + chip share the accent tint while a mode filter is active, so
+       they read as one "this search is filtered" signal instead of two
+       independently-colored pieces. */
+    .srch-icon-area.has-mode .srch-icon { color: var(--accent); }
     .srch-mode-chip {
       font-size: var(--text-2xs);
       font-family: var(--font-ui);
       font-weight: 600;
-      color: var(--fg);
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
+      color: var(--accent);
+      background: var(--tint-soft);
+      letter-spacing: 0.01em;
       white-space: nowrap;
-      line-height: 1;
+      line-height: 1.5;
+      padding: 2px 7px;
+      border-radius: var(--r-xs);
     }
     .srch-mode-chip::after {
       content: ' ›';
-      font-size: var(--text-2xs);
       font-weight: 400;
-      opacity: 0.7;
+      opacity: 0.6;
     }
     .srch-mode-menu { border-color: var(--border) !important; border-bottom-width: var(--bd-w); border-radius: 0; }
     .srch-mode-item {
       color: var(--fg);
       font-family: var(--font-ui);
+      transition: background var(--motion-fast) ease;
     }
     .srch-mode-item.is-active { background: var(--control-active-bg); color: var(--control-active-fg); }
     .srch-mode-name { font-size: var(--text-sm); font-weight: 500; min-width: 5rem; }
@@ -188,7 +197,7 @@ const searchOverlayPanelHTML = `
                   :class="{'has-mode': mode.field || mode.kind}"
                   class="srch-icon-area shrink-0 flex items-center gap-1.5 justify-center">
             <svg class="srch-icon w-[18px] h-[18px] shrink-0"
-                 fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                 fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24">
               <circle cx="11" cy="11" r="8"/><path stroke-linecap="round" d="m21 21-4.35-4.35"/>
             </svg>
             <span x-show="mode.field || mode.kind"

@@ -20,7 +20,6 @@ type noteItem struct {
 	FragmentURL string // drawer fragment URL
 	CursorNs    int64  // Unix nanoseconds for pagination cursor
 	IsKnowledge bool   // true for knowledge notes; drives data-knowledge on the read button
-	IsShort     bool   // true for short notes (origin = "short")
 	IsIndex     bool   // true for index notes (origin = "plugin:index")
 	Pinned      bool   // true when the note is pinned by the user
 	CanCompile  bool   // true when this note is eligible to be compiled (raw, compile_count==0)
@@ -42,7 +41,6 @@ func noteToItem(n storage.Note) noteItem {
 		UpdatedAt:   formatRelativeTime(n.UpdatedAt),
 		Pinned:      n.Pinned,
 		IsKnowledge: isKnowledge,
-		IsShort:     n.Kind == storage.KindShort,
 		IsIndex:     isIndex,
 		CanCompile:  !isKnowledge && !isIndex && n.CompileCount == 0,
 		IsCompiled:  !isKnowledge && !isIndex && n.CompileCount > 0,
@@ -105,16 +103,4 @@ func (vh *ViewHandler) listDirNoteItems(dir string, beforeNs int64, limit int) (
 		nextNs = items[len(items)-1].CursorNs
 	}
 	return items, nextNs
-}
-
-// dirHasUnderscoreView reports whether dir (or any ancestor segment) starts
-// with "_" — mirrors storage.dirHasUnderscoreSegment for the view layer. Used
-// by home.go's sortDirsSystemLast.
-func dirHasUnderscoreView(dir string) bool {
-	for _, seg := range strings.Split(dir, "/") {
-		if strings.HasPrefix(seg, "_") {
-			return true
-		}
-	}
-	return false
 }

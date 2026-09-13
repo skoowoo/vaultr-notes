@@ -29,32 +29,127 @@
     }
 
     /* ── Sidebar ──────────────────────────────────────────────── */
+    /* Fills the role the old left .lib-nav rail used to (now removed —
+       its New/Drawer/Search/Settings actions live in the top/bottom rows
+       below), so it takes over that rail's background for continuity. The
+       aside itself no longer scrolls as a whole; only the middle nav list
+       does, so the top/bottom action rows stay put as the note list grows. */
     .home-side {
       flex: 0 0 232px; max-width: 232px;
       display: flex; flex-direction: column;
-      min-height: 0; overflow-y: auto;
-      padding: 18px 14px 14px;
+      min-height: 0; overflow: hidden;
+      padding: 0;
+      background: var(--surface-soft);
       border-right: var(--bd-w) solid var(--border);
       border-radius: 0;
+      /* Every "currently active" row in here (.home-side-item.is-active,
+         .home-side-child.is-active, the drawer-toggle icon button) just
+         consumes the generic --control-active-bg, same as any other
+         selected-state control app-wide — but since this container's own
+         background is --surface-soft rather than --bg, that generic token
+         is locally repointed at --control-active-bg-on-soft (shared_tokens.go)
+         so it still reads as a clear lift instead of nearly disappearing
+         into the surface it sits on. */
+      --control-active-bg: var(--control-active-bg-on-soft);
     }
-    .home-side-nav { display: flex; flex-direction: column; gap: 3px; }
+    /* Top row now only holds Search, right-aligned — it shares the window's
+       true top edge with the macOS traffic lights (same row, not stacked
+       above/below them), so the lights just need horizontal clearance on
+       the left, the same way the old full-width .lib-topbar reserved it. */
+    .home-side-top {
+      flex-shrink: 0; height: var(--topbar-h);
+      display: flex; align-items: center; justify-content: flex-end;
+      padding: 0 14px;
+      border-radius: 0;
+    }
+    .home-side-bottom {
+      flex-shrink: 0; display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 14px;
+      border-radius: 0; /* flush divider row — the global rounded-corner
+        reset (base.css) was clipping the border-top/bottom short of the
+        sidebar's edges, reading as a doubled/thicker line at the corner. */
+      border-top: var(--bd-w) solid var(--border);
+    }
+    html.macos .home-side-top {
+      padding-left: 76px;
+      -webkit-app-region: drag;
+      cursor: default;
+    }
+    html.macos .home-side-top button { -webkit-app-region: no-drag; }
+    /* Full-width primary action — but understated: a solid accent fill (or
+       even accent-colored text) reads as too loud for a row that's
+       permanently visible in the sidebar rather than a one-off modal CTA.
+       Just a hairline border + the same resting color/weight as any other
+       sidebar row (.home-side-item/.home-side-child) — it reads as "the
+       create action" from its position and icon alone, not from color or
+       boldness. Sits above the scrollable nav list as its own fixed row,
+       not inside it. */
+    .home-side-new-btn {
+      flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+      margin: 2px 14px 10px; height: var(--btn-h);
+      background: transparent; border-radius: var(--r-md);
+      border: var(--bd-w) solid var(--border); color: var(--nav-fg); cursor: pointer;
+      font-family: inherit; font-size: var(--text-sm); font-weight: 500;
+      transition: background var(--motion-fast) ease;
+    }
+    .home-side-new-btn:hover { background: var(--card-hov); color: var(--fg); }
+    .home-side-new-btn:active { opacity: 0.85; }
+    .home-side-new-btn svg { width: 14px; height: 14px; flex-shrink: 0; }
+    /* Drawer toggle's open state reuses the same surface-2 lift as every
+       other "currently active" indicator app-wide (no border — matches
+       .home-side-child.is-active below), scoped to the sidebar's own ghost
+       icon buttons rather than added to the shared component. (--control-
+       active-bg resolves to the stronger --control-active-bg-on-soft value
+       here — see .home-side's own rule above.) */
+    .home-side-bottom .icon-btn-ghost.is-active {
+      background: var(--control-active-bg); color: var(--control-active-fg);
+    }
+    /* One size step up from .icon-btn-ghost's default 14px — Settings and
+       Drawer are the only two controls down here, so they can afford a
+       touch more presence than a dense toolbar's icons would. */
+    .home-side-bottom-btn svg { width: 16px; height: 16px; }
+    .home-side-nav {
+      flex: 1; min-height: 0; overflow-y: auto;
+      display: flex; flex-direction: column; gap: 3px;
+      padding: 14px;
+      border-radius: 0; /* scrolling chrome strip — never rounds (the global
+        reset was clipping its own content into rounded corners) */
+    }
+    /* flex-shrink:0 on every direct child of .home-side-nav below — a flex
+       container with overflow other than visible (this one is
+       overflow-y:auto, to let a long note/folder list scroll) resets its
+       children's automatic minimum size to 0 per spec, so once content
+       actually overflows, the browser silently compresses these rows
+       (proportionally, not just clipping the last one) instead of just
+       scrolling: 30px item rows measured as low as 21.5px, and this 1px
+       divider was crushed to a true 0 — not a color/contrast issue, a real
+       layout bug. .home-side-child rows never hit this because they're
+       nested inside .home-side-group, whose own overflow is the default
+       (visible), so it never resets their minimum size. */
     .home-side-sep {
+      flex-shrink: 0;
       height: var(--bd-w); background: var(--border); margin: 11px 8px;
       border-radius: 0; /* divider line — never rounds */
     }
     .home-side-item {
+      flex-shrink: 0;
       display: flex; align-items: center; gap: 9px;
       width: 100%; height: 30px; padding: 0 8px;
       border: var(--bd-w) solid transparent; background: transparent; border-radius: var(--r-sm);
-      color: var(--fg); cursor: pointer; text-align: left; text-decoration: none;
+      color: var(--nav-fg); cursor: pointer; text-align: left; text-decoration: none;
       font-family: inherit; font-size: var(--text-sm); font-weight: 500;
-      transition: background 100ms ease;
+      transition: background var(--motion-fast) ease;
     }
-    .home-side-item:hover { background: var(--card-hov); }
+    .home-side-item:hover { background: var(--card-hov); color: var(--fg); }
     /* Selected state is the same surface-2 lift used for every other
-       "currently active" row/tab/segment app-wide (--control-active-bg/fg) —
-       not an accent tint. Lavender stays reserved for the compose button and
-       other genuine primary CTAs. */
+       "currently active" row/tab/segment app-wide (--control-active-bg/fg,
+       matches .home-side-child.is-active below) — not an accent tint, and
+       no border (a bordered fill reads as boxed-in/smaller rather than a
+       flat highlight that fills the row). Lavender stays reserved for the
+       compose button and other genuine primary CTAs. (--control-active-bg
+       resolves to the stronger --control-active-bg-on-soft value here — see
+       .home-side's own rule above.) */
     .home-side-item.is-active {
       background: var(--control-active-bg); border-color: transparent; color: var(--control-active-fg);
       font-weight: 600;
@@ -73,15 +168,29 @@
     .home-side-item.is-active .home-side-count { color: var(--control-active-bg); background: var(--control-active-fg); }
 
     /* ── Folders group (expand/collapse) ─────────────────────── */
-    .home-side-group { display: flex; flex-direction: column; margin-top: 4px; }
+    .home-side-group { flex-shrink: 0; display: flex; flex-direction: column; margin-top: 4px; }
     .home-side-item--parent { cursor: pointer; }
     .home-side-chevron {
       flex-shrink: 0; width: 12px; height: 12px; opacity: 0.5;
-      transition: transform 120ms ease;
+      transition: transform var(--motion-base) ease;
     }
     .home-side-item--parent:hover .home-side-chevron { opacity: 0.8; }
     .home-side-chevron.is-open { transform: rotate(90deg); }
+    /* Disclosure animation via the grid-rows 0fr/1fr trick — animates to the
+       content's own intrinsic height with no JS measurement, unlike x-show's
+       instant display:none/flex toggle (which used to make this content pop
+       open/closed with no transition at all, out of step with the chevron
+       rotating smoothly right next to it). x-cloak (home.html/home.go) still
+       hides this pre-hydration so there's no flash-of-wrong-state before
+       Alpine applies the real is-open class on init. */
     .home-side-children {
+      display: grid; grid-template-rows: 1fr;
+      overflow: hidden;
+      transition: grid-template-rows var(--motion-base) ease;
+    }
+    .home-side-children:not(.is-open) { grid-template-rows: 0fr; }
+    .home-side-children-inner {
+      min-height: 0; overflow: hidden;
       display: flex; flex-direction: column; gap: 1px;
       padding: 2px 0 4px 12px;
     }
@@ -89,9 +198,9 @@
       display: flex; align-items: center; gap: 8px;
       width: 100%; height: 30px; padding: 0 8px;
       border: var(--bd-w) solid transparent; background: transparent; border-radius: var(--r-sm);
-      color: var(--fg); cursor: pointer; text-align: left;
+      color: var(--nav-fg); cursor: pointer; text-align: left;
       font-family: inherit; font-size: var(--text-sm); font-weight: 500;
-      transition: background 100ms ease;
+      transition: background var(--motion-fast) ease;
     }
     .home-side-child:hover { background: var(--card-hov); color: var(--fg); }
     .home-side-child.is-active {
@@ -124,21 +233,82 @@
       min-height: 0; overflow: hidden;
       border-radius: 0;
     }
+    /* The shared header row for sections that need one (Pinned, a folder,
+       Inbox, Images, Agents) — same height/padding/no-border everywhere
+       instead of each inventing its own toolbar. A section only puts a
+       title in it when the title carries information the sidebar selection
+       doesn't already (a folder's name, or a count/badge like Pinned's
+       total or Inbox's unread count) — Images/Agents skip the title
+       entirely and just host their own controls, right-aligned via
+       .home-list-head-spacer. Shorts/Graph skip this row altogether; they
+       have nothing that belongs in it.
+
+       min-height pins the row's CONTENT line (i.e. the box excluding this
+       rule's own padding) to --btn-h-xs (28px, this row's actual controls —
+       .seg, .toolbar-toggle — all size to around this already).
+       Written as calc(padding-top + padding-bottom +
+       28px) rather than a flat number because with box-sizing:border-box a
+       plain `min-height: 28px` is measured against the PADDED box, and a
+       title-only row's padded height would otherwise exceed a bare 28px —
+       so the min-height would silently do nothing for exactly the row
+       (Pinned) it's meant to constrain. Explicitly adding the padding back
+       in is what makes it bite: a bare-title row gets padded out to the
+       same total height as a row with a real 28px-tall control in it, so
+       the title centers at the same Y in both instead of sinking into
+       whichever row happens to hold a taller button.
+
+       No border-top: this row sits flush against the true window top now
+       (the standalone .lib-topbar that used to own that edge is gone), the
+       same as the sidebar's own top row — neither needs a border there.
+       border-bottom is the only border this row needs. */
     .home-list-head {
       flex-shrink: 0; display: flex; align-items: center; gap: 8px;
-      padding: 18px 24px 12px;
+      min-height: calc(8px + 8px + var(--btn-h-xs));
+      padding: 8px 24px;
+      border-bottom: var(--bd-w) solid var(--border);
+      border-radius: 0; /* flush chrome strip — never rounds */
     }
-    .home-list-title { font-size: var(--text-title-sm); font-weight: var(--fw-semibold); color: var(--fg); letter-spacing: -0.01em; }
-    .home-list-count { font-size: var(--text-xs); color: var(--muted); font-variant-numeric: tabular-nums; }
+    /* macOS: this row sits at the true window top now (no more full-width
+       .lib-topbar drag strip), so its own blank space (the title/control
+       gap, .home-list-head-spacer) needs to pick up dragging itself —
+       mirrors .home-side-top's treatment. Buttons opt back out so clicks
+       still register instead of dragging the window. */
+    html.macos .home-list-head { -webkit-app-region: drag; cursor: default; }
+    html.macos .home-list-head button,
+    html.macos .home-list-head a { -webkit-app-region: no-drag; }
+    .home-list-title { font-size: var(--text-title-sm); font-weight: var(--fw-semibold); color: var(--fg); letter-spacing: -0.01em; line-height: 1; }
+    .home-list-count { font-size: var(--text-xs); color: var(--muted); font-variant-numeric: tabular-nums; line-height: 1; }
     .home-list-body {
       flex: 1; min-height: 0; overflow-y: auto;
-      padding: 0 24px 40px;
+      padding: 20px 24px 40px;
       display: flex; flex-direction: column;
     }
+    /* Grid layout toggle (Pinned/Folder/Knowledge/Memory only — the sections
+       that render through homeSectionData's shared "full" template). Cards
+       keep the same .home-list-card/.home-note-row markup; only the
+       container's layout mode and a few of the row's own rules change. */
+    .home-list-body.is-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      align-content: start;
+      gap: 0.75rem;
+    }
+    .home-list-body.is-grid .home-list-card { margin-bottom: 0; display: flex; flex-direction: column; }
+    .home-list-body.is-grid .home-note-row-title {
+      white-space: normal; display: -webkit-box;
+      -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    }
+    .home-list-body.is-grid .home-note-row-meta { margin-top: auto; padding-top: 0.5rem; }
+    .home-list-body.is-grid .home-load-sentinel,
+    .home-list-body.is-grid .home-list-empty { grid-column: 1 / -1; }
 
     /* ── Wide note row ─────────────────────────────────────────── */
-    .home-note-row {
-      display: block;
+    /* ── Shared bordered list-card row — the note list's rows and Inbox's
+       message cards were two separately-defined rules identical in every
+       property except display mode (block vs flex, since inbox cards lay
+       out an unread-dot + content side by side). One definition now backs
+       both; each keeps only its own layout mode on top. ── */
+    .home-list-card {
       padding: 0.85rem 1.05rem;
       border: var(--bd-w) solid var(--border-strong);
       border-radius: var(--r-lg);
@@ -146,10 +316,9 @@
       margin-bottom: 0.5rem;
       cursor: pointer;
     }
-    .home-note-row:hover {
-      background: var(--card-hov);
-      border-color: var(--border-strong);
-    }
+    .home-list-card:hover { background: var(--card-hov); }
+    .home-list-card:active { opacity: 0.85; }
+    .home-note-row { display: block; }
     .home-note-row-top {
       display: flex; align-items: center; justify-content: space-between;
       gap: 0.75rem; margin-bottom: 0.3rem;
@@ -171,9 +340,6 @@
     .home-note-badge svg { width: 10px; height: 10px; }
     .home-note-badge--pin { background: transparent; border-color: transparent; color: var(--accent); }
     .home-note-badge--pin svg { width: 14px; height: 14px; }
-    .home-note-badge--k { background: var(--p2); color: var(--inverse-ink); }
-    .home-note-badge--s { background: var(--p3); color: var(--inverse-ink); }
-    .home-note-badge--i { background: var(--p0); color: var(--inverse-ink); }
     .home-note-badge--done { background: var(--accent); color: var(--accent-fg); }
     .home-note-row-meta {
       display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;
@@ -209,7 +375,7 @@
       padding: 16px 0;
       border-bottom: 1px solid var(--border);
       border-radius: 0;
-      transition: opacity 100ms ease;
+      transition: opacity var(--motion-fast) ease;
     }
     .short-entry-card:last-child {
       border-bottom: none;
@@ -267,35 +433,24 @@
     }
     /* ── Inbox embedded in the home list pane ─────────────────── */
     .home-inbox-section { flex: 1; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
-    .home-inbox-head {
-      flex-shrink: 0; display: flex; align-items: center; gap: 0.6rem;
-      padding: 18px 24px 12px;
-    }
-    .home-inbox-head-spacer { flex: 1; }
-    .home-inbox-filter-seg { flex-shrink: 0; display: inline-flex; background: transparent; border: var(--bd-w) solid var(--border-strong); padding: 2px; gap: 2px; }
-    .home-inbox-filter-seg-btn {
-      display: flex; align-items: center; padding: 0.3rem 0.6rem; border: none; background: transparent;
-      font-family: inherit; font-size: var(--text-sm); font-weight: var(--fw-medium); color: var(--muted); cursor: pointer; white-space: nowrap;
-    }
-    .home-inbox-filter-seg-btn:hover { color: var(--fg); background: var(--card-hov); }
-    .home-inbox-filter-seg-btn.active { background: var(--control-active-bg); color: var(--control-active-fg); }
-    .home-inbox-mark-all-btn {
-      flex-shrink: 0; width: var(--action-btn-sz); height: var(--action-btn-sz); display: flex; align-items: center; justify-content: center;
-      border: var(--bd-w) solid var(--border-strong); background: var(--bg); color: var(--muted); cursor: pointer; padding: 0;
-    }
-    .home-inbox-mark-all-btn:hover { color: var(--fg); background: var(--card-hov); }
+    /* Inbox's header now uses the shared .home-list-head below (same class
+       as Pinned/Folder/Images/Agents/Shorts/Graph) instead of its own
+       near-identical rule. */
+    /* Shared right-alignment spacer for every .home-list-head-style header
+       (inbox, images, chat, shorts, graph) — one flex-grow slot so a
+       section's own controls (filter seg, toolbar buttons, ...) push to the
+       header's trailing edge the same way everywhere. */
+    .home-list-head-spacer { flex: 1; }
+    /* Inbox's All/Unread/Read filter and Agents' Chat/Trigger conv-type
+       toggle both use the shared .seg/.seg-btn component (base.css). */
+    /* Base shape/hover/press comes from the shared .icon-btn component
+       (base.css) — this only overrides the svg to a slightly smaller
+       checkmark. */
     .home-inbox-mark-all-btn svg { width: 13px; height: 13px; }
 
-    .home-inbox-list { flex: 1; min-height: 0; overflow-y: auto; padding: 0 24px 40px; display: flex; flex-direction: column; }
+    .home-inbox-list { flex: 1; min-height: 0; overflow-y: auto; padding: 20px 24px 40px; display: flex; flex-direction: column; }
 
-    .home-inbox-card {
-      display: flex; align-items: flex-start; gap: 0.5rem;
-      padding: 0.85rem 1.05rem;
-      border: var(--bd-w) solid var(--border-strong); background: var(--bg);
-      border-radius: var(--r-lg);
-      margin-bottom: 0.5rem; cursor: pointer;
-    }
-    .home-inbox-card:hover { background: var(--card-hov); }
+    .home-inbox-card { display: flex; align-items: flex-start; gap: 0.5rem; }
     /* Read cards recede one surface step (bg -> surface-soft) with a softer
        border, so unread items stay visually "raised" against them. */
     .home-inbox-card:not(.is-unread) { background: var(--surface-soft); border-color: var(--border); }
@@ -323,7 +478,7 @@
       position: fixed; inset: 0; z-index: 200;
       pointer-events: none; background: transparent;
       border-radius: 0; /* full-viewport scrim — never rounds */
-      transition: background 220ms ease;
+      transition: background var(--motion-slow) ease;
     }
     .inbox-sheet-overlay.open { pointer-events: auto; background: var(--drawer-overlay-bg); }
     .inbox-sheet-panel {
@@ -332,6 +487,8 @@
       border-radius: 0; /* edge-docked, flush to 3 viewport edges — never rounds */
       display: flex; flex-direction: column; overflow: hidden;
       transform: translateX(24px); opacity: 0;
+      /* Mirrors .drawer-panel's slide choreography — kept at the same
+         hand-tuned durations, outside the shared motion scale. */
       transition: transform 280ms cubic-bezier(0.25, 0.8, 0.25, 1), opacity 260ms ease;
     }
     .inbox-sheet-overlay.open .inbox-sheet-panel { transform: translateX(0); opacity: 1; }
@@ -344,11 +501,9 @@
       flex: 1; min-width: 0; font-size: var(--text-title-sm); font-weight: var(--fw-semibold); color: var(--fg);
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
-    .inbox-sheet-close {
-      flex-shrink: 0; width: var(--action-btn-sz); height: var(--action-btn-sz); display: flex; align-items: center; justify-content: center;
-      border: none; background: transparent; color: var(--muted); cursor: pointer; padding: 0;
-    }
-    .inbox-sheet-close:hover { color: var(--fg); background: var(--icon-hov); }
+    /* Base shape/hover comes from the shared .icon-btn-ghost component
+       (base.css) — this only overrides the svg to 15px (1px larger than
+       the shared default). */
     .inbox-sheet-close svg { width: 15px; height: 15px; }
     .inbox-sheet-meta {
       flex-shrink: 0; display: flex; align-items: center; gap: 0.5rem;
@@ -356,13 +511,6 @@
     }
     .inbox-sheet-scroll { flex: 1; overflow-y: auto; padding: 0 1.25rem 2rem; }
     .inbox-sheet-body.prose { font-size: var(--text-base); }
-
-    /* ── Chat embedded in the home list pane ─────────────────────
-       agent_chat.css's .mate-chips-bar used to rely on .mate-chips-scroll's
-       flex:1 to push mate-bar-desc/conv-seg/new-chat-btn to the right; that
-       row moved to the sidebar's Chats group (home.html), so this fills the
-       same role in the now-shorter bar. */
-    .chat-bar-spacer { flex: 1; }
 
     /* ── Shorts stream embedded in the home list pane ────────────
        shorts.css (loaded above) styles .shorts-month-item as an <a>; here

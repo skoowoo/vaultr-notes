@@ -20,7 +20,7 @@
       width: 22px; height: 22px; padding: 3px;
       display: flex; align-items: center; justify-content: center;
       cursor: pointer; color: var(--muted);
-      transition: color 120ms, background 120ms, opacity 120ms;
+      transition: color var(--motion-fast), background var(--motion-fast), opacity var(--motion-fast);
     }
     .ProseMirror [data-fm] .fm-edit-btn svg { width: 13px; height: 13px; flex-shrink: 0; }
     .ProseMirror [data-fm] .fm-edit-btn:hover {
@@ -110,7 +110,7 @@
     .ProseMirror strong { color: var(--prose-strong); font-weight: 600; }
     .ProseMirror em     { color: var(--prose-em); font-style: italic; }
     .ProseMirror a {
-      color: var(--link); font-weight: 500;
+      color: var(--link); font-weight: 400;
       text-decoration: underline;
       text-underline-offset: 3px;
       text-decoration-color: var(--link-ul);
@@ -161,18 +161,28 @@
     }
     .ProseMirror :not(pre) > code::before, .ProseMirror :not(pre) > code::after { content: none; }
     .ProseMirror table {
-      border-collapse: collapse; width: 100%;
+      /* separate + border-spacing:0 (not collapse), same reasoning as
+         .prose table in note_shared_prose.css — collapsed border-model
+         tables ignore border-radius/overflow clipping. */
+      border-collapse: separate; border-spacing: 0; width: 100%;
       border: 1px solid var(--tbl-bd);
+      border-radius: var(--r-sm);
+      overflow: hidden;
       margin-bottom: 0;
     }
     .ProseMirror th {
       background: var(--th-bg); color: var(--th-tx); font-weight: 500;
+      font-size: var(--text-base);
       text-align: left; padding: 0.5rem 0.75rem;
       border-bottom: 1px solid var(--tbl-bd); border-right: 1px solid var(--tbl-bd);
+      /* Override the global *{border-radius} reset (base.css) — only the
+         table's own 4 outer corners should round; cells stay square. */
+      border-radius: 0;
     }
     .ProseMirror th:last-child { border-right: none; }
     .ProseMirror td {
-      color: var(--td-tx); padding: 0.45rem 0.75rem;
+      color: var(--td-tx); font-size: var(--text-base); padding: 0.45rem 0.75rem;
+      border-radius: 0;
       border-bottom: 1px solid var(--tbl-bd); border-right: 1px solid var(--tbl-bd);
     }
     .ProseMirror td:last-child { border-right: none; }

@@ -1,17 +1,33 @@
 package view
 
-// themeBootstrapScript is placed in <head>, before first paint. Dark-mode
-// tokens live on bare :root (shared_tokens.go) — Linear's near-black canvas
-// is the shipped default — with the light adaptation applying via
-// :root[data-theme="light"] or an unforced OS light preference. There's no
-// user-facing toggle yet (TODO: once one exists, read the stored preference
-// here and set data-theme explicitly before first paint instead of relying
-// on matchMedia), so this only has to agree with the same
-// prefers-color-scheme check the CSS itself uses.
+// themeBootstrapScript runs in <head> before first paint, so there's no
+// flash of the wrong theme. Dark lives on bare :root (shared_tokens.go);
+// light applies via :root[data-theme="light"] or an unforced OS preference.
+//
+// The Settings → Editor "Theme" toggle stores light/dark/auto under the
+// 'vaultr-theme' localStorage key and calls window.__vaultrApplyTheme (see
+// shared_settings_modal.go's setTheme()); "auto" also gets a live
+// prefers-color-scheme listener so it follows an OS change without a reload.
 const themeBootstrapScript = `  <script>(function(){
-  if(window.vaultrDesktop&&window.vaultrDesktop.setViewBgColor){
-    var light=window.matchMedia&&window.matchMedia('(prefers-color-scheme: light)').matches;
-    window.vaultrDesktop.setViewBgColor(light?'#fcfcfc':'#010102');
+  window.__vaultrApplyTheme=function(pref){
+    try{
+      var sysLight=window.matchMedia&&window.matchMedia('(prefers-color-scheme: light)').matches;
+      var effectiveLight=pref==='light'?true:(pref==='dark'?false:sysLight);
+      if(pref==='light'){document.documentElement.setAttribute('data-theme','light');}
+      else if(pref==='dark'){document.documentElement.setAttribute('data-theme','dark');}
+      else{document.documentElement.removeAttribute('data-theme');}
+      if(window.vaultrDesktop&&window.vaultrDesktop.setViewBgColor){
+        window.vaultrDesktop.setViewBgColor(effectiveLight?'#fcfcfc':'#08080b',pref==='light'?'light':(pref==='dark'?'dark':''));
+      }
+    }catch(_){}
+  };
+  var stored=localStorage.getItem('vaultr-theme');
+  window.__vaultrApplyTheme(stored==='light'||stored==='dark'?stored:'auto');
+  if(window.matchMedia){
+    window.matchMedia('(prefers-color-scheme: light)').addEventListener('change',function(){
+      var cur=localStorage.getItem('vaultr-theme');
+      if(cur!=='light'&&cur!=='dark')window.__vaultrApplyTheme('auto');
+    });
   }
 })()</script>`
 
@@ -19,9 +35,10 @@ const themeBootstrapScript = `  <script>(function(){
 // when running inside the Vaultr desktop wrapper.
 const electronBootstrapScript = `  <script>(function(){if(window.vaultrDesktop){document.documentElement.classList.add('electron');if(window.vaultrDesktop.platform==='darwin')document.documentElement.classList.add('macos');}})()</script>`
 
-// electronShellSafeReloadScript defines when a full webContents reload is safe for the
-// desktop multi-view shell (no editor, no filters, drawer closed, etc.) and a helper
-// to refresh peer sections after vault mutations. Main reads __vaultrShellSafeForBackgroundReload via executeJavaScript.
+// electronShellSafeReloadScript defines when a full webContents reload is
+// safe for the desktop multi-view shell, and a helper to refresh peer
+// sections after vault mutations. Main reads
+// __vaultrShellSafeForBackgroundReload via executeJavaScript.
 const electronShellSafeReloadScript = `  <script>(function(){
   window.__vaultrShellSafeForBackgroundReload=function(){
     try{

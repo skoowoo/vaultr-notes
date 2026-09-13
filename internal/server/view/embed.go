@@ -11,13 +11,13 @@ var infoDialogHTML string
 //go:embed assets/info_dialog.js
 var infoDialogJS string
 
-//go:embed assets/neo.css
-var neoCSS string
+//go:embed assets/base.css
+var baseCSS string
 
 // shortDialogCSS, shortDialogHTML, and shortDialogJS form a self-contained
 // quick-capture dialog for short notes. Drop all three into any page shell to
-// get a modal reachable via the nav rail's short-note button (see navHTML) or
-// the keyboard shortcut Ctrl+Shift+Space (⌘+Shift+Space on macOS).
+// get a modal reachable via the Shorts section's "Write a short…" button or
+// the keyboard shortcut Ctrl+. (⌘. on macOS).
 //
 // The dialog POSTs to POST /api/vault/shorts and calls
 // window.__vaultrAfterVaultMutation (if defined) on success.

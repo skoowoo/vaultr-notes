@@ -27,6 +27,9 @@
       border-radius: 0; /* edge-docked column */
       min-height: 0;
       background: var(--surface-soft);
+      /* .graph-index-item.active below — same --surface-soft-ambient fix as
+         .home-side (home.css): repoint --control-active-bg locally. */
+      --control-active-bg: var(--control-active-bg-on-soft);
     }
 
     .graph-index-head {
@@ -101,7 +104,7 @@
     .graph-index-item-name {
       font-size: var(--text-sm);
       font-weight: var(--fw-medium);
-      color: var(--body);
+      color: var(--nav-fg);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -139,52 +142,6 @@
       flex: 1; width: 100%; background: var(--bg);
     }
 
-    /* ── Graph toolbar ───────────────────────────────────────── */
-    .graph-toolbar {
-      flex-shrink: 0;
-      height: 42px;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0 1rem;
-      border-bottom: var(--bd-w) solid var(--border);
-      border-radius: 0; /* flush chrome strip */
-      background: var(--bg);
-      user-select: none;
-    }
-
-    .graph-toolbar-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.32rem;
-      height: var(--btn-h-xs);
-      padding: 0 0.65rem;
-      border: var(--bd-w) solid var(--border-strong);
-      background: transparent;
-      color: var(--muted);
-      font-size: var(--text-xs);
-      font-weight: var(--fw-medium);
-      font-family: var(--font-ui);
-      cursor: pointer;
-      white-space: nowrap;
-    }
-
-    .graph-toolbar-btn:hover {
-      background: var(--card-hov);
-      border-color: var(--muted);
-      color: var(--fg);
-    }
-
-    .graph-toolbar-btn svg {
-      width: 11px;
-      height: 11px;
-      flex-shrink: 0;
-    }
-
-    .graph-toolbar-btn.spinning svg {
-      animation: lib-spin 0.7s linear infinite;
-    }
-
     /* ── Zoom controls ───────────────────────────────────────── */
     .graph-zoom-controls {
       position: absolute;
@@ -198,19 +155,9 @@
       padding: 3px;
     }
 
-    .graph-zoom-btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: var(--action-btn-sz); height: var(--action-btn-sz);
-      border: none;
-      background: transparent;
-      color: var(--muted);
-      cursor: pointer;
-    }
-
-    .graph-zoom-btn:hover { color: var(--fg); background: var(--icon-hov); }
-    .graph-zoom-btn svg { width: 14px; height: 14px; flex-shrink: 0; }
+    /* .graph-zoom-btn uses the shared .icon-btn-ghost component (base.css)
+       for its base shape, hover, and default 14px svg — nothing unique to
+       add here. */
 
     .graph-zoom-divider {
       width: 2px;
@@ -270,7 +217,7 @@
       padding: 0.4rem 0.65rem;
       font-size: var(--text-sm); color: var(--fg);
       white-space: nowrap;
-      opacity: 0; transition: opacity 80ms;
+      opacity: 0; transition: opacity var(--motion-fast);
     }
 
     .graph-tooltip.visible { opacity: 1; }
@@ -323,20 +270,12 @@
       flex: 1;
     }
 
-    /* icon-only button §6.4: hover 只改背景，无阴影无位移 */
-    .graph-node-panel-close {
-      flex-shrink: 0;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 20px; height: 20px;
-      border: none;
-      background: transparent;
-      color: var(--muted);
-      cursor: pointer;
-    }
-
-    .graph-node-panel-close:hover { color: var(--fg); background: var(--icon-hov); }
+    /* Base shape/hover comes from the shared .icon-btn-ghost component
+       (base.css) — this is a one-off smaller size tier (20px/12px, tighter
+       than the shared default or the --sm modifier), so it overrides those
+       two dimensions directly rather than adding a third size modifier for
+       a single caller. */
+    .graph-node-panel-close { width: 20px; height: 20px; }
     .graph-node-panel-close svg { width: 12px; height: 12px; }
 
     .graph-node-panel-title {
