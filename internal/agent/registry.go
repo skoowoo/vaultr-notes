@@ -7,25 +7,17 @@ import (
 // supportsNativeSession lists agents whose CLI or wire protocol can resume
 // multi-turn context by session id without replaying host message history.
 // Mechanisms:
-//   - CLI flags: claude, codex, opencode, cursor-agent, qwen, qoder, copilot, deepseek
-//   - ACP session/load|resume|prompt: devin, hermes, kimi, kiro, kilo, vibe
+//   - CLI flags: claude, codex, opencode, cursor-agent, copilot
+//   - ACP session/load|resume|prompt: hermes
 //   - Pi RPC prompt/switch_session (+ --session/--continue on CLI): pi
 var supportsNativeSession = map[string]struct{}{
 	"claude":       {},
 	"codex":        {},
-	"devin":        {},
 	"opencode":     {},
 	"hermes":       {},
-	"kimi":         {},
 	"cursor-agent": {},
-	"qwen":         {},
-	"qoder":        {},
 	"copilot":      {},
 	"pi":           {},
-	"kiro":         {},
-	"kilo":         {},
-	"vibe":         {},
-	"deepseek":     {},
 }
 
 // All agent definitions (order matches Open Design AGENT_DEFS).
@@ -86,23 +78,6 @@ func definitions() []*AgentDef {
 			build: buildCodex,
 		},
 		{
-			ID: "devin", Name: "Devin for Terminal", Bin: "devin",
-			VersionArgs: []string{"--version"},
-			FallbackModels: []ModelOption{
-				DefaultModelOption,
-				{ID: "adaptive", Label: "adaptive"},
-				{ID: "swe", Label: "swe"},
-				{ID: "opus", Label: "opus"},
-				{ID: "sonnet", Label: "sonnet"},
-				{ID: "codex", Label: "codex"},
-				{ID: "gpt", Label: "gpt"},
-				{ID: "gemini", Label: "gemini"},
-			},
-			StreamFormat: StreamACPJSONRPC,
-			build:        buildDevin,
-			fetchModels:  fetchDevinModels,
-		},
-		{
 			ID: "opencode", Name: "OpenCode", Bin: "opencode",
 			VersionArgs: []string{"--version"},
 			listModelsArgs: []string{"models"}, listModelsTimeout: 8000,
@@ -129,18 +104,6 @@ func definitions() []*AgentDef {
 			build: buildHermes, fetchModels: fetchHermesModels,
 		},
 		{
-			ID: "kimi", Name: "Kimi CLI", Bin: "kimi",
-			VersionArgs: []string{"--version"},
-			FallbackModels: []ModelOption{
-				DefaultModelOption,
-				{ID: "kimi-k2-turbo-preview", Label: "kimi-k2-turbo-preview"},
-				{ID: "moonshot-v1-8k", Label: "moonshot-v1-8k"},
-				{ID: "moonshot-v1-32k", Label: "moonshot-v1-32k"},
-			},
-			StreamFormat: StreamACPJSONRPC, MCPDiscovery: "mature-acp",
-			build: buildKimi, fetchModels: fetchKimiModels,
-		},
-		{
 			ID: "cursor-agent", Name: "Cursor Agent", Bin: "cursor-agent",
 			VersionArgs: []string{"--version"},
 			listModelsArgs: []string{"models"}, listModelsTimeout: 5000,
@@ -154,31 +117,6 @@ func definitions() []*AgentDef {
 			},
 			StreamFormat: StreamJSONEvent, EventParser: "cursor-agent", PromptViaStdin: true,
 			build: buildCursorAgent,
-		},
-		{
-			ID: "qwen", Name: "Qwen Code", Bin: "qwen",
-			VersionArgs: []string{"--version"},
-			FallbackModels: []ModelOption{
-				DefaultModelOption,
-				{ID: "qwen3-coder-plus", Label: "qwen3-coder-plus"},
-				{ID: "qwen3-coder-flash", Label: "qwen3-coder-flash"},
-			},
-			StreamFormat: StreamPlain, PromptViaStdin: true,
-			build: buildQwen,
-		},
-		{
-			ID: "qoder", Name: "Qoder CLI", Bin: "qodercli",
-			VersionArgs: []string{"--version"},
-			FallbackModels: []ModelOption{
-				DefaultModelOption,
-				{ID: "lite", Label: "Lite"},
-				{ID: "efficient", Label: "Efficient"},
-				{ID: "auto", Label: "Auto"},
-				{ID: "performance", Label: "Performance"},
-				{ID: "ultimate", Label: "Ultimate"},
-			},
-			StreamFormat: StreamQoderJSON, PromptViaStdin: true,
-			build: buildQoder,
 		},
 		{
 			ID: "copilot", Name: "GitHub Copilot CLI", Bin: "copilot",
@@ -208,33 +146,6 @@ func definitions() []*AgentDef {
 			StreamFormat: StreamPiRPC, PromptViaStdin: true,
 			SupportsImagePaths: true,
 			build: buildPi,
-		},
-		{
-			ID: "kiro", Name: "Kiro CLI", Bin: "kiro-cli",
-			VersionArgs: []string{"--version"}, FallbackModels: []ModelOption{DefaultModelOption},
-			StreamFormat: StreamACPJSONRPC, build: buildKiro, fetchModels: fetchKiroModels,
-		},
-		{
-			ID: "kilo", Name: "Kilo", Bin: "kilo",
-			VersionArgs: []string{"--version"}, FallbackModels: []ModelOption{DefaultModelOption},
-			StreamFormat: StreamACPJSONRPC, build: buildKilo, fetchModels: fetchKiloModels,
-		},
-		{
-			ID: "vibe", Name: "Mistral Vibe CLI", Bin: "vibe-acp",
-			VersionArgs: []string{"--version"}, FallbackModels: []ModelOption{DefaultModelOption},
-			StreamFormat: StreamACPJSONRPC, build: buildVibe, fetchModels: fetchVibeModels,
-		},
-		{
-			ID: "deepseek", Name: "DeepSeek TUI", Bin: "deepseek",
-			VersionArgs: []string{"--version"},
-			FallbackModels: []ModelOption{
-				DefaultModelOption,
-				{ID: "deepseek-v4-pro", Label: "deepseek-v4-pro"},
-				{ID: "deepseek-v4-flash", Label: "deepseek-v4-flash"},
-			},
-			MaxPromptArgBytes: 30_000,
-			StreamFormat:      StreamPlain,
-			build:             buildDeepseek,
 		},
 	}
 	for _, d := range defs {

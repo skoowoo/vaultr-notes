@@ -6,19 +6,11 @@ func TestSupportsNativeSession(t *testing.T) {
 	want := map[string]bool{
 		"claude":       true,
 		"codex":        true,
-		"devin":        true,
 		"opencode":     true,
 		"hermes":       true,
-		"kimi":         true,
 		"cursor-agent": true,
-		"qwen":         true,
-		"qoder":        true,
 		"copilot":      true,
 		"pi":           true,
-		"kiro":         true,
-		"kilo":         true,
-		"vibe":         true,
-		"deepseek":     true,
 	}
 	for _, d := range BuiltInAgents() {
 		got := d.SupportsNativeSession

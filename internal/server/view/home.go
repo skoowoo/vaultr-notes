@@ -204,7 +204,7 @@ func (vh *ViewHandler) renderHomeSectionHTML(r *http.Request) (template.HTML, er
 		// varies with the request.
 		return template.HTML(homeInboxSectionHTML), nil //nolint:gosec // static markup, not user HTML
 	case "chat":
-		// Same story again: mates/conversation state lives entirely in
+		// Same story again: agent bots/conversation state lives entirely in
 		// homeCtrl (home.js fetches /api/mates, /api/conversations, etc.
 		// once #chat-scroll lands in the DOM — see the htmx:afterSwap
 		// listener), so this markup never varies with the request.
@@ -752,24 +752,24 @@ const homeInboxSheetHTML = `
     </div>
   </div>`
 
-// homeChatSectionHTML mirrors agent_chat.html's .chat-main block (mate chips,
-// message thread, composer) verbatim — everything except the standalone
-// page's own nav rail, which home's sidebar already replaces. Entirely
-// client-rendered: home.js fetches /api/mates, /api/conversations, etc. once
-// this markup lands in the DOM (see the htmx:afterSwap listener) and drives
-// the mates/messages state that's now merged into homeCtrl.
+// homeChatSectionHTML mirrors agent_chat.html's .chat-main block (agent bot
+// chips, message thread, composer) verbatim — everything except the
+// standalone page's own nav rail, which home's sidebar already replaces.
+// Entirely client-rendered: home.js fetches /api/mates, /api/conversations,
+// etc. once this markup lands in the DOM (see the htmx:afterSwap listener)
+// and drives the agent bots/messages state that's now merged into homeCtrl.
 const homeChatSectionHTML = `<div class="chat-main">
 
-  <!-- ── Mate bar (mate selection itself now lives in the sidebar's Chats
-       group — see home.html — this keeps only the description, conv-type
-       toggle, and new-chat button) ────────────────────────────── -->
+  <!-- ── Agent bot bar (agent bot selection itself now lives in the sidebar's
+       Chats group — see home.html — this keeps only the description,
+       conv-type toggle, and new-chat button) ────────────────────────────── -->
   <div class="home-list-head">
-    <span class="mate-bar-desc" x-show="selectedMate && selectedMate.description"
-      x-text="selectedMate ? selectedMate.description : ''"></span>
+    <span class="agent-bot-bar-desc" x-show="selectedAgentBot && selectedAgentBot.description"
+      x-text="selectedAgentBot ? selectedAgentBot.description : ''"></span>
     <div class="home-list-head-spacer"></div>
 
     <!-- ── Conv type segmented control ───────────────────── -->
-    <div class="seg" x-show="selectedMateId">
+    <div class="seg" x-show="selectedAgentBotId">
       <template x-for="t in convTypes" :key="t.value">
         <button class="seg-btn" :class="convType === t.value ? 'active' : ''" @click="setConvType(t.value)"
           type="button" x-text="t.label"></button>
@@ -777,7 +777,7 @@ const homeChatSectionHTML = `<div class="chat-main">
     </div>
 
     <button class="new-chat-btn" type="button" title="New chat"
-      :disabled="isRunning || !selectedMateId || messages.length === 0 || convType !== 'chat'" @click="newChat()">
+      :disabled="isRunning || !selectedAgentBotId || messages.length === 0 || convType !== 'chat'" @click="newChat()">
       <svg fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14M5 12h14" />
       </svg>
@@ -790,12 +790,12 @@ const homeChatSectionHTML = `<div class="chat-main">
 
     <template x-if="messages.length === 0">
       <div class="chat-empty">
-        <template x-if="!selectedMate">
-          <div class="chat-empty-text">Select a mate from the sidebar to start</div>
+        <template x-if="!selectedAgentBot">
+          <div class="chat-empty-text">Select an agent bot from the sidebar to start</div>
         </template>
-        <template x-if="selectedMate">
+        <template x-if="selectedAgentBot">
           <div class="chat-empty-card">
-            <div class="chat-empty-name" x-text="selectedMate.name"></div>
+            <div class="chat-empty-name" x-text="selectedAgentBot.name"></div>
             <div class="chat-empty-desc">Ask anything or assign a task</div>
             <div class="chat-empty-hints">
               <span class="chat-empty-hint-key">Insert file</span>
@@ -830,9 +830,9 @@ const homeChatSectionHTML = `<div class="chat-main">
           <div class="msg-assistant-wrap">
             <div class="msg-agent-header">
               <div class="msg-agent-avatar"
-                :style="getMateColor(msg.mateId) ? 'background:' + getMateColor(msg.mateId) : ''"
-                x-text="mateInitials(getMateNameForMsg(msg))"></div>
-              <div class="msg-agent-name" x-text="getMateNameForMsg(msg)"></div>
+                :style="getAgentBotColor(msg.agentBotId) ? 'background:' + getAgentBotColor(msg.agentBotId) : ''"
+                x-text="agentBotInitials(getAgentBotNameForMsg(msg))"></div>
+              <div class="msg-agent-name" x-text="getAgentBotNameForMsg(msg)"></div>
               <template x-if="msg.triggerEvent">
                 <span class="msg-trigger-badge" x-text="triggerEventLabel(msg.triggerEvent)"></span>
               </template>
@@ -922,7 +922,7 @@ const homeChatSectionHTML = `<div class="chat-main">
               <template
                 x-if="msg.status !== 'running' && msg.segments.some(function(s){ return s.type==='text' && s.content; })">
                 <button class="msg-copy-btn" type="button" title="Copy reply" :class="msg.copied ? 'copied' : ''"
-                  @click="copyMateText(msg)">
+                  @click="copyAgentBotText(msg)">
                   <template x-if="!msg.copied">
                     <svg fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24">
                       <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
@@ -957,14 +957,14 @@ const homeChatSectionHTML = `<div class="chat-main">
       <div class="chat-input-card">
         <div class="chat-input-hint" x-show="!inputText" aria-hidden="true">
           <span class="chat-hint-name"
-            x-text="selectedMate ? 'Ask ' + selectedMate.name + '…' : 'Select a mate from the sidebar'"></span>
+            x-text="selectedAgentBot ? 'Ask ' + selectedAgentBot.name + '…' : 'Select an agent bot from the sidebar'"></span>
         </div>
         <textarea class="chat-textarea" id="chat-textarea" rows="1" placeholder="" x-model="inputText"
-          :disabled="isRunning || !selectedMateId" @keydown="handleKeydown($event)"
+          :disabled="isRunning || !selectedAgentBotId" @keydown="handleKeydown($event)"
           @input="autoResize($event.target)"></textarea>
         <span class="chat-shortcut-hint" x-text="isMac ? '⌘↵' : 'Ctrl+↵'"></span>
         <button x-show="!isRunning" type="button" class="chat-send-circle"
-          :disabled="!inputText.trim() || !selectedMateId" @click="send()">
+          :disabled="!inputText.trim() || !selectedAgentBotId" @click="send()">
           <svg fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M12 19V5M5 12l7-7 7 7" />
           </svg>

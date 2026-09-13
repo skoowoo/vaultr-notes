@@ -449,11 +449,11 @@
       __vaultrDECenterActiveTab();
     }, 400);
   }
-  function __vaultrDESourceButtons() {
-    return Array.from(document.querySelectorAll('.drawer-source-btn'));
-  }
   function __vaultrDESetSourceActive(active) {
-    __vaultrDESourceButtons().forEach(function(btn) {
+    document.querySelectorAll('.drawer-view-btn-wysiwyg').forEach(function(btn) {
+      btn.classList.toggle('active', !active);
+    });
+    document.querySelectorAll('.drawer-view-btn-source').forEach(function(btn) {
       btn.classList.toggle('active', !!active);
     });
   }
@@ -656,9 +656,14 @@
         });
       }
 
-      __vaultrDESourceButtons().forEach(function(sourceBtn) {
-        sourceBtn.addEventListener('click', function() {
-          editorMode.toggle();
+      document.querySelectorAll('.drawer-view-btn-wysiwyg').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          if (__vaultrDE.inSource) editorMode.exitSource();
+        });
+      });
+      document.querySelectorAll('.drawer-view-btn-source').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          if (!__vaultrDE.inSource) editorMode.enterSource();
         });
       });
     })();
@@ -1618,12 +1623,20 @@
   }
 
   // ── Compile raw note from drawer ─────────────────────────────────────────────
+  function __vaultrDECompileLabel(btn, text) {
+    var label = btn.querySelector('.drawer-compile-label');
+    if (label) label.textContent = text;
+  }
+  function __vaultrDECloseMoreMenu() {
+    document.dispatchEvent(new CustomEvent('drawer:close-more'));
+  }
   function __vaultrDEResetCompileBtn() {
     var btn = document.querySelector('.drawer-compile-btn');
     if (!btn) return;
     btn.classList.remove('is-compiling', 'success');
     btn.disabled = false;
     btn.title = 'Compile to knowledge note';
+    __vaultrDECompileLabel(btn, 'Compile');
   }
 
   async function compileDrawerNote(event) {
@@ -1644,6 +1657,7 @@
     btn.disabled = true;
     btn.classList.add('is-compiling');
     btn.title = 'Compiling…';
+    __vaultrDECompileLabel(btn, 'Compiling…');
 
     try {
       var resp = await fetch('/api/compile/trigger', {
@@ -1659,6 +1673,7 @@
       if (resp.status === 409) {
         btn.disabled = false;
         btn.title = originalTitle;
+        __vaultrDECompileLabel(btn, 'Compile');
         return;
       }
 
@@ -1673,9 +1688,12 @@
             if (drawer && drawer.markTabCompiled) drawer.markTabCompiled(rawPath);
             btn.classList.add('success');
             btn.title = 'Compiled';
+            __vaultrDECompileLabel(btn, 'Compiled');
             setTimeout(function() {
               btn.disabled = false;
               btn.classList.remove('success');
+              __vaultrDECompileLabel(btn, 'Compile');
+              __vaultrDECloseMoreMenu();
             }, 1500);
             if (window.__vaultrAfterVaultMutation) await window.__vaultrAfterVaultMutation();
             return;
@@ -1690,6 +1708,7 @@
     } catch (err) {
       btn.disabled = false;
       btn.title = err && err.message ? err.message : 'Compile failed';
+      __vaultrDECompileLabel(btn, 'Compile');
     } finally {
       btn.classList.remove('is-compiling');
     }

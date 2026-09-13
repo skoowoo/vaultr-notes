@@ -2,7 +2,10 @@ import { $prose } from '@milkdown/utils';
 import { Plugin, PluginKey, TextSelection } from '@milkdown/prose/state';
 import { lift, toggleMark as pmToggleMark, setBlockType, wrapIn } from '@milkdown/prose/commands';
 import { wrapInList } from '@milkdown/prose/schema-list';
-import { Feather, Check, Copy, X, RemoveFormatting, List, ListOrdered, TextQuote } from 'lucide';
+import {
+  Feather, Check, Copy, X, RemoveFormatting, List, ListOrdered, Quote,
+  Bold, Italic, Strikethrough, Code2, Heading1, Heading2, Heading3, Heading4,
+} from 'lucide';
 
 const TOOLTIP_KEY = new PluginKey('vaultr-format-tooltip');
 
@@ -15,19 +18,24 @@ function lucideSvg(iconData) {
   }).join('');
   return (
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" ' +
-    'stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+    'stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' +
     children + '</svg>'
   );
 }
 
-const SVG_FEATHER      = lucideSvg(Feather);
-const SVG_CHECK        = lucideSvg(Check);
-const SVG_COPY         = lucideSvg(Copy);
-const SVG_X            = lucideSvg(X);
-const SVG_CLEAR        = lucideSvg(RemoveFormatting);
-const SVG_LIST         = lucideSvg(List);
-const SVG_LIST_ORDERED = lucideSvg(ListOrdered);
-const SVG_QUOTE        = lucideSvg(TextQuote);
+const SVG_FEATHER = lucideSvg(Feather);
+const SVG_CHECK   = lucideSvg(Check);
+const SVG_COPY    = lucideSvg(Copy);
+const SVG_X       = lucideSvg(X);
+const SVG_CLEAR   = lucideSvg(RemoveFormatting);
+const SVG_LIST    = lucideSvg(List);
+const SVG_OLIST   = lucideSvg(ListOrdered);
+const SVG_QUOTE   = lucideSvg(Quote);
+const SVG_BOLD    = lucideSvg(Bold);
+const SVG_ITALIC  = lucideSvg(Italic);
+const SVG_STRIKE  = lucideSvg(Strikethrough);
+const SVG_CODE    = lucideSvg(Code2);
+const SVG_HEADINGS = [Heading1, Heading2, Heading3, Heading4].map(lucideSvg);
 
 // ── Detection helpers ─────────────────────────────────────────────────────────
 
@@ -257,6 +265,10 @@ function positionTooltip(el, view) {
   // Always prefer above the selection; fall back to below only if no room.
   let top = topCoords.top - box.height - gap;
   if (top < gap) top = botCoords.bottom + gap;
+  // Menus can run taller than the old single-row bar — clamp so a long one
+  // (headings + lists + inline marks + actions) never runs off the bottom.
+  top = Math.min(top, window.innerHeight - box.height - gap);
+  top = Math.max(top, gap);
 
   // Horizontal: center on the head (cursor end) position, clamped to viewport.
   let left = headCoords.left - box.width / 2;
@@ -266,15 +278,39 @@ function positionTooltip(el, view) {
   el.style.left = left + 'px';
 }
 
+// ── Row builder ───────────────────────────────────────────────────────────────
+
+function makeRow(iconSvg, label, opts) {
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'mdt-row' + (opts && opts.active ? ' active' : '');
+  if (opts && opts.title) btn.title = opts.title;
+  const icon = document.createElement('span');
+  icon.className = 'mdt-row-icon';
+  icon.innerHTML = iconSvg;
+  btn.appendChild(icon);
+  const labelEl = document.createElement('span');
+  labelEl.className = 'mdt-row-label';
+  labelEl.textContent = label;
+  btn.appendChild(labelEl);
+  return { btn, icon, labelEl };
+}
+
+function sepEl() {
+  const s = document.createElement('div');
+  s.className = 'mdt-sep';
+  return s;
+}
+
 // ── Plugin ────────────────────────────────────────────────────────────────────
 
 const HEADING_LEVELS = [1, 2, 3, 4];
 
 const INLINE_FMT_BTNS = [
-  { mark: 'strong',         label: 'B',   title: 'Bold'          },
-  { mark: 'emphasis',       label: 'I',   title: 'Italic'        },
-  { mark: 'strike_through', label: 'S',   title: 'Strikethrough' },
-  { mark: 'inlineCode',     label: '</>', title: 'Inline code'   },
+  { mark: 'strong',         label: 'Bold',          icon: SVG_BOLD   },
+  { mark: 'emphasis',       label: 'Italic',        icon: SVG_ITALIC },
+  { mark: 'strike_through', label: 'Strikethrough', icon: SVG_STRIKE },
+  { mark: 'inlineCode',     label: 'Inline code',   icon: SVG_CODE   },
 ];
 
 export const tooltipPlugin = $prose(() => new Plugin({
@@ -352,39 +388,47 @@ export const tooltipPlugin = $prose(() => new Plugin({
       const showClear = !hasToggleFormats(state);
       const clearTarget = showClear ? detectClearTarget(state) : null;
 
+      const selText = state.doc.textBetween(state.selection.from, state.selection.to, ' ');
+      const wc = countWords(selText);
+      const wcText = wc > 0 ? (wc + (wc === 1 ? ' word' : ' words')) : '';
+
       el.innerHTML = '';
 
-      if (showClear && clearTarget) {
-        // ── Clear group: chip + clear button ──────────────────────────────────
-        const chip = document.createElement('span');
-        chip.className = 'mdt-chip';
-        chip.textContent = clearTarget.label;
-        el.appendChild(chip);
+      // ── Header: context label + dismiss ─────────────────────────────────────
+      const header = document.createElement('div');
+      header.className = 'mdt-header';
+      const headerLabel = document.createElement('span');
+      headerLabel.className = 'mdt-header-label';
+      headerLabel.textContent = clearTarget
+        ? (clearTarget.label + (wcText ? ' · ' + wcText : ''))
+        : (wcText || 'Format');
+      header.appendChild(headerLabel);
+      const xBtn = document.createElement('button');
+      xBtn.type = 'button';
+      xBtn.className = 'mdt-x';
+      xBtn.setAttribute('aria-label', 'Dismiss');
+      xBtn.innerHTML = SVG_X;
+      xBtn.addEventListener('mousedown', e => { e.preventDefault(); hide(true); });
+      header.appendChild(xBtn);
+      el.appendChild(header);
 
-        const clearBtn = document.createElement('button');
-        clearBtn.className = 'mdt-clear';
-        clearBtn.title = 'Clear ' + clearTarget.label.toLowerCase();
-        clearBtn.innerHTML = SVG_CLEAR;
-        clearBtn.addEventListener('mousedown', e => {
+      if (showClear && clearTarget) {
+        // ── Clear group: a single row ────────────────────────────────────────
+        const { btn } = makeRow(SVG_CLEAR, 'Clear ' + clearTarget.label.toLowerCase());
+        btn.addEventListener('mousedown', e => {
           e.preventDefault();
           clearComplex(view, clearTarget.kind);
         });
-        el.appendChild(clearBtn);
-
-        const sep = document.createElement('span');
-        sep.className = 'mdt-sep';
-        el.appendChild(sep);
+        el.appendChild(btn);
+        el.appendChild(sepEl());
       } else {
         // ── Toggle group ──────────────────────────────────────────────────────
         const showBlock = shouldShowBlockFormats(state) || selectionInBlockquote(state);
 
         if (showBlock) {
           const headingLevel = selectionHeadingLevel(state);
-          HEADING_LEVELS.forEach(level => {
-            const btn = document.createElement('button');
-            btn.className = 'mdt-fmt' + (headingLevel === level ? ' mdt-fmt--active' : '');
-            btn.textContent = 'H' + level;
-            btn.title = 'Heading ' + level;
+          HEADING_LEVELS.forEach((level, i) => {
+            const { btn } = makeRow(SVG_HEADINGS[i], 'Heading ' + level, { active: headingLevel === level });
             btn.addEventListener('mousedown', e => {
               e.preventDefault();
               toggleHeading(view, level);
@@ -392,10 +436,7 @@ export const tooltipPlugin = $prose(() => new Plugin({
             el.appendChild(btn);
           });
 
-          const quoteBtn = document.createElement('button');
-          quoteBtn.className = 'mdt-fmt mdt-fmt--icon' + (selectionInBlockquote(state) ? ' mdt-fmt--active' : '');
-          quoteBtn.title = 'Blockquote';
-          quoteBtn.innerHTML = SVG_QUOTE;
+          const { btn: quoteBtn } = makeRow(SVG_QUOTE, 'Blockquote', { active: selectionInBlockquote(state) });
           quoteBtn.addEventListener('mousedown', e => {
             e.preventDefault();
             toggleBlockquote(view);
@@ -404,36 +445,25 @@ export const tooltipPlugin = $prose(() => new Plugin({
 
           const listType = selectionListType(state);
 
-          const bulletBtn = document.createElement('button');
-          bulletBtn.className = 'mdt-fmt mdt-fmt--icon' + (listType === 'bullet_list' ? ' mdt-fmt--active' : '');
-          bulletBtn.title = 'Bullet list';
-          bulletBtn.innerHTML = SVG_LIST;
+          const { btn: bulletBtn } = makeRow(SVG_LIST, 'Bullet list', { active: listType === 'bullet_list' });
           bulletBtn.addEventListener('mousedown', e => {
             e.preventDefault();
             toggleList(view, 'bullet_list');
           });
           el.appendChild(bulletBtn);
 
-          const orderedBtn = document.createElement('button');
-          orderedBtn.className = 'mdt-fmt mdt-fmt--icon' + (listType === 'ordered_list' ? ' mdt-fmt--active' : '');
-          orderedBtn.title = 'Ordered list';
-          orderedBtn.innerHTML = SVG_LIST_ORDERED;
+          const { btn: orderedBtn } = makeRow(SVG_OLIST, 'Ordered list', { active: listType === 'ordered_list' });
           orderedBtn.addEventListener('mousedown', e => {
             e.preventDefault();
             toggleList(view, 'ordered_list');
           });
           el.appendChild(orderedBtn);
 
-          const sep1 = document.createElement('span');
-          sep1.className = 'mdt-sep';
-          el.appendChild(sep1);
+          el.appendChild(sepEl());
         }
 
-        INLINE_FMT_BTNS.forEach(({ mark, label, title }) => {
-          const btn = document.createElement('button');
-          btn.className = 'mdt-fmt' + (isMarkActive(state, mark) ? ' mdt-fmt--active' : '');
-          btn.textContent = label;
-          btn.title = title;
+        INLINE_FMT_BTNS.forEach(({ mark, label, icon }) => {
+          const { btn } = makeRow(icon, label, { active: isMarkActive(state, mark) });
           btn.addEventListener('mousedown', e => {
             e.preventDefault();
             applyToggleMark(view, mark);
@@ -441,40 +471,26 @@ export const tooltipPlugin = $prose(() => new Plugin({
           el.appendChild(btn);
         });
 
-        const sep2 = document.createElement('span');
-        sep2.className = 'mdt-sep';
-        el.appendChild(sep2);
+        el.appendChild(sepEl());
       }
 
-      // ── Word count ───────────────────────────────────────────────────────────
-      const selText = state.doc.textBetween(state.selection.from, state.selection.to, ' ');
-      const wc = countWords(selText);
-      if (wc > 0) {
-        const countEl = document.createElement('span');
-        countEl.className = 'mdt-count';
-        countEl.textContent = wc + 'w';
-        el.appendChild(countEl);
-
-        const sepW = document.createElement('span');
-        sepW.className = 'mdt-sep';
-        el.appendChild(sepW);
-      }
-
-      // ── Always: copy, save as short, dismiss ─────────────────────────────────
-      const copyBtn = document.createElement('button');
-      copyBtn.className = 'mdt-copy';
-      copyBtn.title = 'Copy as Markdown';
-      copyBtn.innerHTML = SVG_COPY;
+      // ── Always: copy, save as short ──────────────────────────────────────────
+      const { btn: copyBtn, icon: copyIcon, labelEl: copyLabel } = makeRow(SVG_COPY, 'Copy as Markdown');
       copyBtn.addEventListener('mousedown', e => {
         e.preventDefault();
         window.__vaultrCopySelectionAsMd?.();
+        copyIcon.innerHTML = SVG_CHECK;
+        copyLabel.textContent = 'Copied';
+        copyBtn.classList.add('mdt-row-success');
+        setTimeout(() => {
+          copyIcon.innerHTML = SVG_COPY;
+          copyLabel.textContent = 'Copy as Markdown';
+          copyBtn.classList.remove('mdt-row-success');
+        }, 1200);
       });
       el.appendChild(copyBtn);
 
-      const shortBtn = document.createElement('button');
-      shortBtn.className = 'mdt-short';
-      shortBtn.title = 'Save as short note';
-      shortBtn.innerHTML = SVG_FEATHER;
+      const { btn: shortBtn, icon: shortIcon, labelEl: shortLabel } = makeRow(SVG_FEATHER, 'Save as short note');
       shortBtn.addEventListener('mousedown', async e => {
         e.preventDefault();
         const md = window.__vaultrGetSelectionMd?.();
@@ -493,8 +509,9 @@ export const tooltipPlugin = $prose(() => new Plugin({
             body: JSON.stringify({ content }),
           });
           if (!resp.ok) throw new Error(await resp.text());
-          shortBtn.innerHTML = SVG_CHECK;
-          shortBtn.classList.add('saved');
+          shortIcon.innerHTML = SVG_CHECK;
+          shortLabel.textContent = 'Saved';
+          shortBtn.classList.add('mdt-row-success');
           if (window.__vaultrAfterVaultMutation) await window.__vaultrAfterVaultMutation();
           setTimeout(() => hide(true), 600);
         } catch (err) {
@@ -502,16 +519,6 @@ export const tooltipPlugin = $prose(() => new Plugin({
         }
       });
       el.appendChild(shortBtn);
-
-      const xBtn = document.createElement('button');
-      xBtn.className = 'mdt-x';
-      xBtn.setAttribute('aria-label', 'Dismiss');
-      xBtn.innerHTML = SVG_X;
-      xBtn.addEventListener('mousedown', e => {
-        e.preventDefault();
-        hide(true);
-      });
-      el.appendChild(xBtn);
 
       if (!visible) {
         el.style.display = 'flex';

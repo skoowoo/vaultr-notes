@@ -434,184 +434,184 @@ const settingsModalCSS = `
       font-size: var(--text-xs); color: var(--fg); white-space: nowrap; line-height: 1.4;
     }
 
-    /* ── Mates pane ───────────────────────────────────────────── */
-    .mates-pane { flex: 1; overflow-y: auto; padding: 1.75rem 1.5rem 3rem; }
-    .mates-toolbar { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; }
-    .mates-list { display: flex; flex-direction: column; gap: 0.45rem; }
-    .mates-empty { font-size: var(--text-sm); color: var(--muted); padding: 1.5rem 0; }
-    .mate-card {
+    /* ── Agent Bots pane ───────────────────────────────────────────── */
+    .agent-bots-pane { flex: 1; overflow-y: auto; padding: 1.75rem 1.5rem 3rem; }
+    .agent-bots-toolbar { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; }
+    .agent-bots-list { display: flex; flex-direction: column; gap: 0.45rem; }
+    .agent-bots-empty { font-size: var(--text-sm); color: var(--muted); padding: 1.5rem 0; }
+    .agent-bot-card {
       border: var(--bd-w) solid var(--border-strong);
       border-radius: var(--r-lg);
       background: var(--bg); padding: 0.875rem 1.25rem;
       display: flex; align-items: flex-start; gap: 0.875rem;
     }
-    .mate-card:hover { background: var(--card-hov); }
-    .mate-card.disabled-card { opacity: 0.45; }
-    .mate-avatar {
+    .agent-bot-card:hover { background: var(--card-hov); }
+    .agent-bot-card.disabled-card { opacity: 0.45; }
+    .agent-bot-avatar {
       flex-shrink: 0; width: 36px; height: 36px; border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
       font-size: 0.875rem; font-weight: 700; color: var(--inverse-ink);
       background: var(--muted); user-select: none;
       border: var(--bd-w) solid var(--border-strong);
     }
-    .mate-card-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.3rem; }
-    .mate-card-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.5rem; min-width: 0; }
-    .mate-card-name { font-size: var(--text-sm); font-weight: 600; color: var(--fg); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border-radius: 0; flex: 1; min-width: 0; padding-top: 0.1rem; }
-    .mate-card-desc { font-size: var(--text-xs); color: var(--muted); line-height: 1.5; }
-    .mate-card-actions { display: flex; gap: 0.3rem; flex-shrink: 0; }
-    .mate-card-tags { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.15rem; }
-    .mate-badge {
+    .agent-bot-card-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.3rem; }
+    .agent-bot-card-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.5rem; min-width: 0; }
+    .agent-bot-card-name { font-size: var(--text-sm); font-weight: 600; color: var(--fg); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border-radius: 0; flex: 1; min-width: 0; padding-top: 0.1rem; }
+    .agent-bot-card-desc { font-size: var(--text-xs); color: var(--muted); line-height: 1.5; }
+    .agent-bot-card-actions { display: flex; gap: 0.3rem; flex-shrink: 0; }
+    .agent-bot-card-tags { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.15rem; }
+    .agent-bot-badge {
       font-size: var(--text-xs); font-weight: 500; padding: 2px 8px; border-radius: var(--r-full);
       background: var(--code-bg); color: var(--muted);
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px;
     }
-    .mate-badge.trigger { color: var(--s-ok); background: var(--s-ok-bg); }
-    .mate-act-btn {
+    .agent-bot-badge.trigger { color: var(--s-ok); background: var(--s-ok-bg); }
+    .agent-bot-act-btn {
       height: var(--btn-h-xs); padding: 0 0.65rem;
       border: var(--bd-w) solid var(--border-strong); background: transparent;
       color: var(--muted); font-size: var(--text-xs); font-weight: 500;
       cursor: pointer;
     }
-    .mate-act-btn:hover { color: var(--fg); background: var(--card-hov); }
-    .mate-act-btn:active { opacity: 0.85; }
-    .mate-act-btn.del { background: var(--s-err); border-color: var(--border-strong); color: var(--s-err-fg); }
-    .mate-act-btn.del:hover { opacity: 0.85; }
-    .mate-form-wrap { max-width: 780px; }
-    .mate-form-header { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 2rem; }
-    .mate-back-btn {
+    .agent-bot-act-btn:hover { color: var(--fg); background: var(--card-hov); }
+    .agent-bot-act-btn:active { opacity: 0.85; }
+    .agent-bot-act-btn.del { background: var(--s-err); border-color: var(--border-strong); color: var(--s-err-fg); }
+    .agent-bot-act-btn.del:hover { opacity: 0.85; }
+    .agent-bot-form-wrap { max-width: 780px; }
+    .agent-bot-form-header { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 2rem; }
+    .agent-bot-back-btn {
       display: inline-flex; align-items: center; gap: 0.3rem;
       background: none; border: none; color: var(--muted); font-size: var(--text-sm);
       cursor: pointer; padding: 0;
     }
-    .mate-back-btn:hover { color: var(--fg); }
-    .mate-back-btn svg { width: 14px; height: 14px; }
-    .mate-form-title { font-size: var(--text-base); font-weight: 600; color: var(--fg); }
-    .mate-form { display: flex; flex-direction: column; }
-    .mate-form-section {
+    .agent-bot-back-btn:hover { color: var(--fg); }
+    .agent-bot-back-btn svg { width: 14px; height: 14px; }
+    .agent-bot-form-title { font-size: var(--text-base); font-weight: 600; color: var(--fg); }
+    .agent-bot-form { display: flex; flex-direction: column; }
+    .agent-bot-form-section {
       padding: 1.65rem 0 1.5rem;
       display: flex; flex-direction: column; gap: 1.25rem;
     }
-    .mate-form-section:first-child { padding-top: 0; }
-    .mate-form-section-triggers { gap: 1rem; }
-    .mate-form-section-title {
+    .agent-bot-form-section:first-child { padding-top: 0; }
+    .agent-bot-form-section-triggers { gap: 1rem; }
+    .agent-bot-form-section-title {
       font-size: var(--text-xs); font-weight: var(--fw-medium); letter-spacing: 0.05em;
       text-transform: uppercase; color: var(--fg); margin: 0;
       display: flex; align-items: center; gap: 0.6rem; white-space: nowrap;
     }
-    .mate-form-section-title::after {
+    .agent-bot-form-section-title::after {
       content: ''; flex: 1; height: 2px; background: var(--border-strong); border-radius: 0;
     }
-    .mate-trigger-section-top { display: flex; flex-direction: column; gap: 0.4rem; }
-    .mate-section-desc { font-size: var(--text-sm); color: var(--muted); line-height: 1.5; margin: 0; }
-    .mate-form-row { display: flex; gap: 1rem; }
-    .mate-form-row > * { flex: 1; min-width: 0; }
-    .mate-form-label { display: block; font-size: var(--text-sm); font-weight: 600; color: var(--fg); margin-bottom: 0.4rem; }
-    .mate-form-input, .mate-form-select, .mate-form-textarea {
+    .agent-bot-trigger-section-top { display: flex; flex-direction: column; gap: 0.4rem; }
+    .agent-bot-section-desc { font-size: var(--text-sm); color: var(--muted); line-height: 1.5; margin: 0; }
+    .agent-bot-form-row { display: flex; gap: 1rem; }
+    .agent-bot-form-row > * { flex: 1; min-width: 0; }
+    .agent-bot-form-label { display: block; font-size: var(--text-sm); font-weight: 600; color: var(--fg); margin-bottom: 0.4rem; }
+    .agent-bot-form-input, .agent-bot-form-select, .agent-bot-form-textarea {
       width: 100%; background: var(--bg); border: var(--bd-w) solid var(--border-strong);
       padding: 0.6rem 0.75rem;
       font-size: var(--text-sm); color: var(--fg); outline: none;
       font-family: inherit;
     }
-    .mate-form-input:focus, .mate-form-select:focus, .mate-form-textarea:focus { border-color: var(--accent); }
-    .mate-form-textarea { resize: vertical; overflow: hidden; line-height: 1.55; }
-    .mate-trigger-section-hdr {
+    .agent-bot-form-input:focus, .agent-bot-form-select:focus, .agent-bot-form-textarea:focus { border-color: var(--accent); }
+    .agent-bot-form-textarea { resize: vertical; overflow: hidden; line-height: 1.55; }
+    .agent-bot-trigger-section-hdr {
       display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;
     }
-    .mate-trigger-section-hdr .mate-form-section-title { flex: 1; }
-    .mate-trigger-add {
+    .agent-bot-trigger-section-hdr .agent-bot-form-section-title { flex: 1; }
+    .agent-bot-trigger-add {
       font-size: var(--text-sm); font-weight: 600; color: var(--muted);
       background: none; border: none; cursor: pointer; padding: 0.15rem 0;
       display: block;
     }
-    .mate-trigger-add:hover { color: var(--fg); }
-    .mate-triggers-empty {
+    .agent-bot-trigger-add:hover { color: var(--fg); }
+    .agent-bot-triggers-empty {
       font-size: var(--text-sm); color: var(--muted); line-height: 1.5;
       padding: 1.1rem 1rem; border: var(--bd-w) solid var(--code-bd);
       text-align: center; font-style: italic; opacity: 0.6;
     }
-    .mate-var-panel { margin-bottom: 0.5rem; }
-    .mate-var-panel-label {
+    .agent-bot-var-panel { margin-bottom: 0.5rem; }
+    .agent-bot-var-panel-label {
       display: block; font-size: var(--text-xs); font-weight: 600;
       letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.4rem;
     }
-    .mate-var-chips { display: flex; flex-wrap: wrap; gap: 0.35rem; }
-    .mate-var-chip {
+    .agent-bot-var-chips { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+    .agent-bot-var-chip {
       display: inline-flex; align-items: center; height: var(--btn-h-xs); padding: 0 0.6rem;
       border: var(--bd-w) solid var(--border-strong); background: var(--bg);
       border-radius: var(--r-full);
       cursor: pointer;
     }
-    .mate-var-chip:hover { border-color: var(--border-strong); background: transparent; }
-    .mate-var-chip:active { opacity: 0.85; }
-    .mate-var-chip code {
+    .agent-bot-var-chip:hover { border-color: var(--border-strong); background: transparent; }
+    .agent-bot-var-chip:active { opacity: 0.85; }
+    .agent-bot-var-chip code {
       font-family: var(--font-mono);
       font-size: var(--text-xs); font-weight: 600; color: var(--fg); opacity: 0.8;
     }
-    .mate-trigger-list { display: flex; flex-direction: column; gap: 1rem; }
-    .mate-trigger-card {
+    .agent-bot-trigger-list { display: flex; flex-direction: column; gap: 1rem; }
+    .agent-bot-trigger-card {
       background: var(--bg); border: var(--bd-w) solid var(--border-strong);
       border-radius: var(--r-lg);
       padding: 1rem 1.15rem 1.15rem;
       display: flex; flex-direction: column; gap: 1rem;
     }
-    .mate-trigger-hdr {
+    .agent-bot-trigger-hdr {
       display: flex; align-items: center; justify-content: space-between;
       padding-bottom: 0.75rem; border-bottom: var(--bd-w) solid var(--border-strong); border-radius: 0;
     }
-    .mate-trigger-label { font-size: var(--text-sm); font-weight: 600; color: var(--fg); }
-    .mate-trigger-hdr-actions { display: flex; align-items: center; gap: 0.65rem; }
-    .mate-trigger-del {
+    .agent-bot-trigger-label { font-size: var(--text-sm); font-weight: 600; color: var(--fg); }
+    .agent-bot-trigger-hdr-actions { display: flex; align-items: center; gap: 0.65rem; }
+    .agent-bot-trigger-del {
       background: none; border: none; color: var(--s-err); font-size: var(--text-xs);
       font-weight: 500; cursor: pointer; padding: 0;
       opacity: 0.55;
     }
-    .mate-trigger-del:hover { opacity: 1; }
-    .mate-trigger-body { display: flex; flex-direction: column; gap: 1.4rem; }
-    .mate-block-label { margin-bottom: 0.65rem; }
-    .mate-block-title { display: block; font-size: var(--text-sm); font-weight: 600; color: var(--fg); }
-    .mate-block-hint { display: block; font-size: var(--text-xs); color: var(--muted); line-height: 1.5; margin-top: 0.2rem; }
-    .mate-prompt-textarea { font-family: var(--font-mono); font-size: var(--text-sm); }
-    .mate-schedule-presets { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.65rem; }
-    .mate-schedule-preset {
+    .agent-bot-trigger-del:hover { opacity: 1; }
+    .agent-bot-trigger-body { display: flex; flex-direction: column; gap: 1.4rem; }
+    .agent-bot-block-label { margin-bottom: 0.65rem; }
+    .agent-bot-block-title { display: block; font-size: var(--text-sm); font-weight: 600; color: var(--fg); }
+    .agent-bot-block-hint { display: block; font-size: var(--text-xs); color: var(--muted); line-height: 1.5; margin-top: 0.2rem; }
+    .agent-bot-prompt-textarea { font-family: var(--font-mono); font-size: var(--text-sm); }
+    .agent-bot-schedule-presets { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.65rem; }
+    .agent-bot-schedule-preset {
       height: var(--btn-h-xs); padding: 0 0.65rem;
       border: var(--bd-w) solid var(--border-strong); background: transparent;
       color: var(--muted); font-size: var(--text-xs); font-weight: 500;
       cursor: pointer;
     }
-    .mate-schedule-preset:hover:not(.active) { color: var(--fg); border-color: var(--border-strong); background: transparent; }
-    .mate-schedule-preset:active:not(.active) { opacity: 0.85; }
-    .mate-schedule-preset.active { color: var(--control-active-fg); border-color: var(--border-strong); background: var(--control-active-bg); }
-    .mate-schedule-custom-label { display: block; font-size: var(--text-xs); color: var(--muted); margin-bottom: 0.3rem; }
-    .mate-weekday-toggles { align-items: center; margin-bottom: 0.4rem; }
-    .mate-schedule-kind-seg { margin-bottom: 0.85rem; }
-    .mate-schedule-kind-body { margin-bottom: 0.85rem; }
-    .mate-color-palette { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-top: 0.35rem; }
-    .mate-color-swatch {
+    .agent-bot-schedule-preset:hover:not(.active) { color: var(--fg); border-color: var(--border-strong); background: transparent; }
+    .agent-bot-schedule-preset:active:not(.active) { opacity: 0.85; }
+    .agent-bot-schedule-preset.active { color: var(--control-active-fg); border-color: var(--border-strong); background: var(--control-active-bg); }
+    .agent-bot-schedule-custom-label { display: block; font-size: var(--text-xs); color: var(--muted); margin-bottom: 0.3rem; }
+    .agent-bot-weekday-toggles { align-items: center; margin-bottom: 0.4rem; }
+    .agent-bot-schedule-kind-seg { margin-bottom: 0.85rem; }
+    .agent-bot-schedule-kind-body { margin-bottom: 0.85rem; }
+    .agent-bot-color-palette { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-top: 0.35rem; }
+    .agent-bot-color-swatch {
       width: 26px; height: 26px; cursor: pointer; flex-shrink: 0;
       border: none;
       box-shadow: 0 0 0 2px transparent, 0 0 0 4px transparent;
     }
-    .mate-color-swatch.active { box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--border-strong); }
-    .mate-form-footer {
+    .agent-bot-color-swatch.active { box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--border-strong); }
+    .agent-bot-form-footer {
       display: flex; align-items: center; gap: 0.5rem;
       margin-top: 0.25rem; padding-top: 1.1rem; border-top: var(--bd-w) solid var(--border-strong); border-radius: 0;
     }
-    .mate-save-btn {
+    .agent-bot-save-btn {
       height: var(--btn-h); padding: 0 0.875rem;
       border: var(--bd-w) solid var(--border-strong); background: var(--accent); color: var(--accent-fg);
       font-size: var(--text-base); font-weight: 500; cursor: pointer;
     }
-    .mate-save-btn:hover:not(:disabled) { background: var(--bg); border-color: var(--border-strong); }
-    .mate-save-btn:active:not(:disabled) { opacity: 0.85; }
-    .mate-save-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-    .mate-cancel-btn {
+    .agent-bot-save-btn:hover:not(:disabled) { background: var(--bg); border-color: var(--border-strong); }
+    .agent-bot-save-btn:active:not(:disabled) { opacity: 0.85; }
+    .agent-bot-save-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .agent-bot-cancel-btn {
       height: var(--btn-h); padding: 0 0.875rem;
       border: var(--bd-w) solid var(--border-strong); background: transparent;
       color: var(--muted); font-size: var(--text-base); font-weight: 500; cursor: pointer;
     }
-    .mate-cancel-btn:hover { color: var(--fg); background: var(--bg); border-color: var(--border-strong); }
-    .mate-cancel-btn:active { opacity: 0.85; }
-    .mate-form-err { flex: 1; font-size: var(--text-xs); color: var(--s-err); }
+    .agent-bot-cancel-btn:hover { color: var(--fg); background: var(--bg); border-color: var(--border-strong); }
+    .agent-bot-cancel-btn:active { opacity: 0.85; }
+    .agent-bot-form-err { flex: 1; font-size: var(--text-xs); color: var(--s-err); }
 
     /* ── Custom select ─────────────────────────────────────────── */
     .cselect { position: relative; width: 100%; }
@@ -705,8 +705,8 @@ const settingsModalCSS = `
     .skill-act-btn--del:hover:not(:disabled) { opacity: 0.85; }
 
     /* ── Placeholder text ────────────────────────────────────── */
-    .mate-form-input::placeholder,
-    .mate-form-textarea::placeholder,
+    .agent-bot-form-input::placeholder,
+    .agent-bot-form-textarea::placeholder,
     .cfg-input::placeholder,
     .cfg-textarea::placeholder,
     .settings-input::placeholder {
@@ -754,8 +754,8 @@ func settingsModalHTML() string {
             Server
           </button>
           <button class="settings-sidebar-item"
-                  :class="{active: tab === 'mates'}"
-                  @click="tab = 'mates'">
+                  :class="{active: tab === 'agent-bots'}"
+                  @click="tab = 'agent-bots'">
             <svg fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
               <path d="M12 6V2H8"/>
               <path d="M15 11v2"/>
@@ -764,7 +764,7 @@ func settingsModalHTML() string {
               <path d="M20 16a2 2 0 0 1-2 2H8.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 4 20.286V8a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2z"/>
               <path d="M9 11v2"/>
             </svg>
-            Mate Bots
+            Agent Bots
           </button>
           <button class="settings-sidebar-item"
                   :class="{active: tab === 'skills'}"
@@ -796,7 +796,7 @@ func settingsModalHTML() string {
               <rect x="4" y="4" width="16" height="16" rx="2"/>
               <rect x="8" y="8" width="8" height="8" rx="1"/>
             </svg>
-            Agents
+            Agent CLI
           </button>
           <button class="settings-sidebar-item"
                   x-show="isElectron"
@@ -1000,7 +1000,7 @@ func settingsModalHTML() string {
                         </div>
                         <p class="cfg-wechat-meta">
                           Scan with WeChat to obtain an iLink bot token. Credentials are saved to
-                          <code>config.toml</code>. Create a mate with a <code>wechat_message</code> trigger to handle replies.
+                          <code>config.toml</code>. Create an agent bot with a <code>wechat_message</code> trigger to handle replies.
                         </p>
                         <template x-if="wechatStatus.connected">
                           <div>
@@ -1045,7 +1045,7 @@ func settingsModalHTML() string {
                                 x-text="getVal('plugins.discord.bot_token') ? 'Token set' : 'Not configured'"></span>
                         </div>
                         <p class="cfg-wechat-meta">
-                          Paste your Bot token above, then restart the server. Create a mate with a
+                          Paste your Bot token above, then restart the server. Create an agent bot with a
                           <code>discord_message</code> trigger to handle replies. The bot must share a server
                           with you before it can send proactive DMs.
                         </p>
@@ -1176,51 +1176,51 @@ func settingsModalHTML() string {
             </template>
           </div><!-- .notifications-pane -->
 
-          <!-- Mates tab -->
-          <div class="mates-pane" x-show="tab === 'mates'">
+          <!-- Agent Bots tab -->
+          <div class="agent-bots-pane" x-show="tab === 'agent-bots'">
 
-            <template x-if="!mateFormMode && !matesSubPage">
+            <template x-if="!agentBotFormMode && !agentBotsSubPage">
               <div>
-                <div class="mates-toolbar">
-                  <button class="agents-toolbar-btn" @click="newMate()">
+                <div class="agent-bots-toolbar">
+                  <button class="agents-toolbar-btn" @click="newAgentBot()">
                     <svg fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14"/>
                       <path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14"/>
                     </svg>
-                    New Mate
+                    New Agent Bot
                   </button>
 
-` + toolbarRefreshBtnHTML("matesLoading", "loadMates()", "Loading…") + `
+` + toolbarRefreshBtnHTML("agentBotsLoading", "loadAgentBots()", "Loading…") + `
                 </div>
-                <div class="cfg-err-msg" x-show="matesError && !matesLoading" x-text="'Error: ' + matesError"></div>
-                <div class="mates-list">
-                  <template x-if="!matesLoading && matesList.length === 0">
-                    <div class="mates-empty">No mates yet — click New Mate to create one.</div>
+                <div class="cfg-err-msg" x-show="agentBotsError && !agentBotsLoading" x-text="'Error: ' + agentBotsError"></div>
+                <div class="agent-bots-list">
+                  <template x-if="!agentBotsLoading && agentBotsList.length === 0">
+                    <div class="agent-bots-empty">No agent bots yet — click New Agent Bot to create one.</div>
                   </template>
-                  <template x-for="(m, mi) in matesList" :key="m.id">
-                    <div class="mate-card" :class="m.enabled ? '' : 'disabled-card'">
-                      <div class="mate-avatar"
+                  <template x-for="(m, mi) in agentBotsList" :key="m.id">
+                    <div class="agent-bot-card" :class="m.enabled ? '' : 'disabled-card'">
+                      <div class="agent-bot-avatar"
                            :style="m.color ? 'background:' + m.color : ''">
                         <span x-text="m.name ? m.name.charAt(0).toUpperCase() : '?'"></span>
                       </div>
-                      <div class="mate-card-body">
-                        <div class="mate-card-header">
-                          <span class="mate-card-name" x-text="m.name"></span>
-                          <div class="mate-card-actions">
-                            <button class="mate-act-btn" @click.stop="moveMate(mi, -1)" :disabled="mi === 0" type="button" title="Move up">↑</button>
-                            <button class="mate-act-btn" @click.stop="moveMate(mi, 1)" :disabled="mi === matesList.length - 1" type="button" title="Move down">↓</button>
-                            <button class="mate-act-btn" @click.stop="openMateEdit(m.id)" type="button">Edit</button>
-                            <button class="mate-act-btn del" @click.stop="deleteMate(m.id)" type="button">Delete</button>
+                      <div class="agent-bot-card-body">
+                        <div class="agent-bot-card-header">
+                          <span class="agent-bot-card-name" x-text="m.name"></span>
+                          <div class="agent-bot-card-actions">
+                            <button class="agent-bot-act-btn" @click.stop="moveAgentBot(mi, -1)" :disabled="mi === 0" type="button" title="Move up">↑</button>
+                            <button class="agent-bot-act-btn" @click.stop="moveAgentBot(mi, 1)" :disabled="mi === agentBotsList.length - 1" type="button" title="Move down">↓</button>
+                            <button class="agent-bot-act-btn" @click.stop="openAgentBotEdit(m.id)" type="button">Edit</button>
+                            <button class="agent-bot-act-btn del" @click.stop="deleteAgentBot(m.id)" type="button">Delete</button>
                           </div>
                         </div>
-                        <p class="mate-card-desc" x-show="m.description" x-text="m.description"></p>
-                        <div class="mate-card-tags">
-                          <span class="mate-badge" x-text="m.agentId || '—'"></span>
+                        <p class="agent-bot-card-desc" x-show="m.description" x-text="m.description"></p>
+                        <div class="agent-bot-card-tags">
+                          <span class="agent-bot-badge" x-text="m.agentId || '—'"></span>
                           <template x-if="m.model">
-                            <span class="mate-badge" x-text="m.model"></span>
+                            <span class="agent-bot-badge" x-text="m.model"></span>
                           </template>
                           <template x-if="m.triggerCount > 0">
-                            <span class="mate-badge trigger"
+                            <span class="agent-bot-badge trigger"
                                   x-text="m.triggerCount + (m.triggerCount === 1 ? ' trigger' : ' triggers')"></span>
                           </template>
                         </div>
@@ -1232,169 +1232,169 @@ func settingsModalHTML() string {
             </template>
 
 
-            <template x-if="mateFormMode">
-              <div class="mate-form-wrap">
-                <div class="mate-form-header">
-` + mateBackBtnHTML("mateFormMode = null", "Mate Bots") + `
+            <template x-if="agentBotFormMode">
+              <div class="agent-bot-form-wrap">
+                <div class="agent-bot-form-header">
+` + agentBotBackBtnHTML("agentBotFormMode = null", "Agent Bots") + `
                 </div>
-                <div class="mate-form">
-                  <section class="mate-form-section">
-                    <h3 class="mate-form-section-title">Profile</h3>
-                    <div class="mate-form-row">
+                <div class="agent-bot-form">
+                  <section class="agent-bot-form-section">
+                    <h3 class="agent-bot-form-section-title">Profile</h3>
+                    <div class="agent-bot-form-row">
                       <div>
-                        <label class="mate-form-label">Name</label>
-                        <input class="mate-form-input" type="text" x-model="mateDraft.name" placeholder="Quote Extractor" autofocus>
+                        <label class="agent-bot-form-label">Name</label>
+                        <input class="agent-bot-form-input" type="text" x-model="agentBotDraft.name" placeholder="Quote Extractor" autofocus>
                       </div>
                       <div style="flex:0 0 auto;min-width:90px">
-                        <label class="mate-form-label">Enabled</label>
+                        <label class="agent-bot-form-label">Enabled</label>
                         <label class="cfg-toggle">
-                          <input type="checkbox" :checked="mateDraft.enabled" @change="mateDraft.enabled = $event.target.checked">
+                          <input type="checkbox" :checked="agentBotDraft.enabled" @change="agentBotDraft.enabled = $event.target.checked">
                           <span class="cfg-toggle-pill"></span>
                         </label>
                       </div>
                     </div>
                     <div>
-                      <label class="mate-form-label">Color</label>
-                      <div class="mate-color-palette">
-                        <template x-for="c in mateColors" :key="c">
-                          <button type="button" class="mate-color-swatch"
-                                  :class="mateDraft.color === c ? 'active' : ''"
+                      <label class="agent-bot-form-label">Color</label>
+                      <div class="agent-bot-color-palette">
+                        <template x-for="c in agentBotColors" :key="c">
+                          <button type="button" class="agent-bot-color-swatch"
+                                  :class="agentBotDraft.color === c ? 'active' : ''"
                                   :style="'background:' + c"
-                                  @click="mateDraft = Object.assign({}, mateDraft, {color: c})"
+                                  @click="agentBotDraft = Object.assign({}, agentBotDraft, {color: c})"
                                   :title="c"></button>
                         </template>
                       </div>
                     </div>
                     <div>
-                      <label class="mate-form-label">Description <span style="font-weight:400;text-transform:none;letter-spacing:0;">(optional)</span></label>
-                      <input class="mate-form-input" type="text" x-model="mateDraft.description" placeholder="Brief description of what this mate does">
+                      <label class="agent-bot-form-label">Description <span style="font-weight:400;text-transform:none;letter-spacing:0;">(optional)</span></label>
+                      <input class="agent-bot-form-input" type="text" x-model="agentBotDraft.description" placeholder="Brief description of what this agent bot does">
                     </div>
                   </section>
 
-                  <section class="mate-form-section">
-                    <h3 class="mate-form-section-title">Agent</h3>
-                    <div class="mate-form-row">
+                  <section class="agent-bot-form-section">
+                    <h3 class="agent-bot-form-section-title">Agent</h3>
+                    <div class="agent-bot-form-row">
                       <div>
-                        <label class="mate-form-label">Agent</label>
+                        <label class="agent-bot-form-label">Agent</label>
 ` + cselectHTML(
-		`(agents.find(function(a){return a.id===mateDraft.agentId&&a.available;}) || {name: 'Select agent'}).name`,
-		`<template x-for="a in agents.filter(function(a){return a.available;})" :key="a.id"><button type="button" class="cselect-option" :class="mateDraft.agentId===a.id?'sel':''" @click="mateDraft.agentId=a.id; onMateAgentChange(); csOpen=false"><span class="cselect-option-dot"></span><span x-text="a.name"></span></button></template>`,
+		`(agents.find(function(a){return a.id===agentBotDraft.agentId&&a.available;}) || {name: 'Select agent'}).name`,
+		`<template x-for="a in agents.filter(function(a){return a.available;})" :key="a.id"><button type="button" class="cselect-option" :class="agentBotDraft.agentId===a.id?'sel':''" @click="agentBotDraft.agentId=a.id; onAgentBotAgentChange(); csOpen=false"><span class="cselect-option-dot"></span><span x-text="a.name"></span></button></template>`,
 	) + `
                       </div>
                       <div>
-                        <label class="mate-form-label">Model</label>
+                        <label class="agent-bot-form-label">Model</label>
 ` + cselectHTML(
-		`mateDraft.model || 'Default'`,
-		`<button type="button" class="cselect-option" :class="mateDraft.model===''?'sel':''" @click="mateDraft.model=''; csOpen=false"><span class="cselect-option-dot"></span><span>Default</span></button>`+
-			`<template x-for="m in mateModelsForAgent(mateDraft.agentId)" :key="m.id"><button type="button" class="cselect-option" :class="mateDraft.model===m.id?'sel':''" @click="mateDraft.model=m.id; csOpen=false"><span class="cselect-option-dot"></span><span :title="(m.label && m.label !== m.id) ? m.label : ''" x-text="m.id"></span></button></template>`,
+		`agentBotDraft.model || 'Default'`,
+		`<button type="button" class="cselect-option" :class="agentBotDraft.model===''?'sel':''" @click="agentBotDraft.model=''; csOpen=false"><span class="cselect-option-dot"></span><span>Default</span></button>`+
+			`<template x-for="m in agentBotModelsForAgent(agentBotDraft.agentId)" :key="m.id"><button type="button" class="cselect-option" :class="agentBotDraft.model===m.id?'sel':''" @click="agentBotDraft.model=m.id; csOpen=false"><span class="cselect-option-dot"></span><span :title="(m.label && m.label !== m.id) ? m.label : ''" x-text="m.id"></span></button></template>`,
 	) + `
                       </div>
                     </div>
                     <div style="display:none">
-                      <label class="mate-form-label">Working Directory <span style="font-weight:400;text-transform:none;letter-spacing:0;">(vault root if blank)</span></label>
-                      <input class="mate-form-input" type="text" x-model="mateDraft.cwd" placeholder="/absolute/path or leave blank">
+                      <label class="agent-bot-form-label">Working Directory <span style="font-weight:400;text-transform:none;letter-spacing:0;">(vault root if blank)</span></label>
+                      <input class="agent-bot-form-input" type="text" x-model="agentBotDraft.cwd" placeholder="/absolute/path or leave blank">
                     </div>
                     <div>
-                      <label class="mate-form-label">System Prompt</label>
-                      <textarea class="mate-form-textarea" x-model="mateDraft.systemPrompt" rows="1"
+                      <label class="agent-bot-form-label">System Prompt</label>
+                      <textarea class="agent-bot-form-textarea" x-model="agentBotDraft.systemPrompt" rows="1"
                                 placeholder="Instructions prepended to every message…"></textarea>
                     </div>
                   </section>
 
-                  <section class="mate-form-section mate-form-section-triggers">
-                    <div class="mate-trigger-section-top">
-                      <div class="mate-trigger-section-hdr">
-                        <h3 class="mate-form-section-title">Triggers</h3>
+                  <section class="agent-bot-form-section agent-bot-form-section-triggers">
+                    <div class="agent-bot-trigger-section-top">
+                      <div class="agent-bot-trigger-section-hdr">
+                        <h3 class="agent-bot-form-section-title">Triggers</h3>
                       </div>
-                      <p class="mate-section-desc">Automatically run this mate on vault events or on a schedule. Each trigger sends a prompt template to the agent.</p>
+                      <p class="agent-bot-section-desc">Automatically run this agent bot on vault events or on a schedule. Each trigger sends a prompt template to the agent.</p>
                     </div>
-                    <div class="mate-trigger-list">
-                      <template x-for="(t, ti) in mateTriggers" :key="ti">
-                        <div class="mate-trigger-card">
-                          <div class="mate-trigger-hdr">
-                            <span class="mate-trigger-label">Trigger <span x-text="ti+1"></span></span>
-                            <div class="mate-trigger-hdr-actions">
-                              <button class="mate-trigger-del" type="button" @click="removeMateTrigger(ti)">Remove</button>
+                    <div class="agent-bot-trigger-list">
+                      <template x-for="(t, ti) in agentBotTriggers" :key="ti">
+                        <div class="agent-bot-trigger-card">
+                          <div class="agent-bot-trigger-hdr">
+                            <span class="agent-bot-trigger-label">Trigger <span x-text="ti+1"></span></span>
+                            <div class="agent-bot-trigger-hdr-actions">
+                              <button class="agent-bot-trigger-del" type="button" @click="removeAgentBotTrigger(ti)">Remove</button>
                             </div>
                           </div>
-                          <div class="mate-trigger-body">
-                            <div class="mate-trigger-block mate-trigger-events">
-                              <div class="mate-block-label">
-                                <span class="mate-block-title">Event</span>
-                                <span class="mate-block-hint" x-text="isScheduledTrigger(t) ? 'Scheduled triggers run on a timer — choose one schedule below' : (isWechatTrigger(t) ? 'WeChat DM trigger — use Content and WechatUserID in the prompt' : (isCompileTrigger(t) ? 'Fires when the user manually triggers compilation via the API — Path carries the note' : (isAgentRunCompletedTrigger(t) ? 'Fires when another mate agent run succeeds — filter by source mate names below' : 'Vault event that activates this trigger')))"></span>
+                          <div class="agent-bot-trigger-body">
+                            <div class="agent-bot-trigger-block agent-bot-trigger-events">
+                              <div class="agent-bot-block-label">
+                                <span class="agent-bot-block-title">Event</span>
+                                <span class="agent-bot-block-hint" x-text="isScheduledTrigger(t) ? 'Scheduled triggers run on a timer — choose one schedule below' : (isWechatTrigger(t) ? 'WeChat DM trigger — use Content and WechatUserID in the prompt' : (isCompileTrigger(t) ? 'Fires when the user manually triggers compilation via the API — Path carries the note' : (isAgentRunCompletedTrigger(t) ? 'Fires when another agent bot\'s run succeeds — filter by source agent bot names below' : 'Vault event that activates this trigger')))"></span>
                               </div>
 ` + cselectHTML(
-		`(mateEventDefs.find(function(d){return d.type===(t.eventTypes[0]||'');}) || {label: 'Select event…'}).label`,
-		`<template x-for="def in mateEventDefs" :key="def.type"><button type="button" class="cselect-option" :class="(t.eventTypes[0]||'')===def.type ? 'sel' : ''" :title="def.description" @click="setMateET(t, def.type); csOpen=false"><span class="cselect-option-dot"></span><span x-text="def.label"></span></button></template>`,
+		`(agentBotEventDefs.find(function(d){return d.type===(t.eventTypes[0]||'');}) || {label: 'Select event…'}).label`,
+		`<template x-for="def in agentBotEventDefs" :key="def.type"><button type="button" class="cselect-option" :class="(t.eventTypes[0]||'')===def.type ? 'sel' : ''" :title="def.description" @click="setAgentBotET(t, def.type); csOpen=false"><span class="cselect-option-dot"></span><span x-text="def.label"></span></button></template>`,
 	) + `
                             </div>
                             <template x-if="isScheduledTrigger(t)">
-                              <div class="mate-trigger-block mate-trigger-schedule">
-                                <div class="mate-block-label">
-                                  <span class="mate-block-title">Schedule</span>
-                                  <span class="mate-block-hint">Choose how this trigger repeats, then pick a preset below.</span>
+                              <div class="agent-bot-trigger-block agent-bot-trigger-schedule">
+                                <div class="agent-bot-block-label">
+                                  <span class="agent-bot-block-title">Schedule</span>
+                                  <span class="agent-bot-block-hint">Choose how this trigger repeats, then pick a preset below.</span>
                                 </div>
-                                <div class="seg mate-schedule-kind-seg">
+                                <div class="seg agent-bot-schedule-kind-seg">
                                   <button type="button" class="seg-btn" :class="{active: scheduleKindOf(t)==='every'}" @click="setScheduleKind(t, 'every')">Every</button>
                                   <button type="button" class="seg-btn" :class="{active: scheduleKindOf(t)==='daily'}" @click="setScheduleKind(t, 'daily')">Daily</button>
                                   <button type="button" class="seg-btn" :class="{active: scheduleKindOf(t)==='weekly'}" @click="setScheduleKind(t, 'weekly')">Weekly</button>
                                 </div>
 
                                 <template x-if="scheduleKindOf(t) === 'every'">
-                                  <div class="mate-schedule-kind-body">
-                                    <div class="mate-schedule-presets">
-                                      <template x-for="p in mateIntervalPresets" :key="p.value">
-                                        <button type="button" class="mate-schedule-preset"
+                                  <div class="agent-bot-schedule-kind-body">
+                                    <div class="agent-bot-schedule-presets">
+                                      <template x-for="p in agentBotIntervalPresets" :key="p.value">
+                                        <button type="button" class="agent-bot-schedule-preset"
                                                 :class="(t.schedule || '') === p.value ? 'active' : ''"
                                                 @click="t.schedule = p.value"
                                                 x-text="p.label"></button>
                                       </template>
                                     </div>
-                                    <span class="mate-block-hint">Minimum interval: 15 minutes. For a different interval, edit it directly in Raw below.</span>
+                                    <span class="agent-bot-block-hint">Minimum interval: 15 minutes. For a different interval, edit it directly in Raw below.</span>
                                   </div>
                                 </template>
 
                                 <template x-if="scheduleKindOf(t) === 'daily'">
-                                  <div class="mate-schedule-kind-body">
-                                    <div class="mate-schedule-presets">
-                                      <template x-for="p in mateDailyPresets" :key="p.value">
-                                        <button type="button" class="mate-schedule-preset"
+                                  <div class="agent-bot-schedule-kind-body">
+                                    <div class="agent-bot-schedule-presets">
+                                      <template x-for="p in agentBotDailyPresets" :key="p.value">
+                                        <button type="button" class="agent-bot-schedule-preset"
                                                 :class="(t.schedule || '') === p.value ? 'active' : ''"
                                                 @click="t.schedule = p.value"
                                                 x-text="p.label"></button>
                                       </template>
                                     </div>
-                                    <span class="mate-block-hint">Server local time. For a different time, edit it directly in Raw below.</span>
+                                    <span class="agent-bot-block-hint">Server local time. For a different time, edit it directly in Raw below.</span>
                                   </div>
                                 </template>
 
                                 <template x-if="scheduleKindOf(t) === 'weekly'">
-                                  <div class="mate-schedule-kind-body">
-                                    <label class="mate-schedule-custom-label">Days</label>
-                                    <div class="mate-schedule-presets mate-weekday-toggles">
-                                      <template x-for="d in mateWeekdayDefs" :key="d.abbr">
-                                        <button type="button" class="mate-schedule-preset"
+                                  <div class="agent-bot-schedule-kind-body">
+                                    <label class="agent-bot-schedule-custom-label">Days</label>
+                                    <div class="agent-bot-schedule-presets agent-bot-weekday-toggles">
+                                      <template x-for="d in agentBotWeekdayDefs" :key="d.abbr">
+                                        <button type="button" class="agent-bot-schedule-preset"
                                                 :class="weeklyDaysOf(t).indexOf(d.abbr) >= 0 ? 'active' : ''"
                                                 @click="toggleWeeklyDay(t, d.abbr)"
                                                 x-text="d.label"></button>
                                       </template>
                                     </div>
-                                    <span class="mate-block-hint">Server local time, defaults to 09:00. For a different time, edit it directly in Raw below.</span>
+                                    <span class="agent-bot-block-hint">Server local time, defaults to 09:00. For a different time, edit it directly in Raw below.</span>
                                   </div>
                                 </template>
 
-                                <label class="mate-schedule-custom-label">Raw</label>
-                                <input class="mate-form-input" type="text" x-model="t.schedule"
+                                <label class="agent-bot-schedule-custom-label">Raw</label>
+                                <input class="agent-bot-form-input" type="text" x-model="t.schedule"
                                        placeholder="every 1h · daily 09:00 · weekly mon,wed 09:00">
                               </div>
                             </template>
                             <template x-if="!isScheduledTrigger(t) && !isWechatTrigger(t) && !isAgentRunCompletedTrigger(t)">
-                              <div class="mate-trigger-block mate-trigger-paths">
-                                <div class="mate-block-label">
-                                  <span class="mate-block-title">Path Prefixes <span style="font-weight:400;opacity:0.6;">(optional)</span></span>
-                                  <span class="mate-block-hint">Only fire when the event path starts with one of these prefixes. Leave empty to match all paths. One prefix per line, e.g. <code style="font-size:var(--text-2xs);padding:0 3px;background:var(--code-bg);border-radius:var(--r-xs);">/journal/</code></span>
+                              <div class="agent-bot-trigger-block agent-bot-trigger-paths">
+                                <div class="agent-bot-block-label">
+                                  <span class="agent-bot-block-title">Path Prefixes <span style="font-weight:400;opacity:0.6;">(optional)</span></span>
+                                  <span class="agent-bot-block-hint">Only fire when the event path starts with one of these prefixes. Leave empty to match all paths. One prefix per line, e.g. <code style="font-size:var(--text-2xs);padding:0 3px;background:var(--code-bg);border-radius:var(--r-xs);">/journal/</code></span>
                                 </div>
-                                <textarea class="mate-form-textarea"
+                                <textarea class="agent-bot-form-textarea"
                                           rows="2"
                                           :value="(t.pathPrefixes || []).join('\n')"
                                           @change="t.pathPrefixes = $event.target.value.split('\n').map(function(s){return s.trim();}).filter(Boolean)"
@@ -1402,62 +1402,62 @@ func settingsModalHTML() string {
                               </div>
                             </template>
                             <template x-if="isAgentRunCompletedTrigger(t)">
-                              <div class="mate-trigger-block mate-trigger-paths">
-                                <div class="mate-block-label">
-                                  <span class="mate-block-title">Source Mates <span style="font-weight:400;opacity:0.6;">(optional)</span></span>
-                                  <span class="mate-block-hint">Only fire when the run was completed by one of these mates. Leave empty to fire on any mate. One mate name per line.</span>
+                              <div class="agent-bot-trigger-block agent-bot-trigger-paths">
+                                <div class="agent-bot-block-label">
+                                  <span class="agent-bot-block-title">Source Agent Bots <span style="font-weight:400;opacity:0.6;">(optional)</span></span>
+                                  <span class="agent-bot-block-hint">Only fire when the run was completed by one of these agent bots. Leave empty to fire on any agent bot. One agent bot name per line.</span>
                                 </div>
-                                <textarea class="mate-form-textarea"
+                                <textarea class="agent-bot-form-textarea"
                                           rows="2"
                                           :value="(t.pathPrefixes || []).join('\n')"
                                           @change="t.pathPrefixes = $event.target.value.split('\n').map(function(s){return s.trim();}).filter(Boolean)"
                                           placeholder="Summarizer&#10;Compiler"></textarea>
                               </div>
                             </template>
-                            <div class="mate-trigger-block mate-trigger-prompt">
-                              <div class="mate-block-label">
-                                <span class="mate-block-title">Prompt template</span>
-                                <span class="mate-block-hint">Message sent to the agent when this trigger fires. Click a variable below to insert at cursor.</span>
+                            <div class="agent-bot-trigger-block agent-bot-trigger-prompt">
+                              <div class="agent-bot-block-label">
+                                <span class="agent-bot-block-title">Prompt template</span>
+                                <span class="agent-bot-block-hint">Message sent to the agent when this trigger fires. Click a variable below to insert at cursor.</span>
                               </div>
-                              <div class="mate-var-panel">
-                                <span class="mate-var-panel-label">Variables</span>
-                                <div class="mate-var-chips">
-                                  <template x-for="v in matePromptVarsForTrigger(t)" :key="v.token">
-                                    <button type="button" class="mate-var-chip" :title="v.desc"
-                                            @click="insertMateVar(ti, v.token, $event)">
+                              <div class="agent-bot-var-panel">
+                                <span class="agent-bot-var-panel-label">Variables</span>
+                                <div class="agent-bot-var-chips">
+                                  <template x-for="v in agentBotPromptVarsForTrigger(t)" :key="v.token">
+                                    <button type="button" class="agent-bot-var-chip" :title="v.desc"
+                                            @click="insertAgentBotVar(ti, v.token, $event)">
                                       <code x-text="v.token"></code>
                                     </button>
                                   </template>
                                 </div>
                               </div>
-                              <textarea class="mate-form-textarea mate-prompt-textarea" x-model="t.prompt" rows="2"
-                                        @focus="mateActivePromptIdx = ti"
-                                        :placeholder="matePromptPlaceholder(t)"></textarea>
+                              <textarea class="agent-bot-form-textarea agent-bot-prompt-textarea" x-model="t.prompt" rows="2"
+                                        @focus="agentBotActivePromptIdx = ti"
+                                        :placeholder="agentBotPromptPlaceholder(t)"></textarea>
                             </div>
                           </div>
                         </div>
                       </template>
                     </div>
-                    <button class="mate-trigger-add" type="button" @click="addMateTrigger()" style="margin-top:0.25rem;">+ Add trigger</button>
+                    <button class="agent-bot-trigger-add" type="button" @click="addAgentBotTrigger()" style="margin-top:0.25rem;">+ Add trigger</button>
                   </section>
 
-                  <div class="mate-form-footer">
-                    <button class="mate-save-btn" type="button"
-                            :disabled="!mateDraft.name.trim() || mateSaving"
-                            @click="saveMate()"
-                            x-text="mateSaving ? 'Saving…' : 'Save'"></button>
-                    <button class="mate-cancel-btn" type="button" @click="mateFormMode = null">Cancel</button>
-                    <span class="mate-form-err" x-text="mateSaveError"></span>
+                  <div class="agent-bot-form-footer">
+                    <button class="agent-bot-save-btn" type="button"
+                            :disabled="!agentBotDraft.name.trim() || agentBotSaving"
+                            @click="saveAgentBot()"
+                            x-text="agentBotSaving ? 'Saving…' : 'Save'"></button>
+                    <button class="agent-bot-cancel-btn" type="button" @click="agentBotFormMode = null">Cancel</button>
+                    <span class="agent-bot-form-err" x-text="agentBotSaveError"></span>
                   </div>
                 </div>
               </div>
             </template>
 
-          </div><!-- .mates-pane -->
+          </div><!-- .agent-bots-pane -->
 
           <!-- Skills tab -->
           <div class="skills-pane" x-show="tab === 'skills'">
-            <div class="mates-toolbar">
+            <div class="agent-bots-toolbar">
 ` + toolbarRefreshBtnHTML("skillsLoading", "loadSkills()", "Loading…") + `
             </div>
             <p class="skills-desc">
@@ -1615,50 +1615,50 @@ const settingsCtrlJS = `
       agentsCachedAt: 0,
       agentCopied: '',
 
-      matesList: [],
-      matesLoading: false,
-      matesError: '',
-      mateFormMode: null,
-      matesSubPage: null,
-      mateEditId: '',
-      mateDraft: {},
-      mateTriggers: [],
-      mateActivePromptIdx: -1,
-      mateSaving: false,
-      mateSaveError: '',
-      mateEventDefs: [],
-      matePromptVarsVault: [
+      agentBotsList: [],
+      agentBotsLoading: false,
+      agentBotsError: '',
+      agentBotFormMode: null,
+      agentBotsSubPage: null,
+      agentBotEditId: '',
+      agentBotDraft: {},
+      agentBotTriggers: [],
+      agentBotActivePromptIdx: -1,
+      agentBotSaving: false,
+      agentBotSaveError: '',
+      agentBotEventDefs: [],
+      agentBotPromptVarsVault: [
         { token: '{Path}', desc: 'Full vault path of the affected note' },
         { token: '{Name}', desc: 'Filename without extension' },
         { token: '{Content}', desc: 'Appended short-note text (short_note_created only)' },
       ],
-      matePromptVarsCompile: [
+      agentBotPromptVarsCompile: [
         { token: '{Path}', desc: 'Vault path of the note to compile' },
         { token: '{Name}', desc: 'Filename without extension' },
       ],
-      matePromptVarsWechat: [
+      agentBotPromptVarsWechat: [
         { token: '{Content}', desc: 'Incoming WeChat DM text' },
         { token: '{WechatUserID}', desc: 'Sender WeChat user ID' },
       ],
-      matePromptVarsScheduled: [
+      agentBotPromptVarsScheduled: [
         { token: '{Now}', desc: 'Trigger time (RFC3339)' },
         { token: '{Date}', desc: 'Date YYYY-MM-DD' },
         { token: '{Time}', desc: 'Time HH:MM' },
       ],
-      matePromptVarsAgentRunCompleted: [
-        { token: '{Name}', desc: 'Name of the mate whose run just succeeded' },
+      agentBotPromptVarsAgentRunCompleted: [
+        { token: '{Name}', desc: 'Name of the agent bot whose run just succeeded' },
         { token: '{Content}', desc: 'Last assistant message from the completed run' },
         { token: '{Now}', desc: 'Trigger time (RFC3339)' },
       ],
-      mateIntervalPresets: [
+      agentBotIntervalPresets: [
         { label: 'Every hour', value: 'every 1h' },
         { label: 'Every 6 hours', value: 'every 6h' },
       ],
-      mateDailyPresets: [
+      agentBotDailyPresets: [
         { label: 'Daily 09:00', value: 'daily 09:00' },
         { label: 'Daily 21:00', value: 'daily 21:00' },
       ],
-      mateWeekdayDefs: [
+      agentBotWeekdayDefs: [
         { abbr: 'mon', label: 'Mon' },
         { abbr: 'tue', label: 'Tue' },
         { abbr: 'wed', label: 'Wed' },
@@ -1667,7 +1667,7 @@ const settingsCtrlJS = `
         { abbr: 'sat', label: 'Sat' },
         { abbr: 'sun', label: 'Sun' },
       ],
-      mateColors: ['var(--p0)','var(--p1)','var(--p2)','var(--p3)'],
+      agentBotColors: ['var(--p0)','var(--p1)','var(--p2)','var(--p3)'],
 
       skillsList: [],
       skillsLoading: false,
@@ -1748,8 +1748,8 @@ const settingsCtrlJS = `
           'plugins.search': 'Indexing and search quality.',
           'plugins.git_sync': 'Automatic git push/pull for the vault.',
           'plugins.compile': 'AI knowledge compilation and related options.',
-          'plugins.wechat': 'WeChat iLink bridge — poll DMs and emit wechat_message mate events.',
-          'plugins.discord': 'Discord Bot bridge — receive DMs and emit discord_message mate events.',
+          'plugins.wechat': 'WeChat iLink bridge — poll DMs and emit wechat_message agent bot events.',
+          'plugins.discord': 'Discord Bot bridge — receive DMs and emit discord_message agent bot events.',
           'server.listen': 'HTTP listen address and port.',
           'server': 'HTTP listen address and port.',
         };
@@ -1831,11 +1831,11 @@ const settingsCtrlJS = `
             }
             this.$watch('tab', val => {
               if (val === 'server') { this.loadServerStatus(); this.loadConfig(); }
-              if (val === 'mates') {
-                this.matesSubPage = null;
-                this.loadMates();
+              if (val === 'agent-bots') {
+                this.agentBotsSubPage = null;
+                this.loadAgentBots();
                 if (!this.agentsLoaded) this.loadAgents();
-                if (!this.mateEventDefs.length) this.loadMateEvents();
+                if (!this.agentBotEventDefs.length) this.loadAgentBotEvents();
               }
               if (val === 'skills') this.loadSkills();
               if (val === 'agents') { if (!this.agentsLoaded) this.loadAgents(); }
@@ -1843,10 +1843,10 @@ const settingsCtrlJS = `
             });
           }
           await Promise.all([this.loadConfig(), this.loadServerStatus()]);
-          if (this.tab === 'mates') {
-            this.loadMates();
+          if (this.tab === 'agent-bots') {
+            this.loadAgentBots();
             if (!this.agentsLoaded) this.loadAgents();
-            if (!this.mateEventDefs.length) this.loadMateEvents();
+            if (!this.agentBotEventDefs.length) this.loadAgentBotEvents();
           }
           if (this.tab === 'skills') this.loadSkills();
           if (this.tab === 'agents') { if (!this.agentsLoaded) this.loadAgents(); }
@@ -1872,7 +1872,7 @@ const settingsCtrlJS = `
       },
 
       async loadAgents(force = false) {
-        // Reuse the in-flight promise so a concurrent openMateEdit call doesn't
+        // Reuse the in-flight promise so a concurrent openAgentBotEdit call doesn't
         // issue a second request while the first is still pending.
         if (!force && this._agentsLoadPromise) return this._agentsLoadPromise;
         this.agentsLoading = true;
@@ -1907,38 +1907,38 @@ const settingsCtrlJS = `
         setTimeout(() => { if (this.agentCopied === ag.id) this.agentCopied = ''; }, 1500);
       },
 
-      async loadMates() {
-        this.matesLoading = true;
-        this.matesError = '';
+      async loadAgentBots() {
+        this.agentBotsLoading = true;
+        this.agentBotsError = '';
         try {
           const r = await fetch('/api/mates');
           if (!r.ok) throw new Error('HTTP ' + r.status);
           const d = await r.json();
-          this.matesList = d.mates || [];
-        } catch(e) { this.matesError = e.message; }
-        finally { this.matesLoading = false; }
+          this.agentBotsList = d.mates || [];
+        } catch(e) { this.agentBotsError = e.message; }
+        finally { this.agentBotsLoading = false; }
       },
 
-      async loadMateEvents() {
+      async loadAgentBotEvents() {
         try {
           const r = await fetch('/api/mate-events');
           if (!r.ok) return;
           const d = await r.json();
-          this.mateEventDefs = d.events || [];
+          this.agentBotEventDefs = d.events || [];
         } catch(_) {}
       },
 
-      newMate() {
+      newAgentBot() {
         const first = this.agents.find(function(a){ return a.available; });
         const firstModel = (first && first.models && first.models.length) ? first.models[0].id : '';
-        this.mateDraft = { name: '', description: '', agentId: first ? first.id : '', model: firstModel, color: this.mateColors[0], cwd: '', systemPrompt: '', enabled: true };
-        this.mateTriggers = [];
-        this.mateEditId = '';
-        this.mateSaveError = '';
-        this.mateFormMode = 'create';
+        this.agentBotDraft = { name: '', description: '', agentId: first ? first.id : '', model: firstModel, color: this.agentBotColors[0], cwd: '', systemPrompt: '', enabled: true };
+        this.agentBotTriggers = [];
+        this.agentBotEditId = '';
+        this.agentBotSaveError = '';
+        this.agentBotFormMode = 'create';
       },
 
-      async openMateEdit(id) {
+      async openAgentBotEdit(id) {
         try {
           const [r] = await Promise.all([
             fetch('/api/mates/' + id),
@@ -1947,14 +1947,14 @@ const settingsCtrlJS = `
           if (!r.ok) throw new Error('HTTP ' + r.status);
           const d = await r.json();
           const m = d.mate;
-          const validColor = this.mateColors.includes(m.color) ? m.color : this.mateColors[0];
+          const validColor = this.agentBotColors.includes(m.color) ? m.color : this.agentBotColors[0];
           const savedModel = m.model || '';
-          const knownModels = this.mateModelsForAgent(m.agentId);
+          const knownModels = this.agentBotModelsForAgent(m.agentId);
           const modelValid = !savedModel || savedModel === 'default' ||
             knownModels.length === 0 ||
             knownModels.some(function(x) { return x.id === savedModel; });
-          this.mateDraft = { name: m.name, description: m.description || '', agentId: m.agentId, model: modelValid ? savedModel : '', color: validColor, cwd: m.cwd || '', systemPrompt: m.systemPrompt || '', enabled: m.enabled };
-          this.mateTriggers = (m.triggers || []).map(function(t) {
+          this.agentBotDraft = { name: m.name, description: m.description || '', agentId: m.agentId, model: modelValid ? savedModel : '', color: validColor, cwd: m.cwd || '', systemPrompt: m.systemPrompt || '', enabled: m.enabled };
+          this.agentBotTriggers = (m.triggers || []).map(function(t) {
             return Object.assign({}, t, {
               eventTypes: (t.eventTypes || []).map(function(et) {
                 return et === 'weixin_message' ? 'wechat_message' : et;
@@ -1963,92 +1963,92 @@ const settingsCtrlJS = `
               pathPrefixes: t.pathPrefixes || [],
             });
           });
-          this.mateEditId = m.id;
-          this.mateSaveError = '';
-          this.mateFormMode = 'edit';
+          this.agentBotEditId = m.id;
+          this.agentBotSaveError = '';
+          this.agentBotFormMode = 'edit';
         } catch(e) { window.showError('Load failed: ' + e.message, 'Load failed'); }
       },
 
-      mateModelsForAgent(agentId) {
+      agentBotModelsForAgent(agentId) {
         const a = this.agents.find(function(x) { return x.id === agentId; });
         return (a && a.models) ? a.models : [];
       },
 
-      onMateAgentChange() {
-        const models = this.mateModelsForAgent(this.mateDraft.agentId);
-        this.mateDraft.model = models.length ? models[0].id : '';
+      onAgentBotAgentChange() {
+        const models = this.agentBotModelsForAgent(this.agentBotDraft.agentId);
+        this.agentBotDraft.model = models.length ? models[0].id : '';
       },
 
-      async saveMate() {
-        if (this.mateSaving || !this.mateDraft.name.trim()) return;
-        this.mateSaving = true;
-        this.mateSaveError = '';
+      async saveAgentBot() {
+        if (this.agentBotSaving || !this.agentBotDraft.name.trim()) return;
+        this.agentBotSaving = true;
+        this.agentBotSaveError = '';
         try {
-          const payload = Object.assign({}, this.mateDraft, { triggers: this.mateTriggers });
-          const url = this.mateFormMode === 'create' ? '/api/mates' : '/api/mates/' + this.mateEditId;
-          const method = this.mateFormMode === 'create' ? 'POST' : 'PUT';
+          const payload = Object.assign({}, this.agentBotDraft, { triggers: this.agentBotTriggers });
+          const url = this.agentBotFormMode === 'create' ? '/api/mates' : '/api/mates/' + this.agentBotEditId;
+          const method = this.agentBotFormMode === 'create' ? 'POST' : 'PUT';
           const r = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-          if (!r.ok) { this.mateSaveError = await r.text(); return; }
+          if (!r.ok) { this.agentBotSaveError = await r.text(); return; }
           const d = await r.json();
           const saved = Object.assign({}, d.mate, { triggerCount: (d.mate.triggers || []).length });
-          if (this.mateFormMode === 'create') {
-            this.matesList.push(saved);
+          if (this.agentBotFormMode === 'create') {
+            this.agentBotsList.push(saved);
           } else {
-            this.matesList = this.matesList.map(function(m) { return m.id === saved.id ? saved : m; });
+            this.agentBotsList = this.agentBotsList.map(function(m) { return m.id === saved.id ? saved : m; });
           }
-          this.mateFormMode = null;
-        } catch(e) { this.mateSaveError = e.message; }
-        finally { this.mateSaving = false; }
+          this.agentBotFormMode = null;
+        } catch(e) { this.agentBotSaveError = e.message; }
+        finally { this.agentBotSaving = false; }
       },
 
-      async deleteMate(id) {
+      async deleteAgentBot(id) {
         const ok = (typeof window.showConfirm === 'function')
-          ? await window.showConfirm({ title: 'Delete mate', message: 'This mate and all its data will be permanently deleted.', confirmLabel: 'Delete', danger: true })
-          : window.confirm('Delete this mate? This cannot be undone.');
+          ? await window.showConfirm({ title: 'Delete agent bot', message: 'This agent bot and all its data will be permanently deleted.', confirmLabel: 'Delete', danger: true })
+          : window.confirm('Delete this agent bot? This cannot be undone.');
         if (!ok) return;
         try {
           const r = await fetch('/api/mates/' + id, { method: 'DELETE' });
           if (!r.ok) { window.showError('Delete failed (server error)', 'Delete failed'); return; }
-          this.matesList = this.matesList.filter(function(m) { return m.id !== id; });
+          this.agentBotsList = this.agentBotsList.filter(function(m) { return m.id !== id; });
         } catch(e) { window.showError('Delete failed: ' + e.message, 'Delete failed'); }
       },
 
-      async moveMate(idx, dir) {
+      async moveAgentBot(idx, dir) {
         var newIdx = idx + dir;
-        if (newIdx < 0 || newIdx >= this.matesList.length) return;
-        var tmp = this.matesList[idx];
-        this.matesList[idx] = this.matesList[newIdx];
-        this.matesList[newIdx] = tmp;
-        this.matesList = this.matesList.slice();
+        if (newIdx < 0 || newIdx >= this.agentBotsList.length) return;
+        var tmp = this.agentBotsList[idx];
+        this.agentBotsList[idx] = this.agentBotsList[newIdx];
+        this.agentBotsList[newIdx] = tmp;
+        this.agentBotsList = this.agentBotsList.slice();
         try {
           await fetch('/api/mates/reorder', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ ids: this.matesList.map(function(m) { return m.id; }) }),
+            body: JSON.stringify({ ids: this.agentBotsList.map(function(m) { return m.id; }) }),
           });
         } catch(_) {}
       },
 
-      addMateTrigger() {
-        this.mateTriggers.push({ id: '', mateId: '', eventTypes: ['note_created'], schedule: '', prompt: '', pathPrefixes: [], enabled: true });
+      addAgentBotTrigger() {
+        this.agentBotTriggers.push({ id: '', mateId: '', eventTypes: ['note_created'], schedule: '', prompt: '', pathPrefixes: [], enabled: true });
       },
 
-      removeMateTrigger(idx) { this.mateTriggers.splice(idx, 1); },
+      removeAgentBotTrigger(idx) { this.agentBotTriggers.splice(idx, 1); },
 
       isScheduledTrigger(t) { return (t.eventTypes || []).indexOf('scheduled') >= 0; },
       isWechatTrigger(t) { return (t.eventTypes || []).indexOf('wechat_message') >= 0; },
       isCompileTrigger(t) { return (t.eventTypes || []).indexOf('compile_requested') >= 0; },
       isAgentRunCompletedTrigger(t) { return (t.eventTypes || []).indexOf('agent_run_completed') >= 0; },
 
-      matePromptVarsForTrigger(t) {
-        if (this.isScheduledTrigger(t)) return this.matePromptVarsScheduled;
-        if (this.isWechatTrigger(t)) return this.matePromptVarsWechat;
-        if (this.isCompileTrigger(t)) return this.matePromptVarsCompile;
-        if (this.isAgentRunCompletedTrigger(t)) return this.matePromptVarsAgentRunCompleted;
-        return this.matePromptVarsVault;
+      agentBotPromptVarsForTrigger(t) {
+        if (this.isScheduledTrigger(t)) return this.agentBotPromptVarsScheduled;
+        if (this.isWechatTrigger(t)) return this.agentBotPromptVarsWechat;
+        if (this.isCompileTrigger(t)) return this.agentBotPromptVarsCompile;
+        if (this.isAgentRunCompletedTrigger(t)) return this.agentBotPromptVarsAgentRunCompleted;
+        return this.agentBotPromptVarsVault;
       },
 
-      matePromptPlaceholder(t) {
+      agentBotPromptPlaceholder(t) {
         if (this.isScheduledTrigger(t)) return 'Review my vault and write a daily digest. Time: {Now}';
         if (this.isWechatTrigger(t)) return 'Reply to this WeChat message:\n\n{Content}';
         if (this.isCompileTrigger(t)) return 'Compile {Path} into knowledge units.';
@@ -2056,7 +2056,7 @@ const settingsCtrlJS = `
         return 'Summarize the key points in {Path}';
       },
 
-      setMateET(trigger, et) {
+      setAgentBotET(trigger, et) {
         if (et === 'scheduled') {
           trigger.eventTypes = ['scheduled'];
           if (!trigger.schedule) trigger.schedule = 'daily 09:00';
@@ -2099,7 +2099,7 @@ const settingsCtrlJS = `
       // last selected day is removed, so the schedule string stays prefixed "weekly " and
       // scheduleKindOf() keeps the Weekly tab active rather than falling back to Daily.
       toggleWeeklyDay(t, abbr) {
-        const order = this.mateWeekdayDefs.map(function(d) { return d.abbr; });
+        const order = this.agentBotWeekdayDefs.map(function(d) { return d.abbr; });
         let days = this.weeklyDaysOf(t);
         if (days.indexOf(abbr) >= 0) {
           days = days.filter(function(d) { return d !== abbr; });
@@ -2111,9 +2111,9 @@ const settingsCtrlJS = `
         t.schedule = 'weekly ' + (days.length ? days.join(',') : 'none') + ' ' + time;
       },
 
-      insertMateVar(ti, token, event) {
-        this.mateActivePromptIdx = ti;
-        const promptBlock = event.target.closest('.mate-trigger-prompt');
+      insertAgentBotVar(ti, token, event) {
+        this.agentBotActivePromptIdx = ti;
+        const promptBlock = event.target.closest('.agent-bot-trigger-prompt');
         const ta = promptBlock && promptBlock.querySelector('textarea');
         if (ta && typeof ta.selectionStart === 'number') {
           const start = ta.selectionStart;
@@ -2126,7 +2126,7 @@ const settingsCtrlJS = `
           ta.setSelectionRange(pos, pos);
           return;
         }
-        const t = this.mateTriggers[ti];
+        const t = this.agentBotTriggers[ti];
         if (!t) return;
         t.prompt = (t.prompt || '') + token;
       },
@@ -2389,8 +2389,8 @@ func cselectHTML(labelExpr, body string) string {
 		`</button><div class="cselect-dropdown" x-show="csOpen">` + body + `</div></div>`
 }
 
-func mateBackBtnHTML(onclick, label string) string {
-	return `<button class="mate-back-btn" type="button" @click="` + onclick + `">` +
+func agentBotBackBtnHTML(onclick, label string) string {
+	return `<button class="agent-bot-back-btn" type="button" @click="` + onclick + `">` +
 		`<svg fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>` +
 		label + `</button>`
 }

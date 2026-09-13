@@ -10,7 +10,6 @@ const (
 	StreamJSONEvent     StreamFormat = "json-event-stream"
 	StreamACPJSONRPC    StreamFormat = "acp-json-rpc"
 	StreamPiRPC         StreamFormat = "pi-rpc"
-	StreamQoderJSON     StreamFormat = "qoder-stream-json"
 	StreamCopilotJSON   StreamFormat = "copilot-stream-json"
 	StreamPlain         StreamFormat = "plain"
 )

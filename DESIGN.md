@@ -256,7 +256,7 @@ Dark is the shipped default (bare `:root`). Light is Vaultr's own from-scratch a
 
 ### Semantic
 - **Success / Error / Warning**: Each ships as a triple — a bright running-text color, a low-opacity tinted background, and a matching-opacity border — for status pills, save-state indicators, and validation messages. When one of these needs to be a *solid fill* instead of running text (a handful of solid status buttons/pills), pair it with the matching `-fg` token (inverse ink), since the bright running-text tones are too light for white text on top.
-- **Identity Palette** (`{colors.identity-cyan}`, `{colors.identity-pink}`, `{colors.identity-violet}`, `{colors.identity-green}`): Theme-invariant — these mark "which thing" (a mate/collaborator's assigned color, an entity-type chip in the graph), not "which mode", so they never re-tint between light and dark.
+- **Identity Palette** (`{colors.identity-cyan}`, `{colors.identity-pink}`, `{colors.identity-violet}`, `{colors.identity-green}`): Theme-invariant — these mark "which thing" (an agent bot's assigned color, an entity-type chip in the graph), not "which mode", so they never re-tint between light and dark.
 - **Overlay / Scrim**: Modal and drawer backdrops are always a fixed black veil (25% for dialogs, 20% for the drawer, 40% for the image lightbox) independent of theme — darkening a backdrop reads the same whether the surface above it is paper-white or near-black.
 
 ## Typography
@@ -332,7 +332,7 @@ Everything that doesn't explicitly opt into level 5 stays flat, matching the sur
 | `{rounded.md}` | 8px | Default for buttons and form inputs — and the baseline every element gets unless overridden |
 | `{rounded.lg}` | 12px | List cards, image grid tiles |
 | `{rounded.xl}` | 16px | Dialogs, modals, the search overlay panel, image lightbox tiles |
-| `{rounded.full}` | 999px | Pills, avatars, unread dots, mate-color swatches |
+| `{rounded.full}` | 999px | Pills, avatars, unread dots, agent-bot-color swatches |
 
 Full-viewport or edge-docked chrome (drawer panel and its tab bar, scrims, `<html>`/`<body>`, SVG icons, and replaced elements like the graph's canvas) explicitly resets to 0 — these are structural surfaces flush to real viewport edges, never a "card" shape.
 
@@ -378,11 +378,11 @@ Full-viewport or edge-docked chrome (drawer panel and its tab bar, scrims, `<htm
 
 ### Identity & Media
 
-**`entity-chip`** / **`mate-avatar`** — Colored dot or avatar fallback drawing from the four-color identity palette (cyan, pink, violet, green), theme-invariant. The graph's entity-type nodes default to the violet slot.
+**`entity-chip`** / **`agent-bot-avatar`** — Colored dot or avatar fallback drawing from the four-color identity palette (cyan, pink, violet, green), theme-invariant. The graph's entity-type nodes default to the violet slot.
 
 **`image-tile`** — Grid tile in the image gallery: `--surface-soft` background, rounded `{rounded.xl}`. Selection state uses a fixed white border + black scrim overlay (not theme tokens), since tiles sit on top of arbitrary photo content.
 
-**`avatar`** — `{rounded.full}` circle, sized per context (mate chips, testimonial-style contexts if introduced later).
+**`avatar`** — `{rounded.full}` circle, sized per context (agent bot chips, testimonial-style contexts if introduced later).
 
 ## Do's and Don'ts
 

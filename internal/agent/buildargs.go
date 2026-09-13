@@ -111,14 +111,6 @@ func buildCodex(_ *AgentDef, c BuildArgsContext) []string {
 	return args
 }
 
-func buildDevin(_ *AgentDef, _ BuildArgsContext) []string {
-	return []string{
-		"--permission-mode", "dangerous",
-		"--respect-workspace-trust", "false",
-		"acp",
-	}
-}
-
 func buildOpenCode(_ *AgentDef, c BuildArgsContext) []string {
 	args := []string{"run", "--format", "json", "--dangerously-skip-permissions"}
 	if c.Cwd != "" {
@@ -137,10 +129,6 @@ func buildHermes(_ *AgentDef, _ BuildArgsContext) []string {
 	return []string{"acp", "--accept-hooks"}
 }
 
-func buildKimi(_ *AgentDef, _ BuildArgsContext) []string {
-	return []string{"acp"}
-}
-
 func buildCursorAgent(_ *AgentDef, c BuildArgsContext) []string {
 	args := []string{
 		"--print", "--output-format", "stream-json", "--stream-partial-output",
@@ -154,40 +142,6 @@ func buildCursorAgent(_ *AgentDef, c BuildArgsContext) []string {
 	}
 	if c.Model != "" && c.Model != "default" {
 		args = append(args, "--model", c.Model)
-	}
-	return args
-}
-
-func buildQwen(_ *AgentDef, c BuildArgsContext) []string {
-	args := []string{"--yolo"}
-	if c.SessionID != "" {
-		args = append(args, "--resume", c.SessionID)
-	}
-	if c.Model != "" && c.Model != "default" {
-		args = append(args, "--model", c.Model)
-	}
-	return args
-}
-
-func buildQoder(_ *AgentDef, c BuildArgsContext) []string {
-	args := []string{"-p", "--output-format", "stream-json", "--yolo"}
-	if c.SessionID != "" {
-		args = append(args, "-r", c.SessionID)
-	}
-	if c.Cwd != "" {
-		args = append(args, "-w", c.Cwd)
-	}
-	if c.Model != "" && c.Model != "default" {
-		args = append(args, "--model", c.Model)
-	}
-	for _, d := range filterAbsDirs(c.ExtraAllowedDirs) {
-		args = append(args, "--add-dir", d)
-	}
-	for _, p := range c.ImagePaths {
-		p = strings.TrimSpace(p)
-		if p != "" && filepath.IsAbs(p) {
-			args = append(args, "--attachment", p)
-		}
 	}
 	return args
 }
@@ -220,19 +174,6 @@ func buildPi(_ *AgentDef, c BuildArgsContext) []string {
 	for _, d := range filterAbsDirs(c.ExtraAllowedDirs) {
 		args = append(args, "--append-system-prompt", d)
 	}
-	return args
-}
-
-func buildKiro(_ *AgentDef, _ BuildArgsContext) []string { return []string{"acp"} }
-func buildKilo(_ *AgentDef, _ BuildArgsContext) []string { return []string{"acp"} }
-func buildVibe(_ *AgentDef, _ BuildArgsContext) []string { return nil }
-
-func buildDeepseek(_ *AgentDef, c BuildArgsContext) []string {
-	args := []string{"exec", "--auto"}
-	if c.Model != "" && c.Model != "default" {
-		args = append(args, "--model", c.Model)
-	}
-	args = append(args, c.Prompt)
 	return args
 }
 

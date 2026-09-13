@@ -63,8 +63,8 @@ let activeSection = null;
 let currentViewBgColor = '#08080b';
 
 // ── Inbox notifications (direct SSE from main process) ─────────────────────────
-// Fires once per new /api/inbox message, regardless of producer (mate trigger
-// runs today, other sources later) — see internal/inbox.Store.Notifications().
+// Fires once per new /api/inbox message, regardless of producer (agent bot
+// trigger runs today, other sources later) — see internal/inbox.Store.Notifications().
 
 /** @type {import("node:http").ClientRequest | null} */
 let inboxNotifReq = null;

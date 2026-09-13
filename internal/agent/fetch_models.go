@@ -6,58 +6,10 @@ import (
 	"time"
 )
 
-func fetchDevinModels(resolved string, env []string) ([]ModelOption, error) {
-	return DetectACPModels(context.Background(), ACPDetectOpts{
-		Bin: resolved,
-		Args: []string{
-			"--permission-mode", "dangerous",
-			"--respect-workspace-trust", "false",
-			"acp",
-		},
-		Env:           env,
-		Timeout:       15 * time.Second,
-		DefaultOption: DefaultModelOption,
-	})
-}
-
 func fetchHermesModels(resolved string, env []string) ([]ModelOption, error) {
 	return DetectACPModels(context.Background(), ACPDetectOpts{
 		Bin:           resolved,
 		Args:          []string{"acp", "--accept-hooks"},
-		Env:           env,
-		Timeout:       15 * time.Second,
-		DefaultOption: DefaultModelOption,
-	})
-}
-
-func fetchKimiModels(resolved string, env []string) ([]ModelOption, error) {
-	return DetectACPModels(context.Background(), ACPDetectOpts{
-		Bin:           resolved,
-		Args:          []string{"acp"},
-		Env:           env,
-		Timeout:       15 * time.Second,
-		DefaultOption: DefaultModelOption,
-	})
-}
-
-func fetchKiroModels(resolved string, env []string) ([]ModelOption, error) {
-	return DetectACPModels(context.Background(), ACPDetectOpts{
-		Bin:           resolved,
-		Args:          []string{"acp"},
-		Env:           env,
-		Timeout:       15 * time.Second,
-		DefaultOption: DefaultModelOption,
-	})
-}
-
-func fetchKiloModels(resolved string, env []string) ([]ModelOption, error) {
-	return fetchKiroModels(resolved, env)
-}
-
-func fetchVibeModels(resolved string, env []string) ([]ModelOption, error) {
-	return DetectACPModels(context.Background(), ACPDetectOpts{
-		Bin:           resolved,
-		Args:          nil,
 		Env:           env,
 		Timeout:       15 * time.Second,
 		DefaultOption: DefaultModelOption,

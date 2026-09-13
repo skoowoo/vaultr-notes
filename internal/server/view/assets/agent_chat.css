@@ -48,10 +48,10 @@
       border-radius: 0;
     }
 
-    /* Mate bar now uses the shared .home-list-head (home.css) instead of
+    /* Agent bot bar now uses the shared .home-list-head (home.css) instead of
        its own bordered strip — see homeChatSectionHTML. */
 
-    .mate-chips-scroll {
+    .agent-bot-chips-scroll {
       flex: 1;
       display: flex;
       align-items: center;
@@ -63,11 +63,11 @@
       padding: 4px 4px 4px 0;
     }
 
-    .mate-chips-scroll::-webkit-scrollbar {
+    .agent-bot-chips-scroll::-webkit-scrollbar {
       display: none;
     }
 
-    .mate-bar-desc {
+    .agent-bot-bar-desc {
       flex-shrink: 0;
       max-width: 200px;
       font-size: var(--text-xs);
@@ -78,7 +78,7 @@
       border-radius: 0;
     }
 
-    .mate-chip {
+    .agent-bot-chip {
       flex-shrink: 0;
       padding: 0.2rem 0.85rem 0.2rem 0.3rem;
       height: var(--btn-h);
@@ -96,7 +96,7 @@
       user-select: none;
     }
 
-    .mate-chip-avatar {
+    .agent-bot-chip-avatar {
       width: 20px;
       height: 20px;
       border-radius: 50%;
@@ -113,23 +113,23 @@
       line-height: 1;
     }
 
-    .mate-chip:hover {
+    .agent-bot-chip:hover {
       background: transparent;
       color: var(--fg);
       border-color: var(--border-strong);
     }
 
-    .mate-chip:active:not(.is-active) {
+    .agent-bot-chip:active:not(.is-active) {
       opacity: 0.85;
     }
 
-    .mate-chip.is-active {
+    .agent-bot-chip.is-active {
       background: var(--control-active-bg);
       border: var(--bd-w) solid var(--border-strong) !important;
       color: var(--control-active-fg);
     }
 
-    .mates-empty-hint {
+    .agent-bots-empty-hint {
       font-size: var(--text-sm);
       color: var(--muted);
       font-style: italic;
@@ -217,7 +217,7 @@
       font-weight: 500;
     }
 
-    /* ── Empty state (mate selected, no messages) ───────────────── */
+    /* ── Empty state (agent bot selected, no messages) ───────────────── */
     .chat-empty-card {
       display: flex;
       flex-direction: column;

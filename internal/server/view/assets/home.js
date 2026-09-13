@@ -197,11 +197,11 @@ function homeCtrl() {
     inboxSheetOpen: false,
     unreadCount: 0,
     // ── Chat (mirrors agent_chat.js's agentChatCtrl for the standalone /agent page) ──
-    mates: [],
-    selectedMateId: '',
+    agentBots: [],
+    selectedAgentBotId: '',
     conversationId: '',
     messages: [],
-    mateEventDefs: [],
+    agentBotEventDefs: [],
     inputText: '',
     isRunning: false,
     currentRunId: null,
@@ -254,11 +254,11 @@ function homeCtrl() {
       this.timeTick = Date.now();
       this._timeTicker = setInterval(() => { this.timeTick = Date.now(); }, 30000);
       this.$watch('timeTick', () => this._refreshTimes());
-      // The mates list now lives in the sidebar's Chats group (home.html),
+      // The agent bots list now lives in the sidebar's Chats group (home.html),
       // so it has to be populated regardless of whether Chats has ever been
       // opened — initChatSection() awaits this same promise before restoring
-      // the last-selected mate the first time the section itself is opened.
-      this._matesLoadPromise = Promise.all([this.loadMates(), this.loadMateEvents()]);
+      // the last-selected agent bot the first time the section itself is opened.
+      this._agentBotsLoadPromise = Promise.all([this.loadAgentBots(), this.loadAgentBotEvents()]);
       // Home is always safe: partial HTMX refresh is non-destructive.
       window.__vaultrShellSafeForBackgroundReload = function () { return true; };
       // Electron main calls this instead of wc.reload() when syncing sections.
@@ -897,9 +897,9 @@ function homeCtrl() {
       return html;
     },
 
-    // ── Chat: mates, conversations, streaming replies (mirrors agent_chat.js's
+    // ── Chat: agent bots, conversations, streaming replies (mirrors agent_chat.js's
     // agentChatCtrl for the standalone /agent page) ────────────────────────
-    // Runs the network bootstrap (mates, last-selected mate, its conversation)
+    // Runs the network bootstrap (agent bots, last-selected agent bot, its conversation)
     // exactly once — re-running it every time the user switches back to the
     // Chats sidebar item would clobber an in-progress streaming reply. The
     // autocomplete/wiki-link DOM listeners, though, must be rebound every
@@ -922,41 +922,41 @@ function homeCtrl() {
           } catch (_) { /* ignore */ }
         });
       }
-      // Arriving via the parent "Chats" button (not a specific mate's child
+      // Arriving via the parent "Chats" button (not a specific agent bot's child
       // row) lands here with activeKey === 'chat'. Unlike Graph's parent
-      // ("all"), chat has no distinct all-mates view — whatever mate ends up
+      // ("all"), chat has no distinct all-agent-bots view — whatever agent bot ends up
       // showing should always be the one highlighted in the sidebar.
-      if (this.activeKey === 'chat' && this.selectedMateId) {
-        this.activeKey = 'chat:' + this.selectedMateId;
+      if (this.activeKey === 'chat' && this.selectedAgentBotId) {
+        this.activeKey = 'chat:' + this.selectedAgentBotId;
       }
       if (this._chatBootstrapped) return;
       this._chatBootstrapped = true;
       (async () => {
-        await this._matesLoadPromise;
-        var lastMateId = sessionStorage.getItem('vaultr_mate_id');
-        var target = lastMateId ? this.mates.find((m) => m.id === lastMateId) : null;
-        this.selectedMateId = (target || this.mates[0] || {}).id || '';
-        if (this.selectedMateId) {
-          this.activeKey = 'chat:' + this.selectedMateId;
-          void this.refreshMateConversation(this.selectedMateId);
+        await this._agentBotsLoadPromise;
+        var lastAgentBotId = sessionStorage.getItem('vaultr_agent_bot_id');
+        var target = lastAgentBotId ? this.agentBots.find((m) => m.id === lastAgentBotId) : null;
+        this.selectedAgentBotId = (target || this.agentBots[0] || {}).id || '';
+        if (this.selectedAgentBotId) {
+          this.activeKey = 'chat:' + this.selectedAgentBotId;
+          void this.refreshAgentBotConversation(this.selectedAgentBotId);
         }
       })();
     },
 
     toggleChats() { this.chatsOpen = !this.chatsOpen; },
 
-    // Selecting a mate from the sidebar's Chats children. Works whether or
-    // not the chat pane is currently mounted: selectMate() only touches JS
+    // Selecting an agent bot from the sidebar's Chats children. Works whether or
+    // not the chat pane is currently mounted: selectAgentBot() only touches JS
     // state + fetches (scrollToBottom() no-ops without #chat-scroll), so
-    // picking a mate from, say, Pinned just pre-loads its conversation; if
+    // picking an agent bot from, say, Pinned just pre-loads its conversation; if
     // the chat section isn't showing yet, this also navigates to it.
-    selectChatMate(mateId) {
-      this.activeKey = 'chat:' + mateId;
-      // We're handling mate selection ourselves here — mark bootstrap done
+    selectChatAgentBot(agentBotId) {
+      this.activeKey = 'chat:' + agentBotId;
+      // We're handling agent bot selection ourselves here — mark bootstrap done
       // so initChatSection() (triggered by the _load() below) doesn't also
-      // restore-and-refetch the same mate a second time.
+      // restore-and-refetch the same agent bot a second time.
       this._chatBootstrapped = true;
-      this.selectMate(mateId);
+      this.selectAgentBot(agentBotId);
       if (document.getElementById('chat-scroll')) {
         this._lastURL = '/home/section?type=chat';
       } else {
@@ -964,31 +964,31 @@ function homeCtrl() {
       }
     },
 
-    async loadMates() {
+    async loadAgentBots() {
       try {
         var resp = await fetch('/api/mates');
         if (!resp.ok) return;
-        this.mates = ((await resp.json()).mates || []).filter((m) => m.enabled);
+        this.agentBots = ((await resp.json()).mates || []).filter((m) => m.enabled);
       } catch (_) { /* ignore */ }
     },
 
-    async loadMateEvents() {
+    async loadAgentBotEvents() {
       try {
         var resp = await fetch('/api/mate-events');
         if (!resp.ok) return;
-        this.mateEventDefs = (await resp.json()).events || [];
+        this.agentBotEventDefs = (await resp.json()).events || [];
       } catch (_) { /* ignore */ }
     },
 
     triggerEventLabel(type) {
-      var d = this.mateEventDefs.find((e) => e.type === type);
+      var d = this.agentBotEventDefs.find((e) => e.type === type);
       return d ? d.label : type;
     },
 
-    async refreshMateConversation(mateId) {
-      if (this.isRunning || !mateId) return;
+    async refreshAgentBotConversation(agentBotId) {
+      if (this.isRunning || !agentBotId) return;
       try {
-        var resp = await fetch('/api/conversations?mateId=' + encodeURIComponent(mateId) + '&type=' + encodeURIComponent(this.convType), { cache: 'no-store' });
+        var resp = await fetch('/api/conversations?mateId=' + encodeURIComponent(agentBotId) + '&type=' + encodeURIComponent(this.convType), { cache: 'no-store' });
         if (!resp.ok) return;
         var convs = (await resp.json()).conversations || [];
         this.conversationId = convs.length > 0 ? convs[0].id : '';
@@ -1014,7 +1014,7 @@ function homeCtrl() {
           var at = m.updatedAt ? new Date(m.updatedAt).getTime() : (m.createdAt ? new Date(m.createdAt).getTime() : 0);
           out.push({
             id: m.id,
-            role: 'assistant', agentId: m.agentId, mateId: m.mateId,
+            role: 'assistant', agentId: m.agentId, agentBotId: m.mateId,
             triggerEvent: m.triggerEvent || '',
             segments: m.content ? [{ type: 'text', content: m.content }] : [],
             status: m.status || 'succeeded',
@@ -1046,20 +1046,20 @@ function homeCtrl() {
       } catch (_) { /* ignore */ }
     },
 
-    selectMate(id) {
+    selectAgentBot(id) {
       if (this.isRunning) return;
-      if (id !== this.selectedMateId) {
+      if (id !== this.selectedAgentBotId) {
         this._cancelPoller();
         this.conversationId = '';
         this.messages = [];
       }
-      this.selectedMateId = id;
-      sessionStorage.setItem('vaultr_mate_id', id);
-      void this.refreshMateConversation(id);
+      this.selectedAgentBotId = id;
+      sessionStorage.setItem('vaultr_agent_bot_id', id);
+      void this.refreshAgentBotConversation(id);
     },
 
     async newChat() {
-      if (this.isRunning || !this.selectedMateId) return;
+      if (this.isRunning || !this.selectedAgentBotId) return;
       // Don't create a new conversation when the current one is already empty.
       if (this.messages.length === 0) return;
       this._cancelPoller();
@@ -1073,7 +1073,7 @@ function homeCtrl() {
         var resp = await fetch('/api/conversations', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ mateId: this.selectedMateId, title: title }),
+          body: JSON.stringify({ mateId: this.selectedAgentBotId, title: title }),
         });
         if (resp.ok) {
           var data = await resp.json();
@@ -1096,14 +1096,14 @@ function homeCtrl() {
       this.convType = t;
       this.conversationId = '';
       this.messages = [];
-      if (this.selectedMateId) void this.refreshMateConversation(this.selectedMateId);
+      if (this.selectedAgentBotId) void this.refreshAgentBotConversation(this.selectedAgentBotId);
     },
 
     async send() {
       var text = this.inputText.trim();
-      if (!text || this.isRunning || !this.selectedMateId) return;
-      var mate = this.selectedMate;
-      if (!mate) return;
+      if (!text || this.isRunning || !this.selectedAgentBotId) return;
+      var agentBot = this.selectedAgentBot;
+      if (!agentBot) return;
 
       // Lazy-create conversation on first message.
       if (!this.conversationId) {
@@ -1111,7 +1111,7 @@ function homeCtrl() {
           var cresp = await fetch('/api/conversations', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ mateId: mate.id, title: '' }),
+            body: JSON.stringify({ mateId: agentBot.id, title: '' }),
           });
           if (cresp.ok) {
             this.conversationId = (await cresp.json()).conversation.id;
@@ -1141,7 +1141,7 @@ function homeCtrl() {
       this.messages.push({ id: _userMsgId, role: 'user', content: text, createdAt: _userTs, _fmtTime: this.formatTime(_userTs) });
       this.messages.push({
         id: _assistantMsgId,
-        role: 'assistant', agentId: mate.agentId, mateId: mate.id,
+        role: 'assistant', agentId: agentBot.agentId, agentBotId: agentBot.id,
         segments: [], status: 'running',
         startTime: Date.now(), duration: 0, completedAt: 0, copied: false,
       });
@@ -1153,7 +1153,7 @@ function homeCtrl() {
         var resp = await fetch('/api/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ mateId: mate.id, message: text, conversationId: this.conversationId, userMessageId: _userMsgId, assistantMessageId: _assistantMsgId }),
+          body: JSON.stringify({ mateId: agentBot.id, message: text, conversationId: this.conversationId, userMessageId: _userMsgId, assistantMessageId: _assistantMsgId }),
         });
         if (!resp.ok) {
           var errText = await resp.text();
@@ -1165,7 +1165,7 @@ function homeCtrl() {
         // For cursor-agent: reload from DB after streaming ends to guarantee the
         // displayed text matches the authoritative DB content (text_snapshot), catching
         // any remaining divergence edge cases not handled during streaming.
-        if (sseGotEnd && this.conversationId && mate.agentId === 'cursor-agent') {
+        if (sseGotEnd && this.conversationId && agentBot.agentId === 'cursor-agent') {
           await this.syncLastMsgFromDB(this.conversationId, msgIdx);
         }
       } catch (e) {
@@ -1257,7 +1257,7 @@ function homeCtrl() {
           msg.duration = Date.now() - msg.startTime;
           msg.completedAt = Date.now();
           msg._fmtTime = this.formatTime(msg.completedAt);
-          if (document.hidden) this.showCompletionToast(msg.status, this.getMateNameForMsg(msg));
+          if (document.hidden) this.showCompletionToast(msg.status, this.getAgentBotNameForMsg(msg));
           break;
       }
     },
@@ -1420,7 +1420,7 @@ function homeCtrl() {
         a.getDate() === b.getDate();
     },
 
-    async copyMateText(msg) {
+    async copyAgentBotText(msg) {
       var text = (msg.segments || [])
         .filter((s) => s.type === 'text')
         .map((s) => s.content || '')
@@ -1433,17 +1433,17 @@ function homeCtrl() {
       } catch (_) { /* ignore */ }
     },
 
-    getMateNameForMsg(msg) {
-      var m = this.mates.find((m2) => m2.id === msg.mateId);
+    getAgentBotNameForMsg(msg) {
+      var m = this.agentBots.find((m2) => m2.id === msg.agentBotId);
       return m ? m.name : (msg.agentId || 'Agent');
     },
 
-    getMateColor(mateId) {
-      var m = this.mates.find((m2) => m2.id === mateId);
+    getAgentBotColor(agentBotId) {
+      var m = this.agentBots.find((m2) => m2.id === agentBotId);
       return (m && m.color) ? m.color : '';
     },
 
-    mateInitials(name) {
+    agentBotInitials(name) {
       if (!name) return '?';
       return name.trim().slice(0, 1).toUpperCase();
     },
@@ -1470,8 +1470,8 @@ function homeCtrl() {
       });
     },
 
-    showCompletionToast(status, mateName) {
-      this.toastText = (mateName || 'Agent') + (status === 'succeeded' ? ' finished' : ' failed');
+    showCompletionToast(status, agentBotName) {
+      this.toastText = (agentBotName || 'Agent') + (status === 'succeeded' ? ' finished' : ' failed');
       this.toastKind = status === 'succeeded' ? 'ok' : 'err';
       this.toastVisible = true;
       if (this._toastTimer) clearTimeout(this._toastTimer);
@@ -1498,17 +1498,17 @@ function homeCtrl() {
           self._syncTimer = setTimeout(poll, 5000);
           return;
         }
-        var mateId = self.selectedMateId;
+        var agentBotId = self.selectedAgentBotId;
         var convType = self.convType;
         // Check if a newer conversation was created (e.g. WeChat /new)
-        fetch('/api/conversations?mateId=' + encodeURIComponent(mateId) + '&type=' + encodeURIComponent(convType), { cache: 'no-store' })
+        fetch('/api/conversations?mateId=' + encodeURIComponent(agentBotId) + '&type=' + encodeURIComponent(convType), { cache: 'no-store' })
           .then((r) => r.ok ? r.json() : null)
           .then((data) => {
             if (self._syncSeq !== mySeq) return;
             var convs = (data && data.conversations) || [];
             if (convs.length > 0 && convs[0].id !== convId) {
-              // Active conversation switched; refreshMateConversation will restart the poller
-              void self.refreshMateConversation(mateId);
+              // Active conversation switched; refreshAgentBotConversation will restart the poller
+              void self.refreshAgentBotConversation(agentBotId);
               return;
             }
             // Same conversation — fetch new messages only
@@ -1604,7 +1604,7 @@ function homeCtrl() {
                 msg._fmtTime = self.formatTime(msg.completedAt);
                 self.scrollToBottom();
               }
-              self.showCompletionToast(st, msg ? self.getMateNameForMsg(msg) : null);
+              self.showCompletionToast(st, msg ? self.getAgentBotNameForMsg(msg) : null);
             } else {
               self._runPollerTimer = setTimeout(poll, 5000);
             }
@@ -1635,8 +1635,8 @@ function homeCtrl() {
 
   // Object.assign flattens getters — define computed props properly so Alpine tracks them.
   Object.defineProperties(ctrl, {
-    selectedMate: {
-      get() { var id = this.selectedMateId; return this.mates.find((m) => m.id === id) || null; },
+    selectedAgentBot: {
+      get() { var id = this.selectedAgentBotId; return this.agentBots.find((m) => m.id === id) || null; },
       configurable: true, enumerable: true,
     },
   });

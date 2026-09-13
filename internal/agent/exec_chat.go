@@ -155,10 +155,6 @@ func ExecChat(
 				}
 				_, _ = io.Copy(&writerFunc{func(p []byte) { js.Feed(string(p)) }}, stdout)
 				js.Flush()
-			case StreamQoderJSON:
-				q := NewQoderStream(relay)
-				_, _ = io.Copy(&writerFunc{func(p []byte) { q.Feed(string(p)) }}, stdout)
-				q.Flush()
 			case StreamCopilotJSON:
 				co := NewCopilotStream(relay)
 				_, _ = io.Copy(&writerFunc{func(p []byte) { co.Feed(string(p)) }}, stdout)

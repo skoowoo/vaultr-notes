@@ -15,7 +15,7 @@
 - [Obsidian 兼容](#obsidian-兼容)
 - [编辑器](#编辑器)
 - [Shorts 速记流](#shorts-速记流)
-- [Mate Bots](#mate-bots)
+- [Agent Bots](#agent-bots)
 - [微信](#微信)
 - [Discord](#discord)
 - [LLM-Wiki 编译器](#llm-wiki-编译器)
@@ -35,7 +35,7 @@
 - 支持自部署到远程服务器
 
 #### 🤖 事件驱动的多 Agent 系统
-- **集成了 15 个 agent**，直接复用你本地的 Agent
+- **集成了 7 个 agent CLI**，直接复用你本地的 Agent CLI
 - **事件触发自动化**，笔记一创建、消息一来，agent 自动跑起来
 - **微信 & Discord 直连**，直接在微信或 Discord 私信里和 agent 对话
 
@@ -228,13 +228,13 @@ Shorts 是一个轻量的日常捕捉流，按天存储的速记条目，保存�
 - **Stream 流**：按日期分组的时间线，今天的条目显示在最上方，向下滚动加载更早的记录
 - **Calendar 日历**：月视图，标记哪些日期有记录，点击任意日期跳转到当天的条目
 
-## Mate Bots
+## Agent Bots
 
-Mate Bot 就是你在 **Settings → Mate Bots** 里养的私人 AI。每个 mate 有自己的名字、系统 prompt，以及背后驱动它的 agent。
+Agent Bot 就是你在 **Settings → Agent Bots** 里养的私人 AI。每个 agent bot 有自己的名字、系统 prompt，以及背后驱动它的 agent CLI。
 
 #### 🔔 事件触发器
 
-Mate 最有意思的地方是事件驱动：配好触发器，你什么都不用管，它自己跑。内置的事件有这些：
+Agent Bot 最有意思的地方是事件驱动：配好触发器，你什么都不用管，它自己跑。内置的事件有这些：
 
 | 事件                 | 什么时候触发                 |
 | -------------------- | ---------------------------- |
@@ -251,7 +251,7 @@ Mate 最有意思的地方是事件驱动：配好触发器，你什么都不用
 
 > **Vaultr 直接从本地 `PATH` 发现可用的 agent CLI，不用任何额外配置。** 你已经在用 Claude Code 写代码？在终端里跑 Codex 或 Copilot？Vaultr 启动时自动找到它们，直接拿来用。你的工具，你的习惯，Vaultr 不折腾你。
 
-开箱集成 **15 个 agent CLI**：
+开箱集成 **7 个 agent CLI**：
 
 - Claude Code
 - OpenCode
@@ -260,14 +260,6 @@ Mate 最有意思的地方是事件驱动：配好触发器，你什么都不用
 - Hermes
 - GitHub Copilot CLI
 - Pi
-- DeepSeek TUI
-- Kimi CLI
-- Mistral Vibe CLI
-- Devin for Terminal
-- Qwen Code
-- Qoder CLI
-- Kiro CLI
-- Kilo
 
 ## 微信
 
@@ -282,9 +274,9 @@ Mate 最有意思的地方是事件驱动：配好触发器，你什么都不用
 
 搞定，微信桥接服务开始监听新消息。
 
-#### 第二步：创建一个 `wechat_message` 触发的 Mate Bot
+#### 第二步：创建一个 `wechat_message` 触发的 Agent Bot
 
-1. **Settings → Mate Bots** → **New Mate**
+1. **Settings → Agent Bots** → **New Agent Bot**
 2. 起个名字，选 agent 和模型
 3. **Triggers** 下点 **+ Add trigger**
 4. **Event** 选 `wechat_message`
@@ -296,7 +288,7 @@ Mate 最有意思的地方是事件驱动：配好触发器，你什么都不用
 
 6. 保存
 
-之后每条微信私信都会触发这个 mate，自动帮你回复。
+之后每条微信私信都会触发这个 agent bot，自动帮你回复。
 
 ## Discord
 
@@ -315,16 +307,16 @@ Bot 要能给你发主动消息（如定时推送），需要和你在同一个�
 
 访问不通时，在 **Proxy URL** 填本地代理地址（如 `http://127.0.0.1:7890`）。
 
-#### 第二步：创建一个 `discord_message` 触发的 Mate Bot
+#### 第二步：创建一个 `discord_message` 触发的 Agent Bot
 
-1. **Settings → Mate Bots** → **New Mate**
+1. **Settings → Agent Bots** → **New Agent Bot**
 2. 起名，选 agent 和模型
 3. **Triggers** 下点 **+ Add trigger**
 4. **Event** 选 `discord_message`
 5. Prompt 模板可用变量：`{Content}`、`{DiscordChannelID}`、`{DiscordUserID}`
 6. 保存
 
-搞定，Bot 收到私信就会触发 mate 并回复。
+搞定，Bot 收到私信就会触发 agent bot 并回复。
 
 ## LLM-Wiki 编译器
 
@@ -334,13 +326,13 @@ Bot 要能给你发主动消息（如定时推送），需要和你在同一个�
 
 **Settings → Server → Config → Compile** 开启，默认就是开的。
 
-#### 第二步：创建一个带编译触发器的 Mate
+#### 第二步：创建一个带编译触发器的 Agent Bot
 
-在 **Settings → Mate Bots** 里新建 mate，触发方式有两种，按需选：
+在 **Settings → Agent Bots** 里新建 agent bot，触发方式有两种，按需选：
 
 1. 新笔记进来自动编译（`note_created` + Path Prefix）
 
-**Event** 选 `note_created`，填上 **Path Prefixes**（比如 `/Web Clips/`）。以后这个目录里一有新笔记，mate 就自动跑。
+**Event** 选 `note_created`，填上 **Path Prefixes**（比如 `/Web Clips/`）。以后这个目录里一有新笔记，agent bot 就自动跑。
 
 示例 prompt：
 ```
@@ -372,11 +364,11 @@ Vaultr 能从你的笔记里提取个人记忆，生成六个结构化文件（�
 
 Agent 会自己调用 `vaultr-memory` skill 完成提取。首次运行扫最近 90 天，之后每次增量只扫最近 2 天，很快。
 
-#### ⏰ 方式二：定时 Mate，每天自动更新
+#### ⏰ 方式二：定时 Agent Bot，每天自动更新
 
-懒人方案。在 **Settings → Mate Bots** 里建一个定时 Mate，让它每天自己跑。
+懒人方案。在 **Settings → Agent Bots** 里建一个定时 Agent Bot，让它每天自己跑。
 
-1. **Settings → Mate Bots** → **New Mate**
+1. **Settings → Agent Bots** → **New Agent Bot**
 2. 名字随便起，比如 `Daily Memory`，选好 agent 和模型
 3. **Triggers** → **+ Add trigger**
 4. **Event** 选 `scheduled`，设好每天的执行时间（比如每天 08:00）
@@ -450,11 +442,11 @@ Vaultr 的每一层 AI 输出都可以自定义：
 
 **设置 → Server → Config → Agent** — 填写 `agent.system_prompt` 替换内置的全局 system prompt，该 prompt 会拼接在每次 agent 运行的最前面。留空时 Vaultr 使用内置默认值，该默认值会告知 agent vault 的目录结构、wiki-link 语法以及个人记忆文件的位置。
 
-#### 2. 每个 Mate 的 System Prompt 与 Trigger Prompt
+#### 2. 每个 Agent Bot 的 System Prompt 与 Trigger Prompt
 
-在**设置 → Mate Bots** 中，每个 Mate 有两个自定义点：
+在**设置 → Agent Bots** 中，每个 Agent Bot 有两个自定义点：
 
-- **System Prompt**：Mate 专属指令，附加在全局 system prompt 之后（用 `---` 分隔）。
+- **System Prompt**：Agent Bot 专属指令，附加在全局 system prompt 之后（用 `---` 分隔）。
 - **Trigger Prompt 模板**：Trigger 触发时发送给 agent 的用户消息，支持变量：vault 事件用 `{Path}`、`{Name}`、`{Content}`；定时触发用 `{Now}`、`{Date}`、`{Time}`；微信消息用 `{Content}`、`{WechatUserID}`；Discord 消息用 `{Content}`、`{DiscordChannelID}`、`{DiscordUserID}`。
 
 #### 3. 重写 LLM-Wiki 编译 Skill

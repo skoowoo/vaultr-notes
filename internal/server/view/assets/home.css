@@ -208,9 +208,9 @@
     }
     .home-side-child-icon { flex-shrink: 0; width: 13px; height: 13px; opacity: 0.6; }
     .home-side-child.is-active .home-side-child-icon { opacity: 1; }
-    /* Mate avatar in the Chats group's child rows — mirrors agent_chat.css's
-       .mate-chip-avatar (same colors/sizing logic), just sized for a sidebar row.
-       Keeps each mate's own color even when active (no more knockout-to-black) —
+    /* Agent bot avatar in the Chats group's child rows — mirrors agent_chat.css's
+       .agent-bot-chip-avatar (same colors/sizing logic), just sized for a sidebar row.
+       Keeps each agent bot's own color even when active (no more knockout-to-black) —
        the active row's background is light now, so the identity color still reads fine. */
     .home-side-child-avatar {
       flex-shrink: 0; width: 20px; height: 20px; border-radius: 50%;

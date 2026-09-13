@@ -17,7 +17,7 @@
 - [Obsidian Compatibility](#obsidian-compatibility)
 - [Editor](#editor)
 - [Shorts](#shorts)
-- [Mate Bots](#mate-bots)
+- [Agent Bots](#agent-bots)
 - [WeChat](#wechat)
 - [Discord](#discord)
 - [LLM-Wiki Compiler](#llm-wiki-compiler)
@@ -37,7 +37,7 @@
 - Can also be self-hosted on a remote server
 
 #### 🤖 Event-Driven Multi-Agent System
-- **15 agent CLIs** supported out of the box
+- **7 agent CLIs** supported out of the box
 - **Event-triggered automation**: agents run tasks automatically when notes change, messages arrive, or schedules fire
 - **WeChat & Discord integration**: chat with agents directly from WeChat or Discord DMs
 
@@ -230,13 +230,13 @@ The Quick Note editor is distraction-free: no toolbar, no buttons, just you and 
 - **Stream**: a chronological feed grouped by date; today's entries appear at the top; scroll down to load older entries
 - **Calendar**: a month grid marking which days have entries; click any date to jump to that day's notes
 
-## Mate Bots
+## Agent Bots
 
-Mate Bots are custom AI agents you define in **Settings → Mate Bots**. Each mate has a name, a system prompt, and a backing agent (any agent CLI detected on your PATH).
+Agent Bots are custom AI agents you define in **Settings → Agent Bots**. Each agent bot has a name, a system prompt, and a backing agent CLI (any agent CLI detected on your PATH).
 
 #### 🔔 Event Triggers
 
-Add one or more triggers to a mate and it runs automatically whenever a matching event fires. Vaultr ships with these built-in events:
+Add one or more triggers to an agent bot and it runs automatically whenever a matching event fires. Vaultr ships with these built-in events:
 
 | Event                | When it fires                                        |
 | -------------------- | ---------------------------------------------------- |
@@ -251,9 +251,9 @@ Add one or more triggers to a mate and it runs automatically whenever a matching
 
 #### Backing Agents
 
-> **Vaultr automatically discovers available agent CLIs from your local `PATH` with no extra configuration needed.** If you already use Claude Code, Codex, or Copilot in your terminal, Vaultr finds them at startup and makes them available as backing agents for your mates.
+> **Vaultr automatically discovers available agent CLIs from your local `PATH` with no extra configuration needed.** If you already use Claude Code, Codex, or Copilot in your terminal, Vaultr finds them at startup and makes them available as backing agents for your agent bots.
 
-Vaultr integrates **15 agent CLIs** out of the box:
+Vaultr integrates **7 agent CLIs** out of the box:
 
 - Claude Code
 - OpenCode
@@ -262,18 +262,10 @@ Vaultr integrates **15 agent CLIs** out of the box:
 - Hermes
 - GitHub Copilot CLI
 - Pi
-- DeepSeek TUI
-- Kimi CLI
-- Mistral Vibe CLI
-- Devin for Terminal
-- Qwen Code
-- Qoder CLI
-- Kiro CLI
-- Kilo
 
 ## WeChat
 
-Vaultr can receive WeChat direct messages and route them to a mate agent automatically. Setup has two steps.
+Vaultr can receive WeChat direct messages and route them to an agent bot automatically. Setup has two steps.
 
 #### Step 1: Connect WeChat in Server Config
 
@@ -284,9 +276,9 @@ Vaultr can receive WeChat direct messages and route them to a mate agent automat
 
 The WeChat iLink bridge begins polling for new DMs.
 
-#### Step 2: Create a Mate agent with a `wechat_message` trigger
+#### Step 2: Create an Agent Bot with a `wechat_message` trigger
 
-1. Open **Settings → Mate Bots** and click **New Mate**
+1. Open **Settings → Agent Bots** and click **New Agent Bot**
 2. Fill in a name, pick an agent and model
 3. Under **Triggers**, click **+ Add trigger**
 4. Set the **Event** to `wechat_message`
@@ -297,9 +289,9 @@ The WeChat iLink bridge begins polling for new DMs.
    {{.Content}}
    ```
 
-6. Save the mate agent
+6. Save the agent bot
 
-From this point on, every WeChat DM fires the trigger and the mate agent replies automatically.
+From this point on, every WeChat DM fires the trigger and the agent bot replies automatically.
 
 ## Discord
 
@@ -318,16 +310,16 @@ To send proactive DMs (e.g. from a scheduled trigger), the Bot must share at lea
 
 If `discord.com` is not directly reachable, set **Proxy URL** to your local proxy (e.g. `http://127.0.0.1:7890`).
 
-#### Step 2: Create a Mate agent with a `discord_message` trigger
+#### Step 2: Create an Agent Bot with a `discord_message` trigger
 
-1. Open **Settings → Mate Bots** and click **New Mate**
+1. Open **Settings → Agent Bots** and click **New Agent Bot**
 2. Fill in a name, pick an agent and model
 3. Under **Triggers**, click **+ Add trigger**
 4. Set the **Event** to `discord_message`
 5. Write a prompt template. Available variables: `{Content}`, `{DiscordChannelID}`, `{DiscordUserID}`
-6. Save the mate agent
+6. Save the agent bot
 
-Done. Every incoming DM now triggers the mate agent and gets a reply.
+Done. Every incoming DM now triggers the agent bot and gets a reply.
 
 ## LLM-Wiki Compiler
 
@@ -337,13 +329,13 @@ Compile notes into structured knowledge and build an interconnected LLM wiki net
 
 Go to **Settings → Server → Config → Compile** and enable the compiler. 
 
-#### Step 2 — Create a Mate with a Compile Trigger
+#### Step 2 — Create an Agent Bot with a Compile Trigger
 
-Create a mate in **Settings → Mate Bots**, add a trigger, and choose one of the two compile trigger modes:
+Create an agent bot in **Settings → Agent Bots**, add a trigger, and choose one of the two compile trigger modes:
 
 1. Auto-compile on note creation (`note_created` + Path Prefix)
 
-Set the **Event** to `note_created` and add one or more **Path Prefixes** (e.g. `/Web Clips/`). The mate fires automatically whenever a new note is created inside a matching directory.
+Set the **Event** to `note_created` and add one or more **Path Prefixes** (e.g. `/Web Clips/`). The agent bot fires automatically whenever a new note is created inside a matching directory.
 
 Example prompt:
 ```
@@ -352,7 +344,7 @@ Use the compile skill to compile note `{{.Path}}`, then use the index skill to u
 
 2. Manual compile trigger (`compile_requested`)
 
-Set the **Event** to `compile_requested`. The mate fires when you manually trigger compilation from within the app (e.g. via the note action menu).
+Set the **Event** to `compile_requested`. The agent bot fires when you manually trigger compilation from within the app (e.g. via the note action menu).
 
 Example prompt:
 ```
@@ -375,11 +367,11 @@ Please update my personal memory. I'm [name], currently working on [project], �
 
 The agent invokes the `vaultr-memory` skill and completes the extraction automatically. The first run scans the last 90 days; subsequent incremental runs scan only the last 2 days.
 
-#### ⏰ Option 2 — Create a scheduled Mate Trigger (daily auto-run)
+#### ⏰ Option 2 — Create a scheduled Agent Bot Trigger (daily auto-run)
 
-Create a Mate in **Settings → Mate Bots** with a `scheduled` trigger to update memory automatically every day.
+Create an Agent Bot in **Settings → Agent Bots** with a `scheduled` trigger to update memory automatically every day.
 
-1. Open **Settings → Mate Bots** and click **New Mate**
+1. Open **Settings → Agent Bots** and click **New Agent Bot**
 2. Give it a name (e.g. `Daily Memory`), pick an agent and model
 3. Under **Triggers**, click **+ Add trigger**
 4. Set the **Event** to `scheduled` and configure the time (e.g. daily at 08:00)
@@ -395,7 +387,7 @@ Create a Mate in **Settings → Mate Bots** with a `scheduled` trigger to update
    Please update my personal memory. I'm [name], currently working on [project]. Also scan /journal/.
    ```
 
-6. Save the mate agent
+6. Save the agent bot
 
 From this point on, memory updates run automatically once a day with no manual action required.
 
@@ -453,11 +445,11 @@ Every layer of AI output in Vaultr is customizable:
 
 **Settings → Server → Config → Agent** — set `agent.system_prompt` to replace the built-in default prompt that is prepended to every agent run. When left empty, Vaultr uses its built-in default which teaches agents about vault structure, wiki-link syntax, and personal memory files.
 
-#### 2. Per-Mate System Prompt & Trigger Prompt
+#### 2. Per-Agent-Bot System Prompt & Trigger Prompt
 
-In **Settings → Mate Bots**, each mate exposes two customization points:
+In **Settings → Agent Bots**, each agent bot exposes two customization points:
 
-- **System Prompt** — mate-specific instructions. Appended to the global system prompt (joined with `---`).
+- **System Prompt** — agent-bot-specific instructions. Appended to the global system prompt (joined with `---`).
 - **Trigger Prompt template**: the user message sent to the agent when a trigger fires. Supports variables: `{Path}`, `{Name}`, `{Content}` for vault events; `{Now}`, `{Date}`, `{Time}` for scheduled triggers; `{Content}`, `{WechatUserID}` for WeChat triggers; `{Content}`, `{DiscordChannelID}`, `{DiscordUserID}` for Discord triggers.
 
 #### 3. Rewrite the LLM-Wiki Compile Skill
