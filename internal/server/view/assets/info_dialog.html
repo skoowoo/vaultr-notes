@@ -3,14 +3,14 @@
        x-data="infoDialogCtrl()"
        x-show="open"
        x-cloak
-       class="info-overlay"
+       class="dialog-overlay info-overlay"
        role="dialog" aria-modal="true"
        @click.self="close()">
-    <div class="info-card">
-      <p class="info-title" x-text="title"></p>
+    <div class="dialog-card info-card">
+      <p class="dialog-title info-title" x-text="title"></p>
       <div class="info-body" x-html="bodyHTML"></div>
-      <div class="info-actions">
-        <button type="button" class="info-btn-close" :class="{ error: isError }" @click="close()" x-text="closeLabel"></button>
+      <div class="dialog-actions info-actions">
+        <button type="button" class="dialog-btn info-btn-close" :class="{ error: isError }" @click="close()" x-text="closeLabel"></button>
       </div>
     </div>
   </div>

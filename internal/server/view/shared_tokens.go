@@ -34,6 +34,18 @@ package view
 //
 //  4. Component-scoped tokens — narrow, single-purpose tokens (search
 //     overlay, count badges, etc.) that rarely change with theme.
+//
+// ── State-class convention ──────────────────────────────────────────────
+//
+// New JS/Alpine-toggled state classes use an `is-*` prefix (is-open,
+// is-active, is-selected, is-danger, is-visible, ...) — it reads
+// unambiguously as "current state," not a structural/type modifier, and
+// it's what most components already use. A handful of established shared
+// primitives predate this and keep their bare-adjective names instead
+// (.icon-btn.active, .seg-btn.active in base.css; .cselect-btn.open,
+// .cselect-option.sel in cselect.css) — those aren't being renamed since
+// each has many call sites and renaming buys nothing; don't add new bare
+// state classes elsewhere, reach for `is-*` instead.
 const appTokensShared = `
       /* ═══ Layer 1: primitives — raw tuples plus theme-invariant literals ═══ */
       --accent-rgb:94,106,210;
@@ -63,6 +75,27 @@ const appTokensShared = `
       --ul-mk:var(--accent); --ol-mk:var(--accent);
       /* Code surfaces — ink-derived, re-tint automatically via --ink-rgb. */
       --code-bg:rgba(var(--ink-rgb),0.055); --code-bd:rgba(var(--ink-rgb),0.10);
+      /* --hairline vs --border/--border-strong is a border-weight tier, not
+         a "chrome vs content" one: use --hairline for a SECONDARY seam,
+         where the two sides are already told apart by something else (a
+         background-tint change, or both sides belonging to the same
+         floating card) — the line is only a confirming detail, so it can
+         all but disappear. Reach for --border/--border-strong instead
+         whenever the line is the ONLY separator, or the element floats
+         over an unpredictable backdrop and needs to read as a distinct
+         object regardless of what's behind it.
+           --hairline: app-shell seams (.home-side/.settings-sidebar's
+             sidebar/content border, every "-head"/tab-bar/tool-bar chrome
+             strip's border-bottom) — bg vs surface-soft already marks the
+             boundary — AND a header-to-body seam inside one floating card
+             (.cfg-section-head, .mdt-header) — the card's own outer
+             --border-strong already carries the "distinct object" job, so
+             the internal title/body seam is secondary too.
+           --border/--border-strong: a card/dialog/dropdown's own outer
+             edge, and any divider that's the sole boundary between two
+             same-background regions (list-row separators, table cell
+             lines, field rows) — remove the line there and the boundary
+             is gone. */
       --hairline:rgba(var(--ink-rgb),0.13);
       /* Nav-item label — dimmer than --fg so sidebar/section nav reads as
          secondary chrome; hover/active states restore full --fg. */
@@ -148,18 +181,44 @@ const appTokensShared = `
 // their own.
 const appTokensDark = `
       --ink-rgb:238,240,244;
-      --bg:#08080b; --fg:#eef0f4;
-      --muted:#8d92a0; --surface-soft:#15161a; --surface-2:#1b1c21;
+      --bg:#18191e; --fg:#eef0f4;
+      --muted:#8d92a0; --surface-soft:#212229; --surface-2:#292a33;
       /* Selected-state lift for containers that already sit on
          --surface-soft (sidebars, dropdowns, floating toolbars) — stacking
-         --surface-2 there barely clears 5/255, fainter than a plain hover
+         --surface-2 there only clears ~8/255, fainter than a plain hover
          tint. Such containers locally redefine --control-active-bg to this
          value instead (see .home-side, .settings-sidebar, .graph-index-col,
          .cselect-dropdown, .milkdown-tooltip). Light mode doesn't need this
          — see appTokensLight. */
-      --control-active-bg-on-soft:#292a30;
+      --control-active-bg-on-soft:#3d3e49;
+      /* macOS Electron only (html.macos in home.css): the sidebar sits on
+         the window's native vibrancy instead of a flat --surface-soft fill,
+         and that material's own tint doesn't match this app's near-black
+         palette — left untinted it reads lighter than --surface-soft, which
+         throws off every colour tuned relative to it (active-row lift,
+         hairline borders). This wash pulls it back toward --surface-soft's
+         actual tone while staying translucent enough to still read as
+         glass. The border pairs a white-alpha line instead of --border's
+         flat hex, since a flat hex's contrast against a blurred, partly
+         see-through backdrop can't be predicted the way it can against a
+         solid fill. */
+      --sidebar-glass-bg:rgba(33,34,41,0.6); --sidebar-glass-border:rgba(255,255,255,0.1);
+      /* A translucent lift instead of --control-active-bg-on-soft's flat
+         hex — a solid fill on top of the vibrancy read as a pasted-on chip
+         rather than an integrated highlight. Only swapped in for the row's
+         own background (home.css); --control-active-bg itself stays opaque
+         since the active-row count badge also uses it as a text colour. */
+      --sidebar-glass-active:rgba(255,255,255,0.08);
+      /* The shared --scrollbar-thumb is tuned against a flat, predictable
+         surface; over the blurred vibrancy it reads inconsistently (too
+         bright here in dark, too dark in light — see the light-theme
+         definition below) since the thumb's contrast now depends on
+         whatever the vibrancy is blending with underneath. Toned down
+         instead of matched to the flat value, and scoped to the glass
+         sidebar only (home.css's html.macos .home-side-nav rule). */
+      --sidebar-glass-scrollbar-thumb:rgba(255,255,255,0.10); --sidebar-glass-scrollbar-thumb-hov:rgba(255,255,255,0.20);
       --canvas:#ffffff; --muted-soft:#656a78; --body:#d0d6e0;
-      --border:#262730; --border-strong:#363742;
+      --border:#35363f; --border-strong:#44454f;
       --accent-hov:#7b86e8;
       --link:#eef0f4;
       --link-ul:var(--accent); --link-ul-hov:var(--accent-hov);
@@ -191,13 +250,31 @@ const appTokensDark = `
 // the old warm cream/pure-black pairing.
 const appTokensLight = `
       --ink-rgb:24,24,27;
-      --bg:#fcfcfc; --fg:#18181b;
-      --muted:#6d7080; --surface-soft:#f6f6f7; --surface-2:#ececf0;
+      --bg:#f9f9fb; --fg:#18181b;
+      --muted:#6d7080; --surface-soft:#f5f5f7; --surface-2:#e3e3e9;
       /* Light's surface-soft/surface-2 are already far enough apart — no
          extra lift needed here (see the dark-theme definition above). */
       --control-active-bg-on-soft:var(--surface-2);
+      /* Light-only override of the shared (Layer 1) scrollbar tokens — as
+         --bg/--surface-soft climbed toward white, a thumb tuned against the
+         old darker canvas started reading as barely-there; nudged up so it
+         stays legible against the brighter light surfaces. Dark keeps the
+         shared value (appTokensShared) since its canvas didn't change. */
+      --scrollbar-thumb:rgba(var(--ink-rgb),0.16); --scrollbar-thumb-hov:rgba(var(--ink-rgb),0.30);
+      /* See the dark-theme definition above for why these exist. */
+      /* Brighter and a touch more opaque than --surface-soft's flat value —
+         the native vibrancy underneath (main.js's "sidebar" material) reads
+         dull/dark on its own, so this wash leans lighter to compensate
+         while still letting some of the native blur show through. */
+      --sidebar-glass-bg:rgba(250,250,251,0.72); --sidebar-glass-border:rgba(0,0,0,0.08);
+      --sidebar-glass-active:rgba(0,0,0,0.06);
+      /* See the dark-theme definition above for why this exists separately
+         from --scrollbar-thumb: over the glass sidebar's vibrancy, the
+         thumb reads darker/grayer than the flat --scrollbar-thumb value
+         (0.16) does elsewhere, so this one stays lower. */
+      --sidebar-glass-scrollbar-thumb:rgba(0,0,0,0.11); --sidebar-glass-scrollbar-thumb-hov:rgba(0,0,0,0.20);
       --canvas:#ffffff; --muted-soft:#9b9eac; --body:#3f4147;
-      --border:#e7e7ea; --border-strong:#d4d4d8;
+      --border:#d2d2d9; --border-strong:#bcbcc5;
       --accent-hov:#4c56c8;
       --link:#111111;
       --link-ul:var(--accent); --link-ul-hov:var(--accent-hov);

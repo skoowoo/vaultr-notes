@@ -1,26 +1,13 @@
-    /* ── Info dialog ──────────────────────────────────────────────── */
+    /* ── Info dialog — layers .dialog-* shared chrome (base.css) ─────── */
     .info-overlay {
-      position: fixed; inset: 0; z-index: 9000;
-      display: flex; align-items: center; justify-content: center;
-      padding: 1.5rem;
-      background: var(--overlay-bg);
-      backdrop-filter: var(--glass-scrim-filter);
-      -webkit-backdrop-filter: var(--glass-scrim-filter);
-      border-radius: 0; /* full-viewport scrim — never rounds */
       animation: info-bg-in 160ms ease both;
     }
     .info-card {
-      background: var(--bg);
-      border: var(--bd-w) solid var(--border-strong);
-      border-radius: var(--r-xl);
-      padding: 1.5rem 1.5rem 1.25rem;
-      max-width: 400px; width: 100%;
-      box-shadow: var(--shadow-lg) var(--shadow-color);
+      max-width: 400px;
       animation: info-card-in 180ms cubic-bezier(0.16,1,0.3,1) both;
     }
     .info-title {
-      font-size: var(--text-base); font-weight: 600;
-      color: var(--fg); margin: 0 0 0.625rem; line-height: 1.4;
+      margin-bottom: 0.625rem;
     }
     .info-body {
       font-size: var(--text-sm); color: var(--muted); line-height: 1.65;
@@ -36,20 +23,11 @@
       padding: 0.1em 0.35em; color: var(--fg);
     }
     .info-body strong { color: var(--fg); font-weight: 600; }
-    .info-actions {
-      display: flex; justify-content: flex-end; margin-top: 1.25rem;
-    }
     .info-btn-close {
-      height: var(--btn-h); padding: 0 0.875rem;
-      font-size: var(--text-base); font-weight: 500; cursor: pointer;
-      font-family: inherit;
       background: var(--accent); color: var(--accent-fg); border: none;
     }
     .info-btn-close:hover {
       background: var(--accent-hov);
-    }
-    .info-btn-close:active {
-      opacity: 0.85;
     }
     .info-btn-close.error { background: var(--s-err); color: var(--s-err-fg); }
 

@@ -17,7 +17,7 @@ const themeBootstrapScript = `  <script>(function(){
       else if(pref==='dark'){document.documentElement.setAttribute('data-theme','dark');}
       else{document.documentElement.removeAttribute('data-theme');}
       if(window.vaultrDesktop&&window.vaultrDesktop.setViewBgColor){
-        window.vaultrDesktop.setViewBgColor(effectiveLight?'#fcfcfc':'#08080b',pref==='light'?'light':(pref==='dark'?'dark':''));
+        window.vaultrDesktop.setViewBgColor(effectiveLight?'#f9f9fb':'#18191e',pref==='light'?'light':(pref==='dark'?'dark':''));
       }
     }catch(_){}
   };

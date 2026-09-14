@@ -6,6 +6,16 @@
       font-family: var(--font-ui);
       -webkit-font-smoothing: antialiased;
     }
+    /* macOS Electron only (html.macos, set by shared_theme.go's bootstrap
+       script — see main.js's BaseWindow `vibrancy` option): let the sidebar
+       show the window's native vibrancy instead of painting over it. Body
+       has to be the one that goes transparent — it's the layer directly
+       above the window's own compositor surface, so it's the only thing
+       actually standing between the vibrancy and the sidebar's pixels.
+       .home-list-pane picks up its own explicit background so the content
+       pane still reads as solid; everywhere else (web browser, Windows/
+       Linux Electron) is untouched. */
+    html.macos body { background: transparent; }
     .lib-body { flex: 1; display: flex; min-height: 0; overflow: hidden; border-radius: 0; }
     /* ── Home layout: sidebar + list body fills the full height ───── */
     .home-container {
@@ -35,12 +45,15 @@
        aside itself no longer scrolls as a whole; only the middle nav list
        does, so the top/bottom action rows stay put as the note list grows. */
     .home-side {
-      flex: 0 0 232px; max-width: 232px;
+      flex: 0 0 248px; max-width: 248px;
       display: flex; flex-direction: column;
       min-height: 0; overflow: hidden;
       padding: 0;
       background: var(--surface-soft);
-      border-right: var(--bd-w) solid var(--border);
+      /* --hairline instead of --border — sidebar/content sit close enough
+         in tone now that the full-contrast --border reads as too heavy a
+         seam; the ink-alpha hairline keeps the boundary a thin, quiet line. */
+      border-right: var(--bd-w) solid var(--hairline);
       border-radius: 0;
       /* Every "currently active" row in here (.home-side-item.is-active,
          .home-side-child.is-active, the drawer-toggle icon button) just
@@ -51,6 +64,47 @@
          so it still reads as a clear lift instead of nearly disappearing
          into the surface it sits on. */
       --control-active-bg: var(--control-active-bg-on-soft);
+    }
+    /* macOS Electron only: drop the sidebar's own fill so the window's
+       native vibrancy (main.js) shows through instead — see the html.macos
+       body rule above for why body has to go transparent for this to reach
+       the compositor at all. */
+    html.macos .home-side {
+      background: var(--sidebar-glass-bg);
+      border-right-color: var(--sidebar-glass-border);
+    }
+    /* Every hairline in the glass sidebar shares this one line colour —
+       .home-side's own right border above, the mid-list separator, the
+       New Note button's outline, and the bottom row's top border — so they
+       read as one consistent (if restrained) set of dividers instead of
+       each drifting to its own contrast against the vibrancy. */
+    html.macos .home-side-sep,
+    html.macos .home-side-new-btn,
+    html.macos .home-side-bottom {
+      border-color: var(--sidebar-glass-border);
+    }
+    html.macos .home-side-sep { background: var(--sidebar-glass-border); }
+    /* Active-row lift: a translucent wash instead of --control-active-bg's
+       flat hex, so a selected row reads as part of the glass rather than an
+       opaque chip pasted on top of it. Overrides the background only —
+       --control-active-bg itself stays untouched since .home-side-item's
+       count badge also reads it as a (necessarily opaque) text colour. */
+    html.macos .home-side-item.is-active,
+    html.macos .home-side-child.is-active,
+    html.macos .home-side-bottom .icon-btn-ghost.is-active {
+      background: var(--sidebar-glass-active);
+    }
+    /* Scrollbar thumb: the shared --scrollbar-thumb (base.css) is tuned for
+       a flat surface — over the vibrancy it comes out too strong in both
+       directions (darker/grayer in light, brighter in dark), so the glass
+       sidebar gets its own toned-down value (shared_tokens.go). Same
+       selector base.css uses, just scoped under html.macos so it wins on
+       specificity without !important. */
+    html.macos .home-side-nav::-webkit-scrollbar-thumb {
+      background: var(--sidebar-glass-scrollbar-thumb);
+    }
+    html.macos .home-side-nav::-webkit-scrollbar-thumb:hover {
+      background: var(--sidebar-glass-scrollbar-thumb-hov);
     }
     /* Top row now only holds Search, right-aligned — it shares the window's
        true top edge with the macOS traffic lights (same row, not stacked
@@ -68,7 +122,7 @@
       border-radius: 0; /* flush divider row — the global rounded-corner
         reset (base.css) was clipping the border-top/bottom short of the
         sidebar's edges, reading as a doubled/thicker line at the corner. */
-      border-top: var(--bd-w) solid var(--border);
+      border-top: var(--bd-w) solid var(--hairline);
     }
     html.macos .home-side-top {
       padding-left: 76px;
@@ -232,16 +286,20 @@
       display: flex; flex-direction: column;
       min-height: 0; overflow: hidden;
       border-radius: 0;
+      /* Explicit even though it matches what body already painted here —
+         once html.macos makes body transparent for the sidebar's vibrancy
+         (above), this is what keeps the content pane looking solid. */
+      background: var(--bg);
     }
     /* The shared header row for sections that need one (Pinned, a folder,
-       Inbox, Images, Agents) — same height/padding/no-border everywhere
-       instead of each inventing its own toolbar. A section only puts a
-       title in it when the title carries information the sidebar selection
-       doesn't already (a folder's name, or a count/badge like Pinned's
-       total or Inbox's unread count) — Images/Agents skip the title
-       entirely and just host their own controls, right-aligned via
-       .home-list-head-spacer. Shorts/Graph skip this row altogether; they
-       have nothing that belongs in it.
+       Inbox, Images, Agents, Shorts) — same height/padding/no-border
+       everywhere instead of each inventing its own toolbar. A section only
+       puts a title in it when the title carries information the sidebar
+       selection doesn't already (a folder's name, or a count/badge like
+       Pinned's total or Inbox's unread count) — Images/Agents/Shorts skip
+       the count and just host their own controls (Select toggle, conv-type
+       seg, Shorts' month select) right-aligned via .home-list-head-spacer.
+       Graph skips this row altogether; it has nothing that belongs in it.
 
        min-height pins the row's CONTENT line (i.e. the box excluding this
        rule's own padding) to --btn-h-xs (28px, this row's actual controls —
@@ -265,7 +323,9 @@
       flex-shrink: 0; display: flex; align-items: center; gap: 8px;
       min-height: calc(8px + 8px + var(--btn-h-xs));
       padding: 8px 24px;
-      border-bottom: var(--bd-w) solid var(--border);
+      /* --hairline, not --border — matches the sidebar/content seam
+         (.home-side) so header-strip dividers read at the same weight. */
+      border-bottom: var(--bd-w) solid var(--hairline);
       border-radius: 0; /* flush chrome strip — never rounds */
     }
     /* macOS: this row sits at the true window top now (no more full-width
@@ -494,7 +554,7 @@
     .inbox-sheet-overlay.open .inbox-sheet-panel { transform: translateX(0); opacity: 1; }
     .inbox-sheet-head {
       flex-shrink: 0; display: flex; align-items: center; gap: 0.6rem;
-      padding: 1rem 1.25rem; border-bottom: var(--bd-w) solid var(--border);
+      padding: 1rem 1.25rem; border-bottom: var(--bd-w) solid var(--hairline);
       border-radius: 0; /* flush chrome strip */
     }
     .inbox-sheet-title {
@@ -511,12 +571,3 @@
     }
     .inbox-sheet-scroll { flex: 1; overflow-y: auto; padding: 0 1.25rem 2rem; }
     .inbox-sheet-body.prose { font-size: var(--text-base); }
-
-    /* ── Shorts stream embedded in the home list pane ────────────
-       shorts.css (loaded above) styles .shorts-month-item as an <a>; here
-       it's a <button> (hx-get, stays in place instead of navigating to
-       /shorts), so it needs the button-specific reset shorts.css doesn't
-       already provide. */
-    .home-list-pane .shorts-month-item {
-      background: transparent; font-family: inherit; text-decoration: none;
-    }

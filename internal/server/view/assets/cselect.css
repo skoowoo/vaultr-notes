@@ -1,0 +1,66 @@
+/* ── Custom select ─────────────────────────────────────────── */
+/* App-wide dropdown primitive — used by Settings (Appearance/Agent Bots
+   forms), and Shorts' month picker (home.go, .cselect--inline variant).
+   Lives here (not in the settings modal) because it is not settings-specific. */
+.cselect { position: relative; width: 100%; }
+.cselect-btn {
+  width: 100%; display: flex; align-items: center; justify-content: space-between;
+  gap: 0.4rem; height: var(--btn-h); padding: 0 0.75rem;
+  background: var(--bg); border: var(--bd-w) solid var(--border-strong);
+  cursor: pointer; text-align: left;
+  font-size: var(--text-base); font-family: inherit; color: var(--fg);
+}
+.cselect-btn:focus { outline: none; border-color: var(--accent); }
+.cselect-btn.open { border-color: var(--accent); }
+.cselect-btn-text { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border-radius: 0; }
+.cselect-btn svg { width: 11px; height: 11px; flex-shrink: 0; color: var(--muted); }
+.cselect-btn.open svg { transform: rotate(180deg); }
+.cselect-dropdown {
+  position: absolute; top: calc(100% + 3px); left: 0; right: 0; z-index: 120;
+  background: var(--surface-soft); border: var(--bd-w) solid var(--border-strong);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-sm) var(--shadow-color);
+  overflow: hidden;
+  max-height: 220px; overflow-y: auto;
+  /* .cselect-option.sel below — same --surface-soft-ambient fix as
+     .home-side (home.css): repoint --control-active-bg locally. */
+  --control-active-bg: var(--control-active-bg-on-soft);
+}
+.cselect-option {
+  width: 100%; display: flex; align-items: center; gap: 0.45rem;
+  padding: 0.42rem 0.65rem; background: transparent; border: none; cursor: pointer;
+  text-align: left; font-size: var(--text-sm); font-family: inherit;
+  color: var(--fg);
+}
+.cselect-option:hover { background: var(--card-hov); }
+.cselect-option.sel { background: var(--control-active-bg); color: var(--control-active-fg); }
+.cselect-option-dot {
+  width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
+  background: var(--fg); opacity: 0;
+}
+.cselect-option.sel .cselect-option-dot { opacity: 1; }
+
+/* ── Inline/ghost variant — same dropdown (.cselect-dropdown/-option
+   above, unchanged), but a lightweight trigger for a control that lives
+   in a header or toolbar rather than a form field: sized to its label
+   instead of a full-width bordered box, and quiet until hovered (used
+   by Shorts' month picker, home.go). */
+.cselect--inline { width: auto; }
+/* The base dropdown stretches exactly to the trigger's width (left:0;
+   right:0) — fine when that trigger is a wide form field, but the
+   inline trigger is only as wide as its own short label, and option
+   rows render at a larger font (--text-sm vs the trigger's --text-xs),
+   so pinning both edges wrapped their text. Right-anchor it and size it
+   to its own content instead, only ever growing leftward from the
+   trigger's right edge (never narrower than the trigger itself). */
+.cselect--inline .cselect-dropdown { left: auto; right: 0; width: max-content; min-width: 100%; }
+.cselect-btn--ghost {
+  width: auto; height: auto;
+  background: transparent; border: none;
+  padding: 5px 8px;
+  color: var(--muted); font-size: var(--text-xs); font-weight: var(--fw-medium);
+}
+.cselect-btn--ghost:hover { color: var(--fg); background: var(--card-hov); }
+.cselect-btn--ghost:focus { outline: none; }
+.cselect-btn--ghost:focus-visible { outline: 2px solid var(--accent-focus); outline-offset: 1px; }
+.cselect-btn--ghost.open { color: var(--fg); }

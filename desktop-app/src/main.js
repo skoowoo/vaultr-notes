@@ -1,4 +1,4 @@
-const { app, BaseWindow, WebContentsView, shell, ipcMain, nativeImage, Menu, dialog, Notification } = require("electron");
+const { app, BaseWindow, WebContentsView, shell, ipcMain, nativeImage, nativeTheme, Menu, dialog, Notification } = require("electron");
 
 app.setName("Vaultr");
 
@@ -60,7 +60,13 @@ const views = {};
 let activeSection = null;
 // Track the most-recently applied theme background so detached views can be
 // pre-synced before they are made visible (prevents flash-of-wrong-theme).
-let currentViewBgColor = '#08080b';
+// On macOS this stays fully transparent instead of tracking the theme colour:
+// the window itself gets a native `vibrancy` fill (see createWindow), and the
+// page's own CSS (html.macos rules in home.css) paints every surface that
+// should stay solid — the sidebar is the one deliberate gap that lets the
+// vibrancy through. A view-level background colour here would just paint
+// over that gap.
+let currentViewBgColor = process.platform === 'darwin' ? '#00000000' : '#18191e';
 
 // ── Inbox notifications (direct SSE from main process) ─────────────────────────
 // Fires once per new /api/inbox message, regardless of producer (agent bot
@@ -284,7 +290,7 @@ function resetToStartScreen() {
 }
 
 function showStartScreen() {
-  startView = new WebContentsView({ webPreferences: makeWebPrefs(), backgroundColor: '#08080b' });
+  startView = new WebContentsView({ webPreferences: makeWebPrefs(), backgroundColor: currentViewBgColor });
 
   startView.webContents.setWindowOpenHandler(({ url }) => {
     shell.openExternal(url);
@@ -345,7 +351,7 @@ function setupSectionView(view, sectionName) {
 function createSectionViews(url) {
   serverUrl = url;
   for (const section of SECTIONS) {
-    const view = new WebContentsView({ webPreferences: makeWebPrefs(), backgroundColor: '#08080b' });
+    const view = new WebContentsView({ webPreferences: makeWebPrefs(), backgroundColor: currentViewBgColor });
     view.webContents.loadURL(url + "/" + section);
     setupSectionView(view, section);
     views[section] = view;
@@ -361,14 +367,21 @@ function createSectionViews(url) {
 
 function createWindow() {
   const icon = getAppIconImage();
+  const isMac = process.platform === "darwin";
   win = new BaseWindow({
     width: 1440,
     height: 960,
     minWidth: 960,
     minHeight: 640,
     title: "Vaultr",
-    backgroundColor: "#08080b",
-    titleBarStyle: process.platform === "darwin" ? "hiddenInset" : "default",
+    // On macOS the window itself supplies a native vibrant (blurred,
+    // see-through-to-other-windows) fill instead of a flat colour; home.css's
+    // html.macos rules leave the sidebar transparent so this actually shows
+    // through there, while every other surface keeps painting its own solid
+    // background on top. Windows/Linux keep today's flat colour.
+    backgroundColor: isMac ? undefined : "#18191e",
+    titleBarStyle: isMac ? "hiddenInset" : "default",
+    ...(isMac ? { vibrancy: "sidebar", visualEffectState: "active" } : {}),
     ...(icon ? { icon } : {}),
   });
 
@@ -495,14 +508,26 @@ ipcMain.on("set-window-button-visibility", (_event, visible) => {
 
 ipcMain.on("set-view-bg-color", (event, color, theme) => {
   // Always track the latest theme bg so showSection() can pre-sync detached views.
-  currentViewBgColor = color;
+  // macOS keeps every view fully transparent regardless of theme — see the
+  // currentViewBgColor declaration above for why.
+  currentViewBgColor = process.platform === 'darwin' ? '#00000000' : color;
+
+  // The sidebar's native vibrancy (createWindow) is an NSVisualEffectView,
+  // which tints itself from the OS-level appearance — not from this app's
+  // own light/dark toggle. Left alone, a user who picks "light" in-app but
+  // runs macOS in Dark Mode gets a dark, blown-out sidebar next to a light
+  // content pane. Forcing nativeTheme.themeSource to match keeps them in
+  // sync; 'auto' (theme === '') falls back to whatever the OS is doing.
+  if (process.platform === 'darwin') {
+    nativeTheme.themeSource = theme === 'light' ? 'light' : theme === 'dark' ? 'dark' : 'system';
+  }
 
   // Update every view's native background colour immediately — including detached
   // ones — so the OS layer never shows a stale colour when a section is revealed.
   const allViews = [...Object.values(views), startView].filter(Boolean);
   for (const v of allViews) {
     if (!v.webContents.isDestroyed()) {
-      try { v.setBackgroundColor(color); } catch (_) {}
+      try { v.setBackgroundColor(currentViewBgColor); } catch (_) {}
     }
   }
 

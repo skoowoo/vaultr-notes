@@ -416,7 +416,7 @@
 
     /* Thinking */
     .seg-thinking {
-      border-left: var(--bd-w) solid var(--border);
+      border-left: var(--bd-w) solid var(--hairline);
       border-radius: 0;
       padding-left: 0.7rem;
     }

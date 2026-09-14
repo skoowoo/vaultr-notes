@@ -1,11 +1,13 @@
 {{range .Groups}}
-{{$date := .CompactDate}}
-{{range .Entries}}
-<div class="shorts-entry">
-  <span class="shorts-entry-meta">{{$date}} · {{.Time}}</span>
-  <div class="prose shorts-entry-prose">{{.HTML}}</div>
+<div class="shorts-day">
+  <div class="shorts-day-label">{{if .IsToday}}Today{{else if .IsYesterday}}Yesterday{{else}}{{.DateLabel}}{{end}}</div>
+  {{range .Entries}}
+  <div class="shorts-entry">
+    <span class="shorts-entry-time">{{.Time}}</span>
+    <div class="prose shorts-entry-prose">{{.HTML}}</div>
+  </div>
+  {{end}}
 </div>
-{{end}}
 {{end}}
 <div id="shorts-load-more" hx-swap-oob="true">
   {{if .HasMore}}

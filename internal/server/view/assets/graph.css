@@ -23,7 +23,9 @@
       max-width: 220px;
       display: flex;
       flex-direction: column;
-      border-right: var(--bd-w) solid var(--border);
+      /* --hairline, not --border — matches .home-side's sidebar/content
+         seam (home.css) so every sidebar/content boundary reads the same. */
+      border-right: var(--bd-w) solid var(--hairline);
       border-radius: 0; /* edge-docked column */
       min-height: 0;
       background: var(--surface-soft);
@@ -39,7 +41,7 @@
       align-items: center;
       gap: 0.45rem;
       padding: 0 0.75rem;
-      border-bottom: var(--bd-w) solid var(--border);
+      border-bottom: var(--bd-w) solid var(--hairline);
       border-radius: 0; /* flush chrome strip */
       background: var(--surface-soft);
     }
@@ -285,7 +287,10 @@
       line-height: var(--lh-snug);
       word-break: break-word;
       padding-bottom: 0.55rem;
-      border-bottom: var(--bd-w) solid var(--border-strong);
+      /* Header-to-body seam inside one floating card — the panel's own
+         outer edge (border-strong, elsewhere) already does the "distinct
+         object" job, so this internal seam only needs --hairline. */
+      border-bottom: var(--bd-w) solid var(--hairline);
       border-radius: 0;
     }
 

@@ -217,21 +217,26 @@ func (vh *ViewHandler) renderHomeSectionHTML(r *http.Request) (template.HTML, er
 	return renderHomeSectionFull(data)
 }
 
-// renderHomeShortsSection renders the same rendered Shorts stream (composer,
-// date-grouped entries, month rail) as the standalone /shorts page, reusing
-// its data loaders (shorts.go). Pagination ("Load earlier") and the month
-// rail both stay in place inside #home-list-pane via hx-get, rather than
-// navigating to /shorts — unlike the note-list view kind, they don't go
-// through /home/section/more: the month rail re-requests this same endpoint
-// with &from=, and "Load earlier" hits the existing /shorts/stream endpoint
-// directly (its #shorts-stream-groups/#shorts-load-more ids match here too).
+// renderHomeShortsSection renders the Shorts view: a header (title + a
+// "jump to month" select), a composer, and the date-grouped entry feed
+// (shorts.go's loadStreamGroups/loadMonthsWithEntries back both). Pagination
+// ("Load earlier") and the month select both stay in place inside
+// #home-list-pane via hx-get, rather than navigating anywhere — unlike the
+// note-list view kind, they don't go through /home/section/more: the select
+// re-requests this same endpoint with &from=, and "Load earlier" hits the
+// existing /shorts/stream endpoint directly (its #shorts-stream-groups /
+// #shorts-load-more ids match here too, so the fragment it returns drops in
+// unchanged).
 func (vh *ViewHandler) renderHomeShortsSection(r *http.Request) (template.HTML, error) {
-	before := time.Now().Add(time.Second)
-	activeYM := time.Now().Format("2006-01")
+	now := time.Now()
+	before := now.Add(time.Second)
+	activeYM := now.Format("2006-01")
+	activeMonthLabel := strings.ToUpper(now.Format("Jan 2006"))
 	if from := r.URL.Query().Get("from"); from != "" {
 		if t, err := time.ParseInLocation("2006-01", from, time.Local); err == nil {
 			before = t.AddDate(0, 1, 0) // first moment of next month = end of selected month
 			activeYM = from
+			activeMonthLabel = strings.ToUpper(t.Format("Jan 2006"))
 		}
 	}
 
@@ -241,10 +246,11 @@ func (vh *ViewHandler) renderHomeShortsSection(r *http.Request) (template.HTML, 
 	}
 
 	data := shortsStreamPageData{
-		Groups:  groups,
-		Cursor:  cursor,
-		HasMore: hasMore,
-		Months:  vh.loadMonthsWithEntries(activeYM),
+		Groups:           groups,
+		Cursor:           cursor,
+		HasMore:          hasMore,
+		Months:           vh.loadMonthsWithEntries(activeYM),
+		ActiveMonthLabel: activeMonthLabel,
 	}
 
 	var buf bytes.Buffer
@@ -402,12 +408,40 @@ var homeSectionTemplate = template.Must(
 	).New("full").Funcs(homeTemplateFuncs).Parse(homeSectionFullHTML),
 )
 
-// homeShortsSectionHTML mirrors shorts.html's .shorts-stream-layout (feed +
-// month rail) verbatim, with one difference: the month rail re-requests this
-// same #home-list-pane in place (hx-get) instead of navigating to /shorts —
-// everything here must keep working when it's /shorts's markup embedded
-// inside home rather than the standalone page.
-const homeShortsSectionHTML = `<div class="shorts-stream-layout">
+// homeShortsSectionHTML lays out Shorts as a single column: the shared
+// .home-list-head (title + a "jump to month" picker, in place of the old
+// always-visible month rail) above a composer and the date-grouped feed.
+// The month picker reuses the app's shared custom-dropdown component
+// (.cselect, shared_settings_modal.go) rather than a native <select> — same
+// dropdown look/positioning as Settings/Agent Bots, just with the lighter
+// "ghost" trigger variant (shared_settings_modal.go's .cselect-btn--ghost)
+// since this sits in a header rather than a form field. Each option
+// re-requests this same fragment with &from= instead of navigating
+// anywhere, same as every other control here.
+const homeShortsSectionHTML = `<div class="shorts-view">
+  <div class="home-list-head">
+    <span class="home-list-title">Shorts</span>
+    <div class="home-list-head-spacer"></div>
+    {{if gt (len .Months) 1}}
+    <div class="cselect cselect--inline" x-data="{ csOpen: false }" @click.outside="csOpen = false">
+      <button type="button" class="cselect-btn cselect-btn--ghost" :class="{open: csOpen}"
+              @click="csOpen = !csOpen" @keydown.escape="csOpen = false" aria-label="Jump to month">
+        <span class="cselect-btn-text">{{.ActiveMonthLabel}}</span>
+        <svg fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+      </button>
+      <div class="cselect-dropdown" x-show="csOpen" x-cloak>
+        {{range .Months}}
+        <button type="button" class="cselect-option{{if .IsCurrent}} sel{{end}}"
+                hx-get="/home/section?type=shorts&from={{.YM}}" hx-target="#home-list-pane" hx-swap="innerHTML"
+                @click="csOpen = false">
+          <span class="cselect-option-dot"></span><span>{{.Abbr}} {{.Year}}</span>
+        </button>
+        {{end}}
+      </div>
+    </div>
+    {{end}}
+  </div>
+
   <div class="shorts-stream-wrap">
     <div class="shorts-stream-inner">
       <button type="button" class="shorts-compose"
@@ -417,13 +451,15 @@ const homeShortsSectionHTML = `<div class="shorts-stream-layout">
       </button>
       <div id="shorts-stream-groups">
         {{range .Groups}}
-        {{$date := .CompactDate}}
-        {{range .Entries}}
-        <div class="shorts-entry">
-          <span class="shorts-entry-meta">{{$date}} · {{.Time}}</span>
-          <div class="prose shorts-entry-prose">{{.HTML}}</div>
+        <div class="shorts-day">
+          <div class="shorts-day-label">{{if .IsToday}}Today{{else if .IsYesterday}}Yesterday{{else}}{{.DateLabel}}{{end}}</div>
+          {{range .Entries}}
+          <div class="shorts-entry">
+            <span class="shorts-entry-time">{{.Time}}</span>
+            <div class="prose shorts-entry-prose">{{.HTML}}</div>
+          </div>
+          {{end}}
         </div>
-        {{end}}
         {{else}}
         <div class="shorts-empty-state">
           <div class="shorts-empty-icon">
@@ -452,16 +488,6 @@ const homeShortsSectionHTML = `<div class="shorts-stream-layout">
       </div>
     </div>
   </div>
-
-  <nav class="shorts-month-rail">
-    {{range .Months}}
-    <button type="button" class="shorts-month-item{{if .IsCurrent}} is-current{{end}}{{if .HasData}} has-data{{end}}"
-            hx-get="/home/section?type=shorts&from={{.YM}}" hx-target="#home-list-pane" hx-swap="innerHTML">
-      <span class="shorts-month-abbr">{{.Abbr}}</span>
-      <span class="shorts-month-year">{{.Year}}</span>
-    </button>
-    {{end}}
-  </nav>
 </div>`
 
 var homeShortsSectionTemplate = template.Must(template.New("home-shorts-section").Parse(homeShortsSectionHTML))
@@ -1019,7 +1045,7 @@ var homePageHTML = `<!DOCTYPE html>
   </script>
   <style>
 ` + appTokensCSS + `
-` + infoDialogCSS + baseCSS + homeCSS + shortsCSS + imagesCSS + graphCSS + agentChatCSS + drawerCSS + noteSharedCSS + noteEditorCSS + searchOverlayStyles + confirmDialogCSS + shortDialogCSS + settingsModalCSS + `
+` + infoDialogCSS + baseCSS + cselectCSS + homeCSS + imagesCSS + graphCSS + agentChatCSS + drawerCSS + noteSharedCSS + noteEditorCSS + shortsCSS + searchOverlayStyles + confirmDialogCSS + shortDialogCSS + settingsModalCSS + `
   </style>
 </head>
 <body x-data="homeCtrl()" @vaultr:insert-path.window="insertPath($event)">

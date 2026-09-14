@@ -13,10 +13,9 @@ import (
 // ─── stream types ─────────────────────────────────────────────────────────────
 
 type shortsStreamGroup struct {
-	Date        string
-	DateLabel   string
-	CompactDate string // "Jun 16" or "Jun 16, 2025" — for per-entry timestamp display
+	DateLabel   string // "Monday, June 16" or "Monday, June 16, 2025" — group heading
 	IsToday     bool
+	IsYesterday bool
 	Entries     []shortRenderedEntry
 }
 
@@ -24,15 +23,15 @@ type shortsMonthItem struct {
 	Abbr      string // "JUN"
 	Year      string // "2026"
 	YM        string // "2026-06"
-	HasData   bool
 	IsCurrent bool
 }
 
 type shortsStreamPageData struct {
-	Groups  []shortsStreamGroup
-	Cursor  string // RFC3339 of the oldest entry shown — load-more cursor
-	HasMore bool
-	Months  []shortsMonthItem
+	Groups           []shortsStreamGroup
+	Cursor           string // RFC3339 of the oldest entry shown — load-more cursor
+	HasMore          bool
+	Months           []shortsMonthItem
+	ActiveMonthLabel string // "SEP 2026" — the month-picker trigger's own label
 }
 
 type shortRenderedEntry struct {
@@ -52,14 +51,6 @@ func stripShortContent(content string) string {
 		}
 	}
 	return content
-}
-
-func formatShortsDateLabel(date string) string {
-	t, err := time.ParseInLocation("2006-01-02", date, time.Local)
-	if err != nil {
-		return date
-	}
-	return t.Format("Monday, January 2")
 }
 
 // loadStreamGroups returns entries grouped by date, newest-first.
@@ -82,6 +73,7 @@ func (vh *ViewHandler) loadStreamGroups(before time.Time, limit int) ([]shortsSt
 
 	now := time.Now()
 	today := now.Format("2006-01-02")
+	yesterday := now.AddDate(0, 0, -1).Format("2006-01-02")
 	currentYear := now.Year()
 	var groups []shortsStreamGroup
 	groupIdx := make(map[string]int)
@@ -96,17 +88,16 @@ func (vh *ViewHandler) loadStreamGroups(before time.Time, limit int) ([]shortsSt
 		date := e.CreatedAt.Format("2006-01-02")
 		idx, ok := groupIdx[date]
 		if !ok {
-			compactDate := e.CreatedAt.Format("Jan 2")
+			dateLabel := e.CreatedAt.Format("Monday, January 2")
 			if e.CreatedAt.Year() != currentYear {
-				compactDate = e.CreatedAt.Format("Jan 2, 2006")
+				dateLabel = e.CreatedAt.Format("Monday, January 2, 2006")
 			}
 			idx = len(groups)
 			groupIdx[date] = idx
 			groups = append(groups, shortsStreamGroup{
-				Date:        date,
-				DateLabel:   formatShortsDateLabel(date),
-				CompactDate: compactDate,
+				DateLabel:   dateLabel,
 				IsToday:     date == today,
+				IsYesterday: date == yesterday,
 			})
 		}
 		groups[idx].Entries = append(groups[idx].Entries, shortRenderedEntry{
@@ -123,9 +114,14 @@ func (vh *ViewHandler) loadStreamGroups(before time.Time, limit int) ([]shortsSt
 	return groups, cursor, hasMore, nil
 }
 
-// loadMonthsWithEntries returns the last 24 calendar months, marking which ones
-// have at least one short note file. activeYM is the YYYY-MM that should be
-// highlighted as selected (typically today's month or the ?from= param value).
+// loadMonthsWithEntries returns the months (within the last 24 calendar
+// months) that actually have at least one short note, newest-first, plus the
+// current month even when it's empty — these back the "jump to month" select
+// in the Shorts header (see homeShortsSectionHTML), so an empty month never
+// disappears from it mid-browse. activeYM is the YYYY-MM that should be
+// marked selected (typically today's month or the ?from= param value) and is
+// likewise always kept even without entries. Skipping empty months keeps the
+// list a short, meaningful one instead of 24 mostly-blank options.
 func (vh *ViewHandler) loadMonthsWithEntries(activeYM string) []shortsMonthItem {
 	notes, _ := vh.vault.ListAllNotes(storage.ListOptions{
 		OnlyKinds: []storage.Kind{storage.KindShort},
@@ -138,18 +134,22 @@ func (vh *ViewHandler) loadMonthsWithEntries(activeYM string) []shortsMonthItem 
 			monthSet[date[:7]] = true
 		}
 	}
+	monthSet[time.Now().Format("2006-01")] = true
+	monthSet[activeYM] = true
 
 	base := time.Date(time.Now().Year(), time.Now().Month(), 1, 0, 0, 0, 0, time.Local)
 
-	items := make([]shortsMonthItem, 0, 24)
+	var items []shortsMonthItem
 	for i := 0; i < 24; i++ {
 		t := base.AddDate(0, -i, 0)
 		ym := t.Format("2006-01")
+		if !monthSet[ym] {
+			continue
+		}
 		items = append(items, shortsMonthItem{
 			Abbr:      strings.ToUpper(t.Format("Jan")),
 			Year:      t.Format("2006"),
 			YM:        ym,
-			HasData:   monthSet[ym],
 			IsCurrent: ym == activeYM,
 		})
 	}

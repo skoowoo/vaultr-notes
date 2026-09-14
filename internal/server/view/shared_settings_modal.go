@@ -43,7 +43,10 @@ const settingsModalCSS = `
 
     /* ── Primary sidebar ──────────────────────────────────────── */
     .settings-sidebar {
-      flex-shrink: 0; width: 196px; border-right: var(--bd-w) solid var(--border);
+      flex-shrink: 0; width: 196px;
+      /* --hairline, not --border — matches .home-side's sidebar/content
+         seam (home.css) so both dividers read at the same weight. */
+      border-right: var(--bd-w) solid var(--hairline);
       border-radius: 0; /* internal seam within the modal */
       background: var(--surface-soft);
       padding: 1rem 0.5rem; display: flex; flex-direction: column;
@@ -127,7 +130,7 @@ const settingsModalCSS = `
       flex-shrink: 0; display: flex; align-items: center;
       justify-content: space-between; flex-wrap: wrap;
       gap: 0.75rem 1rem; margin-top: 2rem; padding-top: 1.25rem;
-      border-top: var(--bd-w) solid var(--border); border-radius: 0; max-width: 640px;
+      border-top: var(--bd-w) solid var(--hairline); border-radius: 0; max-width: 640px;
     }
     .cfg-action-left { display: flex; align-items: center; gap: 0.75rem; flex: 1; min-width: 0; }
     .cfg-action-right { display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0; }
@@ -170,7 +173,7 @@ const settingsModalCSS = `
       text-align: left; color: inherit;
     }
     .cfg-section-head:hover { background: var(--card-hov); }
-    .cfg-section.is-open .cfg-section-head { border-bottom: var(--bd-w) solid var(--border); border-radius: 0; }
+    .cfg-section.is-open .cfg-section-head { border-bottom: var(--bd-w) solid var(--hairline); border-radius: 0; }
     .cfg-section-head-text { min-width: 0; flex: 1; }
     .cfg-section-title {
       font-size: var(--text-sm); font-weight: 600; letter-spacing: -0.01em;
@@ -220,7 +223,7 @@ const settingsModalCSS = `
       font-family: var(--font-mono);
     }
     .cfg-field-desc { grid-area: desc; font-size: var(--text-xs); color: var(--muted); margin: 0.35rem 0 0; line-height: 1.5; }
-    .cfg-wechat-auth { padding: 0.88rem 0 0; border-top: var(--bd-w) solid var(--border); border-radius: 0; }
+    .cfg-wechat-auth { padding: 0.88rem 0 0; border-top: var(--bd-w) solid var(--hairline); border-radius: 0; }
     .cfg-wechat-auth-head {
       display: flex; align-items: center; justify-content: space-between;
       gap: 0.75rem; margin-bottom: 0.65rem;
@@ -556,7 +559,10 @@ const settingsModalCSS = `
     }
     .agent-bot-trigger-hdr {
       display: flex; align-items: center; justify-content: space-between;
-      padding-bottom: 0.75rem; border-bottom: var(--bd-w) solid var(--border-strong); border-radius: 0;
+      /* Header-to-body seam inside .agent-bot-trigger-card, whose own outer
+         edge already carries --border-strong — see shared_tokens.go's
+         --hairline comment. */
+      padding-bottom: 0.75rem; border-bottom: var(--bd-w) solid var(--hairline); border-radius: 0;
     }
     .agent-bot-trigger-label { font-size: var(--text-sm); font-weight: 600; color: var(--fg); }
     .agent-bot-trigger-hdr-actions { display: flex; align-items: center; gap: 0.65rem; }
@@ -594,7 +600,7 @@ const settingsModalCSS = `
     .agent-bot-color-swatch.active { box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--border-strong); }
     .agent-bot-form-footer {
       display: flex; align-items: center; gap: 0.5rem;
-      margin-top: 0.25rem; padding-top: 1.1rem; border-top: var(--bd-w) solid var(--border-strong); border-radius: 0;
+      margin-top: 0.25rem; padding-top: 1.1rem; border-top: var(--bd-w) solid var(--hairline); border-radius: 0;
     }
     .agent-bot-save-btn {
       height: var(--btn-h); padding: 0 0.875rem;
@@ -613,44 +619,9 @@ const settingsModalCSS = `
     .agent-bot-cancel-btn:active { opacity: 0.85; }
     .agent-bot-form-err { flex: 1; font-size: var(--text-xs); color: var(--s-err); }
 
-    /* ── Custom select ─────────────────────────────────────────── */
-    .cselect { position: relative; width: 100%; }
-    .cselect-btn {
-      width: 100%; display: flex; align-items: center; justify-content: space-between;
-      gap: 0.4rem; height: var(--btn-h); padding: 0 0.75rem;
-      background: var(--bg); border: var(--bd-w) solid var(--border-strong);
-      cursor: pointer; text-align: left;
-      font-size: var(--text-base); font-family: inherit; color: var(--fg);
-    }
-    .cselect-btn:focus { outline: none; border-color: var(--accent); }
-    .cselect-btn.open { border-color: var(--accent); }
-    .cselect-btn-text { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border-radius: 0; }
-    .cselect-btn svg { width: 11px; height: 11px; flex-shrink: 0; color: var(--muted); }
-    .cselect-btn.open svg { transform: rotate(180deg); }
-    .cselect-dropdown {
-      position: absolute; top: calc(100% + 3px); left: 0; right: 0; z-index: 120;
-      background: var(--surface-soft); border: var(--bd-w) solid var(--border-strong);
-      border-radius: var(--r-md);
-      box-shadow: var(--shadow-sm) var(--shadow-color);
-      overflow: hidden;
-      max-height: 220px; overflow-y: auto;
-      /* .cselect-option.sel below — same --surface-soft-ambient fix as
-         .home-side (home.css): repoint --control-active-bg locally. */
-      --control-active-bg: var(--control-active-bg-on-soft);
-    }
-    .cselect-option {
-      width: 100%; display: flex; align-items: center; gap: 0.45rem;
-      padding: 0.42rem 0.65rem; background: transparent; border: none; cursor: pointer;
-      text-align: left; font-size: var(--text-sm); font-family: inherit;
-      color: var(--fg);
-    }
-    .cselect-option:hover { background: var(--card-hov); }
-    .cselect-option.sel { background: var(--control-active-bg); color: var(--control-active-fg); }
-    .cselect-option-dot {
-      width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
-      background: var(--fg); opacity: 0;
-    }
-    .cselect-option.sel .cselect-option-dot { opacity: 1; }
+    /* .cselect* (custom select) moved to assets/cselect.css — it's an
+       app-wide primitive shared with Shorts' month picker, not a
+       settings-modal detail. */
 
     /* ── Skills pane ─────────────────────────────────────────── */
     .skills-pane { flex: 1; overflow-y: auto; padding: 1.75rem 1.5rem 3rem; }

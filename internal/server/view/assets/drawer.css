@@ -28,7 +28,7 @@
     /* ── Tab bar ─────────────────────────────────────────────────── */
     .drawer-tab-bar {
       flex-shrink: 0; display: flex; align-items: stretch;
-      background: var(--bg); border-bottom: var(--bd-w) solid var(--border);
+      background: var(--bg); border-bottom: var(--bd-w) solid var(--hairline);
       border-radius: 0; /* flush chrome strip */
       min-height: 40px; overflow: hidden; position: relative; z-index: 3;
     }
@@ -99,7 +99,7 @@
     .drawer-tool-bar {
       flex-shrink: 0; display: flex; align-items: center; gap: 0.5rem;
       padding: 0 0.625rem 0 0.75rem;
-      border-bottom: var(--bd-w) solid var(--border); height: 40px; background: var(--bg);
+      border-bottom: var(--bd-w) solid var(--hairline); height: 40px; background: var(--bg);
       border-radius: 0; /* flush chrome strip */
     }
     /* Create-mode half */
@@ -255,7 +255,7 @@
 
     /* ── Search panel (custom, top-anchored) ─────────────────── */
     #drawer-cm-wrap .cm-panels { background: var(--bg); color: var(--fg); }
-    #drawer-cm-wrap .cm-panels-top { border-bottom: var(--bd-w) solid var(--border); border-radius: 0; }
+    #drawer-cm-wrap .cm-panels-top { border-bottom: var(--bd-w) solid var(--hairline); border-radius: 0; }
     .vaultr-search-panel {
       display: grid;
       grid-template-columns: 1fr auto;
@@ -358,7 +358,7 @@
       display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;
       padding: 0.3rem 0.5rem 0.4rem;
       margin-bottom: 0.2rem;
-      border-bottom: var(--bd-w) solid var(--border);
+      border-bottom: var(--bd-w) solid var(--hairline);
       border-radius: 0; /* flush divider — the 8px default would curve it at both ends */
     }
     .mdt-header-label {
