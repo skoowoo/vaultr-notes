@@ -370,7 +370,7 @@ const homeSectionRowsHTML = `{{define "rows"}}{{range .Items}}
     </div>
   </div>
   <div class="home-note-row-meta">
-    {{if ne .Dir "/"}}<span class="home-note-row-dir">{{.Dir}}</span>{{end}}
+    <span class="home-note-row-dir">{{.Dir}}</span>
     <span class="home-note-row-time">{{.UpdatedAt}}</span>
   </div>
 </div>

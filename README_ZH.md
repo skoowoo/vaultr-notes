@@ -1,10 +1,9 @@
 # Vaultr：一个兼容 Obsidian 的 AI native 笔记系统，使用 AI agent 帮你整理、使用笔记。
 
-![Vaultr Hero](./docs/assets/hero4.png)
-![Vaultr Hero](./docs/assets/hero3.png)
-![Vaultr Hero](./docs/assets/hero2.png)
 ![Vaultr Hero](./docs/assets/hero1.png)
-![Vaultr Hero](./docs/assets/hero0.png)
+![Vaultr Hero](./docs/assets/hero2.png)
+![Vaultr Hero](./docs/assets/hero3.png)
+![Vaultr Hero](./docs/assets/hero4.png)
 
 ## 目录
 
