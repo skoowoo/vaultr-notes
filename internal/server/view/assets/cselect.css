@@ -34,10 +34,9 @@
 }
 .cselect-option:hover { background: var(--card-hov); }
 .cselect-option.sel { background: var(--control-active-bg); color: var(--control-active-fg); }
-.cselect-option-dot {
-  width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
-  background: var(--fg); opacity: 0;
-}
+/* Shape/color come from the shared .dot.dot--fg (base.css); only the
+   hidden-until-selected visibility toggle is local. */
+.cselect-option-dot { opacity: 0; }
 .cselect-option.sel .cselect-option-dot { opacity: 1; }
 
 /* ── Inline/ghost variant — same dropdown (.cselect-dropdown/-option

@@ -31,6 +31,10 @@ type imageItem struct {
 type imagesGridData struct {
 	Images []imageItem
 	NextNs int64
+	// Count is the vault-wide total, for the section header's count badge
+	// (homeImagesSectionHTML) — left zero by the pagination-only fragment
+	// (imagesGridTemplate), which has no header to put it in.
+	Count int
 }
 
 func imageItemFrom(img storage.Image) imageItem {

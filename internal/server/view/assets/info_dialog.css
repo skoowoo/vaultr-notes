@@ -23,13 +23,8 @@
       padding: 0.1em 0.35em; color: var(--fg);
     }
     .info-body strong { color: var(--fg); font-weight: 600; }
-    .info-btn-close {
-      background: var(--accent); color: var(--accent-fg); border: none;
-    }
-    .info-btn-close:hover {
-      background: var(--accent-hov);
-    }
-    .info-btn-close.error { background: var(--s-err); color: var(--s-err-fg); }
+    /* Close-button colors now come from the shared .btn-solid /
+       .btn-solid--danger classes (base.css). */
 
     @keyframes info-bg-in  { from { opacity: 0; } to { opacity: 1; } }
     @keyframes info-card-in {

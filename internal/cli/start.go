@@ -96,6 +96,17 @@ func runServe(_ *cobra.Command, _ []string) error {
 		}
 	}
 
+	// Rebuild image–note associations on every start, not just the first-ever
+	// init. RegisterImage (vault_image.go) keeps the images table itself
+	// current as images are uploaded, but linked_notes is only recomputed
+	// here — this is the only point that picks up image references added to
+	// notes since the last restart (previously this only ran once, inside
+	// autoInitVault, so it never refreshed on a normal restart of an
+	// already-initialized vault).
+	if err := vault.BuildImageNoteLinks(); err != nil {
+		log.Warn("image-note links: rebuild failed", "err", err)
+	}
+
 	pidFile := strings.TrimSpace(servePIDFile)
 
 	srv := server.New(cfg, cfgFileUsed, log, vault)
@@ -127,9 +138,8 @@ func autoInitVault(log *slog.Logger, cfg *config.Config, vault *storage.Vault) e
 		log.Info("auto-init: registered images", "count", imgRegistered)
 	}
 
-	if err := vault.BuildImageNoteLinks(); err != nil {
-		log.Warn("auto-init: image-note links failed", "err", err)
-	}
+	// image-note links are rebuilt unconditionally right after this call
+	// returns (see runServe) — no need to also do it here.
 
 	// Rebuild search index for the freshly registered notes.
 	sp := search.New(cfg.Plugins.Search, vault, log)

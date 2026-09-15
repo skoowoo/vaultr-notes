@@ -5,9 +5,23 @@
       border-radius: 0; /* full-viewport scrim — never rounds */
       transition: background var(--motion-slow) ease;
     }
-    .drawer-overlay.open { pointer-events: auto; background: var(--drawer-overlay-bg); }
+    /* backdrop-filter lives on .open only, not the base rule — the overlay
+       stays mounted (pointer-events:none) even while closed, and a
+       permanently-applied blur would soften the whole app underneath it
+       at all times. */
+    .drawer-overlay.open {
+      pointer-events: auto; background: var(--overlay-bg);
+      backdrop-filter: var(--glass-scrim-filter);
+      -webkit-backdrop-filter: var(--glass-scrim-filter);
+    }
     .drawer-panel {
-      position: absolute; top: 0; right: 0; bottom: 0; width: 80vw;
+      /* Default width fills exactly the content pane to the right of the
+         app sidebar — its left edge lands flush on --home-side-w, the
+         sidebar's own dividing line, instead of a vw fraction that doesn't
+         know the sidebar is there. .expanded (focus mode) is the deliberate
+         exception: it deliberately covers the sidebar too, full-viewport. */
+      position: absolute; top: 0; right: 0; bottom: 0;
+      width: calc(100vw - var(--home-side-w));
       background: var(--bg); border-left: var(--bd-w) solid var(--border);
       border-radius: 0; /* edge-docked, flush to 3 viewport edges — never rounds */
       display: flex; flex-direction: column; overflow: hidden;
@@ -137,31 +151,11 @@
     .drawer-path-ac li:not(.path-ac-muted):active { opacity: 0.85; }
     .drawer-path-ac li.path-ac-muted { color: var(--muted); cursor: default; font-style: italic; }
     .drawer-path-ac li.path-ac-muted:hover { background: transparent; }
-    .drawer-publish-btn {
-      flex-shrink: 0; height: var(--action-btn-sz); padding: 0 0.75rem;
-      border: var(--bd-w) solid var(--border-strong); background: var(--accent); color: var(--accent-fg);
-      font-size: var(--text-xs); font-weight: 600; font-family: inherit; cursor: pointer;
-    }
-    .drawer-publish-btn:hover:not(:disabled) {
-      background: var(--accent-hov);
-    }
-    .drawer-publish-btn:active:not(:disabled) {
-      opacity: 0.85;
-    }
-    .drawer-publish-btn:disabled { opacity: 0.32; cursor: not-allowed; }
-    .drawer-publish-btn.success { background: var(--s-ok); color: var(--s-ok-fg); opacity: 1; }
-    .drawer-discard-btn {
-      flex-shrink: 0; height: var(--action-btn-sz); padding: 0 0.65rem;
-      border: var(--bd-w) solid var(--border-strong);
-      background: var(--bg); color: var(--fg);
-      font-size: var(--text-xs); font-weight: 500; font-family: inherit; cursor: pointer;
-    }
-    .drawer-discard-btn:hover {
-      color: var(--fg); border-color: var(--border-strong); background: var(--card-hov);
-    }
-    .drawer-discard-btn:active {
-      opacity: 0.85;
-    }
+    /* #drawer-publish-btn's structure/color now come from the shared
+       .btn-solid.btn--xs (base.css); only its transient "just published"
+       state is local. */
+    #drawer-publish-btn.success { background: var(--s-ok); color: var(--s-ok-fg); opacity: 1; }
+    /* Discard button now uses the shared .btn-outline.btn--xs (base.css). */
     /* Edit-mode half */
     .drawer-path-text {
       flex: 1; min-width: 0; font-size: var(--text-xs);
@@ -223,7 +217,11 @@
        (menu open) is overridden here with the same brand-accent treatment
        as above. */
     .drawer-more-btn.active { color: var(--accent); background: var(--tint-md); }
-    .drawer-view-seg .seg-btn.active { color: var(--accent); background: var(--tint-md); }
+    /* Source/Preview view toggle uses the shared .seg-btn.active as-is
+       (neutral surface-2 fill, base.css) — it's a row-selection control
+       like every other .seg/.seg-btn picker, not an "engaged" brand
+       toggle like pin/compile/the more-menu above. Only the tighter
+       horizontal padding stays local, for this toolbar's tight fit. */
     .drawer-view-seg .seg-btn { padding: 0.3rem 0.5rem; }
 
     /* ── Editor areas ────────────────────────────────────────────── */

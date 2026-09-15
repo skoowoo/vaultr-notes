@@ -155,7 +155,7 @@ const noteFragHTML = `<header class="frag-cover">
       <dt class="fm-key{{if ge $i 3}} fm-overflow{{end}}">{{$v.Key}}</dt>
       <dd class="fm-val{{if ge $i 3}} fm-overflow{{end}}">
         {{- if $v.IsList}}
-        {{- range $v.List}}<span class="fm-tag">{{.}}</span>{{end}}
+        {{- range $v.List}}<span class="badge fm-tag">{{.}}</span>{{end}}
         {{- else if $v.IsURL}}
         <span class="fm-val-text" title="{{$v.Value}}"><a href="{{$v.Value}}" target="_blank" rel="noopener noreferrer">{{$v.Value}}</a></span>
         {{- else if $v.Value}}

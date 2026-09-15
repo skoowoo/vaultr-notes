@@ -12,15 +12,15 @@
       </p>
       <p class="confirm-message" x-text="message"></p>
       <div class="dialog-actions confirm-actions">
-        <button class="dialog-btn confirm-btn confirm-btn-cancel"  @click="cancel()">Cancel</button>
-        <button class="dialog-btn confirm-btn confirm-btn-confirm"
-                :class="{ 'is-danger': danger }"
+        <button class="btn-outline confirm-btn"  @click="cancel()">Cancel</button>
+        <button class="btn-solid confirm-btn"
+                :class="{ 'btn-solid--danger': danger }"
                 x-text="confirmLabel"
                 @click="confirm()"></button>
-        <button class="dialog-btn confirm-btn confirm-btn-confirm"
+        <button class="btn-solid confirm-btn"
                 type="button"
                 x-show="threeButton"
-                :class="{ 'is-danger': altDanger }"
+                :class="{ 'btn-solid--danger': altDanger }"
                 x-text="altLabel"
                 @click="chooseAlt()"></button>
       </div>

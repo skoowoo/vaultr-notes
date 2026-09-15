@@ -10,7 +10,7 @@
       <p class="dialog-title info-title" x-text="title"></p>
       <div class="info-body" x-html="bodyHTML"></div>
       <div class="dialog-actions info-actions">
-        <button type="button" class="dialog-btn info-btn-close" :class="{ error: isError }" @click="close()" x-text="closeLabel"></button>
+        <button type="button" class="btn-solid" :class="{ 'btn-solid--danger': isError }" @click="close()" x-text="closeLabel"></button>
       </div>
     </div>
   </div>

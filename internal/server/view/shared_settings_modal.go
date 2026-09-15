@@ -51,31 +51,15 @@ const settingsModalCSS = `
       background: var(--surface-soft);
       padding: 1rem 0.5rem; display: flex; flex-direction: column;
       gap: 2px; user-select: none;
-      /* .settings-sidebar-item.active below just consumes the generic
+      /* .side-nav-item.is-active (base.css) just consumes the generic
          --control-active-bg — but since this container's own background is
          --surface-soft rather than --bg, the token is locally repointed at
          --control-active-bg-on-soft (shared_tokens.go) so the selected item
          still reads as a clear lift. Same fix as .home-side (home.css). */
       --control-active-bg: var(--control-active-bg-on-soft);
     }
-    /* Hover/active states mirror .home-side-item (home.css) exactly — same
-       --card-hov hover fill, same --control-active-bg/fg + transparent
-       border on active, same --r-sm corner radius — so the two sidebars
-       (home's section nav, this modal's section nav) read as one component
-       everywhere they appear, not two near-identical reimplementations. */
-    .settings-sidebar-item {
-      display: flex; align-items: center; gap: 0.5rem; width: 100%;
-      padding: 0.42rem 0.75rem; border: var(--bd-w) solid transparent;
-      border-radius: var(--r-sm);
-      background: transparent; font-size: var(--text-base); font-weight: 500;
-      color: var(--nav-fg); cursor: pointer; text-align: left;
-    }
-    .settings-sidebar-item:hover { color: var(--fg); background: var(--card-hov); }
-    .settings-sidebar-item.active {
-      color: var(--control-active-fg); background: var(--control-active-bg);
-      border-color: transparent; font-weight: 600;
-    }
-    .settings-sidebar-item svg { width: 14px; height: 14px; flex-shrink: 0; }
+    /* Row/hover/active/icon now come from the shared .side-nav-item /
+       .side-nav-icon (base.css). */
 
     /* ── Content area ─────────────────────────────────────────── */
     .settings-content { flex: 1; min-width: 0; display: flex; flex-direction: column; overflow: hidden; border-radius: 0; }
@@ -92,33 +76,11 @@ const settingsModalCSS = `
     }
     .settings-field-desc { font-size: var(--text-xs); color: var(--muted); margin-top: 0.4rem; line-height: 1.5; }
     .settings-field-row { display: flex; gap: 0.5rem; align-items: center; }
-    .settings-input {
-      flex: 1; min-width: 0; background: var(--bg); border: var(--bd-w) solid var(--border-strong);
-      height: var(--btn-h); padding: 0 0.75rem; font-size: var(--text-sm); color: var(--fg);
-      outline: none; font-family: var(--font-mono);
-    }
-    .settings-input:focus { border-color: var(--accent); }
-    .settings-apply-btn, .cfg-save-btn, .agents-toolbar-btn {
-      height: var(--btn-h); padding: 0 0.875rem;
-      border: var(--bd-w) solid var(--border-strong); color: var(--fg);
-      font-size: var(--text-base); font-weight: 500; cursor: pointer; white-space: nowrap;
-      display: inline-flex; align-items: center; gap: 0.35rem;
-    }
-    /* Primary CTA: accent fill */
-    .settings-apply-btn, .cfg-save-btn { background: var(--accent); color: var(--accent-fg); }
-    /* Toolbar auxiliary: neutral */
-    .agents-toolbar-btn { background: var(--bg); }
-    .settings-apply-btn:hover:not(:disabled),
-    .cfg-save-btn:hover:not(:disabled) { background: var(--accent-hov); }
-    .agents-toolbar-btn:hover:not(:disabled) { border-color: var(--border-strong); background: var(--card-hov); }
-    .settings-apply-btn:active:not(:disabled),
-    .cfg-save-btn:active:not(:disabled),
-    .agents-toolbar-btn:active:not(:disabled) { opacity: 0.85; }
-    .settings-apply-btn:disabled,
-    .cfg-save-btn:disabled,
-    .agents-toolbar-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-    .settings-apply-btn--danger { background: var(--s-err); color: var(--s-err-fg); border-color: var(--border-strong); }
-    .settings-apply-btn--danger:hover:not(:disabled) { opacity: 0.85; }
+    /* Box/font come from the shared .field-input (base.css); this is
+       inline next to a button in a flex row, not full-width. */
+    .settings-input { flex: 1; min-width: 0; }
+    /* Apply/save/toolbar/danger buttons all now use the shared
+       .btn-outline / .btn-solid / .btn-solid--danger classes (base.css). */
     .settings-error { margin-top: 0.4rem; font-size: var(--text-xs); color: var(--s-err); }
 
     /* Theme/Enter-Effect/schedule-kind pickers use the shared .seg/.seg-btn
@@ -141,18 +103,10 @@ const settingsModalCSS = `
       border-radius: 0;
     }
     .cfg-restart-note { font-size: var(--text-xs); color: var(--muted); }
-    .cfg-dirty-badge {
-      font-size: var(--text-xs); color: var(--muted); background: var(--code-bg);
-      border: 1px solid var(--code-bd); padding: 0.12rem 0.5rem;
-      border-radius: var(--r-full);
-    }
-    .cfg-discard-btn {
-      height: var(--btn-h); padding: 0 0.875rem;
-      border: var(--bd-w) solid var(--border-strong); background: var(--bg); color: var(--muted);
-      font-size: var(--text-base); font-weight: 500; cursor: pointer;
-    }
-    .cfg-discard-btn:hover { color: var(--fg); background: var(--card-hov); border-color: var(--border-strong); }
-    .cfg-discard-btn:active { opacity: 0.85; }
+    /* .cfg-dirty-badge now uses the shared .badge (base.css) exactly —
+       its extra 1px outline had no functional reason to exist, so it's
+       gone rather than kept as a one-off. */
+    /* .cfg-discard-btn now uses the shared .btn-outline (base.css). */
     .cfg-pane-area { flex: 1; min-height: 0; position: relative; overflow: hidden; }
     .cfg-pane {
       position: absolute; inset: 0; overflow-y: auto;
@@ -186,9 +140,7 @@ const settingsModalCSS = `
     .cfg-section-head-meta {
       display: flex; align-items: center; gap: 0.4rem; flex-shrink: 0; margin-top: 0.1rem;
     }
-    .cfg-section-dirty-dot {
-      width: 6px; height: 6px; border-radius: 50%; background: var(--accent); flex-shrink: 0;
-    }
+    /* .cfg-section-dirty-dot now uses the shared .dot / .dot--accent (base.css). */
     .cfg-section-chev {
       flex-shrink: 0; color: var(--muted); display: flex; align-items: center; margin-top: 0.15rem;
     }
@@ -229,12 +181,7 @@ const settingsModalCSS = `
       gap: 0.75rem; margin-bottom: 0.65rem;
     }
     .cfg-wechat-auth-title { font-size: var(--text-sm); font-weight: 500; color: var(--body); }
-    .cfg-wechat-badge {
-      font-size: var(--text-sm); font-weight: 500;
-      padding: 3px 10px; border-radius: var(--r-full);
-      color: var(--muted); background: var(--code-bg);
-    }
-    .cfg-wechat-badge.connected { color: var(--s-ok); background: var(--s-ok-bg); }
+    /* .cfg-wechat-badge now uses the shared .badge / .badge--ok (base.css). */
     .cfg-wechat-meta { font-size: var(--text-xs); color: var(--muted); line-height: 1.55; margin: 0 0 0.75rem; }
     .cfg-wechat-meta code {
       font-size: var(--text-2xs); padding: 0.05rem 0.3rem; border-radius: var(--r-xs);
@@ -249,64 +196,24 @@ const settingsModalCSS = `
     .cfg-wechat-status { font-size: var(--text-xs); color: var(--muted); margin-top: 0.5rem; }
     .cfg-wechat-err { font-size: var(--text-xs); color: var(--s-err); margin-top: 0.5rem; }
     .cfg-wechat-ok { font-size: var(--text-xs); color: var(--s-ok); margin-top: 0.5rem; }
-    .cfg-input {
-      width: 100%; background: var(--bg); border: var(--bd-w) solid var(--border-strong);
-      height: var(--btn-h); padding: 0 0.65rem;
-      font-size: var(--text-sm); color: var(--fg); outline: none;
-      font-family: var(--font-mono);
-    }
-    .cfg-input:focus { border-color: var(--accent); }
-    select.cfg-input { cursor: pointer; }
-    input[type="number"].cfg-input { width: 110px; }
-    .cfg-textarea {
-      width: 100%; resize: vertical; min-height: 60px;
-      background: var(--bg); border: var(--bd-w) solid var(--border-strong);
-      padding: 0.6rem 0.65rem;
-      font-size: var(--text-sm); color: var(--fg); outline: none;
-      font-family: var(--font-mono); line-height: 1.5;
-    }
-    .cfg-textarea:focus { border-color: var(--accent); }
+    /* .cfg-input / .cfg-textarea now use the shared .field-input (base.css). */
+    input[type="number"].field-input.cfg-input { width: 110px; }
     .cfg-reveal-wrap { display: flex; gap: 0.375rem; align-items: center; width: 100%; }
-    .cfg-reveal-btn {
-      flex-shrink: 0; width: var(--btn-h); height: var(--btn-h); padding: 0;
-      display: flex; align-items: center; justify-content: center;
-      background: var(--bg); border: var(--bd-w) solid var(--border-strong);
-      border-radius: var(--r-xs);
-      cursor: pointer; color: var(--muted);
-    }
-    .cfg-reveal-btn:hover { color: var(--fg); background: var(--card-hov); border-color: var(--border-strong); }
-    .cfg-reveal-btn:active { opacity: 0.85; }
-    .cfg-reveal-btn svg { width: 13px; height: 13px; }
-    .cfg-toggle { display: inline-flex; align-items: center; cursor: pointer; }
-    .cfg-toggle input[type="checkbox"] { display: none; }
-    .cfg-toggle-pill {
-      width: 36px; height: 20px; background: var(--bg);
-      border: var(--bd-w) solid var(--border-strong);
-      border-radius: var(--r-full);
-      position: relative;
-    }
-    .cfg-toggle-pill::after {
-      content: ''; position: absolute; width: 12px; height: 12px;
-      background: var(--border-strong); top: 2px; left: 3px;
-      border-radius: var(--r-full);
-    }
-    .cfg-toggle input:checked + .cfg-toggle-pill { background: var(--accent); border-color: var(--border-strong); }
-    .cfg-toggle input:checked + .cfg-toggle-pill::after { transform: translateX(14px); background: var(--border-strong); }
+    /* .cfg-reveal-btn now uses the shared .icon-btn.icon-btn--lg (base.css). */
+    /* Toggle switches now use the shared .switch/.switch-track (base.css). */
     .cfg-loader { font-size: var(--text-xs); color: var(--muted); padding: 2rem 0; }
     .cfg-err-msg { font-size: var(--text-xs); color: var(--s-err); padding: 2rem 0; }
 
     /* ── Agents tab ───────────────────────────────────────────── */
     .agents-pane { flex: 1; overflow-y: auto; padding: 1.75rem 1.5rem 3rem; }
     .agents-toolbar { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; }
-    .agents-toolbar-btn svg { width: 13px; height: 13px; flex-shrink: 0; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .agents-toolbar-btn.spinning svg { animation: spin 0.6s linear infinite; }
+    /* Toolbar's refresh/new buttons now use the shared .btn-outline
+       (base.css), which also defines the .spinning svg animation. */
     .agents-summary { font-size: var(--text-xs); color: var(--muted); }
     .agents-list { display: flex; flex-direction: column; gap: 0.45rem; }
+    /* Box comes from the shared .list-card (base.css); this is a static
+       display card, not a click target, so no interaction modifier. */
     .agent-card {
-      border: var(--bd-w) solid var(--border-strong);
-      border-radius: var(--r-lg);
-      background: var(--bg); padding: 1rem 1.25rem;
       display: flex; flex-direction: column; gap: 0.625rem;
       min-width: 0; overflow: hidden;
     }
@@ -315,9 +222,7 @@ const settingsModalCSS = `
     .agent-card-top {
       display: flex; align-items: center; gap: 0.6rem; min-width: 0;
     }
-    .agent-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
-    .agent-dot.ok { background: var(--s-ok); }
-    .agent-dot.off { background: var(--muted); opacity: 0.55; }
+    /* .agent-dot now uses the shared .dot / .dot--on / .dot--off (base.css). */
     .agent-card-name {
       font-size: var(--text-sm); font-weight: 600; color: var(--fg);
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
@@ -354,11 +259,8 @@ const settingsModalCSS = `
       display: flex; flex-wrap: wrap; gap: 4px; align-items: center;
       padding-left: 1.1rem; min-width: 0; overflow: hidden;
     }
-    .agent-model-pill {
-      font-size: var(--text-2xs); font-weight: 500; padding: 1px 7px; border-radius: var(--r-full);
-      background: var(--code-bg); color: var(--muted);
-      white-space: nowrap; max-width: 160px; overflow: hidden; text-overflow: ellipsis;
-    }
+    /* Structure/color come from the shared .badge.badge--sm (base.css). */
+    .agent-model-pill { max-width: 160px; }
     .agent-model-more { font-size: var(--text-xs); color: var(--muted); opacity: 0.6; white-space: nowrap; }
     /* row 4: cli example */
     .agent-card-cli {
@@ -406,17 +308,7 @@ const settingsModalCSS = `
     .notif-row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 0.35rem; }
     .notif-saved { font-size: var(--text-xs); color: var(--s-ok); margin: 0; font-weight: 500; }
     .notif-sound-row { display: flex; align-items: center; gap: 0.5rem; max-width: 280px; }
-    .notif-play-btn {
-      flex-shrink: 0; width: var(--btn-h); height: var(--btn-h); padding: 0;
-      display: flex; align-items: center; justify-content: center;
-      background: var(--bg); border: var(--bd-w) solid var(--border-strong);
-      border-radius: var(--r-xs);
-      cursor: pointer; color: var(--muted);
-    }
-    .notif-play-btn:hover:not(:disabled) { color: var(--fg); background: var(--card-hov); border-color: var(--border-strong); }
-    .notif-play-btn:active:not(:disabled) { opacity: 0.85; }
-    .notif-play-btn:disabled { opacity: 0.35; cursor: not-allowed; }
-    .notif-play-btn svg { width: 13px; height: 13px; }
+    /* .notif-play-btn now uses the shared .icon-btn.icon-btn--lg (base.css). */
     .shortcuts-fields { max-width: 640px; }
     .shortcuts-list { display: flex; flex-direction: column; }
     .shortcuts-row {
@@ -442,43 +334,24 @@ const settingsModalCSS = `
     .agent-bots-toolbar { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; }
     .agent-bots-list { display: flex; flex-direction: column; gap: 0.45rem; }
     .agent-bots-empty { font-size: var(--text-sm); color: var(--muted); padding: 1.5rem 0; }
+    /* Box + hover come from the shared .list-card.list-card--hover
+       (base.css); the row itself isn't a click target (actions live in
+       its own buttons), so no cursor/active. */
     .agent-bot-card {
-      border: var(--bd-w) solid var(--border-strong);
-      border-radius: var(--r-lg);
-      background: var(--bg); padding: 0.875rem 1.25rem;
       display: flex; align-items: flex-start; gap: 0.875rem;
     }
-    .agent-bot-card:hover { background: var(--card-hov); }
     .agent-bot-card.disabled-card { opacity: 0.45; }
-    .agent-bot-avatar {
-      flex-shrink: 0; width: 36px; height: 36px; border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 0.875rem; font-weight: 700; color: var(--inverse-ink);
-      background: var(--muted); user-select: none;
-      border: var(--bd-w) solid var(--border-strong);
-    }
+    /* .agent-bot-avatar now uses the shared .avatar.avatar--lg.avatar--neutral (base.css). */
     .agent-bot-card-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.3rem; }
     .agent-bot-card-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.5rem; min-width: 0; }
     .agent-bot-card-name { font-size: var(--text-sm); font-weight: 600; color: var(--fg); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border-radius: 0; flex: 1; min-width: 0; padding-top: 0.1rem; }
     .agent-bot-card-desc { font-size: var(--text-xs); color: var(--muted); line-height: 1.5; }
     .agent-bot-card-actions { display: flex; gap: 0.3rem; flex-shrink: 0; }
     .agent-bot-card-tags { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.15rem; }
-    .agent-bot-badge {
-      font-size: var(--text-xs); font-weight: 500; padding: 2px 8px; border-radius: var(--r-full);
-      background: var(--code-bg); color: var(--muted);
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px;
-    }
-    .agent-bot-badge.trigger { color: var(--s-ok); background: var(--s-ok-bg); }
-    .agent-bot-act-btn {
-      height: var(--btn-h-xs); padding: 0 0.65rem;
-      border: var(--bd-w) solid var(--border-strong); background: transparent;
-      color: var(--muted); font-size: var(--text-xs); font-weight: 500;
-      cursor: pointer;
-    }
-    .agent-bot-act-btn:hover { color: var(--fg); background: var(--card-hov); }
-    .agent-bot-act-btn:active { opacity: 0.85; }
-    .agent-bot-act-btn.del { background: var(--s-err); border-color: var(--border-strong); color: var(--s-err-fg); }
-    .agent-bot-act-btn.del:hover { opacity: 0.85; }
+    /* Structure/color come from the shared .badge / .badge--ok (base.css). */
+    .agent-bot-badge { max-width: 200px; }
+    /* Row actions (move/edit/delete) now use the shared .btn-outline /
+       .btn-solid.btn-solid--danger with the .btn--xs size modifier. */
     .agent-bot-form-wrap { max-width: 780px; }
     .agent-bot-form-header { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 2rem; }
     .agent-bot-back-btn {
@@ -509,14 +382,11 @@ const settingsModalCSS = `
     .agent-bot-form-row { display: flex; gap: 1rem; }
     .agent-bot-form-row > * { flex: 1; min-width: 0; }
     .agent-bot-form-label { display: block; font-size: var(--text-sm); font-weight: 600; color: var(--fg); margin-bottom: 0.4rem; }
-    .agent-bot-form-input, .agent-bot-form-select, .agent-bot-form-textarea {
-      width: 100%; background: var(--bg); border: var(--bd-w) solid var(--border-strong);
-      padding: 0.6rem 0.75rem;
-      font-size: var(--text-sm); color: var(--fg); outline: none;
-      font-family: inherit;
-    }
-    .agent-bot-form-input:focus, .agent-bot-form-select:focus, .agent-bot-form-textarea:focus { border-color: var(--accent); }
-    .agent-bot-form-textarea { resize: vertical; overflow: hidden; line-height: 1.55; }
+    /* Box/font come from the shared .field-input (base.css). This one
+       auto-grows with its content (JS sets height from scrollHeight),
+       so it keeps its own overflow/line-height instead of the shared
+       fixed-rows textarea treatment. */
+    .agent-bot-form-textarea { overflow: hidden; line-height: 1.55; }
     .agent-bot-trigger-section-hdr {
       display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;
     }
@@ -578,15 +448,8 @@ const settingsModalCSS = `
     .agent-bot-block-hint { display: block; font-size: var(--text-xs); color: var(--muted); line-height: 1.5; margin-top: 0.2rem; }
     .agent-bot-prompt-textarea { font-family: var(--font-mono); font-size: var(--text-sm); }
     .agent-bot-schedule-presets { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.65rem; }
-    .agent-bot-schedule-preset {
-      height: var(--btn-h-xs); padding: 0 0.65rem;
-      border: var(--bd-w) solid var(--border-strong); background: transparent;
-      color: var(--muted); font-size: var(--text-xs); font-weight: 500;
-      cursor: pointer;
-    }
-    .agent-bot-schedule-preset:hover:not(.active) { color: var(--fg); border-color: var(--border-strong); background: transparent; }
-    .agent-bot-schedule-preset:active:not(.active) { opacity: 0.85; }
-    .agent-bot-schedule-preset.active { color: var(--control-active-fg); border-color: var(--border-strong); background: var(--control-active-bg); }
+    /* Preset/weekday chips now use the shared .btn-outline.btn--xs, with
+       .active for "currently chosen" (base.css). */
     .agent-bot-schedule-custom-label { display: block; font-size: var(--text-xs); color: var(--muted); margin-bottom: 0.3rem; }
     .agent-bot-weekday-toggles { align-items: center; margin-bottom: 0.4rem; }
     .agent-bot-schedule-kind-seg { margin-bottom: 0.85rem; }
@@ -602,21 +465,7 @@ const settingsModalCSS = `
       display: flex; align-items: center; gap: 0.5rem;
       margin-top: 0.25rem; padding-top: 1.1rem; border-top: var(--bd-w) solid var(--hairline); border-radius: 0;
     }
-    .agent-bot-save-btn {
-      height: var(--btn-h); padding: 0 0.875rem;
-      border: var(--bd-w) solid var(--border-strong); background: var(--accent); color: var(--accent-fg);
-      font-size: var(--text-base); font-weight: 500; cursor: pointer;
-    }
-    .agent-bot-save-btn:hover:not(:disabled) { background: var(--bg); border-color: var(--border-strong); }
-    .agent-bot-save-btn:active:not(:disabled) { opacity: 0.85; }
-    .agent-bot-save-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-    .agent-bot-cancel-btn {
-      height: var(--btn-h); padding: 0 0.875rem;
-      border: var(--bd-w) solid var(--border-strong); background: transparent;
-      color: var(--muted); font-size: var(--text-base); font-weight: 500; cursor: pointer;
-    }
-    .agent-bot-cancel-btn:hover { color: var(--fg); background: var(--bg); border-color: var(--border-strong); }
-    .agent-bot-cancel-btn:active { opacity: 0.85; }
+    /* Save/Cancel now use the shared .btn-solid / .btn-outline (base.css). */
     .agent-bot-form-err { flex: 1; font-size: var(--text-xs); color: var(--s-err); }
 
     /* .cselect* (custom select) moved to assets/cselect.css — it's an
@@ -635,25 +484,18 @@ const settingsModalCSS = `
     }
     .skills-list { display: flex; flex-direction: column; gap: 0.45rem; }
     .skills-empty { font-size: var(--text-sm); color: var(--muted); padding: 1.5rem 0; }
+    /* Box + hover come from the shared .list-card.list-card--hover
+       (base.css); see .agent-bot-card above for why no cursor/active. */
     .skill-card {
-      border: var(--bd-w) solid var(--border-strong);
-      border-radius: var(--r-lg);
-      background: var(--bg); padding: 0.75rem 1.25rem;
       display: flex; align-items: center; justify-content: space-between; gap: 1rem;
     }
-    .skill-card:hover { background: var(--card-hov); }
     .skill-card.not-installed .skill-card-left { opacity: 0.7; }
     .skill-card.not-installed:hover .skill-card-left { opacity: 1; }
     .skill-card-left { display: flex; align-items: center; gap: 0.6rem; flex: 1; min-width: 0; }
     .skill-card-right { display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0; }
-    .skill-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
-    .skill-dot.on  { background: var(--s-ok); }
-    .skill-dot.off { background: var(--muted); opacity: 0.55; }
+    /* .skill-dot now uses the shared .dot / .dot--on / .dot--off (base.css). */
     .skill-name { font-size: var(--text-sm); font-weight: 600; color: var(--fg); }
-    .skill-default-badge {
-      font-size: var(--text-xs); font-weight: 500; padding: 2px 8px;
-      border-radius: var(--r-full); background: var(--code-bg); color: var(--muted);
-    }
+    /* .skill-default-badge now uses the shared .badge (base.css). */
     .skill-toggling { opacity: 0.55; pointer-events: none; }
     .skill-repo-link {
       font-size: var(--text-xs); color: var(--muted); font-family: var(--font-mono);
@@ -663,17 +505,8 @@ const settingsModalCSS = `
       transition: color var(--motion-fast), opacity var(--motion-fast);
     }
     .skill-repo-link:hover { color: var(--accent); opacity: 1; }
-    .skill-act-btn {
-      height: var(--btn-h-xs); padding: 0 0.65rem;
-      border: var(--bd-w) solid var(--border-strong); background: var(--bg);
-      color: var(--fg); font-size: var(--text-xs); font-weight: 500;
-      cursor: pointer; white-space: nowrap;
-    }
-    .skill-act-btn:hover:not(:disabled) { background: var(--card-hov); }
-    .skill-act-btn:active:not(:disabled) { opacity: 0.85; }
-    .skill-act-btn:disabled { opacity: 0.45; cursor: not-allowed; }
-    .skill-act-btn--del { background: var(--s-err); color: var(--s-err-fg); border-color: var(--border-strong); }
-    .skill-act-btn--del:hover:not(:disabled) { opacity: 0.85; }
+    /* Install/Uninstall now use the shared .btn-outline /
+       .btn-solid.btn-solid--danger with the .btn--xs size modifier. */
 
     /* ── Placeholder text ────────────────────────────────────── */
     .agent-bot-form-input::placeholder,
@@ -704,19 +537,19 @@ func settingsModalHTML() string {
 
         <!-- Primary sidebar -->
         <nav class="settings-sidebar">
-          <button class="settings-sidebar-item"
-                  :class="{active: tab === 'appearance'}"
+          <button class="side-nav-item settings-sidebar-item"
+                  :class="{'is-active': tab === 'appearance'}"
                   @click="tab = 'appearance'">
-            <svg fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24">
+            <svg class="side-nav-icon" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24">
               <circle cx="12" cy="12" r="10"/>
               <path d="M12 18a6 6 0 0 0 0-12z" fill="currentColor" stroke="none"/>
             </svg>
             Appearance
           </button>
-          <button class="settings-sidebar-item"
-                  :class="{active: tab === 'server'}"
+          <button class="side-nav-item settings-sidebar-item"
+                  :class="{'is-active': tab === 'server'}"
                   @click="tab = 'server'">
-            <svg fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24">
+            <svg class="side-nav-icon" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24">
               <rect width="20" height="8" x="2" y="2" rx="2"/>
               <rect width="20" height="8" x="2" y="14" rx="2"/>
               <path stroke-linecap="round" d="M6 6h.01"/>
@@ -724,10 +557,10 @@ func settingsModalHTML() string {
             </svg>
             Server
           </button>
-          <button class="settings-sidebar-item"
-                  :class="{active: tab === 'agent-bots'}"
+          <button class="side-nav-item settings-sidebar-item"
+                  :class="{'is-active': tab === 'agent-bots'}"
                   @click="tab = 'agent-bots'">
-            <svg fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+            <svg class="side-nav-icon" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
               <path d="M12 6V2H8"/>
               <path d="M15 11v2"/>
               <path d="M2 12h2"/>
@@ -737,10 +570,10 @@ func settingsModalHTML() string {
             </svg>
             Agent Bots
           </button>
-          <button class="settings-sidebar-item"
-                  :class="{active: tab === 'skills'}"
+          <button class="side-nav-item settings-sidebar-item"
+                  :class="{'is-active': tab === 'skills'}"
                   @click="tab = 'skills'">
-            <svg fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24">
+            <svg class="side-nav-icon" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z"/>
               <path stroke-linecap="round" stroke-linejoin="round" d="M20 2v4"/>
               <path stroke-linecap="round" stroke-linejoin="round" d="M22 4h-4"/>
@@ -748,10 +581,10 @@ func settingsModalHTML() string {
             </svg>
             Skills
           </button>
-          <button class="settings-sidebar-item"
-                  :class="{active: tab === 'agents'}"
+          <button class="side-nav-item settings-sidebar-item"
+                  :class="{'is-active': tab === 'agents'}"
                   @click="tab = 'agents'">
-            <svg fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24">
+            <svg class="side-nav-icon" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" d="M12 20v2"/>
               <path stroke-linecap="round" stroke-linejoin="round" d="M12 2v2"/>
               <path stroke-linecap="round" stroke-linejoin="round" d="M17 20v2"/>
@@ -769,20 +602,20 @@ func settingsModalHTML() string {
             </svg>
             Agent CLI
           </button>
-          <button class="settings-sidebar-item"
+          <button class="side-nav-item settings-sidebar-item"
                   x-show="isElectron"
-                  :class="{active: tab === 'notifications'}"
+                  :class="{'is-active': tab === 'notifications'}"
                   @click="tab = 'notifications'">
-            <svg fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24">
+            <svg class="side-nav-icon" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/>
               <path stroke-linecap="round" stroke-linejoin="round" d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>
             </svg>
             Notifications
           </button>
-          <button class="settings-sidebar-item"
-                  :class="{active: tab === 'shortcuts'}"
+          <button class="side-nav-item settings-sidebar-item"
+                  :class="{'is-active': tab === 'shortcuts'}"
                   @click="tab = 'shortcuts'">
-            <svg fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24">
+            <svg class="side-nav-icon" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24">
               <path stroke-linecap="round" d="M10 8h.01"/>
               <path stroke-linecap="round" d="M12 12h.01"/>
               <path stroke-linecap="round" d="M14 8h.01"/>
@@ -830,12 +663,12 @@ func settingsModalHTML() string {
                 <div x-show="isElectron" style="max-width:640px; margin-bottom:1.75rem;">
                   <label class="settings-field-label">Connection</label>
                   <div class="settings-field-row">
-                    <input type="url" class="settings-input"
+                    <input type="url" class="field-input settings-input"
                            x-model="serverUrl"
                            @keydown.enter="applyServerUrl()"
                            placeholder="http://localhost:54321"
                            spellcheck="false">
-                    <button class="settings-apply-btn"
+                    <button class="btn-solid"
                             @click="applyServerUrl()"
                             :disabled="urlSaving"
                             x-text="urlSaving ? 'Applying…' : 'Apply'"></button>
@@ -847,7 +680,7 @@ func settingsModalHTML() string {
                 <div x-show="isElectron && serverManaged" style="max-width:640px; margin-bottom:1.75rem;">
                   <label class="settings-field-label">Process</label>
                   <div>
-                    <button class="settings-apply-btn settings-apply-btn--danger"
+                    <button class="btn-solid btn-solid--danger"
                             @click="stopServer()"
                             :disabled="!serverRunning || serverStopping"
                             x-text="serverStopping ? 'Stopping…' : 'Stop Server'"></button>
@@ -870,7 +703,7 @@ func settingsModalHTML() string {
                               x-text="sectionIntro(section)"></span>
                       </div>
                       <div class="cfg-section-head-meta">
-                        <span class="cfg-section-dirty-dot" x-show="sectionHasDirty(section)" title="Unsaved changes in this section"></span>
+                        <span class="dot dot--accent" x-show="sectionHasDirty(section)" title="Unsaved changes in this section"></span>
                         <span class="cfg-section-chev" :class="{open: openSection === section}">
                           <svg fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
@@ -888,40 +721,40 @@ func settingsModalHTML() string {
                             </div>
                             <div class="cfg-field-ctrl">
                               <template x-if="field.type === 'bool'">
-                                <label class="cfg-toggle">
+                                <label class="switch">
                                   <input type="checkbox"
                                          :checked="!!getVal(field.key)"
                                          @change="setVal(field.key, $event.target.checked)">
-                                  <span class="cfg-toggle-pill"></span>
+                                  <span class="switch-track"></span>
                                 </label>
                               </template>
                               <template x-if="field.type === 'string' && field.enum && field.enum.length">
-                                <select class="cfg-input" @change="setVal(field.key, $event.target.value)">
+                                <select class="field-input cfg-input" @change="setVal(field.key, $event.target.value)">
                                   <template x-for="opt in (field.enum || [])" :key="opt">
                                     <option :value="opt" :selected="getVal(field.key) === opt" x-text="opt"></option>
                                   </template>
                                 </select>
                               </template>
                               <template x-if="field.type === 'int'">
-                                <input type="number" class="cfg-input"
+                                <input type="number" class="field-input cfg-input"
                                        :value="getVal(field.key)"
                                        @change="setVal(field.key, Number($event.target.value))"
                                        :min="field.constraints ? field.constraints.min : undefined"
                                        :max="field.constraints ? field.constraints.max : undefined">
                               </template>
                               <template x-if="field.type === 'string_list'">
-                                <textarea class="cfg-textarea" rows="3" placeholder="One entry per line"
+                                <textarea class="field-input cfg-textarea" rows="3" placeholder="One entry per line"
                                           :value="listToText(getVal(field.key))"
                                           @change="setVal(field.key, textToList($event.target.value))"></textarea>
                               </template>
                               <template x-if="field.sensitive && field.type !== 'bool' && field.type !== 'string_list'">
                                 <div class="cfg-reveal-wrap">
-                                  <input class="cfg-input"
+                                  <input class="field-input cfg-input"
                                          :type="revealed[field.key] ? 'text' : 'password'"
                                          :value="getVal(field.key) || ''"
                                          :placeholder="(secrets[field.key] && !getVal(field.key)) ? '••• set •••' : (field.default != null ? String(field.default) : '')"
                                          @input="setVal(field.key, $event.target.value)">
-                                  <button type="button" class="cfg-reveal-btn"
+                                  <button type="button" class="icon-btn icon-btn--lg"
                                           @click.stop="toggleReveal(field.key)"
                                           :title="revealed[field.key] ? 'Hide' : 'Reveal'">
                                     <svg x-show="!revealed[field.key]" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24">
@@ -937,19 +770,19 @@ func settingsModalHTML() string {
                                 </div>
                               </template>
                               <template x-if="!field.sensitive && field.type === 'string' && field.multiline && !(field.enum && field.enum.length)">
-                                <textarea class="cfg-textarea" rows="6"
+                                <textarea class="field-input cfg-textarea" rows="6"
                                           :value="getVal(field.key) ?? ''"
                                           :placeholder="field.default != null ? String(field.default) : ''"
                                           @input="setVal(field.key, $event.target.value)"></textarea>
                               </template>
                               <template x-if="!field.sensitive && (field.type === 'string' || field.type === 'duration') && !field.multiline && !(field.enum && field.enum.length)">
                                 <div style="display:flex;gap:0.375rem;align-items:center;width:100%;">
-                                  <input type="text" class="cfg-input" style="flex:1;min-width:0;"
+                                  <input type="text" class="field-input cfg-input" style="flex:1;min-width:0;"
                                          :value="getVal(field.key) ?? ''"
                                          :placeholder="field.default != null ? String(field.default) : ''"
                                          @input="setVal(field.key, $event.target.value)">
                                   <template x-if="field.key === 'vault.path' && isElectron">
-                                    <button type="button" class="cfg-reveal-btn"
+                                    <button type="button" class="icon-btn icon-btn--lg"
                                             title="Browse for folder"
                                             style="font-size:13px;letter-spacing:0.05em;padding:0 6px;width:auto;"
                                             @click="pickFolder(field.key, getVal(field.key))">···</button>
@@ -965,8 +798,8 @@ func settingsModalHTML() string {
                       <div class="cfg-wechat-auth" x-show="section === 'plugins.wechat'">
                         <div class="cfg-wechat-auth-head">
                           <span class="cfg-wechat-auth-title">WeChat login</span>
-                          <span class="cfg-wechat-badge"
-                                :class="{ connected: wechatStatus.connected }"
+                          <span class="badge"
+                                :class="{ 'badge--ok': wechatStatus.connected }"
                                 x-text="wechatStatus.connected ? 'Connected' : 'Not connected'"></span>
                         </div>
                         <p class="cfg-wechat-meta">
@@ -980,7 +813,7 @@ func settingsModalHTML() string {
                               <span x-show="wechatStatus.saved_at"> · saved <span x-text="wechatStatus.saved_at"></span></span>
                             </p>
                             <div class="cfg-wechat-actions">
-                              <button type="button" class="settings-apply-btn settings-apply-btn--danger"
+                              <button type="button" class="btn-solid btn-solid--danger"
                                       @click="wechatLogout()"
                                       :disabled="wechatAuthBusy"
                                       x-text="wechatAuthBusy ? 'Disconnecting…' : 'Disconnect'"></button>
@@ -990,11 +823,11 @@ func settingsModalHTML() string {
                         <template x-if="!wechatStatus.connected">
                           <div>
                             <div class="cfg-wechat-actions">
-                              <button type="button" class="settings-apply-btn"
+                              <button type="button" class="btn-solid"
                                       @click="startWechatLogin()"
                                       :disabled="wechatAuthBusy || wechatLoginBusy"
                                       x-text="wechatLoginBusy ? 'Waiting for scan…' : 'Scan QR to log in'"></button>
-                              <button type="button" class="settings-apply-btn"
+                              <button type="button" class="btn-solid"
                                       x-show="wechatLoginBusy"
                                       @click="cancelWechatLogin()">Cancel</button>
                             </div>
@@ -1011,8 +844,8 @@ func settingsModalHTML() string {
                       <div class="cfg-wechat-auth" x-show="section === 'plugins.discord'">
                         <div class="cfg-wechat-auth-head">
                           <span class="cfg-wechat-auth-title">Discord Bot status</span>
-                          <span class="cfg-wechat-badge"
-                                :class="{ connected: !!getVal('plugins.discord.bot_token') }"
+                          <span class="badge"
+                                :class="{ 'badge--ok': !!getVal('plugins.discord.bot_token') }"
                                 x-text="getVal('plugins.discord.bot_token') ? 'Token set' : 'Not configured'"></span>
                         </div>
                         <p class="cfg-wechat-meta">
@@ -1036,7 +869,7 @@ func settingsModalHTML() string {
                     <span class="cfg-status-err" x-show="cfgSaveError" x-text="cfgSaveError"></span>
                     <span class="cfg-status-err" x-show="cfgRestartError" x-text="cfgRestartError"></span>
                     <span class="cfg-restart-note" x-show="cfgRestarting">Restarting server…</span>
-                    <span class="cfg-dirty-badge" x-show="hasDirty"
+                    <span class="badge" x-show="hasDirty"
                           x-text="Object.keys(patch).length + ' unsaved change' + (Object.keys(patch).length !== 1 ? 's' : '')"></span>
                     <span class="cfg-restart-note"
                           x-show="!hasDirty && !cfgSaveOk && !cfgSaveError && !cfgRestartError && !cfgRestarting">
@@ -1044,8 +877,8 @@ func settingsModalHTML() string {
                     </span>
                   </div>
                   <div class="cfg-action-right">
-                    <button class="cfg-discard-btn" x-show="hasDirty" @click="discardAll()">Discard</button>
-                    <button class="cfg-save-btn"
+                    <button class="btn-outline" x-show="hasDirty" @click="discardAll()">Discard</button>
+                    <button class="btn-solid"
                             @click="saveConfig()"
                             :disabled="!hasDirty || cfgSaving || cfgRestarting"
                             x-text="cfgRestarting ? 'Restarting…' : cfgSaving ? 'Saving…' : 'Save all'"></button>
@@ -1085,10 +918,10 @@ func settingsModalHTML() string {
                 <div>
                   <div class="notif-row">
                     <label class="settings-field-label" style="margin:0">Text Notifications</label>
-                    <label class="cfg-toggle">
+                    <label class="switch">
                       <input type="checkbox" :checked="notifySettings.textEnabled"
                              @change="notifySettings.textEnabled = $event.target.checked; saveNotifySettings()">
-                      <span class="cfg-toggle-pill"></span>
+                      <span class="switch-track"></span>
                     </label>
                   </div>
                   <p class="settings-field-desc">Show a system notification when a new inbox message arrives.</p>
@@ -1097,10 +930,10 @@ func settingsModalHTML() string {
                 <div>
                   <div class="notif-row">
                     <label class="settings-field-label" style="margin:0">Sound</label>
-                    <label class="cfg-toggle">
+                    <label class="switch">
                       <input type="checkbox" :checked="notifySettings.soundEnabled"
                              @change="notifySettings.soundEnabled = $event.target.checked; saveNotifySettings()">
-                      <span class="cfg-toggle-pill"></span>
+                      <span class="switch-track"></span>
                     </label>
                   </div>
                   <p class="settings-field-desc">Play a sound when a new inbox message arrives.</p>
@@ -1118,18 +951,18 @@ func settingsModalHTML() string {
                             <svg fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
                           </button>
                           <div class="cselect-dropdown" x-show="csOpen">
-                            <button type="button" class="cselect-option" :class="notifySettings.sound==='beep'?'sel':''" @click="notifySettings.sound='beep'; saveNotifySettings(); csOpen=false"><span class="cselect-option-dot"></span><span>System beep</span></button>
-                            <button type="button" class="cselect-option" :class="notifySettings.sound==='none'?'sel':''" @click="notifySettings.sound='none'; saveNotifySettings(); csOpen=false"><span class="cselect-option-dot"></span><span>None</span></button>
-                            <button type="button" class="cselect-option" :class="notifySettings.sound==='Glass'?'sel':''" @click="notifySettings.sound='Glass'; saveNotifySettings(); csOpen=false"><span class="cselect-option-dot"></span><span>Glass</span></button>
-                            <button type="button" class="cselect-option" :class="notifySettings.sound==='Ping'?'sel':''" @click="notifySettings.sound='Ping'; saveNotifySettings(); csOpen=false"><span class="cselect-option-dot"></span><span>Ping</span></button>
-                            <button type="button" class="cselect-option" :class="notifySettings.sound==='Pop'?'sel':''" @click="notifySettings.sound='Pop'; saveNotifySettings(); csOpen=false"><span class="cselect-option-dot"></span><span>Pop</span></button>
-                            <button type="button" class="cselect-option" :class="notifySettings.sound==='Tink'?'sel':''" @click="notifySettings.sound='Tink'; saveNotifySettings(); csOpen=false"><span class="cselect-option-dot"></span><span>Tink</span></button>
-                            <button type="button" class="cselect-option" :class="notifySettings.sound==='Hero'?'sel':''" @click="notifySettings.sound='Hero'; saveNotifySettings(); csOpen=false"><span class="cselect-option-dot"></span><span>Hero</span></button>
-                            <button type="button" class="cselect-option" :class="notifySettings.sound==='Purr'?'sel':''" @click="notifySettings.sound='Purr'; saveNotifySettings(); csOpen=false"><span class="cselect-option-dot"></span><span>Purr</span></button>
-                            <button type="button" class="cselect-option" :class="notifySettings.sound==='Submarine'?'sel':''" @click="notifySettings.sound='Submarine'; saveNotifySettings(); csOpen=false"><span class="cselect-option-dot"></span><span>Submarine</span></button>
+                            <button type="button" class="cselect-option" :class="notifySettings.sound==='beep'?'sel':''" @click="notifySettings.sound='beep'; saveNotifySettings(); csOpen=false"><span class="dot dot--fg cselect-option-dot"></span><span>System beep</span></button>
+                            <button type="button" class="cselect-option" :class="notifySettings.sound==='none'?'sel':''" @click="notifySettings.sound='none'; saveNotifySettings(); csOpen=false"><span class="dot dot--fg cselect-option-dot"></span><span>None</span></button>
+                            <button type="button" class="cselect-option" :class="notifySettings.sound==='Glass'?'sel':''" @click="notifySettings.sound='Glass'; saveNotifySettings(); csOpen=false"><span class="dot dot--fg cselect-option-dot"></span><span>Glass</span></button>
+                            <button type="button" class="cselect-option" :class="notifySettings.sound==='Ping'?'sel':''" @click="notifySettings.sound='Ping'; saveNotifySettings(); csOpen=false"><span class="dot dot--fg cselect-option-dot"></span><span>Ping</span></button>
+                            <button type="button" class="cselect-option" :class="notifySettings.sound==='Pop'?'sel':''" @click="notifySettings.sound='Pop'; saveNotifySettings(); csOpen=false"><span class="dot dot--fg cselect-option-dot"></span><span>Pop</span></button>
+                            <button type="button" class="cselect-option" :class="notifySettings.sound==='Tink'?'sel':''" @click="notifySettings.sound='Tink'; saveNotifySettings(); csOpen=false"><span class="dot dot--fg cselect-option-dot"></span><span>Tink</span></button>
+                            <button type="button" class="cselect-option" :class="notifySettings.sound==='Hero'?'sel':''" @click="notifySettings.sound='Hero'; saveNotifySettings(); csOpen=false"><span class="dot dot--fg cselect-option-dot"></span><span>Hero</span></button>
+                            <button type="button" class="cselect-option" :class="notifySettings.sound==='Purr'?'sel':''" @click="notifySettings.sound='Purr'; saveNotifySettings(); csOpen=false"><span class="dot dot--fg cselect-option-dot"></span><span>Purr</span></button>
+                            <button type="button" class="cselect-option" :class="notifySettings.sound==='Submarine'?'sel':''" @click="notifySettings.sound='Submarine'; saveNotifySettings(); csOpen=false"><span class="dot dot--fg cselect-option-dot"></span><span>Submarine</span></button>
                           </div>
                         </div>
-                        <button type="button" class="notif-play-btn" title="Preview sound"
+                        <button type="button" class="icon-btn icon-btn--lg" title="Preview sound"
                                 :disabled="notifySettings.sound === 'none'"
                                 @click="window.vaultrDesktop?.inboxNotify?.previewSound(notifySettings.sound)">
                           <svg fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 4v16l13-8z"/></svg>
@@ -1153,7 +986,7 @@ func settingsModalHTML() string {
             <template x-if="!agentBotFormMode && !agentBotsSubPage">
               <div>
                 <div class="agent-bots-toolbar">
-                  <button class="agents-toolbar-btn" @click="newAgentBot()">
+                  <button class="btn-outline" @click="newAgentBot()">
                     <svg fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14"/>
                       <path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14"/>
@@ -1169,8 +1002,8 @@ func settingsModalHTML() string {
                     <div class="agent-bots-empty">No agent bots yet — click New Agent Bot to create one.</div>
                   </template>
                   <template x-for="(m, mi) in agentBotsList" :key="m.id">
-                    <div class="agent-bot-card" :class="m.enabled ? '' : 'disabled-card'">
-                      <div class="agent-bot-avatar"
+                    <div class="list-card list-card--hover agent-bot-card" :class="m.enabled ? '' : 'disabled-card'">
+                      <div class="avatar avatar--lg avatar--neutral agent-bot-avatar"
                            :style="m.color ? 'background:' + m.color : ''">
                         <span x-text="m.name ? m.name.charAt(0).toUpperCase() : '?'"></span>
                       </div>
@@ -1178,20 +1011,20 @@ func settingsModalHTML() string {
                         <div class="agent-bot-card-header">
                           <span class="agent-bot-card-name" x-text="m.name"></span>
                           <div class="agent-bot-card-actions">
-                            <button class="agent-bot-act-btn" @click.stop="moveAgentBot(mi, -1)" :disabled="mi === 0" type="button" title="Move up">↑</button>
-                            <button class="agent-bot-act-btn" @click.stop="moveAgentBot(mi, 1)" :disabled="mi === agentBotsList.length - 1" type="button" title="Move down">↓</button>
-                            <button class="agent-bot-act-btn" @click.stop="openAgentBotEdit(m.id)" type="button">Edit</button>
-                            <button class="agent-bot-act-btn del" @click.stop="deleteAgentBot(m.id)" type="button">Delete</button>
+                            <button class="btn-outline btn--xs" @click.stop="moveAgentBot(mi, -1)" :disabled="mi === 0" type="button" title="Move up">↑</button>
+                            <button class="btn-outline btn--xs" @click.stop="moveAgentBot(mi, 1)" :disabled="mi === agentBotsList.length - 1" type="button" title="Move down">↓</button>
+                            <button class="btn-outline btn--xs" @click.stop="openAgentBotEdit(m.id)" type="button">Edit</button>
+                            <button class="btn-solid btn-solid--danger btn--xs" @click.stop="deleteAgentBot(m.id)" type="button">Delete</button>
                           </div>
                         </div>
                         <p class="agent-bot-card-desc" x-show="m.description" x-text="m.description"></p>
                         <div class="agent-bot-card-tags">
-                          <span class="agent-bot-badge" x-text="m.agentId || '—'"></span>
+                          <span class="badge agent-bot-badge" x-text="m.agentId || '—'"></span>
                           <template x-if="m.model">
-                            <span class="agent-bot-badge" x-text="m.model"></span>
+                            <span class="badge agent-bot-badge" x-text="m.model"></span>
                           </template>
                           <template x-if="m.triggerCount > 0">
-                            <span class="agent-bot-badge trigger"
+                            <span class="badge badge--ok agent-bot-badge"
                                   x-text="m.triggerCount + (m.triggerCount === 1 ? ' trigger' : ' triggers')"></span>
                           </template>
                         </div>
@@ -1214,13 +1047,13 @@ func settingsModalHTML() string {
                     <div class="agent-bot-form-row">
                       <div>
                         <label class="agent-bot-form-label">Name</label>
-                        <input class="agent-bot-form-input" type="text" x-model="agentBotDraft.name" placeholder="Quote Extractor" autofocus>
+                        <input class="field-input agent-bot-form-input" type="text" x-model="agentBotDraft.name" placeholder="Quote Extractor" autofocus>
                       </div>
                       <div style="flex:0 0 auto;min-width:90px">
                         <label class="agent-bot-form-label">Enabled</label>
-                        <label class="cfg-toggle">
+                        <label class="switch">
                           <input type="checkbox" :checked="agentBotDraft.enabled" @change="agentBotDraft.enabled = $event.target.checked">
-                          <span class="cfg-toggle-pill"></span>
+                          <span class="switch-track"></span>
                         </label>
                       </div>
                     </div>
@@ -1238,7 +1071,7 @@ func settingsModalHTML() string {
                     </div>
                     <div>
                       <label class="agent-bot-form-label">Description <span style="font-weight:400;text-transform:none;letter-spacing:0;">(optional)</span></label>
-                      <input class="agent-bot-form-input" type="text" x-model="agentBotDraft.description" placeholder="Brief description of what this agent bot does">
+                      <input class="field-input agent-bot-form-input" type="text" x-model="agentBotDraft.description" placeholder="Brief description of what this agent bot does">
                     </div>
                   </section>
 
@@ -1249,25 +1082,25 @@ func settingsModalHTML() string {
                         <label class="agent-bot-form-label">Agent</label>
 ` + cselectHTML(
 		`(agents.find(function(a){return a.id===agentBotDraft.agentId&&a.available;}) || {name: 'Select agent'}).name`,
-		`<template x-for="a in agents.filter(function(a){return a.available;})" :key="a.id"><button type="button" class="cselect-option" :class="agentBotDraft.agentId===a.id?'sel':''" @click="agentBotDraft.agentId=a.id; onAgentBotAgentChange(); csOpen=false"><span class="cselect-option-dot"></span><span x-text="a.name"></span></button></template>`,
+		`<template x-for="a in agents.filter(function(a){return a.available;})" :key="a.id"><button type="button" class="cselect-option" :class="agentBotDraft.agentId===a.id?'sel':''" @click="agentBotDraft.agentId=a.id; onAgentBotAgentChange(); csOpen=false"><span class="dot dot--fg cselect-option-dot"></span><span x-text="a.name"></span></button></template>`,
 	) + `
                       </div>
                       <div>
                         <label class="agent-bot-form-label">Model</label>
 ` + cselectHTML(
 		`agentBotDraft.model || 'Default'`,
-		`<button type="button" class="cselect-option" :class="agentBotDraft.model===''?'sel':''" @click="agentBotDraft.model=''; csOpen=false"><span class="cselect-option-dot"></span><span>Default</span></button>`+
-			`<template x-for="m in agentBotModelsForAgent(agentBotDraft.agentId)" :key="m.id"><button type="button" class="cselect-option" :class="agentBotDraft.model===m.id?'sel':''" @click="agentBotDraft.model=m.id; csOpen=false"><span class="cselect-option-dot"></span><span :title="(m.label && m.label !== m.id) ? m.label : ''" x-text="m.id"></span></button></template>`,
+		`<button type="button" class="cselect-option" :class="agentBotDraft.model===''?'sel':''" @click="agentBotDraft.model=''; csOpen=false"><span class="dot dot--fg cselect-option-dot"></span><span>Default</span></button>`+
+			`<template x-for="m in agentBotModelsForAgent(agentBotDraft.agentId)" :key="m.id"><button type="button" class="cselect-option" :class="agentBotDraft.model===m.id?'sel':''" @click="agentBotDraft.model=m.id; csOpen=false"><span class="dot dot--fg cselect-option-dot"></span><span :title="(m.label && m.label !== m.id) ? m.label : ''" x-text="m.id"></span></button></template>`,
 	) + `
                       </div>
                     </div>
                     <div style="display:none">
                       <label class="agent-bot-form-label">Working Directory <span style="font-weight:400;text-transform:none;letter-spacing:0;">(vault root if blank)</span></label>
-                      <input class="agent-bot-form-input" type="text" x-model="agentBotDraft.cwd" placeholder="/absolute/path or leave blank">
+                      <input class="field-input agent-bot-form-input" type="text" x-model="agentBotDraft.cwd" placeholder="/absolute/path or leave blank">
                     </div>
                     <div>
                       <label class="agent-bot-form-label">System Prompt</label>
-                      <textarea class="agent-bot-form-textarea" x-model="agentBotDraft.systemPrompt" rows="1"
+                      <textarea class="field-input agent-bot-form-textarea" x-model="agentBotDraft.systemPrompt" rows="1"
                                 placeholder="Instructions prepended to every message…"></textarea>
                     </div>
                   </section>
@@ -1296,7 +1129,7 @@ func settingsModalHTML() string {
                               </div>
 ` + cselectHTML(
 		`(agentBotEventDefs.find(function(d){return d.type===(t.eventTypes[0]||'');}) || {label: 'Select event…'}).label`,
-		`<template x-for="def in agentBotEventDefs" :key="def.type"><button type="button" class="cselect-option" :class="(t.eventTypes[0]||'')===def.type ? 'sel' : ''" :title="def.description" @click="setAgentBotET(t, def.type); csOpen=false"><span class="cselect-option-dot"></span><span x-text="def.label"></span></button></template>`,
+		`<template x-for="def in agentBotEventDefs" :key="def.type"><button type="button" class="cselect-option" :class="(t.eventTypes[0]||'')===def.type ? 'sel' : ''" :title="def.description" @click="setAgentBotET(t, def.type); csOpen=false"><span class="dot dot--fg cselect-option-dot"></span><span x-text="def.label"></span></button></template>`,
 	) + `
                             </div>
                             <template x-if="isScheduledTrigger(t)">
@@ -1315,7 +1148,7 @@ func settingsModalHTML() string {
                                   <div class="agent-bot-schedule-kind-body">
                                     <div class="agent-bot-schedule-presets">
                                       <template x-for="p in agentBotIntervalPresets" :key="p.value">
-                                        <button type="button" class="agent-bot-schedule-preset"
+                                        <button type="button" class="btn-outline btn--xs"
                                                 :class="(t.schedule || '') === p.value ? 'active' : ''"
                                                 @click="t.schedule = p.value"
                                                 x-text="p.label"></button>
@@ -1329,7 +1162,7 @@ func settingsModalHTML() string {
                                   <div class="agent-bot-schedule-kind-body">
                                     <div class="agent-bot-schedule-presets">
                                       <template x-for="p in agentBotDailyPresets" :key="p.value">
-                                        <button type="button" class="agent-bot-schedule-preset"
+                                        <button type="button" class="btn-outline btn--xs"
                                                 :class="(t.schedule || '') === p.value ? 'active' : ''"
                                                 @click="t.schedule = p.value"
                                                 x-text="p.label"></button>
@@ -1344,7 +1177,7 @@ func settingsModalHTML() string {
                                     <label class="agent-bot-schedule-custom-label">Days</label>
                                     <div class="agent-bot-schedule-presets agent-bot-weekday-toggles">
                                       <template x-for="d in agentBotWeekdayDefs" :key="d.abbr">
-                                        <button type="button" class="agent-bot-schedule-preset"
+                                        <button type="button" class="btn-outline btn--xs"
                                                 :class="weeklyDaysOf(t).indexOf(d.abbr) >= 0 ? 'active' : ''"
                                                 @click="toggleWeeklyDay(t, d.abbr)"
                                                 x-text="d.label"></button>
@@ -1355,7 +1188,7 @@ func settingsModalHTML() string {
                                 </template>
 
                                 <label class="agent-bot-schedule-custom-label">Raw</label>
-                                <input class="agent-bot-form-input" type="text" x-model="t.schedule"
+                                <input class="field-input agent-bot-form-input" type="text" x-model="t.schedule"
                                        placeholder="every 1h · daily 09:00 · weekly mon,wed 09:00">
                               </div>
                             </template>
@@ -1365,7 +1198,7 @@ func settingsModalHTML() string {
                                   <span class="agent-bot-block-title">Path Prefixes <span style="font-weight:400;opacity:0.6;">(optional)</span></span>
                                   <span class="agent-bot-block-hint">Only fire when the event path starts with one of these prefixes. Leave empty to match all paths. One prefix per line, e.g. <code style="font-size:var(--text-2xs);padding:0 3px;background:var(--code-bg);border-radius:var(--r-xs);">/journal/</code></span>
                                 </div>
-                                <textarea class="agent-bot-form-textarea"
+                                <textarea class="field-input agent-bot-form-textarea"
                                           rows="2"
                                           :value="(t.pathPrefixes || []).join('\n')"
                                           @change="t.pathPrefixes = $event.target.value.split('\n').map(function(s){return s.trim();}).filter(Boolean)"
@@ -1378,7 +1211,7 @@ func settingsModalHTML() string {
                                   <span class="agent-bot-block-title">Source Agent Bots <span style="font-weight:400;opacity:0.6;">(optional)</span></span>
                                   <span class="agent-bot-block-hint">Only fire when the run was completed by one of these agent bots. Leave empty to fire on any agent bot. One agent bot name per line.</span>
                                 </div>
-                                <textarea class="agent-bot-form-textarea"
+                                <textarea class="field-input agent-bot-form-textarea"
                                           rows="2"
                                           :value="(t.pathPrefixes || []).join('\n')"
                                           @change="t.pathPrefixes = $event.target.value.split('\n').map(function(s){return s.trim();}).filter(Boolean)"
@@ -1413,11 +1246,11 @@ func settingsModalHTML() string {
                   </section>
 
                   <div class="agent-bot-form-footer">
-                    <button class="agent-bot-save-btn" type="button"
+                    <button class="btn-solid" type="button"
                             :disabled="!agentBotDraft.name.trim() || agentBotSaving"
                             @click="saveAgentBot()"
                             x-text="agentBotSaving ? 'Saving…' : 'Save'"></button>
-                    <button class="agent-bot-cancel-btn" type="button" @click="agentBotFormMode = null">Cancel</button>
+                    <button class="btn-outline" type="button" @click="agentBotFormMode = null">Cancel</button>
                     <span class="agent-bot-form-err" x-text="agentBotSaveError"></span>
                   </div>
                 </div>
@@ -1443,11 +1276,11 @@ func settingsModalHTML() string {
               </template>
               <div class="skills-list">
                 <template x-for="s in sortedSkillsList" :key="s.name">
-                  <div class="skill-card" :class="s.installed ? '' : 'not-installed'">
+                  <div class="list-card list-card--hover skill-card" :class="s.installed ? '' : 'not-installed'">
                     <div class="skill-card-left">
-                      <span class="skill-dot" :class="s.installed ? 'on' : 'off'"></span>
+                      <span class="dot" :class="s.installed ? 'dot--on' : 'dot--off'"></span>
                       <span class="skill-name" x-text="s.name"></span>
-                      <span class="skill-default-badge" x-show="s.default">built-in</span>
+                      <span class="badge" x-show="s.default">built-in</span>
                       <template x-if="s.repoUrl">
                         <a class="skill-repo-link" :href="s.repoUrl" target="_blank" rel="noopener noreferrer"
                            @click.stop
@@ -1456,14 +1289,14 @@ func settingsModalHTML() string {
                     </div>
                     <div class="skill-card-right">
                       <template x-if="!s.default && s.installed">
-                        <button class="skill-act-btn skill-act-btn--del"
+                        <button class="btn-outline btn-outline--danger btn--xs"
                                 :disabled="!!skillsUninstalling[s.name]"
                                 @click="uninstallSkill(s.name)"
                                 x-text="skillsUninstalling[s.name] ? 'Removing…' : 'Uninstall'">
                         </button>
                       </template>
                       <template x-if="!s.default && !s.installed">
-                        <button class="skill-act-btn"
+                        <button class="btn-outline btn--xs"
                                 :disabled="!!skillsInstalling[s.name]"
                                 @click="installSkill(s.name, s.repoUrl, s.subPath)"
                                 x-text="skillsInstalling[s.name] ? 'Installing…' : 'Install'">
@@ -1490,9 +1323,9 @@ func settingsModalHTML() string {
             <div class="cfg-err-msg" x-show="agentsError && !agentsLoading" x-text="'Error: ' + agentsError"></div>
             <div class="agents-list" x-show="!agentsLoading && !agentsError && agents.length">
               <template x-for="ag in sortedAgents" :key="ag.id">
-                <div class="agent-card" :class="{unavailable: !ag.available}">
+                <div class="list-card agent-card" :class="{unavailable: !ag.available}">
                   <div class="agent-card-top">
-                    <span class="agent-dot" :class="ag.available ? 'ok' : 'off'"></span>
+                    <span class="dot" :class="ag.available ? 'dot--on' : 'dot--off'"></span>
                     <span class="agent-card-name" x-text="ag.name"></span>
                     <span class="agent-card-id" x-text="ag.id"></span>
                     <span class="agent-status-badge" :class="ag.available ? 'ok' : ''"
@@ -1511,7 +1344,7 @@ func settingsModalHTML() string {
                   </div>
                   <div class="agent-card-models">
                     <template x-for="m in agentDisplayModels(ag)" :key="m.id">
-                      <span class="agent-model-pill" :title="(m.label && m.label !== m.id) ? m.id + ' — ' + m.label : m.id" x-text="m.id"></span>
+                      <span class="badge badge--sm agent-model-pill" :title="(m.label && m.label !== m.id) ? m.id + ' — ' + m.label : m.id" x-text="m.id"></span>
                     </template>
                     <span class="agent-model-more"
                           x-show="ag.models && ag.models.length > 4"
@@ -2367,7 +2200,7 @@ func agentBotBackBtnHTML(onclick, label string) string {
 }
 
 func toolbarRefreshBtnHTML(loadingExpr, onclick, busyLabel string) string {
-	return `<button class="agents-toolbar-btn" :class="{spinning: ` + loadingExpr + `}" @click="` + onclick + `" :disabled="` + loadingExpr + `">` +
+	return `<button class="btn-outline" :class="{spinning: ` + loadingExpr + `}" @click="` + onclick + `" :disabled="` + loadingExpr + `">` +
 		`<svg fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path stroke-linecap="round" stroke-linejoin="round" d="M3 3v5h5"/><path stroke-linecap="round" stroke-linejoin="round" d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path stroke-linecap="round" stroke-linejoin="round" d="M16 16h5v5"/></svg>` +
 		`<span x-text="` + loadingExpr + ` ? '` + busyLabel + `' : 'Refresh'"></span></button>`
 }

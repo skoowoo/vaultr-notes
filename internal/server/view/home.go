@@ -288,8 +288,13 @@ func (vh *ViewHandler) renderHomeImagesSection(r *http.Request) (template.HTML, 
 		nextNs = items[len(items)-1].CursorNs
 	}
 
+	count, err := vh.vault.CountImages()
+	if err != nil {
+		return "", err
+	}
+
 	var buf bytes.Buffer
-	if err := homeImagesSectionTemplate.Execute(&buf, imagesGridData{Images: items, NextNs: nextNs}); err != nil {
+	if err := homeImagesSectionTemplate.Execute(&buf, imagesGridData{Images: items, NextNs: nextNs, Count: count}); err != nil {
 		return "", err
 	}
 	return template.HTML(buf.String()), nil //nolint:gosec // server-rendered fragment, not user HTML
@@ -358,7 +363,7 @@ var homeTemplateFuncs = template.FuncMap{
 }
 
 const homeSectionRowsHTML = `{{define "rows"}}{{range .Items}}
-<div class="home-list-card home-note-row" @click="__vaultrOpenNote($event.currentTarget)"
+<div class="list-card list-card--clickable home-list-card home-note-row" @click="__vaultrOpenNote($event.currentTarget)"
      data-note-path="{{.Path}}" data-note-title="{{label .}}"
      data-note-is-knowledge="{{.IsKnowledge}}" data-note-is-index="{{.IsIndex}}"
      data-note-can-compile="{{.CanCompile}}" data-note-pinned="{{.Pinned}}">
@@ -434,7 +439,7 @@ const homeShortsSectionHTML = `<div class="shorts-view">
         <button type="button" class="cselect-option{{if .IsCurrent}} sel{{end}}"
                 hx-get="/home/section?type=shorts&from={{.YM}}" hx-target="#home-list-pane" hx-swap="innerHTML"
                 @click="csOpen = false">
-          <span class="cselect-option-dot"></span><span>{{.Abbr}} {{.Year}}</span>
+          <span class="dot dot--fg cselect-option-dot"></span><span>{{.Abbr}} {{.Year}}</span>
         </button>
         {{end}}
       </div>
@@ -497,26 +502,28 @@ var homeShortsSectionTemplate = template.Must(template.New("home-shorts-section"
 // standalone /images page, just without its own .img-main wrapper (the
 // #home-list-pane flex column already plays that role).
 const homeImagesSectionHTML = `<div class="home-list-head">
+  <span class="home-list-title">Images</span>
+  <span class="home-list-count">{{.Count}}</span>
   <div class="home-list-head-spacer"></div>
-  <button type="button" class="toolbar-toggle" x-show="!selectMode" @click="enterSelectMode()">
+  <button type="button" class="btn-outline btn--xs" x-show="!selectMode" @click="enterSelectMode()">
     <svg fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2"/><path stroke-linecap="round" stroke-linejoin="round" d="m9 12 2 2 4-4"/></svg>
     Select
   </button>
   <div class="toolbar-select-group" x-show="selectMode" style="display:none">
     <div class="bulk-count"><strong x-text="selectedCount"></strong> selected</div>
-    <button type="button" class="bulk-btn bulk-btn-danger"
+    <button type="button" class="btn-solid btn-solid--danger btn--xs"
             :disabled="!selectedCount"
             @click="deleteSelected()"
             x-text="selectedCount ? 'Delete (' + selectedCount + ')' : 'Delete'">
     </button>
-    <button type="button" class="bulk-btn bulk-btn-neutral" @click="exitSelectMode()">Cancel</button>
+    <button type="button" class="btn-outline btn--xs" @click="exitSelectMode()">Cancel</button>
   </div>
 </div>
 <div class="img-scroll">
   <div class="img-grid" id="img-grid">
     {{- if .Images}}
     {{- range .Images}}
-    <div class="img-card" onclick="openImageLightbox(this)"
+    <div class="list-card list-card--clickable img-card" onclick="openImageLightbox(this)"
          data-img-src="{{.ThumbURL}}" data-img-name="{{.Name}}" data-img-dir="{{.Dir}}"
          data-img-size="{{.Size}}" data-img-time="{{.UpdatedAt}}" data-img-ext="{{.Ext}}"
          data-img-notes="{{.LinkedNotesJSON}}">
@@ -544,7 +551,17 @@ const homeImagesSectionHTML = `<div class="home-list-head">
          hx-target="this"></div>
     {{- end}}
     {{- else}}
-    <div class="img-empty">No images found</div>
+    <div class="img-empty empty-state">
+      <div class="empty-state-icon">
+        <svg fill="none" stroke="currentColor" stroke-width="1.25" viewBox="0 0 48 48">
+          <rect x="5" y="8" width="38" height="32" rx="3"/>
+          <circle cx="16" cy="18" r="3.5"/>
+          <path stroke-linecap="round" stroke-linejoin="round" d="M5 33l10-10 8 8 7-9 13 13"/>
+        </svg>
+      </div>
+      <div class="empty-state-title">No images yet</div>
+      <div class="empty-state-desc">Images you add to your notes will show up here.</div>
+    </div>
     {{- end}}
   </div>
 </div>`
@@ -665,7 +682,7 @@ const homeGraphSectionHTML = `<div class="graph-main">
 
     <div class="graph-node-panel" :class="{ open: !!nodePanel }">
       <div class="graph-node-panel-row">
-        <span class="graph-node-panel-type"
+        <span class="badge badge--sm graph-node-panel-type"
               x-show="nodePanel && nodePanel.entityType"
               x-text="nodePanel ? nodePanel.entityType : ''"></span>
         <span class="graph-node-panel-edges"
@@ -678,7 +695,7 @@ const homeGraphSectionHTML = `<div class="graph-main">
         </button>
       </div>
       <div class="graph-node-panel-title" x-text="nodePanel ? nodePanel.label : ''"></div>
-      <button type="button" class="graph-node-open-btn"
+      <button type="button" class="btn-solid graph-node-open-btn"
               @click="nodePanel && openNodeInDrawer(nodePanel.path, nodePanel.label, nodePanel.entityType)">
         Open
         <svg fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24">
@@ -693,8 +710,8 @@ const homeGraphSectionHTML = `<div class="graph-main">
       <span>Loading graph…</span>
     </div>
 
-    <div class="graph-zero" x-show="!loading && empty" x-cloak>
-      <div class="graph-zero-icon">
+    <div class="graph-zero empty-state" x-show="!loading && empty" x-cloak>
+      <div class="empty-state-icon">
         <svg fill="none" stroke="currentColor" stroke-width="1.25" viewBox="0 0 48 48">
           <circle cx="24" cy="12" r="4.5"/>
           <circle cx="10" cy="36" r="4.5"/>
@@ -704,8 +721,8 @@ const homeGraphSectionHTML = `<div class="graph-main">
           <line x1="14.5" y1="36" x2="33.5" y2="36" stroke-linecap="round"/>
         </svg>
       </div>
-      <div class="graph-zero-title">No knowledge notes yet</div>
-      <div class="graph-zero-desc">Knowledge notes and their connections will appear here once the compile agent has run on your raw notes.</div>
+      <div class="empty-state-title">No knowledge notes yet</div>
+      <div class="empty-state-desc">Knowledge notes and their connections will appear here once the compile agent has run on your raw notes.</div>
     </div>
   </div>
 </div>`
@@ -735,8 +752,8 @@ const homeInboxSectionHTML = `<div class="home-inbox-section">
       <div class="home-list-empty" x-text="inboxFilter === 'unread' ? 'All caught up — no unread messages.' : (inboxFilter === 'read' ? 'No read messages yet.' : 'No messages yet.')"></div>
     </template>
     <template x-for="m in visibleInboxMessages()" :key="m.id">
-      <div class="home-list-card home-inbox-card" :class="{ 'is-unread': !m.isRead }" @click="selectInboxMessage(m)">
-        <div class="home-inbox-unread-dot"></div>
+      <div class="list-card list-card--clickable home-list-card home-inbox-card" :class="{ 'is-unread': !m.isRead }" @click="selectInboxMessage(m)">
+        <div class="dot dot--fg home-inbox-unread-dot"></div>
         <div class="home-inbox-card-content">
           <div class="home-inbox-card-top">
             <span class="home-inbox-card-title" x-text="m.title || m.source"></span>
@@ -855,12 +872,12 @@ const homeChatSectionHTML = `<div class="chat-main">
         <template x-if="msg.role === 'assistant'">
           <div class="msg-assistant-wrap">
             <div class="msg-agent-header">
-              <div class="msg-agent-avatar"
-                :style="getAgentBotColor(msg.agentBotId) ? 'background:' + getAgentBotColor(msg.agentBotId) : ''"
+              <div class="avatar avatar--md avatar--accent msg-agent-avatar"
+                :style="getAgentBotColor(msg.agentBotId) ? 'background:' + getAgentBotColor(msg.agentBotId) + ';color:var(--inverse-ink)' : ''"
                 x-text="agentBotInitials(getAgentBotNameForMsg(msg))"></div>
               <div class="msg-agent-name" x-text="getAgentBotNameForMsg(msg)"></div>
               <template x-if="msg.triggerEvent">
-                <span class="msg-trigger-badge" x-text="triggerEventLabel(msg.triggerEvent)"></span>
+                <span class="badge badge--accent" x-text="triggerEventLabel(msg.triggerEvent)"></span>
               </template>
               <template x-if="msg._fmtTime">
                 <span class="msg-agent-time" x-text="msg._fmtTime"></span>
@@ -888,7 +905,7 @@ const homeChatSectionHTML = `<div class="chat-main">
                   <template x-if="seg.type === 'tool_use'">
                     <div>
                       <template x-if="seg.results.length === 0">
-                        <div class="seg-tool-use">
+                        <div class="badge seg-tool-use">
                           <span :class="msg.status === 'running' ? 'seg-tool-spinner' : 'seg-tool-icon-done'"></span>
                           <span x-text="seg.name"></span>
                         </div>
@@ -1109,7 +1126,7 @@ func (vh *ViewHandler) HomeRefresh(w http.ResponseWriter, r *http.Request) {
 var homeRefreshTemplate = template.Must(template.New("home-refresh").Funcs(homeTemplateFuncs).Parse(`<div id="home-side-folders-body" class="home-side-children" :class="{'is-open': foldersOpen}" x-cloak hx-swap-oob="true">
   <div class="home-side-children-inner">
     {{range .Folders}}
-    <button type="button" class="home-side-child" :class="{'is-active': activeKey === 'dir:{{.Dir}}'}"
+    <button type="button" class="side-nav-item home-side-child" :class="{'is-active': activeKey === 'dir:{{.Dir}}'}"
             @click="selectFolder('{{.Dir}}','/home/section?type=folder&path={{encdir .Dir}}')">
       <svg class="home-side-child-icon" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"
            stroke-linejoin="round" viewBox="0 0 24 24">
@@ -1124,7 +1141,7 @@ var homeRefreshTemplate = template.Must(template.New("home-refresh").Funcs(homeT
 <div id="home-side-graph-body" class="home-side-children" :class="{'is-open': graphOpen}" x-cloak hx-swap-oob="true">
   <div class="home-side-children-inner">
     {{range .IndexNotes}}
-    <button type="button" class="home-side-child" :class="{'is-active': activeKey === 'graph:{{.Path}}'}"
+    <button type="button" class="side-nav-item home-side-child" :class="{'is-active': activeKey === 'graph:{{.Path}}'}"
             @click="selectGraphIndex('{{.Path}}')">
       <span class="home-side-child-name">{{label .}}</span>
     </button>

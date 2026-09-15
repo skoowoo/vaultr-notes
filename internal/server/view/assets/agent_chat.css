@@ -335,23 +335,7 @@
       flex-wrap: wrap;
     }
 
-    .msg-agent-avatar {
-      width: 28px;
-      height: 28px;
-      flex-shrink: 0;
-      background: var(--accent);
-      color: var(--accent-fg);
-      border: var(--bd-w) solid var(--border-strong);
-      border-radius: var(--r-full);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: var(--text-xs);
-      font-weight: 700;
-      letter-spacing: 0.02em;
-      user-select: none;
-      line-height: 1;
-    }
+    /* .msg-agent-avatar now uses the shared .avatar.avatar--md.avatar--accent (base.css). */
 
     .msg-agent-name {
       font-size: var(--text-title-sm);
@@ -365,15 +349,7 @@
       font-variant-numeric: tabular-nums;
     }
 
-    .msg-trigger-badge {
-      font-size: var(--text-xs);
-      font-weight: 500;
-      padding: 1px 6px;
-      border-radius: var(--r-full);
-      flex-shrink: 0;
-      background: rgba(var(--accent-rgb), 0.12);
-      color: var(--accent);
-    }
+    /* .msg-trigger-badge now uses the shared .badge / .badge--accent (base.css). */
 
     .msg-body {
       display: flex;
@@ -459,25 +435,9 @@
       line-height: 1.55;
     }
 
-    /* Tool use */
-    .seg-tool-use {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.3rem;
-      padding: 3px 10px;
-      border-radius: var(--r-full);
-      background: var(--code-bg);
-      font-size: var(--text-sm);
-      font-weight: 500;
-      color: var(--muted);
-      align-self: flex-start;
-    }
-
-    .seg-tool-use svg {
-      width: 10px;
-      height: 10px;
-      flex-shrink: 0;
-    }
+    /* Tool use — shape/color come from the shared .badge (base.css);
+       only its self-alignment inside the flex message column is local. */
+    .seg-tool-use { align-self: flex-start; }
 
     .seg-tool-result {
       display: flex;

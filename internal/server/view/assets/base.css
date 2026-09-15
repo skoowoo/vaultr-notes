@@ -81,7 +81,255 @@
     .icon-btn:hover { color: var(--fg); background: var(--icon-hov); border-color: var(--border-strong); }
     .icon-btn:active:not(.active) { background: var(--tint-md); }
     .icon-btn.active { color: var(--control-active-fg); background: var(--control-active-bg); border-color: var(--border-strong); }
+    .icon-btn:disabled { opacity: 0.4; cursor: not-allowed; }
     .icon-btn svg { width: 14px; height: 14px; flex-shrink: 0; }
+
+    /* Taller tier (32px, matches --btn-h) for an icon button sitting next
+       to a form control — e.g. a password-reveal toggle beside a
+       --btn-h input. The default 28px would look mismatched there. */
+    .icon-btn--lg { width: var(--btn-h); height: var(--btn-h); border-radius: var(--r-xs); }
+    .icon-btn--lg svg { width: 13px; height: 13px; }
+
+    /* ── Shared text buttons — every rectangular labeled button in the app
+       is one of exactly two kinds:
+
+       .btn-outline — bordered, neutral fill. Secondary/cancel/toolbar
+       actions.
+       .btn-solid   — colored fill, no border. Primary/destructive actions;
+       add .btn-solid--danger for the latter. A neutral --border-strong
+       edge drawn over a saturated fill (accent/error) reads as a soft,
+       low-contrast smear rather than a crisp line — so solid buttons are
+       always borderless, full stop. Never add a border back onto one.
+
+       .btn--xs drops either to the compact --btn-h-xs tier used by inline
+       row actions (list-item Edit/Delete, etc). ── */
+    .btn-outline, .btn-solid {
+      display: inline-flex; align-items: center; justify-content: center; gap: 0.35rem;
+      height: var(--btn-h); padding: 0 0.875rem;
+      font-family: inherit; font-size: var(--text-base); font-weight: var(--fw-medium);
+      cursor: pointer; white-space: nowrap; flex-shrink: 0;
+    }
+    .btn-outline svg, .btn-solid svg { width: 13px; height: 13px; flex-shrink: 0; }
+    .btn-outline {
+      border: var(--bd-w) solid var(--border-strong);
+      background: var(--bg); color: var(--fg);
+    }
+    .btn-outline:hover:not(:disabled) { background: var(--card-hov); }
+    .btn-outline:active:not(:disabled) { opacity: 0.85; }
+    .btn-outline:disabled { opacity: 0.4; cursor: not-allowed; }
+    /* Selected/chosen-among-choices state — same recipe as the shared
+       .icon-btn.active and .seg-btn.active, so a bordered "pick one (or
+       several) of N" chip never needs its own bespoke component just for
+       this. Declared after :hover so it wins over a transient hover. */
+    .btn-outline.active { color: var(--control-active-fg); background: var(--control-active-bg); }
+
+    .btn-solid {
+      border: none;
+      background: var(--accent); color: var(--accent-fg);
+    }
+    .btn-solid:hover:not(:disabled) { background: var(--accent-hov); }
+    .btn-solid:active:not(:disabled) { opacity: 0.85; }
+    .btn-solid:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .btn-solid--danger { background: var(--s-err); color: var(--s-err-fg); }
+    .btn-solid--danger:hover:not(:disabled) { background: var(--s-err); opacity: 0.85; }
+
+    /* Outline variant for a destructive action that shouldn't shout at
+       rest — e.g. a per-row "Uninstall" repeated down a list, where
+       .btn-solid--danger's saturated fill would stack into a wall of red
+       for what's a routine, reversible action. Neutral like any other
+       .btn-outline until hover/focus reveals the danger tint, so intent
+       still reads clearly without a full-strength fill sitting on screen
+       at rest. Layers on top of .btn-outline, not a replacement. */
+    .btn-outline--danger:hover:not(:disabled),
+    .btn-outline--danger:focus-visible {
+      border-color: var(--s-err-bd); color: var(--s-err); background: var(--s-err-bg);
+    }
+
+    .btn--xs { height: var(--btn-h-xs); padding: 0 0.65rem; font-size: var(--text-xs); }
+    .btn-outline.spinning svg { animation: btn-spin 0.6s linear infinite; }
+    @keyframes btn-spin { to { transform: rotate(360deg); } }
+
+    /* ── Shared iOS-style toggle switch — one definition backs every on/off
+       control app-wide (notification prefs, agent bot enabled, …). ── */
+    .switch { display: inline-flex; align-items: center; cursor: pointer; flex-shrink: 0; }
+    .switch input[type="checkbox"] { display: none; }
+    .switch-track {
+      width: 36px; height: 20px; background: var(--bg);
+      border: var(--bd-w) solid var(--border-strong);
+      border-radius: var(--r-full);
+      position: relative;
+    }
+    .switch-track::after {
+      content: ''; position: absolute; width: 12px; height: 12px;
+      background: var(--border-strong); top: 2px; left: 3px;
+      border-radius: var(--r-full);
+    }
+    .switch input:checked + .switch-track { background: var(--accent); border-color: transparent; }
+    .switch input:checked + .switch-track::after { transform: translateX(14px); background: var(--border-strong); }
+
+    /* ── Shared badge/label pill — neutral tag by default; add a semantic
+       color modifier only when the color itself carries meaning (a status,
+       a connection state, a trigger count). One recipe backs every inline
+       tag, model pill, and status label app-wide instead of each screen
+       hand-rolling its own font-size/padding/tint. ── */
+    .badge {
+      display: inline-flex; align-items: center; gap: 0.3rem; flex-shrink: 0;
+      font-size: var(--text-xs); font-weight: var(--fw-medium);
+      padding: 2px 8px; border-radius: var(--r-full);
+      background: var(--code-bg); color: var(--muted);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .badge--sm { font-size: var(--text-2xs); padding: 1px 7px; }
+    .badge--count { padding: 0.07em 0.4em; font-variant-numeric: tabular-nums; }
+    .badge--ok     { color: var(--s-ok);   background: var(--s-ok-bg); }
+    .badge--err    { color: var(--s-err);  background: var(--s-err-bg); }
+    .badge--warn   { color: var(--s-warn); background: var(--s-warn-bg); }
+    .badge--accent { color: var(--accent); background: rgba(var(--accent-rgb), 0.12); }
+
+    /* ── Shared bordered card/row box — the box itself (border-strong +
+       r-lg + bg + padding) is identical everywhere it appears (note/inbox
+       rows, image grid, agent/agent-bot/skill list cards); only the
+       interaction tier differs, so that's a modifier instead of a fourth
+       copy:
+       .list-card            — static box, no hover (a card with its own
+                                inner action buttons, not itself a target)
+       .list-card--hover     — adds a hover tint (row highlights on
+                                mouseover, but the row itself isn't a
+                                single click target)
+       .list-card--clickable — the whole row IS the click target: hover
+                                tint + pointer cursor + active dim
+       The 4 text-content cards had each hand-picked their own padding
+       (12-16px vertical, 16.8-20px horizontal) with no content-driven
+       reason for the spread, so padding is shared too now; only
+       flex-direction/gap (real layout differences) stay local. The one
+       caller that can't use it — .img-card, which needs its thumbnail
+       flush to the border — overrides back to 0. ── */
+    .list-card {
+      border: var(--bd-w) solid var(--border-strong);
+      border-radius: var(--r-lg);
+      background: var(--bg);
+      padding: 0.875rem 1.25rem;
+    }
+    .list-card--hover:hover { background: var(--card-hov); }
+    .list-card--clickable { cursor: pointer; }
+    .list-card--clickable:hover { background: var(--card-hov); }
+    .list-card--clickable:active { opacity: 0.85; }
+
+    /* ── Shared empty-state block — icon + title + description, centered.
+       One recipe backs every "nothing here yet" screen app-wide (Graph's
+       no-notes state, Images' no-images state, …) instead of each one
+       hand-rolling its own icon size/opacity/type recipe and drifting out
+       of sync with the others. Positioning is the caller's job — Graph
+       absolute-fills its pane, Images flows inside its grid via
+       grid-column:1/-1 — this only owns the icon/title/desc layout
+       itself. ── */
+    .empty-state {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 0.6rem;
+    }
+    .empty-state-icon {
+      width: 48px; height: 48px;
+      color: var(--muted); opacity: 0.35;
+      margin-bottom: 0.25rem;
+    }
+    .empty-state-icon svg { width: 100%; height: 100%; }
+    .empty-state-title {
+      font-size: var(--text-title-sm); font-weight: var(--fw-semibold);
+      color: var(--muted); letter-spacing: -0.01em;
+    }
+    .empty-state-desc {
+      font-size: var(--text-sm); color: var(--muted);
+      text-align: center; max-width: 260px; line-height: var(--lh-relaxed);
+    }
+
+    /* ── Shared sidebar nav row — the app's main sidebar
+       (.home-side-item/.home-side-child, home.css) and the Settings
+       modal's tab list (.settings-sidebar-item) were the same design —
+       same hover/active recipe, both already commented as "should read
+       as one component" — implemented three separate times across two
+       files. Merged onto the app sidebar's own values, since that
+       convention is both the original and the one covering by far the
+       most surface. .is-active (not .active) matches every dependent
+       selector already layered on .home-side-item/.home-side-child
+       elsewhere in home.css (icon opacity, count-badge recolor, etc). ── */
+    .side-nav-item {
+      display: flex; align-items: center; gap: 9px; flex-shrink: 0;
+      width: 100%; height: 30px; padding: 0 8px;
+      border: var(--bd-w) solid transparent; background: transparent; border-radius: var(--r-sm);
+      color: var(--nav-fg); cursor: pointer; text-align: left; text-decoration: none;
+      font-family: inherit; font-size: var(--text-sm); font-weight: 500;
+      transition: background var(--motion-fast) ease;
+    }
+    .side-nav-item:hover { background: var(--card-hov); color: var(--fg); }
+    .side-nav-item.is-active {
+      background: var(--control-active-bg); border-color: transparent; color: var(--control-active-fg);
+      font-weight: 600;
+    }
+    /* Icon tier for a FLAT nav row (home's top-level items, settings'
+       tab list) — a nested/indented row dims its icon further and sizes
+       it down a notch as a depth cue; that one stays its own
+       .home-side-child-icon rather than joining this. */
+    .side-nav-icon { flex-shrink: 0; width: 15px; height: 15px; opacity: 0.68; }
+    .side-nav-item.is-active .side-nav-icon { opacity: 1; }
+
+    /* ── Shared small status dot — a solid circle, color carries the
+       meaning. One recipe backs every online/offline, unread, and dirty
+       indicator app-wide instead of each screen redeclaring the same
+       7px circle. ── */
+    .dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+    .dot--on     { background: var(--s-ok); }
+    .dot--off    { background: var(--muted); opacity: 0.55; }
+    .dot--accent { background: var(--accent); }
+    .dot--fg     { background: var(--fg); }
+
+    /* ── Shared avatar circle — a colored circle with a name's initials.
+       One recipe backs every agent/bot identity marker app-wide; only
+       size and default color differ per caller (both still accept a
+       per-instance color override via inline style for a specific
+       bot's own color). ── */
+    .avatar {
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; border-radius: 50%;
+      font-weight: 700; letter-spacing: 0.02em; user-select: none; line-height: 1;
+    }
+    .avatar--sm { width: 20px; height: 20px; font-size: 8px; }
+    .avatar--md { width: 28px; height: 28px; font-size: var(--text-xs); }
+    .avatar--lg { width: 36px; height: 36px; font-size: 0.875rem; }
+    /* Fixed accent fill — safe to pair with white text since the
+       fallback color itself is fixed and reliably dark enough. This is
+       the true "no bot color assigned" fallback only; every real
+       per-bot color (agentBotColors: p0-p3) is a light/pastel swatch
+       that white text reads poorly on, so any caller applying one of
+       those via inline style must also set `color:var(--inverse-ink)`
+       in that same inline style — see .msg-agent-avatar's binding. */
+    .avatar--accent { background: var(--accent); color: var(--accent-fg); }
+    /* Muted default fill, always paired with inverse-ink (black) — this
+       stays correct both at rest (muted gray) and when a per-bot color
+       overrides the background (same light p0-p3 palette above), so
+       unlike .avatar--accent it needs no conditional override. */
+    .avatar--neutral { background: var(--muted); color: var(--inverse-ink); }
+
+    /* ── Shared form field control — text input / select / textarea. One
+       recipe (border-strong box + bg fill + accent focus ring) backs
+       every field in the app. font-family is monospace throughout: most
+       of these fields already were (server URL, every Server-tab config
+       value, the note-path field), it matches the mono .cfg-field-key
+       label sitting right next to each config input, and it's a single
+       committed choice rather than switching per field's content. ── */
+    .field-input {
+      width: 100%;
+      background: var(--bg); border: var(--bd-w) solid var(--border-strong);
+      font-size: var(--text-sm); color: var(--fg);
+      outline: none; font-family: var(--font-mono);
+    }
+    .field-input:focus { border-color: var(--accent); }
+    select.field-input { cursor: pointer; }
+    /* Single-line control: fixed height matching every other --btn-h
+       control in the app, horizontal-only padding. */
+    input.field-input, select.field-input { height: var(--btn-h); padding: 0 0.7rem; }
+    /* Multi-line: padding-driven height instead, resizes vertically. */
+    textarea.field-input { resize: vertical; min-height: 60px; padding: 0.6rem 0.7rem; line-height: 1.5; }
 
     /* ── Shared segmented "pick one of N" toggle — bordered pill container +
        flat buttons, filled .active state. One definition backs every
@@ -172,9 +420,5 @@
       justify-content: flex-end; align-items: center;
       margin-top: 1.25rem;
     }
-    .dialog-btn {
-      height: var(--btn-h); padding: 0 0.875rem;
-      font-size: var(--text-base); font-weight: 500;
-      cursor: pointer; font-family: inherit; flex: 0 0 auto;
-    }
-    .dialog-btn:active:not(:disabled) { opacity: 0.85; }
+    /* Dialog action buttons now fully match .btn-outline/.btn-solid
+       (base.css) — no bespoke .dialog-btn sizing left to keep. */

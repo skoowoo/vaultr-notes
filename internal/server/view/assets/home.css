@@ -45,7 +45,7 @@
        aside itself no longer scrolls as a whole; only the middle nav list
        does, so the top/bottom action rows stay put as the note list grows. */
     .home-side {
-      flex: 0 0 248px; max-width: 248px;
+      flex: 0 0 var(--home-side-w); max-width: var(--home-side-w);
       display: flex; flex-direction: column;
       min-height: 0; overflow: hidden;
       padding: 0;
@@ -186,30 +186,10 @@
       height: var(--bd-w); background: var(--border); margin: 11px 8px;
       border-radius: 0; /* divider line — never rounds */
     }
-    .home-side-item {
-      flex-shrink: 0;
-      display: flex; align-items: center; gap: 9px;
-      width: 100%; height: 30px; padding: 0 8px;
-      border: var(--bd-w) solid transparent; background: transparent; border-radius: var(--r-sm);
-      color: var(--nav-fg); cursor: pointer; text-align: left; text-decoration: none;
-      font-family: inherit; font-size: var(--text-sm); font-weight: 500;
-      transition: background var(--motion-fast) ease;
-    }
-    .home-side-item:hover { background: var(--card-hov); color: var(--fg); }
-    /* Selected state is the same surface-2 lift used for every other
-       "currently active" row/tab/segment app-wide (--control-active-bg/fg,
-       matches .home-side-child.is-active below) — not an accent tint, and
-       no border (a bordered fill reads as boxed-in/smaller rather than a
-       flat highlight that fills the row). Lavender stays reserved for the
-       compose button and other genuine primary CTAs. (--control-active-bg
-       resolves to the stronger --control-active-bg-on-soft value here — see
-       .home-side's own rule above.) */
-    .home-side-item.is-active {
-      background: var(--control-active-bg); border-color: transparent; color: var(--control-active-fg);
-      font-weight: 600;
-    }
-    .home-side-icon { width: 15px; height: 15px; flex-shrink: 0; opacity: 0.68; }
-    .home-side-item.is-active .home-side-icon { opacity: 1; }
+    /* Row/hover/active/icon now come from the shared .side-nav-item /
+       .side-nav-icon (base.css) — --control-active-bg still resolves to
+       the stronger --control-active-bg-on-soft value here (see
+       .home-side's own rule above), same as before. */
     .home-side-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .home-side-count {
       flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center;
@@ -222,8 +202,14 @@
     .home-side-item.is-active .home-side-count { color: var(--control-active-bg); background: var(--control-active-fg); }
 
     /* ── Folders group (expand/collapse) ─────────────────────── */
-    .home-side-group { flex-shrink: 0; display: flex; flex-direction: column; margin-top: 4px; }
-    .home-side-item--parent { cursor: pointer; }
+    /* No margin-top here — .home-side-nav's own flex `gap` already spaces
+       every direct child uniformly (items, groups, dividers alike); an
+       extra margin on top of that gap was stacking to a visibly bigger
+       gap before every collapsible group than between two plain items. */
+    .home-side-group { flex-shrink: 0; display: flex; flex-direction: column; }
+    /* cursor:pointer already comes from the shared .side-nav-item every
+       row has — .home-side-item--parent exists only as a hook for the
+       chevron-hover rule below. */
     .home-side-chevron {
       flex-shrink: 0; width: 12px; height: 12px; opacity: 0.5;
       transition: transform var(--motion-base) ease;
@@ -242,37 +228,33 @@
       overflow: hidden;
       transition: grid-template-rows var(--motion-base) ease;
     }
-    .home-side-children:not(.is-open) { grid-template-rows: 0fr; }
+    /* max-height:0 + pointer-events:none, not just grid-template-rows:0fr
+       alone — the 0fr row's actual rendered height can round to a
+       sub-pixel sliver instead of a true 0 (Chromium grid rounding), and
+       a collapsed group's hidden row was still hoverable/visible through
+       that sliver: a stray highlighted box right below the group header.
+       max-height:0 is a hard, non-grid-dependent ceiling that can't
+       round to anything but 0, so it closes the leak the 0fr trick alone
+       didn't; pointer-events:none is the second layer, for anything that
+       still somehow has nonzero rendered size. Neither touches the
+       open-state animation, both scoped to :not(.is-open). */
+    .home-side-children:not(.is-open) { grid-template-rows: 0fr; max-height: 0; pointer-events: none; }
     .home-side-children-inner {
       min-height: 0; overflow: hidden;
       display: flex; flex-direction: column; gap: 1px;
       padding: 2px 0 4px 12px;
     }
-    .home-side-child {
-      display: flex; align-items: center; gap: 8px;
-      width: 100%; height: 30px; padding: 0 8px;
-      border: var(--bd-w) solid transparent; background: transparent; border-radius: var(--r-sm);
-      color: var(--nav-fg); cursor: pointer; text-align: left;
-      font-family: inherit; font-size: var(--text-sm); font-weight: 500;
-      transition: background var(--motion-fast) ease;
-    }
-    .home-side-child:hover { background: var(--card-hov); color: var(--fg); }
-    .home-side-child.is-active {
-      background: var(--control-active-bg); border-color: transparent; color: var(--control-active-fg); font-weight: 600;
-    }
+    /* Row/hover/active now come from the shared .side-nav-item (base.css)
+       — its 9px gap replaces this row's own 8px, a 1px difference with
+       no real reason to keep. The icon stays its own smaller/dimmer tier
+       (13px vs .side-nav-icon's 15px) as this group's depth cue. */
     .home-side-child-icon { flex-shrink: 0; width: 13px; height: 13px; opacity: 0.6; }
     .home-side-child.is-active .home-side-child-icon { opacity: 1; }
-    /* Agent bot avatar in the Chats group's child rows — mirrors agent_chat.css's
-       .agent-bot-chip-avatar (same colors/sizing logic), just sized for a sidebar row.
-       Keeps each agent bot's own color even when active (no more knockout-to-black) —
-       the active row's background is light now, so the identity color still reads fine. */
-    .home-side-child-avatar {
-      flex-shrink: 0; width: 20px; height: 20px; border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      background: var(--accent); color: var(--accent-fg);
-      font-size: 8px; font-weight: 700; letter-spacing: 0.02em;
-      user-select: none; line-height: 1;
-    }
+    /* Agent bot avatar in the Chats group's child rows — structure/size/
+       default color come from the shared .avatar.avatar--sm.avatar--accent
+       (base.css). Keeps each agent bot's own color even when active (no
+       more knockout-to-black) — the active row's background is light
+       now, so the identity color still reads fine. */
     .home-side-child-name {
       flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
@@ -303,7 +285,7 @@
 
        min-height pins the row's CONTENT line (i.e. the box excluding this
        rule's own padding) to --btn-h-xs (28px, this row's actual controls —
-       .seg, .toolbar-toggle — all size to around this already).
+       .seg, .btn-outline.btn--xs — all size to around this already).
        Written as calc(padding-top + padding-bottom +
        28px) rather than a flat number because with box-sizing:border-box a
        plain `min-height: 28px` is measured against the PADDED box, and a
@@ -368,16 +350,11 @@
        property except display mode (block vs flex, since inbox cards lay
        out an unread-dot + content side by side). One definition now backs
        both; each keeps only its own layout mode on top. ── */
+    /* Box + click interaction come from the shared
+       .list-card.list-card--clickable (base.css). */
     .home-list-card {
-      padding: 0.85rem 1.05rem;
-      border: var(--bd-w) solid var(--border-strong);
-      border-radius: var(--r-lg);
-      background: var(--bg);
       margin-bottom: 0.5rem;
-      cursor: pointer;
     }
-    .home-list-card:hover { background: var(--card-hov); }
-    .home-list-card:active { opacity: 0.85; }
     .home-note-row { display: block; }
     .home-note-row-top {
       display: flex; align-items: center; justify-content: space-between;
@@ -400,7 +377,7 @@
     .home-note-badge svg { width: 10px; height: 10px; }
     .home-note-badge--pin { background: transparent; border-color: transparent; color: var(--accent); }
     .home-note-badge--pin svg { width: 14px; height: 14px; }
-    .home-note-badge--done { background: var(--accent); color: var(--accent-fg); }
+    .home-note-badge--done { background: var(--accent); color: var(--accent-fg); border-color: transparent; }
     .home-note-row-meta {
       display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;
     }
@@ -517,7 +494,8 @@
     .home-inbox-card:not(.is-unread):hover { background: var(--card-hov); }
     .home-inbox-card:not(.is-unread) .home-inbox-card-title,
     .home-inbox-card:not(.is-unread) .home-inbox-card-time { color: var(--muted); }
-    .home-inbox-unread-dot { flex-shrink: 0; width: 7px; height: 7px; margin-top: 0.45rem; background: var(--fg); border-radius: var(--r-full); }
+    /* Shape/color come from the shared .dot.dot--fg (base.css). */
+    .home-inbox-unread-dot { margin-top: 0.45rem; }
     .home-inbox-card:not(.is-unread) .home-inbox-unread-dot { display: none; }
     .home-inbox-card-content { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.3rem; }
     .home-inbox-card-top { display: flex; align-items: center; gap: 0.5rem; min-width: 0; }
@@ -533,14 +511,19 @@
     }
 
     /* ── Inbox message sheet — read-only slide-in panel, distinct from the
-       note-editor drawer (.drawer-panel). Mirrors its slide/fade mechanics. */
+       note-editor drawer (.drawer-panel). Mirrors its slide/fade/scrim
+       mechanics exactly, .open included, so the two stay in lockstep. */
     .inbox-sheet-overlay {
       position: fixed; inset: 0; z-index: 200;
       pointer-events: none; background: transparent;
       border-radius: 0; /* full-viewport scrim — never rounds */
       transition: background var(--motion-slow) ease;
     }
-    .inbox-sheet-overlay.open { pointer-events: auto; background: var(--drawer-overlay-bg); }
+    .inbox-sheet-overlay.open {
+      pointer-events: auto; background: var(--overlay-bg);
+      backdrop-filter: var(--glass-scrim-filter);
+      -webkit-backdrop-filter: var(--glass-scrim-filter);
+    }
     .inbox-sheet-panel {
       position: absolute; top: 0; right: 0; bottom: 0; width: 640px; max-width: 92vw;
       background: var(--bg); border-left: var(--bd-w) solid var(--border);

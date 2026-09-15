@@ -23,12 +23,9 @@
     .fm-val a { color: var(--link); text-decoration: underline; text-decoration-color: var(--link-ul); text-decoration-thickness: 1px; text-underline-offset: 2px; opacity: 0.85; }
     .fm-val a:hover { opacity: 1; text-decoration-color: var(--link-ul-hov); }
     .fm-val-text { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border-radius: 0; }
-    .fm-tag {
-      display: inline-block; font-size: var(--text-sm); font-weight: 500;
-      color: var(--muted); background: var(--code-bg);
-      border-radius: var(--r-full);
-      padding: 2px 10px; margin: 0.1em 0.25em 0.1em 0;
-    }
+    /* Structure/color come from the shared .badge (base.css); only the
+       flex-wrap list spacing is local. */
+    .fm-tag { margin: 0.1em 0.25em 0.1em 0; }
     .fm-pre {
       font-family: var(--font-mono);
       font-size: var(--text-xs); color: var(--cover-dir);

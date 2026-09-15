@@ -58,8 +58,19 @@ const appTokensShared = `
          The one treatment for "currently selected" app-wide (tabs, rows,
          toggles). Primary-action buttons use --accent/--accent-fg instead. */
       --control-active-bg:var(--surface-2); --control-active-fg:var(--fg);
-      /* Modal/drawer scrim — fixed black veil regardless of theme. */
-      --overlay-bg:rgba(0,0,0,0.25); --drawer-overlay-bg:rgba(0,0,0,0.2);
+      /* Modal scrim — fixed black veil regardless of theme. One recipe
+         (this color + --glass-scrim-filter's blur) backs every floating
+         layer that dims the app behind it: dialogs, the settings modal,
+         search, and the drawer/inbox-sheet edge-docked panels. (The
+         lightbox is the one deliberate exception — see
+         --lightbox-overlay-bg below, tuned for arbitrary photo content
+         instead of app chrome.) Drawer/inbox-sheet used to get their own
+         lighter, unblurred tint back when their panel left most of the
+         page peeking through beside it; now that the panel fills the
+         whole content pane and only the sidebar shows through, there's
+         no reason for them to carry a different recipe from every other
+         floating layer — so they just consume this token directly. */
+      --overlay-bg:rgba(0,0,0,0.25);
       /* Accent-derived interaction tints — --accent-rgb is theme-invariant,
          so no per-theme restating needed. */
       --card-hov:rgba(var(--accent-rgb),0.10);
@@ -131,10 +142,10 @@ const appTokensShared = `
       /* Kept as a whole pixel — a fractional border width breaks
          anti-aliasing where a straight edge meets a radius arc. */
       --bd-w:1px;
-      /* Floating-card scrim blur — shared by every centered overlay (search,
-         dialogs, settings, lightbox) so blur amounts can't drift apart.
-         Edge-docked chrome (drawer, inbox sheet) has no scrim to blur
-         through. */
+      /* Floating-card scrim blur — shared by every layer that dims the app
+         behind it, centered (search, dialogs, settings, lightbox) or
+         edge-docked (drawer, inbox sheet) alike, so blur amounts can't
+         drift apart. */
       --glass-scrim-filter:blur(3px);
 
       /* ═══ Layer 4: component-scoped tokens ═══ */
@@ -168,6 +179,12 @@ const appTokensShared = `
       --space-xxs:4px; --space-xs:8px; --space-sm:12px; --space-md:16px; --space-lg:24px;
       --space-xl:32px; --space-xxl:48px;
       --topbar-h:40px; --action-btn-sz:28px;
+      /* Single source of truth for the app sidebar's width (home.css's
+         .home-side) — the reading drawer and inbox sheet (drawer.css,
+         home.css) size themselves off this too, so their edge-docked
+         panels land flush against the sidebar's own right edge instead of
+         drifting out of sync with it. */
+      --home-side-w:248px;
       /* --btn-h (32px) matches DESIGN.md's button-primary spec and the
          app's form inputs. --btn-h-xs (28px) is the compact tier for
          secondary inline actions, never a primary CTA. --btn-h-sm is

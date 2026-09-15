@@ -36,31 +36,5 @@
       white-space: nowrap;
     }
 
-    .confirm-btn-cancel {
-      background: transparent;
-      color: var(--muted);
-      border: var(--bd-w) solid var(--border-strong);
-    }
-
-    .confirm-btn-cancel:hover {
-      color: var(--fg);
-      background: var(--card-hov);
-    }
-
-    .confirm-btn-confirm {
-      border: none;
-    }
-
-    .confirm-btn-confirm.is-danger {
-      background: var(--s-err);
-      color: var(--s-err-fg);
-    }
-
-    .confirm-btn-confirm:not(.is-danger) {
-      background: var(--accent);
-      color: var(--accent-fg);
-    }
-
-    .confirm-btn-confirm:not(.is-danger):hover:not(:disabled) {
-      background: var(--accent-hov);
-    }
+    /* Cancel/confirm colors now come from the shared .btn-outline / .btn-solid
+       / .btn-solid--danger classes (base.css). */
