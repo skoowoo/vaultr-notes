@@ -652,6 +652,14 @@ func settingsModalHTML() string {
                 </div>
                 <p class="settings-field-desc">Visual effect when pressing Enter in the editor. Takes effect immediately.</p>
               </div>
+              <div>
+                <label class="settings-field-label">Line Breaks</label>
+                <div class="seg">
+                  <button class="seg-btn" :class="{active: lineBreaksPref==='loose'}" @click="setLineBreaks('loose')">Loose</button>
+                  <button class="seg-btn" :class="{active: lineBreaksPref==='strict'}" @click="setLineBreaks('strict')">Strict</button>
+                </div>
+                <p class="settings-field-desc">How a single line break inside a paragraph is interpreted when opening or pasting Markdown. Loose shows it as a visible break, matching Obsidian's default. Strict merges it into flowing text like plain CommonMark — use this if you paste text that was manually wrapped to a fixed width. Applies the next time that text is parsed (reopen the note, or switch out of source view).</p>
+              </div>
             </div>
           </div>
 
@@ -1491,6 +1499,12 @@ const settingsCtrlJS = `
 
       effectPref: localStorage.getItem('vaultr-editor-effect') || 'particles',
       setEffect(key) { this.effectPref = key; localStorage.setItem('vaultr-editor-effect', key); },
+
+      // Read live by the editor's remark pipeline on every parse (breaks.js),
+      // not threaded through Editor.make() config — so this takes effect on
+      // the next parse without needing the editor to be recreated.
+      lineBreaksPref: localStorage.getItem('vaultr-line-breaks') || 'loose',
+      setLineBreaks(key) { this.lineBreaksPref = key; localStorage.setItem('vaultr-line-breaks', key); },
 
       // themePref mirrors what themeBootstrapScript already resolved at
       // first paint (light/dark/auto) — switching here just persists the

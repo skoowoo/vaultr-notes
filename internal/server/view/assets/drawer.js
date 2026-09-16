@@ -494,8 +494,10 @@
         .use(mod.breaksPlugin)
         .use(mod.frontmatterPlugin).use(mod.wikiLinkPlugin).use(mod.wikiImagePlugin)
         .use(mod.tooltipPlugin).use(mod.linkInputRule).use(mod.insertImageInputRule)
+        .use(mod.tabGuardPlugin)
         .use(mod.$prose(function() { return mod.pmHistory(); }))
         .use(mod.$prose(function() { return mod.pmKeymap({'Mod-z': mod.pmUndo, 'Mod-Shift-z': mod.pmRedo, 'Mod-y': mod.pmRedo}); }))
+        .use(mod.$prose(function() { return mod.gapCursor(); }))
         .create();
 
       var pmEl = document.querySelector('#drawer-milkdown .ProseMirror');
@@ -1832,25 +1834,3 @@
     }
   }, true);
 
-  // Intercept keyboard back/forward shortcuts to switch drawer tabs.
-  // Alt+Left/Right: skip when editor has focus (word navigation there).
-  // Cmd/Ctrl+[ or ]: safe to intercept everywhere in the drawer.
-  window.__vaultrHotkeys.registerRaw('drawer-tab-nav', function(e, mod) {
-    var _drawer = window.__vaultrDrawer;
-    if (!_drawer || !_drawer.drawerOpen || _drawer.tabs.length <= 1) return;
-    var ae = document.activeElement;
-    var tag = ae && ae.tagName;
-    var inInput = tag === 'INPUT' || tag === 'TEXTAREA';
-    var ea = document.getElementById('drawer-edit-area');
-    var cw = document.getElementById('drawer-cm-wrap');
-    var inEditor = (ea && ea.contains(ae)) || (cw && cw.contains(ae));
-    var isBack = (e.altKey && !mod && e.key === 'ArrowLeft' && !inInput && !inEditor) ||
-                 (mod && !e.shiftKey && !e.altKey && e.key === '[');
-    var isFwd  = (e.altKey && !mod && e.key === 'ArrowRight' && !inInput && !inEditor) ||
-                 (mod && !e.shiftKey && !e.altKey && e.key === ']');
-    if (!isBack && !isFwd) return;
-    e.preventDefault();
-    if (isBack && _drawer.activeTab > 0) void _drawer.drawerSwitchTab(_drawer.activeTab - 1);
-    else if (isFwd && _drawer.activeTab < _drawer.tabs.length - 1) void _drawer.drawerSwitchTab(_drawer.activeTab + 1);
-    return true;
-  });

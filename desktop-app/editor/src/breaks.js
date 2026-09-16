@@ -5,11 +5,24 @@ import { Fragment, Slice } from 'prosemirror-model';
 import { Selection } from 'prosemirror-state';
 
 // ── Remark transformer ────────────────────────────────────────────────────────
-// Milkdown's built-in remarkLineBreak converts single \n to {type:"break",
-// data:{isInline:true}}, which renders as a space. Flip isInline to false so
-// all soft-break newlines render as <br> instead.
+// Milkdown's built-in remarkLineBreak converts every bare single \n (already
+// stripped of CommonMark's hard-break markers by remark-parse) to {type:"break",
+// data:{isInline:true}}, which renders as a space — i.e. a manually word-wrapped
+// paragraph collapses back into one flowing line, matching plain CommonMark.
+// Genuine hard breaks (trailing "  \n" or "\\\n") never go through this path:
+// remark-parse already turns those into their own break nodes with no
+// data.isInline, so they render as <br> either way.
+//
+// The "Loose" line-break mode (settings → Appearance → Line Breaks, default)
+// additionally flips every remaining isInline:true break to isInline:false, so
+// even an unmarked single \n renders as a visible <br> — this matches
+// Obsidian's default ("Strict line breaks" off) and is what most users
+// pasting notes written with Enter-per-line expect. "Strict" mode leaves
+// Milkdown's default behavior alone, for vaults that paste/import text
+// manually wrapped to a fixed column width and want it reflowed as prose.
 function remarkSoftBreakToHard() {
   return (tree) => {
+    if (localStorage.getItem('vaultr-line-breaks') === 'strict') return;
     visit(tree, 'break', (node) => {
       if (node.data) node.data.isInline = false;
       else node.data = { isInline: false };
@@ -18,11 +31,15 @@ function remarkSoftBreakToHard() {
 }
 const remarkHardBreaksPlugin = $remark('remarkHardBreaks', () => remarkSoftBreakToHard);
 
-// Serializer: non-inline break → plain \n (not CommonMark "  \n")
+// Serializer: non-inline break → CommonMark hard break ("\\\n"). A bare "\n"
+// round-trips as a soft break (space) in any spec-compliant renderer outside
+// Vaultr, silently losing the line break. Backslash-escaping is used instead
+// of trailing double-spaces because vault files commonly pass through git and
+// editors that trim trailing whitespace on save, which would strip that marker.
 function remarkBreakSerialize() {
   const data = this.data();
   const exts = data.toMarkdownExtensions || (data.toMarkdownExtensions = []);
-  exts.push({ handlers: { break: () => '\n' } });
+  exts.push({ handlers: { break: () => '\\\n' } });
 }
 const remarkBreakSerializePlugin = $remark('remarkBreakSerialize', () => remarkBreakSerialize);
 

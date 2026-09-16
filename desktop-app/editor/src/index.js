@@ -9,6 +9,7 @@ export { frontmatterPlugin } from './frontmatter.js';
 export { wikiLinkPlugin } from './wikilink.js';
 export { wikiImagePlugin } from './wikiimage.js';
 export { tooltipPlugin } from './tooltip.js';
+export { tabGuardPlugin } from './tab-guard.js';
 export { linkInputRule } from './link-input-rule.js';
 export { EditorView, keymap } from '@codemirror/view';
 export { EditorState } from '@codemirror/state';
@@ -19,3 +20,4 @@ export { defaultKeymap, history, historyKeymap, undo as cmUndo, redo as cmRedo }
 export { search, openSearchPanel, closeSearchPanel, findNext, findPrevious, replaceNext, replaceAll as cmReplaceAll, SearchQuery, getSearchQuery, setSearchQuery } from '@codemirror/search';
 export { history as pmHistory, undo as pmUndo, redo as pmRedo } from 'prosemirror-history';
 export { keymap as pmKeymap } from 'prosemirror-keymap';
+export { gapCursor } from 'prosemirror-gapcursor';
