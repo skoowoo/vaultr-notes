@@ -67,13 +67,13 @@
             <ul class="drawer-path-ac" id="drawer-path-ac" role="listbox" aria-expanded="false" hidden></ul>
           </div>
           <div class="seg drawer-view-seg">
-            <button type="button" class="seg-btn drawer-view-btn drawer-view-btn-wysiwyg active" title="Preview">
+            <button type="button" class="seg-btn drawer-view-btn drawer-view-btn-wysiwyg active" title="Live preview">
               <svg fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
                 <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/>
                 <circle cx="12" cy="12" r="3"/>
               </svg>
             </button>
-            <button type="button" class="seg-btn drawer-view-btn drawer-view-btn-source" title="Source">
+            <button type="button" class="seg-btn drawer-view-btn drawer-view-btn-source" title="Raw markdown">
               <svg fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="m18 16 4-4-4-4"/>
                 <path stroke-linecap="round" stroke-linejoin="round" d="m6 8-4 4 4 4"/>
@@ -97,21 +97,6 @@
           </svg>
         </span>
         <div class="drawer-tool-actions" x-show="activeTab >= 0 && (!tabs[activeTab] || tabs[activeTab].path)">
-          <div class="seg drawer-view-seg">
-            <button type="button" class="seg-btn drawer-view-btn drawer-view-btn-wysiwyg active" title="Preview">
-              <svg fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
-                <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/>
-                <circle cx="12" cy="12" r="3"/>
-              </svg>
-            </button>
-            <button type="button" class="seg-btn drawer-view-btn drawer-view-btn-source" title="Source">
-              <svg fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="m18 16 4-4-4-4"/>
-                <path stroke-linecap="round" stroke-linejoin="round" d="m6 8-4 4 4 4"/>
-                <path stroke-linecap="round" stroke-linejoin="round" d="m14.5 4-5 16"/>
-              </svg>
-            </button>
-          </div>
           <div class="drawer-more-wrap" x-data="{ moreOpen: false }"
                @mousedown.window="moreOpen = false"
                @drawer:close-more.document="moreOpen = false">
@@ -127,6 +112,22 @@
               </svg>
             </button>
             <div class="drawer-more-menu" x-show="moreOpen" x-cloak @mousedown.stop>
+              <button type="button" class="drawer-more-item drawer-source-toggle-btn"
+                      @click.stop="moreOpen = false; editorMode.toggle()"
+                      title="Toggle raw markdown">
+                <!-- Each pair (icon+label) names the mode a click will switch TO. -->
+                <svg class="dstb-goto-source" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="m18 16 4-4-4-4"/>
+                  <path stroke-linecap="round" stroke-linejoin="round" d="m6 8-4 4 4 4"/>
+                  <path stroke-linecap="round" stroke-linejoin="round" d="m14.5 4-5 16"/>
+                </svg>
+                <span class="dstb-goto-source">Raw markdown</span>
+                <svg class="dstb-goto-wysiwyg" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                  <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/>
+                  <circle cx="12" cy="12" r="3"/>
+                </svg>
+                <span class="dstb-goto-wysiwyg">Live preview</span>
+              </button>
               <button type="button" class="drawer-more-item frag-pin-btn"
                       :class="{ active: tabs[activeTab] && tabs[activeTab].pinned }"
                       x-show="tabs[activeTab] && tabs[activeTab].path"
@@ -158,9 +159,10 @@
         </div>
       </div>
 
-      <!-- ③ Editor areas -->
-      <div id="drawer-edit-area" tabindex="-1"><div id="drawer-milkdown"></div></div>
-      <div id="drawer-cm-wrap"></div>
+      <!-- ③ Editor area — single CodeMirror 6 view; editorMode.applyWysiwyg/
+           applySource toggle live-preview decorations on/off in place
+           (see drawer.js) rather than swapping between two DOM mounts. -->
+      <div id="drawer-edit-area" tabindex="-1"></div>
     </div>
   </div>
 

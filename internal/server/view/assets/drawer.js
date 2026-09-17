@@ -1,19 +1,26 @@
   // ── Editor state ────────────────────────────────────────────────────────────
+  // One CodeMirror 6 EditorView (s.view) for the whole editor now — the old
+  // Milkdown (WYSIWYG) / CodeMirror (source) split is gone. "inSource"/
+  // editorMode still exist (see below) but now mean "decorations
+  // Compartment reconfigured to plain syntax highlighting" vs "live-preview
+  // decorations active", toggled in place on the same view/doc instead of
+  // switching between two separately-mounted editors.
   var __vaultrDE = {
-    milkdown: null, cm: null,
+    view: null,
     initPromise: null, loading: false, dirty: false,
     pendingBaselineFromEditor: false, pendingBaselineTimer: null,
     currentPath: '', currentDraftId: '', currentMd: '', baselineMd: '',
     saveTimer: null, draftSaveTimer: null, draftSaveTabId: null,
-    replaceAll: null, editorViewCtx: null, schemaCtx: null, serializerCtx: null, parserCtx: null, pmSlice: null,
-    EditorView: null, EditorState: null, keymap: null,
+    EditorView: null, EditorState: null, Compartment: null, keymap: null,
     defaultKeymap: null, historyKeymap: null, history: null,
     markdown: null, HighlightStyle: null, syntaxHighlighting: null, tags: null,
-    pmUndo: null, pmRedo: null, pmHistory: null, pmKeymap: null, $prose: null,
     cmUndo: null, cmRedo: null,
     cmSearch: null, cmOpenSearchPanel: null, cmCloseSearchPanel: null,
     cmFindNext: null, cmFindPrev: null, cmReplaceNext: null, cmReplaceAll: null,
     SearchQuery: null, getSearchQuery: null, setSearchQuery: null,
+    livePreviewPlugin: null, livePreviewAtomicRanges: null,
+    livePreviewTheme: null, wikiMarkdownLanguage: null,
+    decoCompartment: null, sharedLanguage: null,
     inSource: false, pendingScrollRaf: null, pendingOpenScroll: null,
     pendingTabScrollRaf: null, pendingTabScrollTimer: null,
   };
@@ -205,12 +212,8 @@
   }
   function __vaultrDEGetScrollState() {
     var s = __vaultrDE;
-    if (s.inSource) {
-      var cmScroller = document.querySelector('#drawer-cm-wrap .cm-scroller');
-      return {scrollTop: cmScroller ? cmScroller.scrollTop : 0, inSource: true};
-    }
-    var editArea = document.getElementById('drawer-edit-area');
-    return {scrollTop: editArea ? editArea.scrollTop : 0, inSource: false};
+    var scroller = document.querySelector('#drawer-edit-area .cm-scroller');
+    return {scrollTop: scroller ? scroller.scrollTop : 0, inSource: s.inSource};
   }
   function __vaultrDECaptureDraft(tab) {
     if (!tab || tab.path) return null;
@@ -456,207 +459,151 @@
     document.querySelectorAll('.drawer-view-btn-source').forEach(function(btn) {
       btn.classList.toggle('active', !!active);
     });
+    document.querySelectorAll('.drawer-source-toggle-btn').forEach(function(btn) {
+      btn.classList.toggle('active', !!active);
+    });
   }
 
   // ── Lazy editor init ─────────────────────────────────────────────────────────
   async function __vaultrEnsureDrawerEditor() {
     var s = __vaultrDE;
-    if (s.milkdown) return;
+    if (s.view) return;
     if (s.initPromise) return s.initPromise;
     s.initPromise = (async function() {
       var mod = await import('/static/editor.js');
-      s.replaceAll = mod.replaceAll; s.editorViewCtx = mod.editorViewCtx; s.schemaCtx = mod.schemaCtx; s.serializerCtx = mod.serializerCtx;
-      s.parserCtx = mod.parserCtx; s.pmSlice = mod.Slice;
-      s.EditorView = mod.EditorView; s.EditorState = mod.EditorState; s.keymap = mod.keymap;
+      s.EditorView = mod.EditorView; s.EditorState = mod.EditorState; s.Compartment = mod.Compartment;
+      s.keymap = mod.keymap;
       s.defaultKeymap = mod.defaultKeymap; s.historyKeymap = mod.historyKeymap; s.history = mod.history;
+      s.listIndentExtension = mod.listIndentExtension;
       s.markdown = mod.markdown; s.HighlightStyle = mod.HighlightStyle;
       s.syntaxHighlighting = mod.syntaxHighlighting; s.tags = mod.tags;
-      s.pmUndo = mod.pmUndo; s.pmRedo = mod.pmRedo;
       s.cmUndo = mod.cmUndo; s.cmRedo = mod.cmRedo;
       s.cmSearch = mod.search; s.cmOpenSearchPanel = mod.openSearchPanel; s.cmCloseSearchPanel = mod.closeSearchPanel;
       s.cmFindNext = mod.findNext; s.cmFindPrev = mod.findPrevious;
       s.cmReplaceNext = mod.replaceNext; s.cmReplaceAll = mod.cmReplaceAll;
       s.SearchQuery = mod.SearchQuery; s.getSearchQuery = mod.getSearchQuery; s.setSearchQuery = mod.setSearchQuery;
-      s.pmHistory = mod.pmHistory; s.pmKeymap = mod.pmKeymap; s.$prose = mod.$prose;
-      s.linkInputRule = mod.linkInputRule; s.insertImageInputRule = mod.insertImageInputRule;
+      s.livePreviewPlugin = mod.livePreviewPlugin; s.livePreviewAtomicRanges = mod.livePreviewAtomicRanges;
+      s.livePreviewTheme = mod.livePreviewTheme; s.codeHighlightStyle = mod.codeHighlightStyle;
+      s.wikiMarkdownLanguage = mod.wikiMarkdownLanguage; s.linkClickHandler = mod.linkClickHandler;
+      s.horizontalRuleField = mod.horizontalRuleField;
 
       var editArea = document.getElementById('drawer-edit-area');
-      s.milkdown = await mod.Editor.make()
-        .config(function(ctx) {
-          ctx.set(mod.rootCtx, document.getElementById('drawer-milkdown'));
-          ctx.set(mod.defaultValueCtx, s.currentMd || '');
-          ctx.get(mod.listenerCtx).markdownUpdated(function(_ctx, md) {
-            if (s.loading && !s.pendingBaselineFromEditor) return;
-            __vaultrDEHandleContentChange(md, true);
-          });
-        })
-        .use(mod.commonmark).use(mod.gfm).use(mod.listener)
-        .use(mod.breaksPlugin)
-        .use(mod.frontmatterPlugin).use(mod.wikiLinkPlugin).use(mod.wikiImagePlugin)
-        .use(mod.tooltipPlugin).use(mod.linkInputRule).use(mod.insertImageInputRule)
-        .use(mod.tabGuardPlugin)
-        .use(mod.$prose(function() { return mod.pmHistory(); }))
-        .use(mod.$prose(function() { return mod.pmKeymap({'Mod-z': mod.pmUndo, 'Mod-Shift-z': mod.pmRedo, 'Mod-y': mod.pmRedo}); }))
-        .use(mod.$prose(function() { return mod.gapCursor(); }))
-        .create();
 
-      var pmEl = document.querySelector('#drawer-milkdown .ProseMirror');
-      if (pmEl) pmEl.spellcheck = false;
+      var cmTheme = s.EditorView.theme({
+        '&': {height:'100%',color:'var(--prose-body)',background:'transparent'},
+        '&.cm-focused': {outline:'none'},
+        '.cm-content': {caretColor:'var(--accent)'},
+        '.cm-cursor,.cm-dropCursor': {borderLeftColor:'var(--accent)'},
+        '.cm-selectionBackground': {background:'var(--cm-selection-bg) !important'},
+        '&.cm-focused .cm-selectionBackground': {background:'var(--cm-selection-bg)'},
+        '.cm-activeLine': {background:'var(--cm-active-line)'},
+        '.cm-gutters': {display:'none'},
+      });
+      // Raw-markdown ("Source") mode's syntax highlighting — the live-preview
+      // decorations (s.livePreviewPlugin etc.) replace this in "Live preview"
+      // mode; see editorMode below for how the two are swapped.
+      var cmHighlight = s.HighlightStyle.define([
+        {tag:s.tags.heading1,color:'var(--h1)',fontWeight:'600'},
+        {tag:s.tags.heading2,color:'var(--h2)',fontWeight:'600'},
+        {tag:s.tags.heading3,color:'var(--h3)',fontWeight:'600'},
+        {tag:s.tags.heading4,color:'var(--h4)',fontWeight:'500'},
+        {tag:s.tags.emphasis,fontStyle:'italic',color:'var(--prose-em)'},
+        {tag:s.tags.strong,fontWeight:'600',color:'var(--prose-strong)'},
+        {tag:s.tags.link,color:'var(--p1)'},{tag:s.tags.url,color:'var(--p1)',opacity:'0.72'},
+        {tag:s.tags.monospace,color:'var(--code-tx)'},{tag:s.tags.meta,color:'var(--cm-md-muted)'},
+        {tag:s.tags.punctuation,color:'var(--cm-md-muted)'},
+        {tag:s.tags.processingInstruction,color:'var(--cm-md-muted)'},
+        {tag:s.tags.strikethrough,color:'var(--muted)',textDecoration:'line-through'},
+      ]);
 
-      if (pmEl) {
-        pmEl.addEventListener('copy', function(e) {
-          var view;
-          s.milkdown.action(function(ctx) { view = ctx.get(s.editorViewCtx); });
-          if (!view) return;
-          var sel = view.state.selection;
-          if (sel.empty) return;
-          var md;
-          try {
-            s.milkdown.action(function(ctx) {
-              var serializer = ctx.get(s.serializerCtx);
-              var schema = ctx.get(s.schemaCtx);
-              var doc = schema.topNodeType.create(null, sel.content().content);
-              md = serializer(doc);
-            });
-          } catch(_) { return; }
-          if (typeof md === 'string' && md) {
-            e.preventDefault();
-            e.clipboardData.setData('text/plain', md.trim());
-          }
-        });
-      }
+      // Shared by both modes so toggling reconfigures s.decoCompartment
+      // around the same parse instead of re-parsing from scratch.
+      s.sharedLanguage = s.wikiMarkdownLanguage();
 
-      window.__vaultrCopySelectionAsMd = function() {
-        var view;
-        s.milkdown.action(function(ctx) { view = ctx.get(s.editorViewCtx); });
-        if (!view) return;
-        var sel = view.state.selection;
-        if (sel.empty) return;
-        var md;
-        try {
-          s.milkdown.action(function(ctx) {
-            var serializer = ctx.get(s.serializerCtx);
-            var schema = ctx.get(s.schemaCtx);
-            var doc = schema.topNodeType.create(null, sel.content().content);
-            md = serializer(doc);
-          });
-        } catch(_) { return; }
-        if (typeof md === 'string' && md) {
-          navigator.clipboard.writeText(md.trim()).catch(function() {});
-        }
+      var liveOptions = {
+        resolveImageSrc: function(filename) {
+          return '/api/images/serve?name=' + encodeURIComponent(filename);
+        },
+        onWikiLinkClick: function(target) { void __vaultrDrawerOpenWikiLink(target); },
       };
-
-      window.__vaultrGetSelectionMd = function() {
-        var view;
-        s.milkdown.action(function(ctx) { view = ctx.get(s.editorViewCtx); });
-        if (!view) return null;
-        var sel = view.state.selection;
-        if (sel.empty) return null;
-        var md;
-        try {
-          s.milkdown.action(function(ctx) {
-            var serializer = ctx.get(s.serializerCtx);
-            var schema = ctx.get(s.schemaCtx);
-            var doc = schema.topNodeType.create(null, sel.content().content);
-            md = serializer(doc);
-          });
-        } catch(_) { return null; }
-        return (typeof md === 'string' && md) ? md.trim() : null;
+      // Exposed on s so editorMode (a separate closure) can reconfigure
+      // s.decoCompartment without rebuilding these from scratch. Frontmatter
+      // now renders through s.livePreviewPlugin like everything else — see
+      // cm-live/index.js's livePreviewExtensions() comment for why it no
+      // longer needs its own opt-in field.
+      s._liveModeExt = function() {
+        return [
+          s.livePreviewPlugin.of(liveOptions),
+          s.livePreviewAtomicRanges(),
+          s.horizontalRuleField(),
+          s.livePreviewTheme,
+          // Fenced-code token colors (keyword/string/comment/...) — see
+          // cm-live/theme.js's codeHighlightStyle comment for why this is a
+          // separate, code-scoped style rather than cm-live/index.js's
+          // livePreviewExtensions() bundling it in directly: this file
+          // hand-picks pieces instead of calling that function (see the
+          // comment above s._liveModeExt) so wikiMarkdownLanguage() can stay
+          // shared across both modes outside s.decoCompartment — anything
+          // livePreviewExtensions() adds has to be mirrored here too.
+          s.syntaxHighlighting(s.codeHighlightStyle),
+        ];
       };
+      s._sourceModeExt = function() {
+        return [s.syntaxHighlighting(cmHighlight)];
+      };
+      s.decoCompartment = new s.Compartment();
 
-      if (editArea) {
-        editArea.addEventListener('click', function(e) {
-          var li = e.target.closest('li[data-item-type="task"]');
-          if (!li) return;
-          if (e.clientX - li.getBoundingClientRect().left > 22) return;
-          e.preventDefault();
-          s.milkdown.action(function(ctx) {
-            var view = ctx.get(s.editorViewCtx);
-            try {
-              var domPos = view.posAtDOM(li, 0);
-              var $pos = view.state.doc.resolve(domPos);
-              var d = $pos.depth;
-              while (d > 0 && $pos.node(d).type.name !== 'list_item') d--;
-              if (d === 0) return;
-              var node = $pos.node(d);
-              if (node.attrs.checked === null || node.attrs.checked === undefined) return;
-              view.dispatch(view.state.tr.setNodeMarkup($pos.before(d), null,
-                Object.assign({}, node.attrs, {checked: !node.attrs.checked})));
-            } catch(_) {}
-          });
-        });
-        editArea.addEventListener('paste', async function(e) {
-          var imgFile = __vaultrDEFindImageFile(e.clipboardData);
-          if (imgFile) {
-            e.preventDefault(); e.stopPropagation();
-            try {
-              var src = await __vaultrDEUploadImage(imgFile);
-              var filename = src.split('/').pop();
-              s.milkdown.action(function(ctx) {
-                var view = ctx.get(s.editorViewCtx);
-                var schema = ctx.get(s.schemaCtx);
-                var wiType = schema.nodes.wikiImage;
-                if (wiType) {
-                  view.dispatch(view.state.tr.replaceSelectionWith(wiType.create({value: filename})));
-                } else {
-                  view.dispatch(view.state.tr.replaceSelectionWith(schema.nodes.image.create({src: src, alt: ''})));
-                }
-              });
-            } catch(e) {
-              window.showError((e && e.message) || 'Image upload failed.', 'Upload error');
-            }
-            return;
-          }
-          // Parse plain-text markdown paste as structured content instead of literal text.
-          // Without this, ProseMirror treats pasted text as literal and escapes markdown syntax.
-          var html = e.clipboardData.getData('text/html');
-          if (html) return; // let ProseMirror handle HTML natively
-          var text = e.clipboardData.getData('text/plain');
-          if (!text || !s.parserCtx || !s.pmSlice) return;
-          e.preventDefault(); e.stopPropagation();
-          s.milkdown.action(function(ctx) {
-            var view = ctx.get(s.editorViewCtx);
-            var parser = ctx.get(s.parserCtx);
-            if (!view || !parser) return;
-            try {
-              var parsedDoc = parser(text);
-              if (!parsedDoc) throw new Error('parse failed');
-              var state = view.state;
-              var slice = new s.pmSlice(parsedDoc.content, 0, 0);
-              view.dispatch(state.tr.replace(state.selection.from, state.selection.to, slice));
-            } catch(_) {
-              var sel = view.state.selection;
-              view.dispatch(view.state.tr.insertText(text, sel.from, sel.to));
-            }
-          });
-        }, true);
-        // Capture-phase: intercept link and wiki-link clicks before ProseMirror.
-        editArea.addEventListener('click', function(e) {
-          var a = e.target.closest('a');
-          if (a) {
-            var href = a.getAttribute('href');
-            if (!href) return;
-            e.preventDefault(); e.stopPropagation();
-            window.open(href, '_blank', 'noopener,noreferrer');
-            return;
-          }
-          var wl = e.target.closest('span[data-wl]');
-          if (wl) {
-            e.preventDefault(); e.stopPropagation();
-            var wlVal = wl.getAttribute('data-wl-value') || '';
-            if (wlVal) void __vaultrDrawerOpenWikiLink(wlVal);
-          }
-        }, true);
-      }
-
-      if (editArea) {
-        editArea.addEventListener('keydown', function(e) {
-          if (e.key !== 'Enter' || e.isComposing) return;
-          s.milkdown.action(function(ctx) {
-            window.__vaultrEditorEffects.trigger(ctx.get(s.editorViewCtx));
-          });
-        });
-      }
+      s.view = new s.EditorView({
+        parent: editArea,
+        state: s.EditorState.create({
+          doc: s.currentMd || '',
+          extensions: [
+            s.sharedLanguage,
+            s.history(),
+            // listIndentExtension is Prec.highest internally (see
+            // cm-live/list-indent.js) — @codemirror/lang-markdown's own
+            // language support registers a high-precedence Enter binding for
+            // "continue list markup" that a plain keymap.of(...) here would
+            // lose to regardless of array position. It handles Tab/Shift-Tab
+            // (not bound by defaultKeymap at all — every outliner-style
+            // editor claims them, same as Cmd+]/Cmd+[) and Enter on an empty
+            // list item specifically (the built-in path is supposed to
+            // outdent/exit there but unreliably just inserts a blank line
+            // with the marker left dangling instead); a non-empty item's
+            // Enter isn't handled here and falls through to defaultKeymap.
+            s.listIndentExtension,
+            s.keymap.of([...s.defaultKeymap, ...s.historyKeymap]),
+            s.cmSearch({ top: true, createPanel: __vaultrCreateSearchPanel }),
+            s.EditorView.lineWrapping, cmTheme,
+            s.EditorView.contentAttributes.of({spellcheck: 'false'}),
+            s.linkClickHandler(), // click a collapsed link to open it, Obsidian-style — works in both modes, not compartmented
+            s.decoCompartment.of(s._liveModeExt()),
+            s.EditorView.updateListener.of(function(update) {
+              if (!update.docChanged || s.loading) return;
+              __vaultrDEHandleContentChange(update.state.doc.toString(), false);
+            }),
+            s.EditorView.domEventHandlers({
+              paste: function(e, view) {
+                var imgFile = __vaultrDEFindImageFile(e.clipboardData);
+                if (!imgFile) return false;
+                e.preventDefault();
+                __vaultrDEUploadImage(imgFile).then(function(src) {
+                  var filename = src.split('/').pop();
+                  var ins = '![[' + filename + ']]'; var sel = view.state.selection.main;
+                  view.dispatch({changes:{from:sel.from,to:sel.to,insert:ins},selection:{anchor:sel.from+ins.length}});
+                }).catch(function(e) {
+                  window.showError((e && e.message) || 'Image upload failed.', 'Upload error');
+                });
+                return true;
+              },
+              keydown: function(e) {
+                if (e.key === 'Enter' && !e.isComposing) window.__vaultrEditorEffects.trigger(s.view);
+                return false;
+              },
+            }),
+          ],
+        }),
+      });
 
       document.querySelectorAll('.drawer-view-btn-wysiwyg').forEach(function(btn) {
         btn.addEventListener('click', function() {
@@ -782,110 +729,50 @@
     };
   }
 
-  // ── CodeMirror / source mode ─────────────────────────────────────────────────
-  function __vaultrDEEnsureCM() {
-    var s = __vaultrDE;
-    if (s.cm) return;
-    var cmTheme = s.EditorView.theme({
-      '&': {height:'100%',color:'var(--prose-body)',background:'transparent'},
-      '&.cm-focused': {outline:'none'},
-      '.cm-content': {caretColor:'var(--accent)'},
-      '.cm-cursor,.cm-dropCursor': {borderLeftColor:'var(--accent)'},
-      '.cm-selectionBackground': {background:'var(--cm-selection-bg) !important'},
-      '&.cm-focused .cm-selectionBackground': {background:'var(--cm-selection-bg)'},
-      '.cm-activeLine': {background:'var(--cm-active-line)'},
-      '.cm-gutters': {display:'none'},
-    });
-    var cmHighlight = s.HighlightStyle.define([
-      {tag:s.tags.heading1,color:'var(--h1)',fontWeight:'600'},
-      {tag:s.tags.heading2,color:'var(--h2)',fontWeight:'600'},
-      {tag:s.tags.heading3,color:'var(--h3)',fontWeight:'600'},
-      {tag:s.tags.heading4,color:'var(--h4)',fontWeight:'500'},
-      {tag:s.tags.emphasis,fontStyle:'italic',color:'var(--prose-em)'},
-      {tag:s.tags.strong,fontWeight:'600',color:'var(--prose-strong)'},
-      {tag:s.tags.link,color:'var(--p1)'},{tag:s.tags.url,color:'var(--p1)',opacity:'0.72'},
-      {tag:s.tags.monospace,color:'var(--code-tx)'},{tag:s.tags.meta,color:'var(--cm-md-muted)'},
-      {tag:s.tags.punctuation,color:'var(--cm-md-muted)'},
-      {tag:s.tags.processingInstruction,color:'var(--cm-md-muted)'},
-      {tag:s.tags.strikethrough,color:'var(--muted)',textDecoration:'line-through'},
-    ]);
-    s.cm = new s.EditorView({
-      parent: document.getElementById('drawer-cm-wrap'),
-      state: s.EditorState.create({
-        doc: s.currentMd,
-        extensions: [
-          s.history(), s.keymap.of([...s.defaultKeymap,...s.historyKeymap]),
-          s.cmSearch({ top: true, createPanel: __vaultrCreateSearchPanel }),
-          s.markdown(), s.syntaxHighlighting(cmHighlight), s.EditorView.lineWrapping, cmTheme,
-          s.EditorView.updateListener.of(function(update) {
-            if (!update.docChanged || s.loading) return;
-            __vaultrDEHandleContentChange(update.state.doc.toString(), false);
-          }),
-          s.EditorView.domEventHandlers({ paste: function(e, view) {
-            var imgFile = __vaultrDEFindImageFile(e.clipboardData);
-            if (!imgFile) return false;
-            e.preventDefault();
-            __vaultrDEUploadImage(imgFile).then(function(src) {
-              var filename = src.split('/').pop();
-              var ins = '![[' + filename + ']]'; var sel = view.state.selection.main;
-              view.dispatch({changes:{from:sel.from,to:sel.to,insert:ins},selection:{anchor:sel.from+ins.length}});
-            }).catch(function(e) {
-              window.showError((e && e.message) || 'Image upload failed.', 'Upload error');
-            });
-            return true;
-          }}),
-        ],
-      }),
-    });
-  }
   // ── Editor mode state machine ────────────────────────────────────────────────
-  // Single authority for wysiwyg ↔ source transitions.
+  // Single authority for live-preview ↔ source transitions. Both modes are
+  // the same EditorView/doc now — this only reconfigures s.decoCompartment
+  // (see __vaultrEnsureDrawerEditor) and, when the caller is about to show a
+  // *different* note's content, syncs s.currentMd into the view first.
   // applySource / applyWysiwyg: low-level, called by applyState (skipFocus=true).
   // enterSource / exitSource / toggle: user-triggered, manage focus themselves.
   var editorMode = (function() {
-    function _switchDisplay(inSource) {
-      var ea = document.getElementById('drawer-edit-area');
-      var cw = document.getElementById('drawer-cm-wrap');
-      if (inSource) {
-        if (ea) ea.style.display = 'none'; if (cw) cw.style.display = 'block';
-      } else {
-        if (cw) cw.style.display = 'none'; if (ea) ea.style.display = '';
+    function syncContent() {
+      var s = __vaultrDE;
+      if (s.view.state.doc.toString() !== s.currentMd) {
+        s.view.dispatch({changes: {from: 0, to: s.view.state.doc.length, insert: s.currentMd}});
       }
-      __vaultrDESetSourceActive(inSource);
     }
     return {
-      // Load s.currentMd into CM and show source view.
-      // Caller must ensure s.currentMd is up to date.
       applySource: function(opts) {
         var s = __vaultrDE;
         __vaultrDEClearPendingBaselineSync();
-        __vaultrDEEnsureCM();
         s.loading = true;
-        s.cm.dispatch({changes:{from:0,to:s.cm.state.doc.length,insert:s.currentMd}});
+        syncContent();
+        s.view.dispatch({effects: s.decoCompartment.reconfigure(s._sourceModeExt())});
         s.loading = false;
-        _switchDisplay(true);
         s.inSource = true;
+        __vaultrDESetSourceActive(true);
         if (!(opts && opts.skipFocus)) focusManager.focusEditor();
       },
-      // Load s.currentMd into Milkdown and show wysiwyg view.
-      // Caller must ensure s.currentMd is up to date (does NOT sync from CM).
       applyWysiwyg: function(opts) {
         var s = __vaultrDE;
         var tab = __vaultrDEActiveTab();
         if (tab && tab.path) __vaultrDEMarkPendingBaselineSync();
         s.loading = true;
-        s.milkdown.action(s.replaceAll(s.currentMd));
+        syncContent();
+        s.view.dispatch({effects: s.decoCompartment.reconfigure(s._liveModeExt())});
         setTimeout(function() { s.loading = false; }, 50);
-        _switchDisplay(false);
         s.inSource = false;
+        __vaultrDESetSourceActive(false);
         if (!(opts && opts.skipFocus)) focusManager.focusEditor();
       },
-      // User-triggered: wysiwyg → source
+      // User-triggered: live preview → source
       enterSource: function() { this.applySource(); },
-      // User-triggered: source → wysiwyg (syncs CM content into s.currentMd first)
+      // User-triggered: source → live preview
       exitSource: function() {
         var s = __vaultrDE;
-        s.currentMd = s.cm.state.doc.toString();
+        s.currentMd = s.view.state.doc.toString();
         this.applyWysiwyg();
       },
       toggle: function() {
@@ -898,15 +785,9 @@
   // ── Focus manager ────────────────────────────────────────────────────────────
   // Single authority for all editor focus/blur decisions.
   var focusManager = {
-    // Focus the active editor surface (CM in source mode, editArea in wysiwyg).
     focusEditor: function() {
       var s = __vaultrDE;
-      if (s.inSource) {
-        if (s.cm) s.cm.focus();
-      } else {
-        var ea = document.getElementById('drawer-edit-area');
-        if (ea) ea.focus({preventScroll: true});
-      }
+      if (s.view) s.view.focus();
     },
     // Focus the path input (create-mode toolbar).
     focusPathInput: function() {
@@ -917,12 +798,11 @@
     blurActive: function() {
       if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
     },
-    // True when focus is inside the editor content area (editArea or CM).
+    // True when focus is inside the editor content area.
     isInsideEditor: function() {
       var ae = document.activeElement;
       var ea = document.getElementById('drawer-edit-area');
-      var cw = document.getElementById('drawer-cm-wrap');
-      return !!(ea && ea.contains(ae)) || !!(cw && cw.contains(ae));
+      return !!(ea && ea.contains(ae));
     },
   };
 
@@ -937,15 +817,8 @@
       save: function(tabId) {
         if (!tabId) return;
         var s = __vaultrDE;
-        var scrollTop = 0;
-        if (s.inSource) {
-          var cmScroller = document.querySelector('#drawer-cm-wrap .cm-scroller');
-          scrollTop = cmScroller ? cmScroller.scrollTop : 0;
-        } else {
-          var editArea = document.getElementById('drawer-edit-area');
-          scrollTop = editArea ? editArea.scrollTop : 0;
-        }
-        _states.set(tabId, { scrollTop: scrollTop, inSource: s.inSource });
+        var scroller = document.querySelector('#drawer-edit-area .cm-scroller');
+        _states.set(tabId, { scrollTop: scroller ? scroller.scrollTop : 0, inSource: s.inSource });
       },
       restore: function(tabId) {
         if (!tabId) return null;
@@ -1027,9 +900,18 @@
 
     if (s.pendingScrollRaf) { cancelAnimationFrame(s.pendingScrollRaf); s.pendingScrollRaf = null; }
     clearTimeout(s.pendingOpenScroll);
-    var getScroller = targetInSource
-      ? function() { return document.querySelector('#drawer-cm-wrap .cm-scroller'); }
-      : function() { return document.getElementById('drawer-edit-area'); };
+    var getScroller = function() { return document.querySelector('#drawer-edit-area .cm-scroller'); };
+    // Set it once synchronously, in the same tick as the content swap above
+    // (dispatch() has already updated the DOM by the time this line runs) —
+    // otherwise the scroller keeps the PREVIOUS tab's scrollTop for at
+    // least one paint, since the rAF/setTimeout calls below are the only
+    // other place this gets set and both are deliberately deferred (see
+    // their own comments). That stale-scrollTop-against-new-content frame
+    // is the tab-switch flash: this line is what removes it for the common
+    // case; the deferred ones stay as-is for the one case that still needs
+    // them — the drawer's own slide-in animation tearing down a compositing
+    // layer and resetting scrollTop out from under this synchronous set.
+    var syncEl = getScroller(); if (syncEl) syncEl.scrollTop = targetScroll;
     s.pendingScrollRaf = requestAnimationFrame(function() {
       s.pendingScrollRaf = requestAnimationFrame(function() {
         s.pendingScrollRaf = null;
@@ -1100,7 +982,7 @@
       if (enterFirstTs && (now - enterFirstTs) <= __DRAWER_PATH_DBL_ENTER_MS) {
         ev.preventDefault(); enterFirstTs = 0;
         var s = __vaultrDE;
-        if (s.milkdown && s.editorViewCtx) s.milkdown.action(function(ctx){ ctx.get(s.editorViewCtx).focus(); });
+        if (s.view) s.view.focus();
         return;
       }
       enterFirstTs = now;
@@ -1262,7 +1144,7 @@
           }
           if (document.querySelector('.vaultr-search-panel')) {
             var _s = __vaultrDE;
-            if (_s.cm && _s.cmCloseSearchPanel) _s.cmCloseSearchPanel(_s.cm);
+            if (_s.view && _s.cmCloseSearchPanel) _s.cmCloseSearchPanel(_s.view);
             return;
           }
           self.drawerOpen = false;
@@ -1327,15 +1209,9 @@
             //    resets scrollTop when the GPU compositing layer is torn down at animation end
             var s = __vaultrDE;
             var sc = savedState.scrollTop || 0;
-            var inSrc = savedState.inSource;
             function __applyDrawerScroll() {
-              if (inSrc) {
-                var cmScroller = document.querySelector('#drawer-cm-wrap .cm-scroller');
-                if (cmScroller) cmScroller.scrollTop = sc;
-              } else {
-                var ea = document.getElementById('drawer-edit-area');
-                if (ea) ea.scrollTop = sc;
-              }
+              var scroller = document.querySelector('#drawer-edit-area .cm-scroller');
+              if (scroller) scroller.scrollTop = sc;
             }
             if (s.pendingScrollRaf) { cancelAnimationFrame(s.pendingScrollRaf); s.pendingScrollRaf = null; }
             clearTimeout(s.pendingOpenScroll);
@@ -1537,8 +1413,9 @@
           clearTimeout(__vaultrDE.saveTimer); __vaultrDE.saveTimer = null;
           __vaultrDE.currentPath = ''; __vaultrDE.currentDraftId = ''; __vaultrDE.currentMd = ''; __vaultrDE.dirty = false;
           __vaultrDESaveStatus('');
-          if (__vaultrDE.milkdown && __vaultrDE.replaceAll) {
-            __vaultrDE.loading = true; __vaultrDE.milkdown.action(__vaultrDE.replaceAll(''));
+          if (__vaultrDE.view) {
+            __vaultrDE.loading = true;
+            __vaultrDE.view.dispatch({changes: {from: 0, to: __vaultrDE.view.state.doc.length, insert: ''}});
             setTimeout(function(){ __vaultrDE.loading = false; }, 50);
           }
           return;
@@ -1606,8 +1483,9 @@
         if (this.tabs.length === 0) {
           this.drawerOpen = false; this.activeTab = -1;
           __vaultrDE.currentPath = ''; __vaultrDE.currentDraftId = ''; __vaultrDE.currentMd = ''; __vaultrDESaveStatus('');
-          if (__vaultrDE.milkdown && __vaultrDE.replaceAll) {
-            __vaultrDE.loading = true; __vaultrDE.milkdown.action(__vaultrDE.replaceAll(''));
+          if (__vaultrDE.view) {
+            __vaultrDE.loading = true;
+            __vaultrDE.view.dispatch({changes: {from: 0, to: __vaultrDE.view.state.doc.length, insert: ''}});
             setTimeout(function(){ __vaultrDE.loading=false; },50);
           }
         } else {
@@ -1717,28 +1595,14 @@
   }
 
   // Global undo/redo called by Electron main process via executeJavaScript.
-  // Calls ProseMirror or CodeMirror undo directly, bypassing browser native undo.
+  // Calls CodeMirror undo directly, bypassing browser native undo.
   window.__vaultrUndo = function() {
     var s = __vaultrDE;
-    if (s.inSource && s.cm && s.cmUndo) {
-      s.cmUndo(s.cm);
-    } else if (s.milkdown && s.editorViewCtx && s.pmUndo) {
-      s.milkdown.action(function(ctx) {
-        var view = ctx.get(s.editorViewCtx);
-        if (view) s.pmUndo(view.state, view.dispatch, view);
-      });
-    }
+    if (s.view && s.cmUndo) s.cmUndo(s.view);
   };
   window.__vaultrRedo = function() {
     var s = __vaultrDE;
-    if (s.inSource && s.cm && s.cmRedo) {
-      s.cmRedo(s.cm);
-    } else if (s.milkdown && s.editorViewCtx && s.pmRedo) {
-      s.milkdown.action(function(ctx) {
-        var view = ctx.get(s.editorViewCtx);
-        if (view) s.pmRedo(view.state, view.dispatch, view);
-      });
-    }
+    if (s.view && s.cmRedo) s.cmRedo(s.view);
   };
 
   window.__vaultrEditorShellHref = function() {
@@ -1764,17 +1628,11 @@
     if (tag === 'INPUT' || tag === 'TEXTAREA') return;
     var _drawer = window.__vaultrDrawer;
     if (!_drawer || !_drawer.drawerOpen) return;
-    var _pmEl = document.querySelector('#drawer-milkdown .ProseMirror');
-    var _cmWrap = document.getElementById('drawer-cm-wrap');
-    if ((_pmEl && (_pmEl === ae || _pmEl.contains(ae))) || (_cmWrap && _cmWrap.contains(ae))) return;
+    var _editArea = document.getElementById('drawer-edit-area');
+    if (_editArea && _editArea.contains(ae)) return;
     e.preventDefault();
-    if (__vaultrDE.inSource) {
-      var _cmScroller = document.querySelector('#drawer-cm-wrap .cm-scroller');
-      if (_cmScroller) _cmScroller.scrollBy(0, e.key === 'ArrowDown' ? 80 : -80);
-    } else {
-      var _ea = document.getElementById('drawer-edit-area');
-      if (_ea) _ea.scrollBy(0, e.key === 'ArrowDown' ? 80 : -80);
-    }
+    var _scroller = document.querySelector('#drawer-edit-area .cm-scroller');
+    if (_scroller) _scroller.scrollBy(0, e.key === 'ArrowDown' ? 80 : -80);
     return true;
   });
 
@@ -1799,10 +1657,9 @@
     var _fDrawer = window.__vaultrDrawer;
     if (!_fDrawer || !_fDrawer.drawerOpen) return;
     var _de = __vaultrDE;
-    if (!_de.cmOpenSearchPanel) return;
+    if (!_de.cmOpenSearchPanel || !_de.view) return;
     e.preventDefault();
-    if (!_de.inSource) editorMode.enterSource();
-    _de.cmOpenSearchPanel(_de.cm);
+    _de.cmOpenSearchPanel(_de.view);
     return true;
   });
 

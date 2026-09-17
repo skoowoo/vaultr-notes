@@ -1,23 +1,22 @@
-export { Editor, rootCtx, defaultValueCtx, editorViewCtx, schemaCtx, serializerCtx, parserCtx } from '@milkdown/core';
-export { Slice } from 'prosemirror-model';
-export { breaksPlugin } from './breaks.js';
-export { commonmark, insertImageInputRule } from '@milkdown/preset-commonmark';
-export { gfm } from '@milkdown/preset-gfm';
-export { listener, listenerCtx } from '@milkdown/plugin-listener';
-export { replaceAll, $prose } from '@milkdown/utils';
-export { frontmatterPlugin } from './frontmatter.js';
-export { wikiLinkPlugin } from './wikilink.js';
-export { wikiImagePlugin } from './wikiimage.js';
-export { tooltipPlugin } from './tooltip.js';
-export { tabGuardPlugin } from './tab-guard.js';
-export { linkInputRule } from './link-input-rule.js';
+// Public entry point bundled to internal/server/static/editor.js and
+// imported by drawer.js. Everything the live-preview editor needs — see
+// src/cm-live/ for the actual implementation; this file is just the export
+// surface drawer.js's dynamic import() pulls from.
 export { EditorView, keymap } from '@codemirror/view';
-export { EditorState } from '@codemirror/state';
+export { EditorState, Compartment } from '@codemirror/state';
 export { markdown } from '@codemirror/lang-markdown';
 export { HighlightStyle, syntaxHighlighting } from '@codemirror/language';
 export { tags } from '@lezer/highlight';
 export { defaultKeymap, history, historyKeymap, undo as cmUndo, redo as cmRedo } from '@codemirror/commands';
 export { search, openSearchPanel, closeSearchPanel, findNext, findPrevious, replaceNext, replaceAll as cmReplaceAll, SearchQuery, getSearchQuery, setSearchQuery } from '@codemirror/search';
-export { history as pmHistory, undo as pmUndo, redo as pmRedo } from 'prosemirror-history';
-export { keymap as pmKeymap } from 'prosemirror-keymap';
-export { gapCursor } from 'prosemirror-gapcursor';
+export {
+  livePreviewExtensions,
+  wikiMarkdownLanguage,
+  livePreviewPlugin,
+  livePreviewAtomicRanges,
+  horizontalRuleField,
+  linkClickHandler,
+  livePreviewTheme,
+  codeHighlightStyle,
+  listIndentExtension,
+} from './cm-live/index.js';
