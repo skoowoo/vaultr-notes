@@ -205,6 +205,77 @@ export class TableDelimiterWidget extends WidgetType {
   }
 }
 
+// "Metadata" header row above the frontmatter block — click toggles the
+// whole-block collapse (state lives in frontmatter-collapse.js, not here);
+// the pencil button (only rendered when onEdit is wired up — an app-level
+// concern, e.g. drawer.js opening its edit dialog) is a separate hit target
+// so it doesn't also trigger the collapse toggle.
+//
+// showEdit: the button stays in the DOM either way (so the row's layout
+// doesn't jump when it appears) but is hidden — via CSS class, not
+// display:none, so it fades rather than pops — until the caret is actually
+// inside the frontmatter block (frontmatter-collapse.js computes this).
+export class FrontmatterHeaderWidget extends WidgetType {
+  constructor(collapsed, onToggle, onEdit, showEdit) {
+    super();
+    this.collapsed = collapsed;
+    this.onToggle = onToggle;
+    this.onEdit = onEdit || null;
+    this.showEdit = !!showEdit;
+  }
+
+  eq(other) {
+    return (
+      other.collapsed === this.collapsed &&
+      !!other.onEdit === !!this.onEdit &&
+      other.showEdit === this.showEdit
+    );
+  }
+
+  toDOM(view) {
+    const row = document.createElement('div');
+    row.className = 'cm-lp-fm-header' + (this.collapsed ? ' cm-lp-fm-header-collapsed' : '');
+    row.setAttribute('role', 'button');
+    row.tabIndex = 0;
+    row.title = this.collapsed ? 'Expand metadata' : 'Collapse metadata';
+    const chevron = document.createElement('span');
+    chevron.className = 'cm-lp-fm-header-chevron';
+    chevron.innerHTML =
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>';
+    const label = document.createElement('span');
+    label.className = 'cm-lp-fm-header-label';
+    label.textContent = 'Metadata';
+    row.appendChild(chevron);
+    row.appendChild(label);
+    row.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      this.onToggle(view);
+    });
+
+    if (this.onEdit) {
+      const editBtn = document.createElement('button');
+      editBtn.type = 'button';
+      editBtn.className = 'cm-lp-fm-header-edit' + (this.showEdit ? '' : ' cm-lp-fm-header-edit-hidden');
+      editBtn.tabIndex = this.showEdit ? 0 : -1;
+      editBtn.title = 'Edit metadata';
+      editBtn.innerHTML =
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>';
+      editBtn.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        this.onEdit(view);
+      });
+      row.appendChild(editBtn);
+    }
+
+    return row;
+  }
+
+  ignoreEvent() {
+    return false;
+  }
+}
+
 // Frontmatter collapsed line — same hairline trick as TableDelimiterWidget.
 export class FrontmatterCollapsedLineWidget extends WidgetType {
   eq() {
@@ -222,21 +293,95 @@ export class FrontmatterCollapsedLineWidget extends WidgetType {
   }
 }
 
-// "+N more" — selection-only into first hidden line; decorateFrontmatter expands.
-export class FrontmatterMoreWidget extends WidgetType {
-  constructor(count, revealPos) {
+// Per-field type icon (text/tag/list/number) — inserted before the key
+// label; purely decorative, matches Obsidian's Properties panel at a glance.
+const FM_ICON_PATHS = {
+  tag:
+    '<path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42Z"/><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/>',
+  list: '<path d="M3 12h.01"/><path d="M3 18h.01"/><path d="M3 6h.01"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M8 6h13"/>',
+  number: '<path d="M4 9h16"/><path d="M4 15h16"/><path d="M10 3 8 21"/><path d="M16 3 14 21"/>',
+  text: '<path d="M17 6.1H3"/><path d="M21 12.1H3"/><path d="M15.1 18H3"/>',
+};
+
+export class FrontmatterKeyIconWidget extends WidgetType {
+  constructor(type) {
     super();
-    this.count = count;
-    this.revealPos = revealPos;
+    this.type = FM_ICON_PATHS[type] ? type : 'text';
   }
 
   eq(other) {
-    return other.count === this.count && other.revealPos === this.revealPos;
+    return other.type === this.type;
+  }
+
+  toDOM() {
+    const span = document.createElement('span');
+    span.className = 'cm-lp-fm-icon';
+    span.innerHTML =
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">' +
+      FM_ICON_PATHS[this.type] +
+      '</svg>';
+    return span;
+  }
+
+  ignoreEvent() {
+    return true;
+  }
+}
+
+// Invisible icon+label-shaped spacer standing in for a block-list item's
+// raw indent/"- " marker — same classes as the real key icon + label, just
+// hidden, so it measures pixel-identical to them regardless of the label's
+// smaller font-size (a ch-based padding-left on the line itself can't
+// reproduce that, since ch resolves against the *line's* font there).
+export class FrontmatterListIndentWidget extends WidgetType {
+  constructor(labelWidthCh) {
+    super();
+    this.labelWidthCh = labelWidthCh;
+  }
+
+  eq(other) {
+    return other.labelWidthCh === this.labelWidthCh;
+  }
+
+  toDOM() {
+    const wrap = document.createElement('span');
+    wrap.className = 'cm-lp-fm-list-indent';
+    const icon = document.createElement('span');
+    icon.className = 'cm-lp-fm-icon';
+    const label = document.createElement('span');
+    label.className = 'cm-lp-fm-label';
+    label.style.width = this.labelWidthCh + 'ch';
+    wrap.appendChild(icon);
+    wrap.appendChild(label);
+    wrap.appendChild(document.createTextNode(' '));
+    return wrap;
+  }
+
+  ignoreEvent() {
+    return true;
+  }
+}
+
+// "+N more" — selection-only into first hidden line; decorateFrontmatter expands.
+export class FrontmatterMoreWidget extends WidgetType {
+  // ownLine: true when this is the sole content of its row (block-list
+  // overflow, left-aligned under the value column) — the default inline
+  // spacing (margin-left, for sitting right after a tag/item on the same
+  // line) would just push it off that alignment.
+  constructor(count, revealPos, ownLine) {
+    super();
+    this.count = count;
+    this.revealPos = revealPos;
+    this.ownLine = !!ownLine;
+  }
+
+  eq(other) {
+    return other.count === this.count && other.revealPos === this.revealPos && other.ownLine === this.ownLine;
   }
 
   toDOM(view) {
     const span = document.createElement('span');
-    span.className = 'cm-lp-fm-more';
+    span.className = 'cm-lp-fm-more' + (this.ownLine ? ' cm-lp-fm-more-own-line' : '');
     span.textContent = '+' + this.count + ' more';
     span.addEventListener('mousedown', (e) => {
       e.preventDefault();

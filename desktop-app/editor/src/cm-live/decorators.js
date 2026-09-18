@@ -13,8 +13,11 @@ import {
   TableDelimiterWidget,
   FrontmatterCollapsedLineWidget,
   FrontmatterMoreWidget,
+  FrontmatterKeyIconWidget,
+  FrontmatterListIndentWidget,
 } from './widgets.js';
 import { wikiNodeInner, splitWikiLinkInner } from './wiki-syntax.js';
+import { frontmatterCollapseField } from './frontmatter-collapse.js';
 
 function hideRange(from, to, decos) {
   if (from >= to) return;
@@ -479,15 +482,25 @@ const decorateTableBodyRow = decorateTableRow(false);
 const FM_KEY_LINE_RE = /^([A-Za-z0-9_.-]+)(:)(\s*)([\s\S]*)$/;
 const FM_URL_RE = /^https?:\/\//i;
 const FM_CONTINUATION_RE = /^[ \t]/;
-const FM_VISIBLE_FIELDS = 3;
+const FM_NUMBER_RE = /^-?\d+(\.\d+)?$/;
+// Arrays/lists over this many items collapse behind "+N more" (whole
+// frontmatter block always renders in full now — only long array/list
+// values get truncated, so a note with lots of tags stays scannable).
+const FM_ARRAY_VISIBLE_ITEMS = 3;
 
-// One group per top-level field (continuations fold in) for "+N more" cutoff.
+// One group per top-level field (continuations fold in) so array/list groups
+// can be told apart from plain scalar fields for icon choice + truncation.
 function fmFieldGroups(doc, fromLineNo, toLineNo) {
   const groups = [];
   let current = null;
   for (let n = fromLineNo; n <= toLineNo; n++) {
     const text = doc.line(n).text;
-    if (current && FM_CONTINUATION_RE.test(text)) {
+    // A blank line (some YAML list authors leave one between "- item"
+    // entries) folds into whatever group is open instead of starting a new
+    // one-line "field" — otherwise it renders as a phantom full-height row
+    // with a stray key icon and nothing next to it.
+    const isBlank = text.trim().length === 0;
+    if (current && (isBlank || FM_CONTINUATION_RE.test(text))) {
       current.toNo = n;
     } else {
       current = { fromNo: n, toNo: n };
@@ -497,29 +510,45 @@ function fmFieldGroups(doc, fromLineNo, toLineNo) {
   return groups;
 }
 
-function decorateFmArrayValue(rawValue, valueFrom, valueTo, decos) {
+function decorateFmArrayValue(rawValue, valueFrom, valueTo, decos, state) {
   const m = /^\[([\s\S]*)\]\s*$/.exec(rawValue);
   if (!m) return false;
   const closeIdx = rawValue.lastIndexOf(']');
   const inner = rawValue.slice(1, closeIdx);
   hideRange(valueFrom, valueFrom + 1, decos);
-  let pos = valueFrom + 1;
   const parts = inner.split(',');
+  // First pass: item ranges only, so overflow/reveal can be decided before
+  // any decoration is pushed.
+  const items = [];
+  let pos = valueFrom + 1;
   for (let i = 0; i < parts.length; i++) {
     const raw = parts[i];
     const trimmed = raw.trim();
     const leadingWs = raw.length - raw.trimStart().length;
     const itemFrom = pos + leadingWs;
     const itemTo = itemFrom + trimmed.length;
-    hideRange(pos, itemFrom, decos);
-    if (trimmed.length > 0) styleRange(itemFrom, itemTo, 'cm-lp-fm-tag', decos);
     const segEnd = pos + raw.length;
-    hideRange(itemTo, segEnd, decos);
-    pos = segEnd;
-    if (i < parts.length - 1) {
-      hideRange(pos, pos + 1, decos);
-      pos += 1;
-    }
+    items.push({ itemFrom, itemTo });
+    pos = segEnd + (i < parts.length - 1 ? 1 : 0); // +1 for the comma
+  }
+  const overflow = items.length > FM_ARRAY_VISIBLE_ITEMS;
+  const revealed = overflow && selectionTouchesRange(state, items[FM_ARRAY_VISIBLE_ITEMS].itemFrom, valueTo);
+  const visibleCount = overflow && !revealed ? FM_ARRAY_VISIBLE_ITEMS : items.length;
+
+  pos = valueFrom + 1;
+  for (let i = 0; i < visibleCount; i++) {
+    const it = items[i];
+    hideRange(pos, it.itemFrom, decos);
+    if (it.itemTo > it.itemFrom) styleRange(it.itemFrom, it.itemTo, 'cm-lp-fm-tag', decos);
+    pos = it.itemTo;
+  }
+  if (overflow && !revealed) {
+    decos.push(
+      Decoration.widget({
+        widget: new FrontmatterMoreWidget(items.length - visibleCount, items[visibleCount].itemFrom),
+        side: 1,
+      }).range(pos)
+    );
   }
   hideRange(pos, valueTo, decos);
   return true;
@@ -535,15 +564,24 @@ function frontmatterLabelWidthCh(doc, fromLineNo, toLineNo) {
   return Math.ceil(maxLen * 1.15) + 1;
 }
 
-function decorateFmFieldLine(text, lineFrom, decos, labelWidthCh) {
+// Type drives which icon renders next to the key — 'tags' is special-cased
+// (Obsidian does the same), other arrays/lists get the generic list icon.
+function fmFieldType(key, rawValue, isArrayGroup) {
+  if (isArrayGroup) return key.trim().toLowerCase() === 'tags' ? 'tag' : 'list';
+  return FM_NUMBER_RE.test(rawValue.trim()) ? 'number' : 'text';
+}
+
+function decorateFmFieldLine(text, lineFrom, decos, labelWidthCh, type, state) {
   const m = FM_KEY_LINE_RE.exec(text);
   if (!m) {
+    decos.push(Decoration.widget({ widget: new FrontmatterKeyIconWidget(type || 'text'), side: -1 }).range(lineFrom));
     if (text.trim().length > 0) styleRange(lineFrom, lineFrom + text.length, 'cm-lp-fm-val', decos);
     return;
   }
   const [, key, colon, gap, rawValue] = m;
   const keyTo = lineFrom + key.length;
   const colonTo = keyTo + colon.length;
+  decos.push(Decoration.widget({ widget: new FrontmatterKeyIconWidget(type || 'text'), side: -1 }).range(lineFrom));
   decos.push(
     Decoration.mark({ class: 'cm-lp-fm-label', attributes: { style: 'width:' + labelWidthCh + 'ch' } }).range(
       lineFrom,
@@ -555,7 +593,7 @@ function decorateFmFieldLine(text, lineFrom, decos, labelWidthCh) {
   const valueFrom = colonTo + gap.length;
   const valueTo = lineFrom + text.length;
   if (valueFrom >= valueTo) return;
-  if (decorateFmArrayValue(rawValue, valueFrom, valueTo, decos)) return;
+  if (decorateFmArrayValue(rawValue, valueFrom, valueTo, decos, state)) return;
   const cls = FM_URL_RE.test(rawValue.trim()) ? 'cm-lp-fm-val cm-lp-fm-link' : 'cm-lp-fm-val';
   styleRange(valueFrom, valueTo, cls, decos);
 }
@@ -565,14 +603,17 @@ function decorateFmContinuationLine(text, lineFrom, decos, labelWidthCh) {
   const m = /^(\s*)(-\s?)?([\s\S]*)$/.exec(text);
   const indent = m[1];
   const bullet = m[2] || '';
-  let pos = lineFrom + indent.length;
-  hideRange(lineFrom, pos, decos);
-  if (bullet) {
-    styleRange(pos, pos + bullet.length, 'cm-lp-fm-colon', decos);
-    pos += bullet.length;
-  }
+  const pos = lineFrom + indent.length + bullet.length;
+  // Replace the raw indent+"- " with an invisible icon+label-shaped spacer
+  // instead of hiding it and padding-left-ing the line to compensate — the
+  // real label renders at a smaller font-size than the line itself, so a
+  // ch-based calc() on the line's padding (sized in the line's own font)
+  // can't reproduce the label's actual (smaller-font) width. Reusing the
+  // identical icon/label markup, just invisible, measures itself the same
+  // way the real one does and lines up with it pixel-for-pixel.
+  decos.push(Decoration.replace({ widget: new FrontmatterListIndentWidget(labelWidthCh) }).range(lineFrom, pos));
   const textEnd = lineFrom + text.length;
-  if (pos < textEnd) styleRange(pos, textEnd, 'cm-lp-fm-val', decos);
+  if (pos < textEnd) styleRange(pos, textEnd, 'cm-lp-fm-val cm-lp-fm-list-item', decos);
 }
 
 function decorateFmDelimiterLine(line, decos) {
@@ -589,75 +630,129 @@ function decorateFrontmatter(node, view, decos) {
   const fmTo = node.to;
   const firstLine = doc.lineAt(fmFrom);
   const lastLine = doc.lineAt(fmTo);
+
+  if (state.field(frontmatterCollapseField, false)) {
+    // Whole block collapsed via the "Metadata" header toggle — hairline
+    // every line individually rather than one multi-line replace (that's
+    // the known CM6 height-map crash this file works around everywhere
+    // else too; see fmFieldGroups' blank-line handling above).
+    for (let n = firstLine.number; n <= lastLine.number; n++) {
+      const line = doc.line(n);
+      decos.push(Decoration.line({ class: 'cm-lp-fm-line cm-lp-fm-collapsed' }).range(line.from));
+      if (line.length > 0) {
+        decos.push(Decoration.replace({ widget: new FrontmatterCollapsedLineWidget() }).range(line.from, line.to));
+      } else {
+        decos.push(Decoration.widget({ widget: new FrontmatterCollapsedLineWidget(), side: 1 }).range(line.from));
+      }
+    }
+    return;
+  }
+
   // Unclosed → no closing "---"; rest is interior.
   const hasClosingDelimiter = lastLine.number > firstLine.number && doc.line(lastLine.number).text.trim() === '---';
   const interiorFromNo = firstLine.number + 1;
   const interiorToNo = hasClosingDelimiter ? lastLine.number - 1 : lastLine.number;
   const hasInterior = interiorToNo >= interiorFromNo;
   const groups = hasInterior ? fmFieldGroups(doc, interiorFromNo, interiorToNo) : [];
-  // Caret anywhere in block expands "+N more".
-  const blockRevealed = selectionTouchesRange(state, fmFrom, fmTo);
-  const collapsingOverflow = !blockRevealed && groups.length > FM_VISIBLE_FIELDS;
   const labelWidthCh = hasInterior ? frontmatterLabelWidthCh(doc, interiorFromNo, interiorToNo) : 0;
 
-  if (selectionTouchesLine(state, firstLine)) {
-    decos.push(Decoration.line({ class: 'cm-lp-fm-line cm-lp-fm-first' }).range(firstLine.from));
-  } else {
-    decos.push(Decoration.line({ class: 'cm-lp-fm-line cm-lp-fm-first cm-lp-fm-collapsed' }).range(firstLine.from));
-    decos.push(
-      Decoration.replace({ widget: new FrontmatterCollapsedLineWidget() }).range(firstLine.from, firstLine.to)
-    );
-  }
+  // Frontmatter is read-only in this view now (frontmatter-readonly.js) —
+  // always the decorated/collapsed form, never raw syntax on caret entry;
+  // editing happens through the header's edit button (an app-level dialog).
+  decos.push(Decoration.line({ class: 'cm-lp-fm-line cm-lp-fm-first cm-lp-fm-collapsed' }).range(firstLine.from));
+  decos.push(Decoration.replace({ widget: new FrontmatterCollapsedLineWidget() }).range(firstLine.from, firstLine.to));
 
-  const continuationPadding = 'padding-left: calc(0.875rem + ' + labelWidthCh + 'ch) !important';
+  groups.forEach((group) => {
+    const keyLineText = doc.line(group.fromNo).text;
 
-  groups.forEach((group, gi) => {
-    const collapsed = collapsingOverflow && gi >= FM_VISIBLE_FIELDS;
-    for (let n = group.fromNo; n <= group.toNo; n++) {
+    // A blank line with nothing open before it (rare — e.g. right after the
+    // opening "---") ends up as its own one-line "group"; render it as a
+    // hairline instead of a field row so it doesn't get a stray key icon.
+    if (keyLineText.trim().length === 0) {
+      const blankLine = doc.line(group.fromNo);
+      const classes = ['cm-lp-fm-line', 'cm-lp-fm-collapsed'];
+      if (!hasClosingDelimiter && group.fromNo === interiorToNo) classes.push('cm-lp-fm-last');
+      decos.push(Decoration.line({ class: classes.join(' ') }).range(blankLine.from));
+      // A truly empty line has nothing for CM6 to measure against, so its
+      // height falls back to a full line instead of the shrunk hairline —
+      // same widgetBuffer anchor the non-empty collapse branches use below.
+      decos.push(Decoration.widget({ widget: new FrontmatterCollapsedLineWidget(), side: 1 }).range(blankLine.from));
+      return;
+    }
+
+    const keyMatch = FM_KEY_LINE_RE.exec(keyLineText);
+    const isMultilineList = group.toNo > group.fromNo;
+    const isFlowArray = keyMatch ? /^\[[\s\S]*\]\s*$/.test(keyMatch[4].trim()) : false;
+    const isArrayGroup = isMultilineList || isFlowArray;
+    const type = keyMatch ? fmFieldType(keyMatch[1], keyMatch[4], isArrayGroup) : 'text';
+
+    // Key line (always rendered — no more whole-block collapsing).
+    const keyLine = doc.line(group.fromNo);
+    const keyLineClasses = ['cm-lp-fm-line'];
+    if (!hasClosingDelimiter && group.fromNo === interiorToNo) keyLineClasses.push('cm-lp-fm-last');
+    decos.push(Decoration.line({ class: keyLineClasses.join(' ') }).range(keyLine.from));
+    decorateFmFieldLine(keyLine.text, keyLine.from, decos, labelWidthCh, type, state);
+
+    if (!isMultilineList) return;
+
+    // Block-list items (indented "- item" continuation lines) — collapse
+    // past FM_ARRAY_VISIBLE_ITEMS, same "+N more" affordance as flow arrays.
+    // Blank lines a list author left between entries render as a hairline
+    // (allLineNos) but don't count toward the visible-item cutoff (itemLineNos).
+    const allLineNos = [];
+    for (let n = group.fromNo + 1; n <= group.toNo; n++) allLineNos.push(n);
+    const itemLineNos = allLineNos.filter((n) => doc.line(n).text.trim().length > 0);
+    const overflow = itemLineNos.length > FM_ARRAY_VISIBLE_ITEMS;
+    const revealed =
+      overflow && selectionTouchesRange(state, doc.line(itemLineNos[FM_ARRAY_VISIBLE_ITEMS]).from, doc.line(group.toNo).to);
+    const visibleCount = overflow && !revealed ? FM_ARRAY_VISIBLE_ITEMS : itemLineNos.length;
+
+    allLineNos.forEach((n) => {
       const line = doc.line(n);
       const isLastRenderedLine = !hasClosingDelimiter && n === interiorToNo;
       const lineClasses = ['cm-lp-fm-line'];
       if (isLastRenderedLine) lineClasses.push('cm-lp-fm-last');
-      const isContinuation = n > group.fromNo;
+      const isBlank = line.text.trim().length === 0;
+      const idx = isBlank ? -1 : itemLineNos.indexOf(n);
 
-      if (collapsed) {
+      // First hidden item's own line carries "+N more" as a normal,
+      // left-aligned row (same invisible icon+label indent as a real item)
+      // instead of collapsing to a hairline like the rest of the overflow.
+      if (overflow && !revealed && idx === visibleCount) {
+        decos.push(Decoration.line({ class: lineClasses.join(' ') }).range(line.from));
+        const m = /^(\s*)(-\s?)?([\s\S]*)$/.exec(line.text);
+        const prefixEnd = line.from + m[1].length + (m[2] || '').length;
+        decos.push(
+          Decoration.replace({ widget: new FrontmatterListIndentWidget(labelWidthCh) }).range(line.from, prefixEnd)
+        );
+        decos.push(
+          Decoration.replace({
+            widget: new FrontmatterMoreWidget(itemLineNos.length - visibleCount, line.from, true),
+          }).range(prefixEnd, line.to)
+        );
+        return;
+      }
+
+      if (isBlank || idx >= visibleCount) {
         decos.push(Decoration.line({ class: lineClasses.concat('cm-lp-fm-collapsed').join(' ') }).range(line.from));
         if (line.length > 0) {
           decos.push(Decoration.replace({ widget: new FrontmatterCollapsedLineWidget() }).range(line.from, line.to));
+        } else {
+          // Zero-length (blank) line — same widgetBuffer anchor, as a point
+          // widget instead of a replace since there's no range to consume.
+          decos.push(Decoration.widget({ widget: new FrontmatterCollapsedLineWidget(), side: 1 }).range(line.from));
         }
-        continue;
+        return;
       }
 
-      const lineSpec = { class: lineClasses.join(' ') };
-      if (isContinuation) lineSpec.attributes = { style: continuationPadding };
-      decos.push(Decoration.line(lineSpec).range(line.from));
-      if (selectionTouchesLine(state, line)) continue;
-      if (isContinuation) decorateFmContinuationLine(line.text, line.from, decos, labelWidthCh);
-      else decorateFmFieldLine(line.text, line.from, decos, labelWidthCh);
-    }
+      decos.push(Decoration.line({ class: lineClasses.join(' ') }).range(line.from));
+      decorateFmContinuationLine(line.text, line.from, decos, labelWidthCh);
+    });
   });
 
-  if (collapsingOverflow) {
-    const hiddenCount = groups.length - FM_VISIBLE_FIELDS;
-    const lastVisibleLine = doc.line(groups[FM_VISIBLE_FIELDS - 1].toNo);
-    const firstHiddenLine = doc.line(groups[FM_VISIBLE_FIELDS].fromNo);
-    decos.push(
-      Decoration.widget({
-        widget: new FrontmatterMoreWidget(hiddenCount, firstHiddenLine.from),
-        side: 1,
-      }).range(lastVisibleLine.to)
-    );
-  }
-
   if (hasClosingDelimiter) {
-    if (selectionTouchesLine(state, lastLine)) {
-      decos.push(Decoration.line({ class: 'cm-lp-fm-line cm-lp-fm-last' }).range(lastLine.from));
-    } else {
-      decos.push(Decoration.line({ class: 'cm-lp-fm-line cm-lp-fm-last cm-lp-fm-collapsed' }).range(lastLine.from));
-      decos.push(
-        Decoration.replace({ widget: new FrontmatterCollapsedLineWidget() }).range(lastLine.from, lastLine.to)
-      );
-    }
+    decos.push(Decoration.line({ class: 'cm-lp-fm-line cm-lp-fm-last cm-lp-fm-collapsed' }).range(lastLine.from));
+    decos.push(Decoration.replace({ widget: new FrontmatterCollapsedLineWidget() }).range(lastLine.from, lastLine.to));
   }
 }
 

@@ -2,6 +2,7 @@
 import { ViewPlugin, Decoration, EditorView } from '@codemirror/view';
 import { syntaxTree } from '@codemirror/language';
 import { nodeDecorators } from './decorators.js';
+import { setFrontmatterCollapsed } from './frontmatter-collapse.js';
 
 class LivePreviewPlugin {
   constructor(view, options) {
@@ -15,7 +16,11 @@ class LivePreviewPlugin {
 
   update(update) {
     if (update.docChanged) this.tableCache.clear();
-    if (update.docChanged || update.viewportChanged || update.selectionSet) {
+    // The "Metadata" header toggle dispatches a bare effect — no doc change,
+    // no selection change, so it wouldn't otherwise trigger a rebuild and
+    // decorateFrontmatter's collapsed-block branch would never run.
+    const collapseToggled = update.transactions.some((tr) => tr.effects.some((e) => e.is(setFrontmatterCollapsed)));
+    if (update.docChanged || update.viewportChanged || update.selectionSet || collapseToggled) {
       this.rebuild(update.view);
     }
   }

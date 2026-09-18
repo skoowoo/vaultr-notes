@@ -3,7 +3,7 @@
 // src/cm-live/ for the actual implementation; this file is just the export
 // surface drawer.js's dynamic import() pulls from.
 export { EditorView, keymap } from '@codemirror/view';
-export { EditorState, Compartment } from '@codemirror/state';
+export { EditorState, Compartment, Transaction } from '@codemirror/state';
 export { markdown } from '@codemirror/lang-markdown';
 export { HighlightStyle, syntaxHighlighting } from '@codemirror/language';
 export { tags } from '@lezer/highlight';
@@ -15,6 +15,11 @@ export {
   livePreviewPlugin,
   livePreviewAtomicRanges,
   horizontalRuleField,
+  frontmatterCollapseField,
+  frontmatterHeaderField,
+  setFrontmatterCollapsed,
+  frontmatterReadOnly,
+  allowFrontmatterEdit,
   linkClickHandler,
   livePreviewTheme,
   codeHighlightStyle,

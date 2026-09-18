@@ -1,5 +1,7 @@
 // Leading "---\n...\n---" as one Frontmatter block node.
 // Without this: opening --- → HorizontalRule; closing --- → Setext H2.
+import { syntaxTree } from '@codemirror/language';
+
 const FRONTMATTER_NODE = 'Frontmatter';
 
 function isDelimLine(line) {
@@ -28,3 +30,12 @@ export const frontmatterSyntax = {
     },
   ],
 };
+
+// The parse rule above only fires at cx.lineStart === 0, so Frontmatter (if
+// present) is always the document's first top-level node — callers that
+// just need to locate it (frontmatter-collapse.js, frontmatter-readonly.js)
+// can check that one child directly instead of walking the whole tree.
+export function findFrontmatterNode(state) {
+  const first = syntaxTree(state).topNode.firstChild;
+  return first && first.name === FRONTMATTER_NODE ? first : null;
+}

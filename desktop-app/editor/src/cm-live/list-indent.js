@@ -118,13 +118,28 @@ function renumberChangesAt(state, pos, seenTops, changes) {
   for (const list of lists) renumberList(state, list, changes);
 }
 
+// One transaction, not two: renumbering needs the list structure *after*
+// the indent/outdent lands (nesting only changes once that edit is in), but
+// dispatching the indent first and the renumber second — as this used to —
+// split one Tab press into two undo-history entries, so a single Ctrl+Z only
+// unwound the renumber and left the indent behind. `state.update` builds the
+// post-indent state without dispatching it, and ChangeSet.compose chains the
+// two edits (each already expressed in its own doc's coordinate space —
+// composing is the CM6-correct way to combine them; concatenating them into
+// one `changes:` array would instead treat both as relative to the same
+// original document, corrupting the renumber positions) into a single
+// changeset for one dispatch.
 function dispatchWithRenumber(view, changes) {
-  view.dispatch({ changes });
-  const state = view.state;
+  const indentChanges = view.state.changes(changes);
+  const afterIndent = view.state.update({ changes: indentChanges }).state;
   const renumber = [];
   const seenTops = new Set();
-  for (const range of state.selection.ranges) renumberChangesAt(state, range.head, seenTops, renumber);
-  if (renumber.length) view.dispatch({ changes: renumber });
+  for (const range of afterIndent.selection.ranges) renumberChangesAt(afterIndent, range.head, seenTops, renumber);
+  if (!renumber.length) {
+    view.dispatch({ changes: indentChanges });
+    return;
+  }
+  view.dispatch({ changes: indentChanges.compose(afterIndent.changes(renumber)) });
 }
 
 function smartIndentMore(view) {

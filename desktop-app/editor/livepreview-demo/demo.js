@@ -1,14 +1,27 @@
 import { EditorView, keymap } from '@codemirror/view';
 import { EditorState } from '@codemirror/state';
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
-import { livePreviewExtensions, listIndentExtension } from '../src/cm-live/index.js';
+import { livePreviewExtensions, listIndentExtension, allowFrontmatterEdit } from '../src/cm-live/index.js';
 
 const sample = `---
 title: Live Preview POC
 date: 2026-09-16
 source: https://codemirror.net
-tags: [codemirror, editor, live-preview]
+tags: [codemirror, editor, live-preview, wysiwyg, obsidian, yaml]
 status: draft
+compile_count: 2
+related_notes:
+  - /foo/bar-note-one.md
+  - /foo/bar-note-two.md
+  - /foo/bar-note-three.md
+  - /foo/bar-note-four.md
+  - /foo/bar-note-five.md
+  - /foo/bar-note-six.md
+  - /foo/bar-note-seven.md
+  - /foo/bar-note-eight.md
+  - /foo/bar-note-nine.md
+  - /foo/bar-note-ten.md
+  - /foo/bar-note-eleven.md
 ---
 
 # Vaultr Live Preview 架构 POC
@@ -96,6 +109,21 @@ const view = new EditorView({
         onWikiLinkClick: (target, alias) => {
           // Phase 3: replace this log with window.__vaultrDrawerOpenWikiLink(target).
           logEvent('wikilink click → target="' + target + '" alias="' + (alias ?? '') + '"');
+        },
+        // Stand-in for drawer.js's dialog (frontmatter_dialog.html/js) —
+        // window.prompt() has no textarea, but it's enough to exercise the
+        // read-only-until-edited round trip end to end in this demo.
+        onEditFrontmatter: (v, from, to) => {
+          const raw = v.state.doc.sliceString(from, to);
+          const lines = raw.split('\n');
+          const hasClose = lines.length > 1 && lines[lines.length - 1].trim() === '---';
+          const interior = (hasClose ? lines.slice(1, -1) : lines.slice(1)).join('\n');
+          const edited = window.prompt('Edit frontmatter YAML (fences added back automatically):', interior);
+          if (edited === null) return;
+          const body = edited.replace(/\s+$/, '');
+          const newBlock = '---\n' + (body ? body + '\n' : '') + '---';
+          v.dispatch({ changes: { from, to, insert: newBlock }, annotations: allowFrontmatterEdit.of(true) });
+          logEvent('frontmatter saved via dialog stand-in');
         },
       }),
     ],

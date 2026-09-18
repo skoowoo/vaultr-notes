@@ -472,6 +472,7 @@
     s.initPromise = (async function() {
       var mod = await import('/static/editor.js');
       s.EditorView = mod.EditorView; s.EditorState = mod.EditorState; s.Compartment = mod.Compartment;
+      s.Transaction = mod.Transaction;
       s.keymap = mod.keymap;
       s.defaultKeymap = mod.defaultKeymap; s.historyKeymap = mod.historyKeymap; s.history = mod.history;
       s.listIndentExtension = mod.listIndentExtension;
@@ -486,6 +487,8 @@
       s.livePreviewTheme = mod.livePreviewTheme; s.codeHighlightStyle = mod.codeHighlightStyle;
       s.wikiMarkdownLanguage = mod.wikiMarkdownLanguage; s.linkClickHandler = mod.linkClickHandler;
       s.horizontalRuleField = mod.horizontalRuleField;
+      s.frontmatterCollapseField = mod.frontmatterCollapseField; s.frontmatterHeaderField = mod.frontmatterHeaderField;
+      s.frontmatterReadOnly = mod.frontmatterReadOnly; s.allowFrontmatterEdit = mod.allowFrontmatterEdit;
 
       var editArea = document.getElementById('drawer-edit-area');
 
@@ -536,6 +539,10 @@
           s.livePreviewPlugin.of(liveOptions),
           s.livePreviewAtomicRanges(),
           s.horizontalRuleField(),
+          // Live-preview only: source mode is the raw-YAML editing surface,
+          // so frontmatter stays freely editable there. The Metadata
+          // header's edit dialog is the only path in this mode.
+          s.frontmatterReadOnly(),
           s.livePreviewTheme,
           // Fenced-code token colors (keyword/string/comment/...) — see
           // cm-live/theme.js's codeHighlightStyle comment for why this is a
@@ -552,6 +559,12 @@
         return [s.syntaxHighlighting(cmHighlight)];
       };
       s.decoCompartment = new s.Compartment();
+      // Own compartment so editorMode.syncContent() (below) can wipe the
+      // undo stack on note/tab switch — this EditorView is a session-long
+      // singleton (__vaultrEnsureDrawerEditor only ever creates it once),
+      // so without this reset Ctrl+Z after switching notes walks back into
+      // the PREVIOUS note's edit history against the new note's document.
+      s.historyCompartment = new s.Compartment();
 
       s.view = new s.EditorView({
         parent: editArea,
@@ -559,7 +572,7 @@
           doc: s.currentMd || '',
           extensions: [
             s.sharedLanguage,
-            s.history(),
+            s.historyCompartment.of(s.history()),
             // listIndentExtension is Prec.highest internally (see
             // cm-live/list-indent.js) — @codemirror/lang-markdown's own
             // language support registers a high-precedence Enter binding for
@@ -577,6 +590,11 @@
             s.EditorView.lineWrapping, cmTheme,
             s.EditorView.contentAttributes.of({spellcheck: 'false'}),
             s.linkClickHandler(), // click a collapsed link to open it, Obsidian-style — works in both modes, not compartmented
+            // Outside the compartment so the collapsed flag survives a
+            // source/live-preview toggle — reconfigure() tears down and
+            // recreates any StateField that was only inside _liveModeExt().
+            s.frontmatterCollapseField,
+            s.frontmatterHeaderField({ onEditFrontmatter: __vaultrDEEditFrontmatter }),
             s.decoCompartment.of(s._liveModeExt()),
             s.EditorView.updateListener.of(function(update) {
               if (!update.docChanged || s.loading) return;
@@ -740,7 +758,27 @@
     function syncContent() {
       var s = __vaultrDE;
       if (s.view.state.doc.toString() !== s.currentMd) {
-        s.view.dispatch({changes: {from: 0, to: s.view.state.doc.length, insert: s.currentMd}});
+        // Whole-document swap (mode toggle, tab/note switch), not a user
+        // edit to frontmatter text — frontmatterReadOnly()'s changeFilter
+        // computes its blocked range from the *old* doc's frontmatter and
+        // would otherwise clip this replace, silently dropping everything
+        // after the old frontmatter (the exact "only frontmatter shows"
+        // bug). allowFrontmatterEdit is the filter's one escape hatch.
+        //
+        // Also resets historyCompartment and excludes this swap from
+        // history itself, in the same transaction — s.view is a session-
+        // long singleton reused across every note, so without this a note
+        // switch is just another undoable edit: Ctrl+Z right after opening
+        // a different note would revert its content to the PREVIOUS note's
+        // text while s.currentPath/s.currentMd still track the new note,
+        // risking that stale content gets autosaved under the new path.
+        var annotations = [s.Transaction.addToHistory.of(false)];
+        if (s.allowFrontmatterEdit) annotations.push(s.allowFrontmatterEdit.of(true));
+        s.view.dispatch({
+          changes: {from: 0, to: s.view.state.doc.length, insert: s.currentMd},
+          effects: s.historyCompartment.reconfigure(s.history()),
+          annotations: annotations,
+        });
       }
     }
     return {
@@ -808,6 +846,27 @@
 
   function __vaultrDEEnterSource() { editorMode.enterSource(); }
   function __vaultrDEExitSource() { editorMode.exitSource(); }
+
+  // "Metadata" header's pencil button (cm-live/frontmatter-collapse.js) —
+  // frontmatter is read-only in live-preview mode (frontmatterReadOnly()),
+  // so this dialog + allowFrontmatterEdit-annotated dispatch is the only
+  // way to change it there. from/to span the whole node including the
+  // "---" delimiters; only the interior YAML is shown/edited.
+  function __vaultrDEEditFrontmatter(view, from, to) {
+    var raw = view.state.doc.sliceString(from, to);
+    var lines = raw.split('\n');
+    var hasClose = lines.length > 1 && lines[lines.length - 1].trim() === '---';
+    var interior = (hasClose ? lines.slice(1, lines.length - 1) : lines.slice(1)).join('\n');
+    if (!window.__vaultrEditFrontmatter) return;
+    window.__vaultrEditFrontmatter(interior, function(newInterior) {
+      var body = newInterior.replace(/\s+$/, '');
+      var newBlock = '---\n' + (body ? body + '\n' : '') + '---';
+      view.dispatch({
+        changes: { from: from, to: to, insert: newBlock },
+        annotations: __vaultrDE.allowFrontmatterEdit.of(true),
+      });
+    });
+  }
 
   // ── Tab state manager ─────────────────────────────────────────────────────────
   // Owns the per-tab saved state (scroll position, source mode).
@@ -1415,7 +1474,13 @@
           __vaultrDESaveStatus('');
           if (__vaultrDE.view) {
             __vaultrDE.loading = true;
-            __vaultrDE.view.dispatch({changes: {from: 0, to: __vaultrDE.view.state.doc.length, insert: ''}});
+            // Clearing to empty removes the frontmatter range too — needs
+            // the same escape hatch as syncContent() above, or a note with
+            // frontmatter left behind a leftover (blocked) suppressed range.
+            __vaultrDE.view.dispatch({
+              changes: {from: 0, to: __vaultrDE.view.state.doc.length, insert: ''},
+              annotations: __vaultrDE.allowFrontmatterEdit ? __vaultrDE.allowFrontmatterEdit.of(true) : undefined,
+            });
             setTimeout(function(){ __vaultrDE.loading = false; }, 50);
           }
           return;
@@ -1485,7 +1550,13 @@
           __vaultrDE.currentPath = ''; __vaultrDE.currentDraftId = ''; __vaultrDE.currentMd = ''; __vaultrDESaveStatus('');
           if (__vaultrDE.view) {
             __vaultrDE.loading = true;
-            __vaultrDE.view.dispatch({changes: {from: 0, to: __vaultrDE.view.state.doc.length, insert: ''}});
+            // Clearing to empty removes the frontmatter range too — needs
+            // the same escape hatch as syncContent() above, or a note with
+            // frontmatter left behind a leftover (blocked) suppressed range.
+            __vaultrDE.view.dispatch({
+              changes: {from: 0, to: __vaultrDE.view.state.doc.length, insert: ''},
+              annotations: __vaultrDE.allowFrontmatterEdit ? __vaultrDE.allowFrontmatterEdit.of(true) : undefined,
+            });
             setTimeout(function(){ __vaultrDE.loading=false; },50);
           }
         } else {

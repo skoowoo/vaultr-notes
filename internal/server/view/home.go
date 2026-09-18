@@ -1062,11 +1062,11 @@ var homePageHTML = `<!DOCTYPE html>
   </script>
   <style>
 ` + appTokensCSS + `
-` + infoDialogCSS + baseCSS + cselectCSS + homeCSS + imagesCSS + graphCSS + agentChatCSS + drawerCSS + noteSharedCSS + noteEditorCSS + shortsCSS + searchOverlayStyles + confirmDialogCSS + shortDialogCSS + settingsModalCSS + `
+` + infoDialogCSS + baseCSS + cselectCSS + homeCSS + imagesCSS + graphCSS + agentChatCSS + drawerCSS + noteSharedCSS + noteEditorCSS + shortsCSS + searchOverlayStyles + confirmDialogCSS + shortDialogCSS + settingsModalCSS + frontmatterDialogCSS + `
   </style>
 </head>
 <body x-data="homeCtrl()" @vaultr:insert-path.window="insertPath($event)">
-` + searchOnlyOverlayHTML + confirmDialogHTML + infoDialogHTML + shortDialogHTML + settingsModalHTML() + homeImagesLightboxHTML + homeInboxSheetHTML + homeChatToastHTML + `
+` + searchOnlyOverlayHTML + confirmDialogHTML + infoDialogHTML + shortDialogHTML + frontmatterDialogHTML + settingsModalHTML() + homeImagesLightboxHTML + homeInboxSheetHTML + homeChatToastHTML + `
   <div class="lib-body">
 ` + homeMainHTML + `
   </div>
@@ -1079,7 +1079,7 @@ var homePageHTML = `<!DOCTYPE html>
 ` + alpineStoresScript + `
   });
 
-` + keysJS + pathAcScript + drawerScript + searchOverlayScript + confirmDialogJS + infoDialogJS + shortDialogJS + settingsCtrlJS + homeJS + `
+` + keysJS + pathAcScript + drawerScript + searchOverlayScript + confirmDialogJS + infoDialogJS + shortDialogJS + frontmatterDialogJS + settingsCtrlJS + homeJS + `
   </script>
 ` + noteSharedJS + `
 </body>

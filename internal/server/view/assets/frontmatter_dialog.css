@@ -1,0 +1,13 @@
+
+    /* ── Metadata (frontmatter) edit dialog — layers .dialog-* shared chrome
+       (base.css); only the textarea + wider card are local. ── */
+    .fm-edit-card { max-width: min(36rem, calc(100vw - 2rem)); }
+    .fm-edit-textarea {
+      display: block; width: 100%; height: 22rem; margin-top: 0.75rem;
+      resize: vertical; box-sizing: border-box;
+      font-family: var(--font-mono); font-size: var(--text-sm); line-height: 1.6;
+      color: var(--fg); background: var(--surface-soft);
+      border: var(--bd-w) solid var(--border); border-radius: var(--r-md);
+      padding: 0.75rem 0.875rem; white-space: pre; overflow: auto;
+    }
+    .fm-edit-textarea:focus { outline: none; border-color: var(--accent); }

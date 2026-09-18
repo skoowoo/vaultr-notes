@@ -14,6 +14,8 @@ import { wikiSyntax } from './wiki-syntax.js';
 import { frontmatterSyntax } from './frontmatter-syntax.js';
 import { livePreviewPlugin, livePreviewAtomicRanges } from './live-preview.js';
 import { horizontalRuleField } from './horizontal-rule-field.js';
+import { frontmatterCollapseField, frontmatterHeaderField } from './frontmatter-collapse.js';
+import { frontmatterReadOnly } from './frontmatter-readonly.js';
 import { linkClickHandler } from './link-click.js';
 import { livePreviewTheme, codeHighlightStyle } from './theme.js';
 
@@ -22,6 +24,8 @@ export { frontmatterSyntax } from './frontmatter-syntax.js';
 export { nodeDecorators } from './decorators.js';
 export { livePreviewPlugin, livePreviewAtomicRanges } from './live-preview.js';
 export { horizontalRuleField } from './horizontal-rule-field.js';
+export { frontmatterCollapseField, frontmatterHeaderField, setFrontmatterCollapsed } from './frontmatter-collapse.js';
+export { frontmatterReadOnly, allowFrontmatterEdit } from './frontmatter-readonly.js';
 export { linkClickHandler } from './link-click.js';
 export { livePreviewTheme, codeHighlightStyle } from './theme.js';
 export { listIndentExtension } from './list-indent.js';
@@ -56,25 +60,31 @@ export function wikiMarkdownLanguage() {
  *   filename verbatim, which only works for demo/test fixtures.
  * @param {(target: string, alias: string|null, event: MouseEvent) => void}
  *   [options.onWikiLinkClick] Called when a [[wikilink]] chip is clicked.
+ * @param {(view: import('@codemirror/view').EditorView, from: number, to: number) => void}
+ *   [options.onEditFrontmatter] Called with the Frontmatter node's range
+ *   when the "Metadata" header's pencil button is clicked — see
+ *   frontmatter-collapse.js. Frontmatter is read-only in this view
+ *   (frontmatter-readonly.js) otherwise, so this is the only edit path.
  */
 export function livePreviewExtensions(options) {
   return [
     wikiMarkdownLanguage(),
     livePreviewPlugin.of(options),
     livePreviewAtomicRanges(),
-    // Frontmatter used to need its own opt-in StateField here (a rendered
-    // metadata CARD via a block:true widget — see git history for
-    // frontmatter-field.js/frontmatter-widget.js) because collapsing
-    // multi-line raw YAML into a totally different rendered structure hit a
-    // real CM6 height-map crash under a realistic transaction sequence
-    // (edit the card, then a full-document replace — exactly what every
-    // mode toggle/note switch does). decorateFrontmatter (decorators.js) is
-    // a from-scratch replacement that never collapses multiple lines into
-    // one block: it prettifies each YAML line in place (key label, tag
-    // chips, collapsing only single lines at a time via the same
-    // widgetBuffer-safe technique the GFM table decorator uses), so it's
-    // just another entry in nodeDecorators — no separate field, no
-    // block:true, no exclusion needed here.
+    // decorateFrontmatter (decorators.js, run from livePreviewPlugin above)
+    // never collapses multiple lines into one block — it prettifies each
+    // YAML line in place and, even for the whole-block collapse toggle,
+    // hairlines every line individually (the earlier multi-line-replace
+    // design crashed CM6's height-map under a realistic transaction
+    // sequence — edit the card, then a full-document replace, i.e. every
+    // mode toggle/note switch). The "Metadata" header row is block:true
+    // though, which CM6 refuses from a ViewPlugin, so it — like
+    // horizontalRuleField below — gets its own StateField instead;
+    // frontmatterCollapseField is the plain boolean both that field and
+    // decorateFrontmatter read.
+    frontmatterCollapseField,
+    frontmatterHeaderField(options),
+    frontmatterReadOnly(),
     horizontalRuleField(),
     linkClickHandler(),
     livePreviewTheme,
