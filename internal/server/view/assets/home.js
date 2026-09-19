@@ -757,14 +757,15 @@ function homeCtrl() {
     _load(url) {
       this._lastURL = url;
       // Leaving whatever section was showing: any open image lightbox,
-      // select-mode state, graph instance, or inbox sheet refers to elements
-      // that are about to be replaced (or, for the sheet, just shouldn't
-      // stay open over a different section).
+      // select-mode state, or graph instance refers to elements that are
+      // about to be replaced. The inbox detail sheet is independent of
+      // #home-list-pane's content (content_pane.html's inbox-detail-panel
+      // renders from inboxSelected, not the list DOM) so it's left open —
+      // switching sections shouldn't force-close something the user opened.
       this.lightbox = null;
       if (this.selectMode) this.exitSelectMode();
       if (this.cy) { this.cy.destroy(); this.cy = null; }
       this.nodePanel = null;
-      this.inboxSheetOpen = false;
       var pane = document.getElementById('home-list-pane');
       if (pane) pane.scrollTop = 0;
       htmx.ajax('GET', url, { target: '#home-list-pane', swap: 'innerHTML' });

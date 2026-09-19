@@ -16,16 +16,18 @@ const contentTokensShared = `
       --bq-bd:rgba(var(--accent-rgb),0.55);
       --ul-mk:var(--accent); --ol-mk:var(--accent);
       --code-bg:rgba(var(--ink-rgb),0.055); --code-bd:rgba(var(--ink-rgb),0.10);
-      --th-bg:rgba(var(--ink-rgb),0.04); --tbl-bd:rgba(var(--ink-rgb),0.12);`
+      --th-bg:rgba(var(--ink-rgb),0.04); --tbl-bd:rgba(var(--ink-rgb),0.12);
+      /* h6 rides the same muted-soft tier both themes already use for
+         lowest-emphasis text — a heading that size doesn't need its own hue,
+         just its own size (see theme.js's h1-h6 comment). */
+      --h6:var(--muted-soft);`
 
 // Default palette (bare :root). Only tokens that differ from light.
 const contentTokensDark = `
       --link:#eef0f4;
       --link-ul:var(--accent); --link-ul-hov:var(--accent-hov);
-      --h1:#eef0f4; --h2:#d0d6e0; --h3:#adb2bc; --h4:#8d92a0;
+      --h1:#eef0f4; --h2:#d0d6e0; --h3:#adb2bc; --h4:#8d92a0; --h5:#797e8c;
       --prose-body:#ccd1db;
-      /* Editor-only; reader still uses --h4. --lp-h4=--h3 so h4 can't outrank h3. */
-      --lp-h4:var(--h3); --lp-h5:var(--h4);
       --prose-strong:#eef0f4; --prose-em:#ccd1db;
       --pre-bg:rgba(var(--ink-rgb),0.055); --pre-bd:rgba(var(--ink-rgb),0.13); --pre-tx:#e9ebf0;
       --code-tx:#ccd1db;
@@ -42,9 +44,8 @@ const contentTokensDark = `
 const contentTokensLight = `
       --link:#111111;
       --link-ul:var(--accent); --link-ul-hov:var(--accent-hov);
-      --h1:#111111; --h2:#1f2937; --h3:#374151; --h4:#6b7280;
+      --h1:#111111; --h2:#1f2937; --h3:#374151; --h4:#6b7280; --h5:#838896;
       --prose-body:#374151;
-      --lp-h4:var(--h3); --lp-h5:var(--h4);
       --prose-strong:#111111; --prose-em:#374151;
       --pre-bg:rgba(var(--ink-rgb),0.055); --pre-bd:rgba(var(--ink-rgb),0.13); --pre-tx:#111111;
       --code-tx:#374151;

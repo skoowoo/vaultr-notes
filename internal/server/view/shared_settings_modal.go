@@ -1523,7 +1523,6 @@ const settingsCtrlJS = `
         { id: 'dismiss',        label: 'Dismiss',                desc: 'Close any open overlay or dialog',          mac: 'Esc',  win: 'Esc' },
         { id: 'toggle-search',  label: 'Search',                 desc: 'Open the quick search overlay',             mac: '⌘K',   win: 'Ctrl+K' },
         { id: 'new-note',       label: 'New Note',               desc: 'Open a new blank note in the editor',       mac: '⌘N',   win: 'Ctrl+N' },
-        { id: 'quick-note',     label: 'Quick Note',             desc: 'Open the quick-capture note dialog',        mac: '⌘.',   win: 'Ctrl+.' },
         { id: 'toggle-editor',  label: 'Toggle Editor',          desc: 'Open or close the editor panel',            mac: '⌘E',   win: 'Ctrl+E' },
         { id: 'close-tab',      label: 'Close Editor Tab',       desc: 'Close the active tab in the editor',        mac: '⌘W',   win: 'Ctrl+W' },
         { id: 'expand-editor',  label: 'Expand / Shrink Editor', desc: 'Toggle editor between 80% and 100% width',  mac: '⌘\\',  win: 'Ctrl+\\' },

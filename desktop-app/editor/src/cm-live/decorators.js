@@ -78,9 +78,14 @@ function decorateHeading(level) {
     if (paddingBottom) styleDecls.push('padding-bottom:' + paddingBottom + ' !important');
     if (styleDecls.length) lineSpec.attributes = { style: styleDecls.join(';') };
     decos.push(Decoration.line(lineSpec).range(line.from));
-    if (selectionTouchesLine(view.state, line)) return;
     const mark = node.node.getChild('HeaderMark');
     if (!mark) return;
+    if (selectionTouchesLine(view.state, line)) {
+      // Caret on the line reveals the "#"s — style them muted (cm-lp-heading-mark)
+      // instead of inheriting the heading's own color, so they read as syntax.
+      styleRange(mark.from, mark.to, 'cm-lp-heading-mark', decos);
+      return;
+    }
     // Fold trailing space after "#"s — not part of HeaderMark.
     const extra =
       mark.to < line.to && view.state.doc.sliceString(mark.to, mark.to + 1) === ' ' ? 1 : 0;

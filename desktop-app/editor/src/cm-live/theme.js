@@ -24,68 +24,70 @@ export const livePreviewTheme = EditorView.theme({
   },
 
   // ── Headings ────────────────────────────────────────────────────────────
+  // Obsidian's actual Minimal-theme scale (pulled from live devtools output,
+  // not guessed): --h1-size:1.125em, h2:1.05em, h3:1em (== body!), h4:0.9em,
+  // h5/h6:0.85em (below body, propped up by small-caps). That's far flatter
+  // than a first pass at "gentle" assumed — landing here is a deliberate
+  // middle ground: keep h4-h6 at-or-above body size (no small-caps trick to
+  // fall back on) while still compressing top-to-bottom much closer than
+  // before. No dedicated display face any more (Cal Sans dropped app-wide —
+  // headings inherit .cm-content's font-family, same Inter stack as body).
+  // All six levels share one weight (600); same scale in .prose
+  // (note_shared_prose.css).
   // Explicit lineHeight: large fonts without it leave hit-box taller than glyphs
-  // → click lands on next line. h1/h2 bumped from old 1.2/1.3 (Cal Sans + CJK
-  // measured taller). Padding not margin — CM6 ResizeObserver ignores margin.
-  // !important: content_pane.css zeros .cm-line padding via ID selector.
+  // → click lands on next line. Padding not margin — CM6 ResizeObserver
+  // ignores margin. !important: content_pane.css zeros .cm-line padding via
+  // ID selector.
   '.cm-lp-heading': { fontWeight: '600' },
   '.cm-lp-h1': {
-    fontFamily: '"Cal Sans", var(--font-sans, "Inter", sans-serif)',
-    fontSize: '1.75em',
-    lineHeight: '1.45', // old: 1.2
-    letterSpacing: '-0.02em',
+    fontSize: '1.3em',
+    lineHeight: '1.3',
+    letterSpacing: '-0.012em',
     color: 'var(--h1, #111111)',
     paddingTop: '1.5em !important',
     paddingBottom: '0.65em !important',
   },
   '.cm-lp-h2': {
-    fontFamily: '"Cal Sans", var(--font-sans, "Inter", sans-serif)',
-    fontSize: '1.375em',
-    lineHeight: '1.4', // old: 1.3
-    letterSpacing: '-0.014em',
+    fontSize: '1.2em',
+    lineHeight: '1.35',
+    letterSpacing: '-0.01em',
     color: 'var(--h2, #1f2937)',
     paddingTop: '1.75em !important',
     paddingBottom: '0.65em !important',
   },
   '.cm-lp-h3': {
-    fontFamily: '"Cal Sans", var(--font-sans, "Inter", sans-serif)',
-    fontSize: '1.125em',
+    fontSize: '1.1em',
     lineHeight: '1.4',
-    letterSpacing: '-0.008em',
+    letterSpacing: '-0.006em',
     color: 'var(--h3, #374151)',
     paddingTop: '1.5em !important',
     paddingBottom: '0.5em !important',
   },
-  // Editor-only (--lp-h4/--lp-h5): don't touch reader --h4.
-  // h4 = body size + --h3 color (can't outrank body without outranking h3).
-  // h5/h6: wider size gap — uppercase/tracking is inert for CJK.
   '.cm-lp-h4': {
-    fontSize: '1em',
+    fontSize: '1.05em',
     lineHeight: '1.5',
-    color: 'var(--lp-h4, #374151)',
+    letterSpacing: '-0.003em',
+    color: 'var(--h4, #6b7280)',
     paddingTop: '1.25em !important',
     paddingBottom: '0.5em !important',
   },
   '.cm-lp-h5': {
-    fontSize: '0.8125em', // was 0.875em
-    lineHeight: '1.5',
-    letterSpacing: '0.08em',
-    textTransform: 'uppercase',
-    fontWeight: '500',
-    color: 'var(--lp-h5, #6b7280)',
+    fontSize: '1em',
+    lineHeight: '1.6',
+    color: 'var(--h5, #838896)',
     paddingTop: '1.25em !important',
     paddingBottom: '0.5em !important',
   },
   '.cm-lp-h6': {
-    fontSize: '0.8125em',
-    lineHeight: '1.5',
-    letterSpacing: '0.08em',
-    textTransform: 'uppercase',
-    fontWeight: '500',
-    color: 'var(--lp-h5, #6b7280)',
+    fontSize: '1em',
+    lineHeight: '1.6',
+    color: 'var(--h6, #9b9eac)',
     paddingTop: '1.25em !important',
     paddingBottom: '0.5em !important',
   },
+  // Revealed "#" marker (caret on the line) — muted regardless of heading
+  // level so it reads as syntax, not part of the heading text.
+  '.cm-lp-heading-mark': { color: 'var(--muted-soft, rgba(60,60,67,0.35))', fontWeight: '400' },
 
   '.cm-lp-strong': { fontWeight: '600', color: 'var(--prose-strong, #111111)' },
   '.cm-lp-em': { fontStyle: 'italic', color: 'var(--prose-em, #374151)' },
