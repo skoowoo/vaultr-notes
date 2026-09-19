@@ -24,11 +24,11 @@ window.fmToggleGrid = function(btn) {
         var u = new URL(href, window.location.origin);
         var name = u.searchParams.get('name') || '';
         var path = u.searchParams.get('path') || '';
-        if (path && window.__vaultrDrawer) {
+        if (path && window.__vaultrContentPane) {
           var title = a.textContent.trim() || path.split('/').pop().replace(/\.md$/, '');
-          void window.__vaultrDrawer.openNoteInDrawer(path, title, false, false);
-        } else if (name && typeof __vaultrDrawerOpenWikiLink === 'function') {
-          void __vaultrDrawerOpenWikiLink(name.replace(/\.md$/, ''));
+          void window.__vaultrContentPane.openNoteInContentPane(path, title, false, false);
+        } else if (name && typeof __vaultrContentPaneOpenWikiLink === 'function') {
+          void __vaultrContentPaneOpenWikiLink(name.replace(/\.md$/, ''));
         }
       } catch(_) {}
     }

@@ -465,8 +465,8 @@ let syncVaultDebouncePromise = null;
 let syncVaultDebounceResolve = null;
 
 /**
- * Global debounce for vault-driven section reloads: IPC, app foreground, drawer
- * close, etc. share one window — only the last trigger within SYNC_VAULT_DEBOUNCE_MS runs.
+ * Global debounce for vault-driven section reloads: IPC, app foreground, content
+ * pane close, etc. share one window — only the last trigger within SYNC_VAULT_DEBOUNCE_MS runs.
  * Concurrent ipcRenderer.invoke callers share the same Promise until flush.
  */
 function scheduleSyncVaultDataAcrossSectionViews() {

@@ -31,31 +31,73 @@
       max-width: 600px;
     }
 
-    /* ── Compose button ─────────────────────────────── */
-    .shorts-compose {
+    /* ── Composer — a plain bordered note card, deliberately not the chat
+       composer's pill/circle-send look (agent_chat.css's .chat-input-card):
+       this is a note field, not a chat bubble, so no accent color and no
+       single-line-that-balloons-into-a-pill shape. Two rows tall by
+       default (rows=2 in the markup); grows for longer notes the same way
+       .chat-textarea does (home.js's shared autoResize), just without ever
+       going shorter than two lines (min-height below). Replaces the old
+       short_dialog.js full-screen overlay — writing a short is now always
+       inline at the top of the feed instead of behind a modal. */
+    .shorts-compose-card {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      margin-bottom: var(--space-lg);
+      background: var(--bg);
+      border: var(--bd-w) solid var(--border-strong);
+    }
+    .shorts-compose-card:focus-within { background: var(--surface-soft); }
+
+    .shorts-compose-input {
+      width: 100%;
+      display: block;
+      resize: none;
+      border: none;
+      outline: none;
+      background: transparent;
+      color: var(--fg);
+      font-size: var(--text-base);
+      font-family: inherit;
+      line-height: 1.4;
+      padding: var(--space-sm) var(--space-md) 0;
+      min-height: calc(2.8em + var(--space-sm));
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    .shorts-compose-input::placeholder { color: var(--muted-soft); }
+    .shorts-compose-input:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .shorts-compose-footer {
       display: flex;
       align-items: center;
-      gap: var(--space-xs);
-      justify-content: space-between;
-      width: 100%;
-      padding: var(--space-sm) var(--space-md);
-      margin-bottom: var(--space-lg);
-      background: transparent;
-      border: var(--bd-w) solid var(--border-strong);
-      color: var(--muted);
-      font-size: var(--text-base);
-      cursor: pointer;
-      text-align: left;
+      justify-content: flex-end;
+      gap: var(--space-sm);
+      padding: var(--space-xs) var(--space-md) var(--space-sm);
     }
-    .shorts-compose:hover {
-      border-color: var(--border-strong);
+
+    .shorts-compose-hint {
+      font-size: var(--text-2xs);
+      color: var(--muted-soft);
+      user-select: none;
+      white-space: nowrap;
+    }
+
+    .shorts-compose-send {
+      height: var(--btn-h-xs);
+      padding: 0 var(--space-md);
+      background: var(--bg);
       color: var(--fg);
-      background: var(--card-hov);
+      border: var(--bd-w) solid var(--border-strong);
+      font-size: var(--text-2xs);
+      font-weight: var(--fw-medium);
+      font-family: inherit;
+      cursor: pointer;
     }
-    .shorts-compose:active {
-      opacity: 0.85;
-    }
-    .shorts-compose svg { width: 14px; height: 14px; flex-shrink: 0; opacity: 0.5; }
+    .shorts-compose-send:hover:not(:disabled) { background: var(--surface-soft); }
+    .shorts-compose-send:active:not(:disabled) { opacity: 0.85; }
+    .shorts-compose-send:disabled { opacity: 0.35; cursor: not-allowed; }
 
     /* ── Day groups ───────────────────────────────────
        One label per calendar day instead of repeating the date on every

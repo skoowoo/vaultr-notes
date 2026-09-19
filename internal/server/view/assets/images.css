@@ -18,7 +18,7 @@
     .img-scroll { flex: 1; overflow-y: auto; padding: 20px 1.25rem 1rem; }
 
     /* ── Grid ───────────────────────────────────────────────────── */
-    .img-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 0.75rem; }
+    .img-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 0.75rem; }
 
     /* ── Card ───────────────────────────────────────────────────── */
     /* Box + click interaction come from the shared
@@ -29,7 +29,7 @@
     /* ── Thumbnail ──────────────────────────────────────────────── */
     .img-thumb-wrap {
       position: relative;
-      width: 100%; aspect-ratio: 1 / 1; overflow: hidden; background: var(--border);
+      width: 100%; aspect-ratio: 16 / 9; overflow: hidden; background: var(--border);
       border-radius: 0;
       display: flex; align-items: center; justify-content: center;
     }
@@ -212,7 +212,7 @@
     .lb-no-notes { font-size: var(--text-xs); color: var(--muted); padding: 0.25rem 0; }
 
     /* ── macOS ─────────────────────────────────────────────────── */
-    html.macos .drawer-overlay.open { -webkit-app-region: no-drag; }
+    html.macos .content-pane.open { -webkit-app-region: no-drag; }
     html.macos .lb-overlay { -webkit-app-region: no-drag; }
 
     ::-webkit-scrollbar { display: none; }

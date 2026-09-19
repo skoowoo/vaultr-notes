@@ -103,14 +103,14 @@ const view = new EditorView({
         // Shaped like the real endpoint (internal/storage/image.go via
         // /api/images/serve?name=) so this option reads as production
         // wiring, not a demo stub — Phase 3 swaps the placeholder service
-        // for that literal path in drawer.js, nothing here changes shape.
+        // for that literal path in content_pane.js, nothing here changes shape.
         resolveImageSrc: (filename) =>
           'https://placehold.co/320x160?text=' + encodeURIComponent(filename), // stand-in for /api/images/serve?name=...
         onWikiLinkClick: (target, alias) => {
-          // Phase 3: replace this log with window.__vaultrDrawerOpenWikiLink(target).
+          // Phase 3: replace this log with window.__vaultrContentPaneOpenWikiLink(target).
           logEvent('wikilink click → target="' + target + '" alias="' + (alias ?? '') + '"');
         },
-        // Stand-in for drawer.js's dialog (frontmatter_dialog.html/js) —
+        // Stand-in for content_pane.js's dialog (frontmatter_dialog.html/js) —
         // window.prompt() has no textarea, but it's enough to exercise the
         // read-only-until-edited round trip end to end in this demo.
         onEditFrontmatter: (v, from, to) => {

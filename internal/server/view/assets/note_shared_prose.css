@@ -44,15 +44,14 @@
 
     .prose strong { color: var(--prose-strong); font-weight: 600; }
     .prose em     { color: var(--prose-em); font-style: italic; }
+    /* Color carries the link, not an underline — matches the CM6 editor's
+       .cm-lp-link (cm-live/theme.js) so a note reads the same in both. */
     .prose a {
-      color: var(--link); font-weight: 400;
-      text-decoration: underline;
-      text-underline-offset: 3px;
-      text-decoration-color: var(--link-ul);
-      text-decoration-thickness: 1px;
+      color: var(--accent); font-weight: 400;
+      text-decoration: none;
     }
     .prose a:hover {
-      text-decoration-color: var(--link-ul-hov);
+      color: var(--accent-hov);
       background: var(--tint-soft);
     }
     .prose blockquote {
@@ -148,17 +147,12 @@
     }
 
     /* ── Wiki links — icon-prefixed inline links, same style as prose <a> ── */
-    .prose a[href^="/notes?"],
-    .ProseMirror span[data-wl] {
+    .prose a[href^="/notes?"] {
       display: inline;
-      color: var(--link); font-weight: 400;
-      text-decoration: underline;
-      text-underline-offset: 3px;
-      text-decoration-color: var(--link-ul);
-      text-decoration-thickness: 1px;
+      color: var(--accent); font-weight: 400;
+      text-decoration: none;
     }
-    .prose a[href^="/notes?"]::before,
-    .ProseMirror span[data-wl]::before {
+    .prose a[href^="/notes?"]::before {
       content: ''; display: inline-block; width: 11px; height: 13px;
       margin-right: 0.2em; vertical-align: middle; margin-top: -0.1em;
       border-radius: 0; /* CSS-mask icon glyph, not a shape — never clip it */
@@ -171,10 +165,9 @@
       -webkit-mask-size: 100% 100%; mask-size: 100% 100%;
       -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
     }
-    .prose a[href^="/notes?"]:hover,
-    .ProseMirror span[data-wl]:hover {
+    .prose a[href^="/notes?"]:hover {
       background: var(--tint-soft);
-      text-decoration-color: var(--link-ul-hov);
+      color: var(--accent-hov);
     }
     /* read-view only */
     .prose a[href^="/notes?"] { max-width: 100%; overflow: hidden; }

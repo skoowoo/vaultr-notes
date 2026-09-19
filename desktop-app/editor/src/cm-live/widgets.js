@@ -1,6 +1,6 @@
 import { WidgetType } from '@codemirror/view';
 
-// Clickable [[wikilink]] chip; onClick injected by drawer.js (no Vaultr routing here).
+// Clickable [[wikilink]] chip; onClick injected by content_pane.js (no Vaultr routing here).
 export class WikiLinkWidget extends WidgetType {
   constructor(target, alias, onClick) {
     super();
@@ -34,7 +34,7 @@ export class WikiLinkWidget extends WidgetType {
   }
 }
 
-// ![[wikiimage]] → <img>; resolveSrc from drawer.js.
+// ![[wikiimage]] → <img>; resolveSrc from content_pane.js.
 export class WikiImageWidget extends WidgetType {
   constructor(filename, resolveSrc) {
     super();
@@ -208,7 +208,7 @@ export class TableDelimiterWidget extends WidgetType {
 // "Metadata" header row above the frontmatter block — click toggles the
 // whole-block collapse (state lives in frontmatter-collapse.js, not here);
 // the pencil button (only rendered when onEdit is wired up — an app-level
-// concern, e.g. drawer.js opening its edit dialog) is a separate hit target
+// concern, e.g. content_pane.js opening its edit dialog) is a separate hit target
 // so it doesn't also trigger the collapse toggle.
 //
 // showEdit: the button stays in the DOM either way (so the row's layout
@@ -293,14 +293,29 @@ export class FrontmatterCollapsedLineWidget extends WidgetType {
   }
 }
 
-// Per-field type icon (text/tag/list/number) — inserted before the key
-// label; purely decorative, matches Obsidian's Properties panel at a glance.
+// Per-field icon — inserted before the key label; purely decorative, matches
+// Obsidian's Properties panel at a glance. tag/list/number/text are the
+// value-type fallback (decorators.js's fmFieldType); heading/layers/user/
+// link/clock are fixed icons for system-defined keys (decorators.js's
+// FM_KEY_ICON_OVERRIDES) that win over the value-type guess.
 const FM_ICON_PATHS = {
   tag:
     '<path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42Z"/><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/>',
   list: '<path d="M3 12h.01"/><path d="M3 18h.01"/><path d="M3 6h.01"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M8 6h13"/>',
   number: '<path d="M4 9h16"/><path d="M4 15h16"/><path d="M10 3 8 21"/><path d="M16 3 14 21"/>',
   text: '<path d="M17 6.1H3"/><path d="M21 12.1H3"/><path d="M15.1 18H3"/>',
+  // title
+  heading: '<path d="M6 12h12"/><path d="M6 20V4"/><path d="M18 20V4"/>',
+  // kind
+  layers:
+    '<path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/>',
+  // author
+  user: '<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
+  // source / source_notes
+  link:
+    '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
+  // clipped / clipped_at / created_at / last_compiled_at
+  clock: '<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>',
 };
 
 export class FrontmatterKeyIconWidget extends WidgetType {

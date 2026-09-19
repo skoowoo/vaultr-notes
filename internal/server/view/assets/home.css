@@ -30,17 +30,71 @@
     ::-webkit-scrollbar { display: none; }
 
     /* ── Sidebar + list shell ──────────────────────────────────── */
+    /* Three flex items in document order: .home-side (fixed width) →
+       #home-list-pane → .home-pane-resizer → .content-pane (the editor
+       pane, see content_pane.css). --split-ratio/--split-ratio-inv normally come
+       from home.html's :style binding (content_pane.js's splitRatio state); a
+       live drag instead writes them straight to this element's inline
+       style every animation frame (startPaneResize), bypassing Alpine so
+       the hot path never re-evaluates the whole :style expression.
+
+       flex-grow itself never tweens (duration 0s always, both here and on
+       .content-pane in content_pane.css) — animating flex-grow/width directly
+       forces a synchronous layout (and, worse, fires CodeMirror's
+       ResizeObserver on every intermediate frame) instead of running on
+       the compositor. Opening snaps the split to its target size in one
+       reflow and lets .content-pane-panel's transform/opacity transition (see
+       content_pane.css) fake the slide-in on top of an already-correctly-sized
+       box. Closing runs that same fade first and only *then* collapses
+       the layout, via transition-delay: var(--content-pane-exit-ms) below (an
+       instant, zero-duration change, just deferred until the fade has had
+       time to finish) — the base rule (this element, not yet
+       .content-pane-open) carries that delay, and .content-pane-open resets it to 0s
+       so opening is never held up by it. */
     .home-shell {
       flex: 1;
       display: flex;
       min-height: 0;
       overflow: hidden;
       border-radius: 0;
+      --split-ratio: 0.5;
+      --split-ratio-inv: 0.5;
+      --content-pane-exit-ms: 200ms;
+    }
+    .home-shell.content-pane-open #home-list-pane { flex-grow: var(--split-ratio); transition-delay: 0s; }
+    .home-shell.content-pane-open .content-pane { flex-grow: var(--split-ratio-inv); transition-delay: 0s; }
+
+    /* ── Pane resizer ─────────────────────────────────────────── */
+    /* A true hairline (matches every other divider in this shell — see
+       .home-side's own border-right), not a wide colored gutter — the
+       grab target is widened with a transparent ::before instead of
+       thickening the visible line itself. */
+    /* Real layout width is one hairline (var(--bd-w)) — no gutter/gap
+       between the two panes, so there's nothing here for macOS's
+       vibrancy-transparent body to leak through (unlike a wider block,
+       which needs its own opaque fill to avoid that). The grab target is
+       still comfortably wide: ::before extends it ±4px via absolute
+       positioning, which doesn't add to this element's flex-basis (out of
+       flow) but still receives mousedown/hover, so dragging works exactly
+       like it did with the wider box — only the visible line shrank. */
+    .home-pane-resizer {
+      flex: 0 0 var(--bd-w); min-width: 0;
+      background: var(--hairline);
+      cursor: col-resize;
+      position: relative; z-index: 5;
+    }
+    .home-pane-resizer::before {
+      content: ""; position: absolute; top: 0; bottom: 0; left: -4px; right: -4px;
+      cursor: col-resize;
+    }
+    .home-pane-resizer:hover,
+    .home-shell.is-resizing .home-pane-resizer {
+      background: var(--accent);
     }
 
     /* ── Sidebar ──────────────────────────────────────────────── */
     /* Fills the role the old left .lib-nav rail used to (now removed —
-       its New/Drawer/Search/Settings actions live in the top/bottom rows
+       its New/ContentPane/Search/Settings actions live in the top/bottom rows
        below), so it takes over that rail's background for continuity. The
        aside itself no longer scrolls as a whole; only the middle nav list
        does, so the top/bottom action rows stay put as the note list grows. */
@@ -56,7 +110,7 @@
       border-right: var(--bd-w) solid var(--hairline);
       border-radius: 0;
       /* Every "currently active" row in here (.home-side-item.is-active,
-         .home-side-child.is-active, the drawer-toggle icon button) just
+         .home-side-child.is-active, the content-pane-toggle icon button) just
          consumes the generic --control-active-bg, same as any other
          selected-state control app-wide — but since this container's own
          background is --surface-soft rather than --bg, that generic token
@@ -150,7 +204,7 @@
     .home-side-new-btn:hover { background: var(--card-hov); color: var(--fg); }
     .home-side-new-btn:active { opacity: 0.85; }
     .home-side-new-btn svg { width: 14px; height: 14px; flex-shrink: 0; }
-    /* Drawer toggle's open state reuses the same surface-2 lift as every
+    /* The reading-pane toggle's open state reuses the same surface-2 lift as every
        other "currently active" indicator app-wide (no border — matches
        .home-side-child.is-active below), scoped to the sidebar's own ghost
        icon buttons rather than added to the shared component. (--control-
@@ -160,7 +214,7 @@
       background: var(--control-active-bg); color: var(--control-active-fg);
     }
     /* One size step up from .icon-btn-ghost's default 14px — Settings and
-       Drawer are the only two controls down here, so they can afford a
+       ContentPane are the only two controls down here, so they can afford a
        touch more presence than a dense toolbar's icons would. */
     .home-side-bottom-btn svg { width: 16px; height: 16px; }
     .home-side-nav {
@@ -268,6 +322,14 @@
       display: flex; flex-direction: column;
       min-height: 0; overflow: hidden;
       border-radius: 0;
+      /* Zero-duration — see .home-shell's comment above. The delay only
+         bites on close (this base rule); .content-pane-open zeroes it again. */
+      transition: flex-grow 0s linear var(--content-pane-exit-ms, 200ms);
+      /* Scopes this pane's own reflow (section swaps, grid/list toggle,
+         and the width change above) so it can't bleed into a layout pass
+         over the rest of the page — cheap insurance for a pane that's
+         frequently resized. */
+      contain: layout paint style;
       /* Explicit even though it matches what body already painted here —
          once html.macos makes body transparent for the sidebar's vibrancy
          (above), this is what keeps the content pane looking solid. */
@@ -398,7 +460,7 @@
       font-size: var(--text-sm); color: var(--muted);
     }
 
-    /* ── Short note content in drawer ──────────────────────────── */
+    /* ── Short note content in content pane ──────────────────────── */
     .short-day-frag {
       display: flex;
       flex-direction: column;
@@ -510,36 +572,17 @@
       overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
 
-    /* ── Inbox message sheet — read-only slide-in panel, distinct from the
-       note-editor drawer (.drawer-panel). Mirrors its slide/fade/scrim
-       mechanics exactly, .open included, so the two stay in lockstep. */
-    .inbox-sheet-overlay {
-      position: fixed; inset: 0; z-index: 200;
-      pointer-events: none; background: transparent;
-      border-radius: 0; /* full-viewport scrim — never rounds */
-      transition: background var(--motion-slow) ease;
-    }
-    .inbox-sheet-overlay.open {
-      pointer-events: auto; background: var(--overlay-bg);
-      backdrop-filter: var(--glass-scrim-filter);
-      -webkit-backdrop-filter: var(--glass-scrim-filter);
-    }
-    .inbox-sheet-panel {
-      position: absolute; top: 0; right: 0; bottom: 0; width: 640px; max-width: 92vw;
-      background: var(--bg); border-left: var(--bd-w) solid var(--border);
-      border-radius: 0; /* edge-docked, flush to 3 viewport edges — never rounds */
-      display: flex; flex-direction: column; overflow: hidden;
-      transform: translateX(24px); opacity: 0;
-      /* Mirrors .drawer-panel's slide choreography — kept at the same
-         hand-tuned durations, outside the shared motion scale. */
-      transition: transform 280ms cubic-bezier(0.25, 0.8, 0.25, 1), opacity 260ms ease;
-    }
-    .inbox-sheet-overlay.open .inbox-sheet-panel { transform: translateX(0); opacity: 1; }
-    .inbox-sheet-head {
-      flex-shrink: 0; display: flex; align-items: center; gap: 0.6rem;
-      padding: 1rem 1.25rem; border-bottom: var(--bd-w) solid var(--hairline);
-      border-radius: 0; /* flush chrome strip */
-    }
+    /* ── Inbox message detail — read-only content, rendered inside the same
+       .content-pane-panel the note editor uses (content_pane.html's inbox-detail-panel);
+       the pane's own slide/fade/split-pane mechanics live in content_pane.css/
+       home.css's .content-pane-panel/.home-shell rules, not here.
+
+       Horizontal rhythm: title bar, meta row, and body all share the same
+       --space-lg left/right inset (the editor toolbar's own tighter
+       default, meant for its icon buttons, is overridden here so this
+       header's text lines up with the content below it instead of sitting
+       half an inset to the left of it). */
+    .inbox-detail-panel .content-pane-tool-bar { padding-left: var(--space-lg); padding-right: var(--space-lg); }
     .inbox-sheet-title {
       flex: 1; min-width: 0; font-size: var(--text-title-sm); font-weight: var(--fw-semibold); color: var(--fg);
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
@@ -550,7 +593,12 @@
     .inbox-sheet-close svg { width: 15px; height: 15px; }
     .inbox-sheet-meta {
       flex-shrink: 0; display: flex; align-items: center; gap: 0.5rem;
-      padding: 0 1.25rem 1rem; font-size: var(--text-xs); color: var(--muted);
+      padding: var(--space-sm) var(--space-lg) var(--space-md); font-size: var(--text-xs); color: var(--muted);
     }
-    .inbox-sheet-scroll { flex: 1; overflow-y: auto; padding: 0 1.25rem 2rem; }
-    .inbox-sheet-body.prose { font-size: var(--text-base); }
+    .inbox-sheet-scroll { flex: 1; overflow-y: auto; padding: var(--space-xs) var(--space-lg) var(--space-xxl); }
+    /* Capped so lines don't run edge-to-edge when the split pane is wide —
+       matching prose's usual reading measure instead of stretching the
+       text thin across the whole pane. Centered (not left-stuck) so a
+       wide pane reads as a deliberate reading column, not a narrow block
+       stranded on the left with dead space on the right. */
+    .inbox-sheet-body.prose { font-size: var(--text-base); max-width: 680px; margin-left: auto; margin-right: auto; }

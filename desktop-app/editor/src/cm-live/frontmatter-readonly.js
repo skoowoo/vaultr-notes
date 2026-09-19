@@ -4,7 +4,7 @@
 // than silently corrupting a YAML block the decorations assume is
 // well-formed. The only way to edit it is the "Metadata" header's edit
 // button (frontmatter-collapse.js), which hands the raw YAML to an
-// app-level dialog (drawer.js) and writes the result back through a
+// app-level dialog (content_pane.js) and writes the result back through a
 // transaction annotated with allowFrontmatterEdit — the one escape hatch
 // this filter grants.
 import { EditorState, Annotation } from '@codemirror/state';

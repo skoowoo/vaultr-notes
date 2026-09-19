@@ -48,8 +48,8 @@ const electronShellSafeReloadScript = `  <script>(function(){
       if(seg==='edit')return false;
       if(seg!=='home')return false;
       if(window.__vaultrSearchOpen)return false;
-      var dr=window.__vaultrDrawer;
-      if(dr&&dr.drawerOpen)return false;
+      var cp=window.__vaultrContentPane;
+      if(cp&&cp.contentPaneOpen)return false;
       if(seg==='home'){
         var rawTab=document.getElementById('t-raw');
         if(rawTab&&rawTab.classList.contains('on'))return false;

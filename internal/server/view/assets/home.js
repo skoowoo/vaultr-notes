@@ -1,8 +1,8 @@
 
 // ── Search result selection ────────────────────────────────────────────────
 // While the graph section is showing, focus the matching node instead of
-// opening the drawer (mirrors graph.js's override for the standalone page);
-// otherwise open the note in the drawer as usual.
+// opening the content pane (mirrors graph.js's override for the standalone page);
+// otherwise open the note in the content pane as usual.
 window.handleSearchResultSelection = function (el) {
   if (!el || !el.dataset) return false;
   var path = el.dataset.previewPath || '';
@@ -16,13 +16,13 @@ window.handleSearchResultSelection = function (el) {
       else hd._applyFocus(node);
       return true;
     }
-    // Not in the currently-loaded graph — fall through to open in drawer.
+    // Not in the currently-loaded graph — fall through to open in the content pane.
   }
 
   var nameEl = el.querySelector('.sr-name');
   var title = nameEl ? nameEl.textContent.trim() : (path.split('/').pop().replace(/\.md$/, '') || 'Note');
-  if (window.__vaultrDrawer) {
-    void window.__vaultrDrawer.openNoteInDrawer(path, title,
+  if (window.__vaultrContentPane) {
+    void window.__vaultrContentPane.openNoteInContentPane(path, title,
       el.dataset.noteIsKnowledge === 'true', false, el.dataset.noteIsIndex === 'true',
       el.dataset.noteCanCompile === 'true');
     return true;
@@ -166,7 +166,7 @@ function __vaultrSetupChatAc() {
 
 // ── Home Alpine controller ────────────────────────────────────────────────
 function homeCtrl() {
-  var ctrl = Object.assign(drawerCtrl(), {
+  var ctrl = Object.assign(contentPaneCtrl(), {
     activeKey: 'pinned',
     // Each of Knowledge/Memory/Pinned/Folders keeps its own list-vs-grid
     // choice (all folders share the single 'folder' bucket, rather than one
@@ -224,8 +224,11 @@ function homeCtrl() {
       { value: 'chat', label: 'Chat' },
       { value: 'trigger', label: 'Trigger' },
     ],
+    // ── Shorts: inline composer (replaces the old short_dialog.js overlay) ──
+    shortComposeText: '',
+    shortComposeSaving: false,
     init() {
-      this.initDrawer();
+      this.initContentPane();
       window._homeData = this;
       window.__vaultrHotkeys.register('refresh', 'r', function () {
         if (typeof window.__vaultrBackgroundRefresh === 'function') {
@@ -235,6 +238,29 @@ function homeCtrl() {
         }
       });
       _lbOpen = (data) => { this.lightbox = data; };
+      // Route both overlays through the shared ESC stack (shared_keys.go)
+      // instead of @keydown.escape.window: that binding fires on window's
+      // bubble phase, but the stack's document-capture listener runs first
+      // and swallows Escape whenever the editor's content pane (or any other
+      // stack entry) is open, so window never sees the key.
+      this.$watch('lightbox', (val) => {
+        if (val) { if (window.__vaultrEscPush) window.__vaultrEscPush('lightbox', () => { this.lightbox = null; }); }
+        else if (window.__vaultrEscPop) window.__vaultrEscPop('lightbox');
+      });
+      // No longer pushed onto the shared ESC stack — the inbox detail is a
+      // docked pane (content_pane.html's inbox-detail-panel), not a floating
+      // overlay, so Esc shouldn't dismiss it.
+      this.$watch('inboxSheetOpen', (val) => {
+        if (!val) return;
+        // The note editor and the inbox detail share one pane (see
+        // content_pane.html's inbox-detail-panel) — always one or the other.
+        if (this.contentPaneOpen) this.contentPaneOpen = false;
+        var overlayEl = document.querySelector('.content-pane');
+        if (overlayEl) {
+          overlayEl.classList.add('content-pane-is-opening');
+          setTimeout(function () { overlayEl.classList.remove('content-pane-is-opening'); }, 320);
+        }
+      });
       window._imgUpdateSelected = () => {
         this.selectedCount = document.querySelectorAll('.img-card.is-selected').length;
       };
@@ -374,7 +400,7 @@ function homeCtrl() {
         window.showError((e && e.message) ? e.message : 'Delete failed.', 'Delete failed');
       }
     },
-    // Close lightbox first, then open the note in the drawer after the
+    // Close lightbox first, then open the note in the content pane after the
     // leave animation (160 ms) finishes so the two panels don't collide.
     async openLinkedNote(noteName) {
       this.lightbox = null;
@@ -391,8 +417,8 @@ function homeCtrl() {
         var n = matches[0];
         var notePath = n.dir === '/' ? '/' + n.name : n.dir + '/' + n.name;
         await new Promise(function (r) { setTimeout(r, 180); });
-        if (window.__vaultrDrawer) {
-          void window.__vaultrDrawer.openNoteInDrawer(notePath, noteName, false, !!n.pinned);
+        if (window.__vaultrContentPane) {
+          void window.__vaultrContentPane.openNoteInContentPane(notePath, noteName, false, !!n.pinned);
         }
       } catch (e) { /* ignore */ }
     },
@@ -460,10 +486,10 @@ function homeCtrl() {
 
     closeNodePanel() { this._clearFocus(); },
 
-    openNodeInDrawer(path, label) {
-      var drawer = window.__vaultrDrawer;
-      if (!drawer) return;
-      drawer.openNoteInDrawer(path, label || path, true, false, false, false);
+    openNodeInContentPane(path, label) {
+      var pane = window.__vaultrContentPane;
+      if (!pane) return;
+      pane.openNoteInContentPane(path, label || path, true, false, false, false);
     },
 
     _hexToRgba(hex, alpha) {
@@ -916,8 +942,8 @@ function homeCtrl() {
           e.preventDefault();
           try {
             var name = new URLSearchParams(href.split('?')[1] || '').get('name') || '';
-            if (name && typeof __vaultrDrawerOpenWikiLink === 'function') {
-              void __vaultrDrawerOpenWikiLink(name.replace(/\.md$/, ''));
+            if (name && typeof __vaultrContentPaneOpenWikiLink === 'function') {
+              void __vaultrContentPaneOpenWikiLink(name.replace(/\.md$/, ''));
             }
           } catch (_) { /* ignore */ }
         });
@@ -1358,11 +1384,41 @@ function homeCtrl() {
     autoResize(el) {
       el.style.height = 'auto';
       el.style.height = Math.min(el.scrollHeight, 140) + 'px';
-      var card = el.closest('.chat-input-card');
+      var card = el.closest('.chat-input-card, .shorts-compose-card');
       if (!card) return;
       var cs = getComputedStyle(el);
       var singleLineH = (parseFloat(cs.lineHeight) || 20) + parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
       card.classList.toggle('is-multiline', el.scrollHeight > singleLineH + 1);
+    },
+
+    // ── Shorts: inline composer ─────────────────────────────────────────
+    handleShortComposeKeydown(e) {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+        e.preventDefault();
+        void this.saveShortCompose();
+      }
+    },
+    async saveShortCompose() {
+      var text = this.shortComposeText.trim();
+      if (!text || this.shortComposeSaving) return;
+      this.shortComposeSaving = true;
+      try {
+        var resp = await fetch('/api/vault/shorts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ content: text }),
+        });
+        if (!resp.ok) {
+          var msg = await resp.text();
+          throw new Error(msg || 'Save failed');
+        }
+        this.shortComposeText = '';
+        if (window.__vaultrAfterVaultMutation) await window.__vaultrAfterVaultMutation();
+      } catch (err) {
+        window.showError('Failed to save: ' + (err && err.message ? err.message : String(err)), 'Save failed');
+      } finally {
+        this.shortComposeSaving = false;
+      }
     },
 
     formatDuration(ms) {
@@ -1674,7 +1730,7 @@ document.body.addEventListener('htmx:afterSwap', function (e) {
 });
 
 // ── Shorts entries embedded in the list pane: intercept internal links ────
-// Wikilinks (/notes?…) → open in drawer editor; external → new tab.
+// Wikilinks (/notes?…) → open in the content pane; external → new tab.
 // (Mirrors shorts.js's listener for the standalone /shorts page.)
 document.addEventListener('click', function (e) {
   var a = e.target.closest ? e.target.closest('a') : null;
@@ -1688,11 +1744,11 @@ document.addEventListener('click', function (e) {
       var u = new URL(href, window.location.origin);
       var name = u.searchParams.get('name') || '';
       var path = u.searchParams.get('path') || '';
-      if (path && window.__vaultrDrawer) {
+      if (path && window.__vaultrContentPane) {
         var title = a.textContent.trim() || path.split('/').pop().replace(/\.md$/, '');
-        void window.__vaultrDrawer.openNoteInDrawer(path, title, false, false);
+        void window.__vaultrContentPane.openNoteInContentPane(path, title, false, false);
       } else if (name) {
-        void __vaultrDrawerOpenWikiLink(name.replace(/\.md$/, ''));
+        void __vaultrContentPaneOpenWikiLink(name.replace(/\.md$/, ''));
       }
     } catch (_) { /* ignore */ }
   } else if (/^https?:\/\//.test(href)) {

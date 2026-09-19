@@ -62,7 +62,7 @@ function buildHeaderDecorations(state, options) {
  * @param {(view: import('@codemirror/view').EditorView, from: number, to: number) => void} [options.onEditFrontmatter]
  *   Called with the whole Frontmatter node's range (including the "---"
  *   delimiters) when the header's pencil button is clicked. App-level
- *   concern (drawer.js) — this file doesn't know about dialogs.
+ *   concern (content_pane.js) — this file doesn't know about dialogs.
  */
 export function frontmatterHeaderField(options) {
   return StateField.define({

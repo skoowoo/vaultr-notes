@@ -15,15 +15,19 @@ export const livePreviewTheme = EditorView.theme({
     fontSize: 'var(--text-body, 1rem)',
     color: 'var(--prose-body, #374151)',
     lineHeight: '1.75',
-    // !important: drawer.css `#drawer-edit-area .cm-content { padding: 0 }` otherwise wins.
-    padding: '24px 0 !important',
+    // !important: content_pane.css `#content-pane-edit-area .cm-content { padding: 0 }` otherwise wins.
+    // Top is 0, not 24px — .cm-scroller already adds 2.5rem (content_pane.css),
+    // and source mode (no livePreviewTheme) only gets that one gap, so a top
+    // value here just double-pads live-preview on top of it.
+    paddingTop: '0 !important',
+    paddingBottom: '24px !important',
   },
 
   // ── Headings ────────────────────────────────────────────────────────────
   // Explicit lineHeight: large fonts without it leave hit-box taller than glyphs
   // → click lands on next line. h1/h2 bumped from old 1.2/1.3 (Cal Sans + CJK
   // measured taller). Padding not margin — CM6 ResizeObserver ignores margin.
-  // !important: drawer.css zeros .cm-line padding via ID selector.
+  // !important: content_pane.css zeros .cm-line padding via ID selector.
   '.cm-lp-heading': { fontWeight: '600' },
   '.cm-lp-h1': {
     fontFamily: '"Cal Sans", var(--font-sans, "Inter", sans-serif)',
@@ -96,7 +100,7 @@ export const livePreviewTheme = EditorView.theme({
   },
 
   // ── Blockquote ──────────────────────────────────────────────────────────
-  // !important: drawer.css zeros .cm-line padding.
+  // !important: content_pane.css zeros .cm-line padding.
   // borderRadius:0 — global reset would round the inset bar into brackets.
   '.cm-lp-quote': {
     fontStyle: 'italic',
@@ -455,9 +459,24 @@ export const livePreviewTheme = EditorView.theme({
   },
   '.cm-lp-fm-collapsed-widget': { display: 'inline-block', height: '0' },
 
-  // ── Tables — inline-block cells + % widths (not display:table per row).
+  // ── Tables — a row is one markdown source line; cells are Decoration.mark
+  // spans on it, so there's no real <table> to lean on. flex covers the two
+  // things a real <table> would give for free:
+  //   1. align-items:stretch (the default) equalizes every cell's height to
+  //      the tallest one in the row, so a cell that wraps to 2+ lines
+  //      doesn't leave its siblings' borders drawn at their own shorter
+  //      height (which read as a broken/staggered grid).
+  //   2. Per-cell flex-grow + min-width (set inline in decorators.js,
+  //      driven by tableColumnWeights/tableColumnMinEm) instead of a flat
+  //      width:X% — a width tied purely to "this column's share of every
+  //      column's combined weight" lets one long-text column inflate the
+  //      total and squeeze a short label column below the width its own
+  //      content needs (it'd wrap one character per line despite the row
+  //      having plenty of spare width overall). min-width guarantees every
+  //      column at least enough room for its own content; only space left
+  //      over after that is split by weight.
+  '.cm-lp-table-row': { display: 'flex', alignItems: 'stretch' },
   '.cm-lp-table-cell': {
-    display: 'inline-block',
     boxSizing: 'border-box',
     color: 'var(--td-tx, #374151)',
     fontSize: 'var(--text-base, 0.875rem)',
@@ -465,7 +484,6 @@ export const livePreviewTheme = EditorView.theme({
     borderBottom: '1px solid var(--tbl-bd, rgba(24,24,27,0.12))',
     borderRight: '1px solid var(--tbl-bd, rgba(24,24,27,0.12))',
     borderRadius: '0',
-    verticalAlign: 'top',
   },
   '.cm-lp-table-cell-first': { borderLeft: '1px solid var(--tbl-bd, rgba(24,24,27,0.12))' },
   '.cm-lp-table-row-header .cm-lp-table-cell': {

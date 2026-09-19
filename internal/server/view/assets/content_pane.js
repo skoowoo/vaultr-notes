@@ -5,7 +5,7 @@
   // Compartment reconfigured to plain syntax highlighting" vs "live-preview
   // decorations active", toggled in place on the same view/doc instead of
   // switching between two separately-mounted editors.
-  var __vaultrDE = {
+  var __vaultrEditor = {
     view: null,
     initPromise: null, loading: false, dirty: false,
     pendingBaselineFromEditor: false, pendingBaselineTimer: null,
@@ -22,7 +22,6 @@
     livePreviewTheme: null, wikiMarkdownLanguage: null,
     decoCompartment: null, sharedLanguage: null,
     inSource: false, pendingScrollRaf: null, pendingOpenScroll: null,
-    pendingTabScrollRaf: null, pendingTabScrollTimer: null,
   };
 
   // ── Editor visual effects plugin system ─────────────────────────────────────
@@ -65,18 +64,18 @@
     };
   })();
 
-  var DRAWER_CREATE_KEY = 'vaultr.drawer-create';
-  var __vaultrDETabSeq = 0;
-  function __vaultrDENewTabId() {
-    __vaultrDETabSeq = (__vaultrDETabSeq + 1) % 1000;
-    return Date.now() * 1000 + __vaultrDETabSeq;
+  var CONTENT_PANE_CREATE_KEY = 'vaultr.content-pane-create';
+  var __vaultrEditorTabSeq = 0;
+  function __vaultrEditorNewTabId() {
+    __vaultrEditorTabSeq = (__vaultrEditorTabSeq + 1) % 1000;
+    return Date.now() * 1000 + __vaultrEditorTabSeq;
   }
 
   // ── Autocomplete (path input in create mode) ─────────────────────────────────
-  var __DRAWER_PATH_DBL_ENTER_MS = 2000;
-  var __vaultrDEPathAc = null; // created in __vaultrDESetupCreateMode
+  var __CONTENT_PANE_PATH_DBL_ENTER_MS = 2000;
+  var __vaultrEditorPathAc = null; // created in __vaultrEditorSetupCreateMode
 
-  function __vaultrDEAcParseCtx(val, caret) {
+  function __vaultrEditorAcParseCtx(val, caret) {
     val = typeof val === 'string' ? val : '';
     if (caret == null || caret > val.length) caret = val.length;
     var left = val.slice(0, caret);
@@ -88,8 +87,8 @@
   }
 
   // ── Save helpers ─────────────────────────────────────────────────────────────
-  function __vaultrDESaveStatus(txt) {
-    var el = document.getElementById('drawer-save-status');
+  function __vaultrEditorSaveStatus(txt) {
+    var el = document.getElementById('content-pane-save-status');
     if (!el) return;
     clearTimeout(el._ssiTimer);
     if (txt === '●') {
@@ -101,13 +100,13 @@
       el.dataset.state = '';
     }
   }
-  function __vaultrDEClearPendingBaselineSync() {
-    var s = __vaultrDE;
+  function __vaultrEditorClearPendingBaselineSync() {
+    var s = __vaultrEditor;
     s.pendingBaselineFromEditor = false;
     if (s.pendingBaselineTimer) { clearTimeout(s.pendingBaselineTimer); s.pendingBaselineTimer = null; }
   }
-  function __vaultrDEMarkPendingBaselineSync() {
-    var s = __vaultrDE;
+  function __vaultrEditorMarkPendingBaselineSync() {
+    var s = __vaultrEditor;
     s.pendingBaselineFromEditor = true;
     if (s.pendingBaselineTimer) clearTimeout(s.pendingBaselineTimer);
     s.pendingBaselineTimer = setTimeout(function() {
@@ -115,20 +114,20 @@
       s.pendingBaselineFromEditor = false;
     }, 500); // Milkdown debounces markdownUpdated at 200ms; 500ms gives safe margin
   }
-  function __vaultrDEScheduleSave() {
-    __vaultrDESaveStatus('●');
-    clearTimeout(__vaultrDE.saveTimer);
-    __vaultrDE.saveTimer = setTimeout(__vaultrDEDoSave, 800);
+  function __vaultrEditorScheduleSave() {
+    __vaultrEditorSaveStatus('●');
+    clearTimeout(__vaultrEditor.saveTimer);
+    __vaultrEditor.saveTimer = setTimeout(__vaultrEditorDoSave, 800);
   }
-  async function __vaultrDEDoSave() {
-    if (!__vaultrDE.dirty) return;
-    var path = __vaultrDE.currentPath;
-    var content = __vaultrDE.currentMd;
+  async function __vaultrEditorDoSave() {
+    if (!__vaultrEditor.dirty) return;
+    var path = __vaultrEditor.currentPath;
+    var content = __vaultrEditor.currentMd;
     if (!path) return;
-    if (content === __vaultrDE.baselineMd) {
-      __vaultrDE.dirty = false;
-      clearTimeout(__vaultrDE.saveTimer); __vaultrDE.saveTimer = null;
-      __vaultrDESaveStatus('');
+    if (content === __vaultrEditor.baselineMd) {
+      __vaultrEditor.dirty = false;
+      clearTimeout(__vaultrEditor.saveTimer); __vaultrEditor.saveTimer = null;
+      __vaultrEditorSaveStatus('');
       return;
     }
     try {
@@ -137,7 +136,7 @@
         body: JSON.stringify({path: path, content: content}),
       });
       if (r.ok) {
-        __vaultrDE.dirty = false; __vaultrDE.baselineMd = content; __vaultrDESaveStatus('Saved');
+        __vaultrEditor.dirty = false; __vaultrEditor.baselineMd = content; __vaultrEditorSaveStatus('Saved');
       } else {
         var errText = ''; try { errText = await r.text(); } catch(_) {}
         window.showError(errText || 'Server error — your changes may not be saved.', 'Save error');
@@ -148,11 +147,11 @@
   }
 
   // ── Misc helpers ─────────────────────────────────────────────────────────────
-  function __vaultrDETightenLists(md) {
+  function __vaultrEditorTightenLists(md) {
     return md.replace(
       /(^[ \t]*(?:[-*+]|\d+[.)]) [^\n]*)\n\n(?=[ \t]*(?:[-*+]|\d+[.)]) )/gm, '$1\n');
   }
-  function __vaultrDEFindImageFile(dt) {
+  function __vaultrEditorFindImageFile(dt) {
     if (!dt) return null;
     var items = Array.from(dt.items || []);
     for (var i = 0; i < items.length; i++) {
@@ -160,7 +159,7 @@
     }
     return null;
   }
-  async function __vaultrDEUploadImage(imgFile) {
+  async function __vaultrEditorUploadImage(imgFile) {
     var fd = new FormData();
     fd.append('file', imgFile);
     var resp = await fetch('/api/vault/upload-image', {method: 'POST', body: fd});
@@ -169,21 +168,21 @@
   }
 
   // ── Electron draft store helpers ────────────────────────────────────────────
-  function __vaultrDEDraftStore() {
+  function __vaultrEditorDraftStore() {
     return window.vaultrDesktop && window.vaultrDesktop.drafts ? window.vaultrDesktop.drafts : null;
   }
-  function __vaultrDENewDraftId() {
+  function __vaultrEditorNewDraftId() {
     return 'draft-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
   }
-  function __vaultrDEActiveTab() {
-    var drawer = window.__vaultrDrawer;
-    return drawer ? drawer.tabs[drawer.activeTab] : null;
+  function __vaultrEditorActiveTab() {
+    var pane = window.__vaultrContentPane;
+    return pane ? pane.tabs[pane.activeTab] : null;
   }
-  function __vaultrDEPathInputValue() {
-    var pi = document.getElementById('drawer-path-input');
+  function __vaultrEditorPathInputValue() {
+    var pi = document.getElementById('content-pane-path-input');
     return pi ? pi.value : '';
   }
-  function __vaultrDEDraftTitle(pathInput, content) {
+  function __vaultrEditorDraftTitle(pathInput, content) {
     var name = (pathInput || '').trim();
     if (name) return name.replace(/\.md$/i, '').split('/').pop() || 'New note';
     var first = String(content || '').split(/\r?\n/).map(function(line) {
@@ -191,44 +190,44 @@
     }).find(Boolean);
     return first ? first.slice(0, 48) : 'New note';
   }
-  function __vaultrDEEnsureDraftId(tab) {
+  function __vaultrEditorEnsureDraftId(tab) {
     if (!tab || tab.path) return '';
     if (!tab.draftId) {
-      tab.draftId = __vaultrDENewDraftId();
-      var drawer = window.__vaultrDrawer;
-      if (drawer) drawer._persist();
+      tab.draftId = __vaultrEditorNewDraftId();
+      var pane = window.__vaultrContentPane;
+      if (pane) pane._persist();
     }
     return tab.draftId;
   }
-  function __vaultrDEIsActiveTab(tab) {
-    var drawer = window.__vaultrDrawer;
-    return !!(drawer && tab && drawer.tabs[drawer.activeTab] === tab);
+  function __vaultrEditorIsActiveTab(tab) {
+    var pane = window.__vaultrContentPane;
+    return !!(pane && tab && pane.tabs[pane.activeTab] === tab);
   }
-  function __vaultrDEIsActiveTabId(tabId) {
+  function __vaultrEditorIsActiveTabId(tabId) {
     if (!tabId) return true;
-    var drawer = window.__vaultrDrawer;
-    var tab = drawer && drawer.tabs[drawer.activeTab];
+    var pane = window.__vaultrContentPane;
+    var tab = pane && pane.tabs[pane.activeTab];
     return !!(tab && tab.id === tabId);
   }
-  function __vaultrDEGetScrollState() {
-    var s = __vaultrDE;
-    var scroller = document.querySelector('#drawer-edit-area .cm-scroller');
+  function __vaultrEditorGetScrollState() {
+    var s = __vaultrEditor;
+    var scroller = document.querySelector('#content-pane-edit-area .cm-scroller');
     return {scrollTop: scroller ? scroller.scrollTop : 0, inSource: s.inSource};
   }
-  function __vaultrDECaptureDraft(tab) {
+  function __vaultrEditorCaptureDraft(tab) {
     if (!tab || tab.path) return null;
-    var drawer = window.__vaultrDrawer;
-    var active = __vaultrDEIsActiveTab(tab);
-    var live = !!(active && drawer && drawer.drawerOpen && __vaultrDE.currentDraftId === tab.draftId);
-    var content = live ? __vaultrDE.currentMd : (tab._draftContent || tab.draftContent || '');
-    var pathInput = live ? __vaultrDEPathInputValue() : (tab._pathVal || '');
-    var scroll = active ? __vaultrDEGetScrollState() : (__vaultrDERestoreTabState(tab.id) || {});
+    var pane = window.__vaultrContentPane;
+    var active = __vaultrEditorIsActiveTab(tab);
+    var live = !!(active && pane && pane.contentPaneOpen && __vaultrEditor.currentDraftId === tab.draftId);
+    var content = live ? __vaultrEditor.currentMd : (tab._draftContent || tab.draftContent || '');
+    var pathInput = live ? __vaultrEditorPathInputValue() : (tab._pathVal || '');
+    var scroll = active ? __vaultrEditorGetScrollState() : (__vaultrEditorRestoreTabState(tab.id) || {});
     tab._draftContent = content || '';
     tab._pathVal = pathInput || '';
-    tab.title = __vaultrDEDraftTitle(tab._pathVal, tab._draftContent);
+    tab.title = __vaultrEditorDraftTitle(tab._pathVal, tab._draftContent);
     return {
       version: 1,
-      draftId: __vaultrDEEnsureDraftId(tab),
+      draftId: __vaultrEditorEnsureDraftId(tab),
       content: tab._draftContent,
       pathInput: tab._pathVal,
       title: tab.title,
@@ -237,20 +236,20 @@
       createdAt: tab.createdAt || Date.now(),
     };
   }
-  function __vaultrDEClearDraftTimer(tab) {
-    if (!__vaultrDE.draftSaveTimer) return;
-    if (!tab || __vaultrDE.draftSaveTabId === tab.id) {
-      clearTimeout(__vaultrDE.draftSaveTimer);
-      __vaultrDE.draftSaveTimer = null;
-      __vaultrDE.draftSaveTabId = null;
+  function __vaultrEditorClearDraftTimer(tab) {
+    if (!__vaultrEditor.draftSaveTimer) return;
+    if (!tab || __vaultrEditor.draftSaveTabId === tab.id) {
+      clearTimeout(__vaultrEditor.draftSaveTimer);
+      __vaultrEditor.draftSaveTimer = null;
+      __vaultrEditor.draftSaveTabId = null;
     }
   }
-  async function __vaultrDEFlushDraft(tab) {
+  async function __vaultrEditorFlushDraft(tab) {
     if (!tab || tab.path) return;
-    __vaultrDEClearDraftTimer(tab);
-    var store = __vaultrDEDraftStore();
+    __vaultrEditorClearDraftTimer(tab);
+    var store = __vaultrEditorDraftStore();
     if (!store || !store.write) return;
-    var data = __vaultrDECaptureDraft(tab);
+    var data = __vaultrEditorCaptureDraft(tab);
     if (!data || !data.draftId) return;
     try {
       await store.write(data.draftId, data);
@@ -259,29 +258,29 @@
       console.warn('draft write failed', e);
     }
   }
-  async function __vaultrDESaveTabForLeave(tab) { await tabStateManager.saveForLeave(tab); }
-  function __vaultrDEScheduleDraftSave(tab) {
+  async function __vaultrEditorSaveTabForLeave(tab) { await tabStateManager.saveForLeave(tab); }
+  function __vaultrEditorScheduleDraftSave(tab) {
     if (!tab || tab.path) return;
-    __vaultrDECaptureDraft(tab);
-    __vaultrDEClearDraftTimer(tab);
-    __vaultrDE.draftSaveTabId = tab.id;
-    __vaultrDE.draftSaveTimer = setTimeout(function() {
-      __vaultrDE.draftSaveTimer = null;
-      __vaultrDE.draftSaveTabId = null;
-      void __vaultrDEFlushDraft(tab);
+    __vaultrEditorCaptureDraft(tab);
+    __vaultrEditorClearDraftTimer(tab);
+    __vaultrEditor.draftSaveTabId = tab.id;
+    __vaultrEditor.draftSaveTimer = setTimeout(function() {
+      __vaultrEditor.draftSaveTimer = null;
+      __vaultrEditor.draftSaveTabId = null;
+      void __vaultrEditorFlushDraft(tab);
     }, 350);
   }
-  function __vaultrDEScheduleActiveDraftSave() {
-    var tab = __vaultrDEActiveTab();
-    if (tab && !tab.path) __vaultrDEScheduleDraftSave(tab);
+  function __vaultrEditorScheduleActiveDraftSave() {
+    var tab = __vaultrEditorActiveTab();
+    if (tab && !tab.path) __vaultrEditorScheduleDraftSave(tab);
   }
-  async function __vaultrDELoadDraft(tab) {
+  async function __vaultrEditorLoadDraft(tab) {
     if (!tab || tab.path) return {content:'', pathInput:'', inSource:false, scrollTop:0};
-    var store = __vaultrDEDraftStore();
+    var store = __vaultrEditorDraftStore();
     var content = tab._draftContent || tab.draftContent || '';
     var pathInput = tab._pathVal || '';
     var loaded = null;
-    __vaultrDEEnsureDraftId(tab);
+    __vaultrEditorEnsureDraftId(tab);
     if (store && store.read) {
       try { loaded = await store.read(tab.draftId); } catch(_) { loaded = null; }
     }
@@ -289,12 +288,12 @@
       content = typeof loaded.content === 'string' ? loaded.content : '';
       pathInput = typeof loaded.pathInput === 'string' ? loaded.pathInput : (loaded.path || '');
       tab.createdAt = loaded.createdAt || tab.createdAt || Date.now();
-      tab.title = loaded.title || __vaultrDEDraftTitle(pathInput, content);
+      tab.title = loaded.title || __vaultrEditorDraftTitle(pathInput, content);
     } else {
       tab.createdAt = tab.createdAt || Date.now();
-      tab.title = __vaultrDEDraftTitle(pathInput, content);
+      tab.title = __vaultrEditorDraftTitle(pathInput, content);
     }
-    tab._draftContent = __vaultrDETightenLists(content || '');
+    tab._draftContent = __vaultrEditorTightenLists(content || '');
     tab._pathVal = pathInput || '';
     if (!loaded && store && store.write) {
       try {
@@ -319,32 +318,32 @@
       scrollTop: loaded ? (loaded.scrollTop || 0) : 0,
     };
   }
-  function __vaultrDEDraftEditorState(draft, savedState) {
+  function __vaultrEditorDraftEditorState(draft, savedState) {
     return {
       content: draft && typeof draft.content === 'string' ? draft.content : '',
       inSource: savedState && typeof savedState.inSource === 'boolean' ? savedState.inSource : !!(draft && draft.inSource),
       scrollTop: savedState && typeof savedState.scrollTop === 'number' ? savedState.scrollTop : ((draft && draft.scrollTop) || 0),
     };
   }
-  async function __vaultrDEDeleteDraft(tab) {
+  async function __vaultrEditorDeleteDraft(tab) {
     if (!tab || !tab.draftId) return;
-    __vaultrDEClearDraftTimer(tab);
-    var store = __vaultrDEDraftStore();
+    __vaultrEditorClearDraftTimer(tab);
+    var store = __vaultrEditorDraftStore();
     var id = tab.draftId;
     tab.draftId = '';
     tab._draftContent = '';
     tab._pathVal = '';
-    if (__vaultrDE.currentDraftId === id) __vaultrDE.currentDraftId = '';
+    if (__vaultrEditor.currentDraftId === id) __vaultrEditor.currentDraftId = '';
     if (store && store.delete) {
       try { await store.delete(id); } catch(e) { console.warn('draft delete failed', e); }
     }
   }
-  function __vaultrDEHandleContentChange(md, tighten) {
-    var s = __vaultrDE;
-    var drawer = window.__vaultrDrawer;
-    if (drawer && !drawer.drawerOpen) return;
-    var next = tighten ? __vaultrDETightenLists(md) : md;
-    var tab = __vaultrDEActiveTab();
+  function __vaultrEditorHandleContentChange(md, tighten) {
+    var s = __vaultrEditor;
+    var pane = window.__vaultrContentPane;
+    if (pane && !pane.contentPaneOpen) return;
+    var next = tighten ? __vaultrEditorTightenLists(md) : md;
+    var tab = __vaultrEditorActiveTab();
     if (tab && tab.path && s.pendingBaselineFromEditor && tighten) {
       s.pendingBaselineFromEditor = false;
       if (s.pendingBaselineTimer) { clearTimeout(s.pendingBaselineTimer); s.pendingBaselineTimer = null; }
@@ -352,35 +351,35 @@
       s.baselineMd = next;
       s.dirty = false;
       clearTimeout(s.saveTimer); s.saveTimer = null;
-      __vaultrDESaveStatus('');
+      __vaultrEditorSaveStatus('');
       return;
     }
     s.currentMd = next;
     if (tab && !tab.path) {
       s.dirty = false;
       tab._draftContent = next;
-      __vaultrDEScheduleDraftSave(tab);
+      __vaultrEditorScheduleDraftSave(tab);
       return;
     }
     if (next !== s.baselineMd) {
       s.dirty = true;
-      __vaultrDEScheduleSave();
+      __vaultrEditorScheduleSave();
     } else {
       s.dirty = false;
       clearTimeout(s.saveTimer); s.saveTimer = null;
-      __vaultrDESaveStatus('');
+      __vaultrEditorSaveStatus('');
     }
   }
 
-  // Open a wiki-link target in the drawer.  value is the raw [[…]] inner text.
-  async function __vaultrDrawerOpenWikiLink(value) {
-    var drawer = window.__vaultrDrawer;
-    if (!drawer) return;
+  // Open a wiki-link target in the pane.  value is the raw [[…]] inner text.
+  async function __vaultrContentPaneOpenWikiLink(value) {
+    var pane = window.__vaultrContentPane;
+    if (!pane) return;
     // Path-like value (contains /): treat as vault-absolute path directly
     if (value.indexOf('/') !== -1) {
       var p = value.startsWith('/') ? value : '/' + value;
       if (!p.endsWith('.md')) p += '.md';
-      await drawer.openNoteInDrawer(p, p.split('/').pop().replace(/\.md$/, ''), false, false);
+      await pane.openNoteInContentPane(p, p.split('/').pop().replace(/\.md$/, ''), false, false);
       return;
     }
     // Bare name: resolve through the server
@@ -404,69 +403,29 @@
       var noteTitle = note.title || note.name.replace(/\.md$/, '');
       var _isK = note.origin === 'plugin:compile';
       var _isI = note.origin === 'plugin:index';
-      await drawer.openNoteInDrawer(notePath, noteTitle, _isK, !!note.pinned, _isI,
+      await pane.openNoteInContentPane(notePath, noteTitle, _isK, !!note.pinned, _isI,
         !_isK && !_isI && !note.compile_count);
     } catch(_) {}
   }
 
-  function __vaultrDESaveTabState(tabId) { tabStateManager.save(tabId); }
-  function __vaultrDERestoreTabState(tabId) { return tabStateManager.restore(tabId); }
-  function __vaultrDEClearTabState(tabId) { tabStateManager.clear(tabId); }
-  function __vaultrDECenterActiveTab() {
-    var drawer = window.__vaultrDrawer;
-    if (!drawer || drawer.activeTab < 0) return false;
-    var overlay = document.querySelector('.drawer-overlay');
-    var container = overlay && overlay.querySelector('.drawer-tabs');
-    var tab = overlay && overlay.querySelectorAll('.drawer-tab')[drawer.activeTab];
-    if (!container || !tab) return false;
-    var containerRect = container.getBoundingClientRect();
-    var tabRect = tab.getBoundingClientRect();
-    if (!containerRect.width || !tabRect.width) return false;
-    var delta = (tabRect.left + tabRect.width / 2) - (containerRect.left + containerRect.width / 2);
-    var maxLeft = Math.max(0, container.scrollWidth - container.clientWidth);
-    var nextLeft = Math.max(0, Math.min(maxLeft, container.scrollLeft + delta));
-    if (Math.abs(container.scrollLeft - nextLeft) > 0.5) {
-      container.scrollTo({left: nextLeft, behavior: 'smooth'});
-    }
-    return true;
-  }
-  function __vaultrDEScheduleActiveTabScroll() {
-    var s = __vaultrDE;
-    if (s.pendingTabScrollRaf) {
-      cancelAnimationFrame(s.pendingTabScrollRaf);
-      s.pendingTabScrollRaf = null;
-    }
-    clearTimeout(s.pendingTabScrollTimer);
-    clearTimeout(s.pendingTabScrollDelay);
-    s.pendingTabScrollDelay = setTimeout(function() {
-      s.pendingTabScrollDelay = null;
-      s.pendingTabScrollRaf = requestAnimationFrame(function() {
-        s.pendingTabScrollRaf = requestAnimationFrame(function() {
-          s.pendingTabScrollRaf = null;
-          __vaultrDECenterActiveTab();
-        });
-      });
-    }, 80);
-    s.pendingTabScrollTimer = setTimeout(function() {
-      s.pendingTabScrollTimer = null;
-      __vaultrDECenterActiveTab();
-    }, 400);
-  }
-  function __vaultrDESetSourceActive(active) {
-    document.querySelectorAll('.drawer-view-btn-wysiwyg').forEach(function(btn) {
+  function __vaultrEditorSaveTabState(tabId) { tabStateManager.save(tabId); }
+  function __vaultrEditorRestoreTabState(tabId) { return tabStateManager.restore(tabId); }
+  function __vaultrEditorClearTabState(tabId) { tabStateManager.clear(tabId); }
+  function __vaultrEditorSetSourceActive(active) {
+    document.querySelectorAll('.content-pane-view-btn-wysiwyg').forEach(function(btn) {
       btn.classList.toggle('active', !active);
     });
-    document.querySelectorAll('.drawer-view-btn-source').forEach(function(btn) {
+    document.querySelectorAll('.content-pane-view-btn-source').forEach(function(btn) {
       btn.classList.toggle('active', !!active);
     });
-    document.querySelectorAll('.drawer-source-toggle-btn').forEach(function(btn) {
+    document.querySelectorAll('.content-pane-source-toggle-btn').forEach(function(btn) {
       btn.classList.toggle('active', !!active);
     });
   }
 
   // ── Lazy editor init ─────────────────────────────────────────────────────────
-  async function __vaultrEnsureDrawerEditor() {
-    var s = __vaultrDE;
+  async function __vaultrEnsureContentPaneEditor() {
+    var s = __vaultrEditor;
     if (s.view) return;
     if (s.initPromise) return s.initPromise;
     s.initPromise = (async function() {
@@ -479,7 +438,8 @@
       s.markdown = mod.markdown; s.HighlightStyle = mod.HighlightStyle;
       s.syntaxHighlighting = mod.syntaxHighlighting; s.tags = mod.tags;
       s.cmUndo = mod.cmUndo; s.cmRedo = mod.cmRedo;
-      s.cmSearch = mod.search; s.cmOpenSearchPanel = mod.openSearchPanel; s.cmCloseSearchPanel = mod.closeSearchPanel;
+      s.cmSearch = mod.search; s.cmOpenSearchPanel = mod.openSearchPanel;
+      s.cmCloseSearchPanel = __vaultrEditorMakeAnimatedSearchClose(mod.closeSearchPanel);
       s.cmFindNext = mod.findNext; s.cmFindPrev = mod.findPrevious;
       s.cmReplaceNext = mod.replaceNext; s.cmReplaceAll = mod.cmReplaceAll;
       s.SearchQuery = mod.SearchQuery; s.getSearchQuery = mod.getSearchQuery; s.setSearchQuery = mod.setSearchQuery;
@@ -490,7 +450,7 @@
       s.frontmatterCollapseField = mod.frontmatterCollapseField; s.frontmatterHeaderField = mod.frontmatterHeaderField;
       s.frontmatterReadOnly = mod.frontmatterReadOnly; s.allowFrontmatterEdit = mod.allowFrontmatterEdit;
 
-      var editArea = document.getElementById('drawer-edit-area');
+      var editArea = document.getElementById('content-pane-edit-area');
 
       var cmTheme = s.EditorView.theme({
         '&': {height:'100%',color:'var(--prose-body)',background:'transparent'},
@@ -527,7 +487,7 @@
         resolveImageSrc: function(filename) {
           return '/api/images/serve?name=' + encodeURIComponent(filename);
         },
-        onWikiLinkClick: function(target) { void __vaultrDrawerOpenWikiLink(target); },
+        onWikiLinkClick: function(target) { void __vaultrContentPaneOpenWikiLink(target); },
       };
       // Exposed on s so editorMode (a separate closure) can reconfigure
       // s.decoCompartment without rebuilding these from scratch. Frontmatter
@@ -561,7 +521,7 @@
       s.decoCompartment = new s.Compartment();
       // Own compartment so editorMode.syncContent() (below) can wipe the
       // undo stack on note/tab switch — this EditorView is a session-long
-      // singleton (__vaultrEnsureDrawerEditor only ever creates it once),
+      // singleton (__vaultrEnsureContentPaneEditor only ever creates it once),
       // so without this reset Ctrl+Z after switching notes walks back into
       // the PREVIOUS note's edit history against the new note's document.
       s.historyCompartment = new s.Compartment();
@@ -594,18 +554,18 @@
             // source/live-preview toggle — reconfigure() tears down and
             // recreates any StateField that was only inside _liveModeExt().
             s.frontmatterCollapseField,
-            s.frontmatterHeaderField({ onEditFrontmatter: __vaultrDEEditFrontmatter }),
+            s.frontmatterHeaderField({ onEditFrontmatter: __vaultrEditorEditFrontmatter }),
             s.decoCompartment.of(s._liveModeExt()),
             s.EditorView.updateListener.of(function(update) {
               if (!update.docChanged || s.loading) return;
-              __vaultrDEHandleContentChange(update.state.doc.toString(), false);
+              __vaultrEditorHandleContentChange(update.state.doc.toString(), false);
             }),
             s.EditorView.domEventHandlers({
               paste: function(e, view) {
-                var imgFile = __vaultrDEFindImageFile(e.clipboardData);
+                var imgFile = __vaultrEditorFindImageFile(e.clipboardData);
                 if (!imgFile) return false;
                 e.preventDefault();
-                __vaultrDEUploadImage(imgFile).then(function(src) {
+                __vaultrEditorUploadImage(imgFile).then(function(src) {
                   var filename = src.split('/').pop();
                   var ins = '![[' + filename + ']]'; var sel = view.state.selection.main;
                   view.dispatch({changes:{from:sel.from,to:sel.to,insert:ins},selection:{anchor:sel.from+ins.length}});
@@ -623,14 +583,14 @@
         }),
       });
 
-      document.querySelectorAll('.drawer-view-btn-wysiwyg').forEach(function(btn) {
+      document.querySelectorAll('.content-pane-view-btn-wysiwyg').forEach(function(btn) {
         btn.addEventListener('click', function() {
-          if (__vaultrDE.inSource) editorMode.exitSource();
+          if (__vaultrEditor.inSource) editorMode.exitSource();
         });
       });
-      document.querySelectorAll('.drawer-view-btn-source').forEach(function(btn) {
+      document.querySelectorAll('.content-pane-view-btn-source').forEach(function(btn) {
         btn.addEventListener('click', function() {
-          if (!__vaultrDE.inSource) editorMode.enterSource();
+          if (!__vaultrEditor.inSource) editorMode.enterSource();
         });
       });
     })();
@@ -638,8 +598,24 @@
   }
 
   // ── Search panel (custom, top-anchored) ─────────────────────────────────────
+  // CodeMirror's Panel API has no declarative x-show/x-transition
+  // equivalent (mount() fires once, right after insertion; there's no
+  // pre-removal hook), so the slide-in/out that matches the tabs/more
+  // menus (content_pane.html, content_pane.css) is done by hand: mount() toggles
+  // .is-entering on the .cm-panels-top wrapper CodeMirror already
+  // created, and every close goes through this wrapper, which holds the
+  // real close call until .is-closing's CSS transition (content_pane.css) has
+  // had time to finish.
+  function __vaultrEditorMakeAnimatedSearchClose(realClose) {
+    return function(view) {
+      var panel = document.querySelector('#content-pane-edit-area .cm-panels-top');
+      if (!panel) { realClose(view); return; }
+      panel.classList.add('is-closing');
+      setTimeout(function() { realClose(view); }, 100);
+    };
+  }
   function __vaultrCreateSearchPanel(view) {
-    var s = __vaultrDE;
+    var s = __vaultrEditor;
     var dom = document.createElement('div');
     dom.className = 'vaultr-search-panel';
 
@@ -743,6 +719,13 @@
           if (txt && !txt.includes('\n')) { findInput.value = txt; commit(); }
         }
         findInput.focus(); findInput.select();
+        var panel = dom.closest('.cm-panels-top');
+        if (panel) {
+          panel.classList.add('is-entering');
+          requestAnimationFrame(function() {
+            requestAnimationFrame(function() { panel.classList.remove('is-entering'); });
+          });
+        }
       },
     };
   }
@@ -750,13 +733,13 @@
   // ── Editor mode state machine ────────────────────────────────────────────────
   // Single authority for live-preview ↔ source transitions. Both modes are
   // the same EditorView/doc now — this only reconfigures s.decoCompartment
-  // (see __vaultrEnsureDrawerEditor) and, when the caller is about to show a
+  // (see __vaultrEnsureContentPaneEditor) and, when the caller is about to show a
   // *different* note's content, syncs s.currentMd into the view first.
   // applySource / applyWysiwyg: low-level, called by applyState (skipFocus=true).
   // enterSource / exitSource / toggle: user-triggered, manage focus themselves.
   var editorMode = (function() {
     function syncContent() {
-      var s = __vaultrDE;
+      var s = __vaultrEditor;
       if (s.view.state.doc.toString() !== s.currentMd) {
         // Whole-document swap (mode toggle, tab/note switch), not a user
         // edit to frontmatter text — frontmatterReadOnly()'s changeFilter
@@ -783,38 +766,38 @@
     }
     return {
       applySource: function(opts) {
-        var s = __vaultrDE;
-        __vaultrDEClearPendingBaselineSync();
+        var s = __vaultrEditor;
+        __vaultrEditorClearPendingBaselineSync();
         s.loading = true;
         syncContent();
         s.view.dispatch({effects: s.decoCompartment.reconfigure(s._sourceModeExt())});
         s.loading = false;
         s.inSource = true;
-        __vaultrDESetSourceActive(true);
+        __vaultrEditorSetSourceActive(true);
         if (!(opts && opts.skipFocus)) focusManager.focusEditor();
       },
       applyWysiwyg: function(opts) {
-        var s = __vaultrDE;
-        var tab = __vaultrDEActiveTab();
-        if (tab && tab.path) __vaultrDEMarkPendingBaselineSync();
+        var s = __vaultrEditor;
+        var tab = __vaultrEditorActiveTab();
+        if (tab && tab.path) __vaultrEditorMarkPendingBaselineSync();
         s.loading = true;
         syncContent();
         s.view.dispatch({effects: s.decoCompartment.reconfigure(s._liveModeExt())});
         setTimeout(function() { s.loading = false; }, 50);
         s.inSource = false;
-        __vaultrDESetSourceActive(false);
+        __vaultrEditorSetSourceActive(false);
         if (!(opts && opts.skipFocus)) focusManager.focusEditor();
       },
       // User-triggered: live preview → source
       enterSource: function() { this.applySource(); },
       // User-triggered: source → live preview
       exitSource: function() {
-        var s = __vaultrDE;
+        var s = __vaultrEditor;
         s.currentMd = s.view.state.doc.toString();
         this.applyWysiwyg();
       },
       toggle: function() {
-        var s = __vaultrDE;
+        var s = __vaultrEditor;
         if (s.inSource) this.exitSource(); else this.enterSource();
       },
     };
@@ -824,12 +807,12 @@
   // Single authority for all editor focus/blur decisions.
   var focusManager = {
     focusEditor: function() {
-      var s = __vaultrDE;
+      var s = __vaultrEditor;
       if (s.view) s.view.focus();
     },
     // Focus the path input (create-mode toolbar).
     focusPathInput: function() {
-      var pi = document.getElementById('drawer-path-input');
+      var pi = document.getElementById('content-pane-path-input');
       if (pi) pi.focus();
     },
     // Blur whatever currently has focus.
@@ -839,20 +822,20 @@
     // True when focus is inside the editor content area.
     isInsideEditor: function() {
       var ae = document.activeElement;
-      var ea = document.getElementById('drawer-edit-area');
+      var ea = document.getElementById('content-pane-edit-area');
       return !!(ea && ea.contains(ae));
     },
   };
 
-  function __vaultrDEEnterSource() { editorMode.enterSource(); }
-  function __vaultrDEExitSource() { editorMode.exitSource(); }
+  function __vaultrEditorEnterSource() { editorMode.enterSource(); }
+  function __vaultrEditorExitSource() { editorMode.exitSource(); }
 
   // "Metadata" header's pencil button (cm-live/frontmatter-collapse.js) —
   // frontmatter is read-only in live-preview mode (frontmatterReadOnly()),
   // so this dialog + allowFrontmatterEdit-annotated dispatch is the only
   // way to change it there. from/to span the whole node including the
   // "---" delimiters; only the interior YAML is shown/edited.
-  function __vaultrDEEditFrontmatter(view, from, to) {
+  function __vaultrEditorEditFrontmatter(view, from, to) {
     var raw = view.state.doc.sliceString(from, to);
     var lines = raw.split('\n');
     var hasClose = lines.length > 1 && lines[lines.length - 1].trim() === '---';
@@ -863,7 +846,7 @@
       var newBlock = '---\n' + (body ? body + '\n' : '') + '---';
       view.dispatch({
         changes: { from: from, to: to, insert: newBlock },
-        annotations: __vaultrDE.allowFrontmatterEdit.of(true),
+        annotations: __vaultrEditor.allowFrontmatterEdit.of(true),
       });
     });
   }
@@ -875,8 +858,8 @@
     return {
       save: function(tabId) {
         if (!tabId) return;
-        var s = __vaultrDE;
-        var scroller = document.querySelector('#drawer-edit-area .cm-scroller');
+        var s = __vaultrEditor;
+        var scroller = document.querySelector('#content-pane-edit-area .cm-scroller');
         _states.set(tabId, { scrollTop: scroller ? scroller.scrollTop : 0, inSource: s.inSource });
       },
       restore: function(tabId) {
@@ -890,21 +873,21 @@
       saveForLeave: async function(tab) {
         if (!tab) return;
         this.save(tab.id);
-        if (!tab.path) await __vaultrDEFlushDraft(tab);
+        if (!tab.path) await __vaultrEditorFlushDraft(tab);
       },
     };
   })();
 
   // ── Content loaders ──────────────────────────────────────────────────────────
-  async function __vaultrDrawerLoadNote(path, tabId, savedState) {
-    var s = __vaultrDE;
-    __vaultrDEClearPendingBaselineSync();
+  async function __vaultrContentPaneLoadNote(path, tabId, savedState) {
+    var s = __vaultrEditor;
+    __vaultrEditorClearPendingBaselineSync();
     if (s.dirty && s.currentPath && s.currentPath !== path) {
-      clearTimeout(s.saveTimer); s.saveTimer = null; await __vaultrDEDoSave();
+      clearTimeout(s.saveTimer); s.saveTimer = null; await __vaultrEditorDoSave();
     } else { clearTimeout(s.saveTimer); s.saveTimer = null; }
-    if (!__vaultrDEIsActiveTabId(tabId)) return false;
-    __vaultrDESaveStatus('');
-    var ptEl = document.getElementById('drawer-path-text');
+    if (!__vaultrEditorIsActiveTabId(tabId)) return false;
+    __vaultrEditorSaveStatus('');
+    var ptEl = document.getElementById('content-pane-path-text');
     if (ptEl) ptEl.textContent = path;
 
     // Load from server
@@ -919,31 +902,31 @@
       return false;
     }
     var content = await resp.text();
-    if (!__vaultrDEIsActiveTabId(tabId)) return false;
-    s.currentPath = path; s.currentDraftId = ''; s.currentMd = __vaultrDETightenLists(content); s.baselineMd = s.currentMd; s.dirty = false;
+    if (!__vaultrEditorIsActiveTabId(tabId)) return false;
+    s.currentPath = path; s.currentDraftId = ''; s.currentMd = __vaultrEditorTightenLists(content); s.baselineMd = s.currentMd; s.dirty = false;
     
     // Apply state (will create new state if no saved state)
-    return await __vaultrDEApplyState(savedState || { inSource: false, scrollTop: 0 }, tabId);
+    return await __vaultrEditorApplyState(savedState || { inSource: false, scrollTop: 0 }, tabId);
   }
 
-  async function __vaultrDrawerSetContent(content, tabId, savedState, draftId) {
-    var s = __vaultrDE;
-    __vaultrDEClearPendingBaselineSync();
-    if (s.dirty && s.currentPath) { clearTimeout(s.saveTimer); s.saveTimer = null; await __vaultrDEDoSave(); }
+  async function __vaultrContentPaneSetContent(content, tabId, savedState, draftId) {
+    var s = __vaultrEditor;
+    __vaultrEditorClearPendingBaselineSync();
+    if (s.dirty && s.currentPath) { clearTimeout(s.saveTimer); s.saveTimer = null; await __vaultrEditorDoSave(); }
     else { clearTimeout(s.saveTimer); s.saveTimer = null; }
-    if (!__vaultrDEIsActiveTabId(tabId)) return false;
-    __vaultrDESaveStatus('');
-    s.currentPath = ''; s.currentDraftId = draftId || ''; s.currentMd = __vaultrDETightenLists(content || ''); s.baselineMd = ''; s.dirty = false;
+    if (!__vaultrEditorIsActiveTabId(tabId)) return false;
+    __vaultrEditorSaveStatus('');
+    s.currentPath = ''; s.currentDraftId = draftId || ''; s.currentMd = __vaultrEditorTightenLists(content || ''); s.baselineMd = ''; s.dirty = false;
     
     // Apply state
-    return await __vaultrDEApplyState(savedState || { inSource: false, scrollTop: 0 }, tabId);
+    return await __vaultrEditorApplyState(savedState || { inSource: false, scrollTop: 0 }, tabId);
   }
   
-  async function __vaultrDEApplyState(state, expectedTabId) {
-    var s = __vaultrDE;
+  async function __vaultrEditorApplyState(state, expectedTabId) {
+    var s = __vaultrEditor;
     s.loading = true;
-    await __vaultrEnsureDrawerEditor();
-    if (!__vaultrDEIsActiveTabId(expectedTabId)) {
+    await __vaultrEnsureContentPaneEditor();
+    if (!__vaultrEditorIsActiveTabId(expectedTabId)) {
       s.loading = false;
       return false;
     }
@@ -959,7 +942,7 @@
 
     if (s.pendingScrollRaf) { cancelAnimationFrame(s.pendingScrollRaf); s.pendingScrollRaf = null; }
     clearTimeout(s.pendingOpenScroll);
-    var getScroller = function() { return document.querySelector('#drawer-edit-area .cm-scroller'); };
+    var getScroller = function() { return document.querySelector('#content-pane-edit-area .cm-scroller'); };
     // Set it once synchronously, in the same tick as the content swap above
     // (dispatch() has already updated the DOM by the time this line runs) —
     // otherwise the scroller keeps the PREVIOUS tab's scrollTop for at
@@ -968,15 +951,15 @@
     // their own comments). That stale-scrollTop-against-new-content frame
     // is the tab-switch flash: this line is what removes it for the common
     // case; the deferred ones stay as-is for the one case that still needs
-    // them — the drawer's own slide-in animation tearing down a compositing
+    // them — the pane's own slide-in animation tearing down a compositing
     // layer and resetting scrollTop out from under this synchronous set.
     var syncEl = getScroller(); if (syncEl) syncEl.scrollTop = targetScroll;
     s.pendingScrollRaf = requestAnimationFrame(function() {
       s.pendingScrollRaf = requestAnimationFrame(function() {
         s.pendingScrollRaf = null;
-        if (!__vaultrDEIsActiveTabId(expectedTabId)) return;
+        if (!__vaultrEditorIsActiveTabId(expectedTabId)) return;
         var el = getScroller(); if (el) el.scrollTop = targetScroll;
-        var tabForFocus = __vaultrDEActiveTab();
+        var tabForFocus = __vaultrEditorActiveTab();
         var isDraftTab = tabForFocus && !tabForFocus.path;
         if (!focusManager.isInsideEditor() && !isDraftTab) {
           focusManager.focusEditor();
@@ -985,7 +968,7 @@
     });
     s.pendingOpenScroll = setTimeout(function() {
       s.pendingOpenScroll = null;
-      if (!__vaultrDEIsActiveTabId(expectedTabId)) return;
+      if (!__vaultrEditorIsActiveTabId(expectedTabId)) return;
       var el = getScroller(); if (el) el.scrollTop = targetScroll;
     }, 270);
     return true;
@@ -993,69 +976,69 @@
 
 
   // ── Create mode: path input handlers + Publish ───────────────────────────────
-  function __vaultrDESetupCreateMode() {
-    var pi = document.getElementById('drawer-path-input');
-    var pb = document.getElementById('drawer-publish-btn');
+  function __vaultrEditorSetupCreateMode() {
+    var pi = document.getElementById('content-pane-path-input');
+    var pb = document.getElementById('content-pane-publish-btn');
     if (!pi) return;
 
     // Build the autocomplete instance via the shared factory.
     var enterFirstTs = 0;
-    __vaultrDEPathAc = __vaultrPathAcCreate({
-      getInput: function() { return document.getElementById('drawer-path-input'); },
-      getList:  function() { return document.getElementById('drawer-path-ac'); },
-      parseCtx: __vaultrDEAcParseCtx,
+    __vaultrEditorPathAc = __vaultrPathAcCreate({
+      getInput: function() { return document.getElementById('content-pane-path-input'); },
+      getList:  function() { return document.getElementById('content-pane-path-ac'); },
+      parseCtx: __vaultrEditorAcParseCtx,
       onApply: function(input, newVal, caretPos) {
         input.value = newVal;
         input.setSelectionRange(caretPos, caretPos);
         input.focus();
         input.classList.remove('invalid');
         input.placeholder = 'filename.md  ·  or  /folder/note.md';
-        __vaultrDEScheduleActiveDraftSave();
+        __vaultrEditorScheduleActiveDraftSave();
       },
-      escKey: 'drawer-ac',
+      escKey: 'content-pane-ac',
     });
 
     pi.addEventListener('input', function() {
       enterFirstTs = 0;
       pi.classList.remove('invalid');
       pi.placeholder = 'filename.md  ·  or  /folder/note.md';
-      __vaultrDEPathAc.refresh();
-      __vaultrDEScheduleActiveDraftSave();
+      __vaultrEditorPathAc.refresh();
+      __vaultrEditorScheduleActiveDraftSave();
     });
-    pi.addEventListener('click', function() { __vaultrDEPathAc.refresh(); });
+    pi.addEventListener('click', function() { __vaultrEditorPathAc.refresh(); });
     pi.addEventListener('keyup', function(ev) {
       if (ev.key === 'ArrowLeft' || ev.key === 'ArrowRight' || ev.key === 'Home' || ev.key === 'End')
-        __vaultrDEPathAc.refresh();
+        __vaultrEditorPathAc.refresh();
     });
     pi.addEventListener('blur', function() {
       enterFirstTs = 0;
       setTimeout(function() {
-        var acEl = document.getElementById('drawer-path-ac');
-        if (!acEl || !acEl.contains(document.activeElement)) __vaultrDEPathAc.close();
+        var acEl = document.getElementById('content-pane-path-ac');
+        if (!acEl || !acEl.contains(document.activeElement)) __vaultrEditorPathAc.close();
       }, 180);
     });
     pi.addEventListener('keydown', function(ev) {
-      if (__vaultrDEPathAc.handleKeydown(ev)) return;
+      if (__vaultrEditorPathAc.handleKeydown(ev)) return;
       if (ev.key !== 'Enter') return;
       var now = Date.now();
-      if (enterFirstTs && (now - enterFirstTs) <= __DRAWER_PATH_DBL_ENTER_MS) {
+      if (enterFirstTs && (now - enterFirstTs) <= __CONTENT_PANE_PATH_DBL_ENTER_MS) {
         ev.preventDefault(); enterFirstTs = 0;
-        var s = __vaultrDE;
+        var s = __vaultrEditor;
         if (s.view) s.view.focus();
         return;
       }
       enterFirstTs = now;
     });
-    if (pb) pb.addEventListener('click', __vaultrDrawerPublish);
+    if (pb) pb.addEventListener('click', __vaultrContentPanePublish);
   }
 
-  async function __vaultrDrawerPublish() {
-    var pi = document.getElementById('drawer-path-input');
-    var pb = document.getElementById('drawer-publish-btn');
+  async function __vaultrContentPanePublish() {
+    var pi = document.getElementById('content-pane-path-input');
+    var pb = document.getElementById('content-pane-publish-btn');
     if (!pi || !pb) return;
-    var drawer = window.__vaultrDrawer;
-    var tab = drawer ? drawer.tabs[drawer.activeTab] : null;
-    if (tab && !tab.path) await __vaultrDEFlushDraft(tab);
+    var pane = window.__vaultrContentPane;
+    var tab = pane ? pane.tabs[pane.activeTab] : null;
+    if (tab && !tab.path) await __vaultrEditorFlushDraft(tab);
     var name = pi.value.trim();
     if (!name) {
       window.showError('A file name is required to publish.', 'Cannot publish');
@@ -1088,7 +1071,7 @@
       }
       var resp = await fetch('/api/vault/write', {
         method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({path: apiPath, content: __vaultrDE.currentMd}),
+        body: JSON.stringify({path: apiPath, content: __vaultrEditor.currentMd}),
       });
       if (!resp.ok) {
         var msg = (await resp.text()) || 'Publish failed.';
@@ -1096,10 +1079,10 @@
         pi.classList.add('invalid'); return;
       }
       published = true;
-      __vaultrDE.currentPath = apiPath; __vaultrDE.dirty = false; __vaultrDE.baselineMd = __vaultrDE.currentMd; __vaultrDESaveStatus('Saved');
-      __vaultrDE.currentDraftId = '';
-      __vaultrDEPathAc && __vaultrDEPathAc.close();
-      if (drawer) {
+      __vaultrEditor.currentPath = apiPath; __vaultrEditor.dirty = false; __vaultrEditor.baselineMd = __vaultrEditor.currentMd; __vaultrEditorSaveStatus('Saved');
+      __vaultrEditor.currentDraftId = '';
+      __vaultrEditorPathAc && __vaultrEditorPathAc.close();
+      if (pane) {
         if (tab && !tab.path) {
           var oldDraftId = tab.draftId;
           tab.path = apiPath;
@@ -1107,13 +1090,13 @@
           tab.draftId = '';
           tab._draftContent = '';
           tab._pathVal = '';
-          drawer._persist();
-          var draftStore = __vaultrDEDraftStore();
+          pane._persist();
+          var draftStore = __vaultrEditorDraftStore();
           if (oldDraftId && draftStore && draftStore.delete)
             void draftStore.delete(oldDraftId).catch(function(){});
         }
       }
-      var ptEl = document.getElementById('drawer-path-text');
+      var ptEl = document.getElementById('content-pane-path-text');
       if (ptEl) ptEl.textContent = apiPath;
       pb.classList.add('success'); pb.textContent = '✓ Published';
       setTimeout(function(){ pb.disabled = false; pb.textContent = 'Publish'; pb.classList.remove('success'); }, 1200);
@@ -1127,20 +1110,106 @@
   // ── Global note-card helper ───────────────────────────────────────────────────
   function __vaultrOpenNote(el) {
     var d = el && el.dataset; if (!d || !d.notePath) return;
-    var drawer = window.__vaultrDrawer;
-    if (drawer) void drawer.openNoteInDrawer(d.notePath, d.noteTitle || 'Note',
+    var pane = window.__vaultrContentPane;
+    if (pane) void pane.openNoteInContentPane(d.notePath, d.noteTitle || 'Note',
       d.noteIsKnowledge === 'true', d.notePinned === 'true', d.noteIsIndex === 'true',
       d.noteCanCompile === 'true');
   }
 
-  // ── Drawer controller factory ─────────────────────────────────────────────────
-  function drawerCtrl() {
+  // ── Content-pane controller factory ────────────────────────────────────────────────
+  function contentPaneCtrl() {
     return {
-      drawerOpen: false, drawerExpanded: false, tabs: [], activeTab: -1,
+      contentPaneOpen: false, tabs: [], activeTab: -1,
+      splitRatio: 0.5, isPaneResizing: false, _prevSplitRatio: 0.5,
+
+      // Tab-bar maximize/restore button — same spot/icon the old "focus
+      // mode" toggle used, but it just drives splitRatio to/from 0 now
+      // instead of a separate expanded state (the sidebar always stays
+      // visible; see home.css's .content-pane-open rule).
+      toggleMaximizeEditor() {
+        if (this.splitRatio > 0.02) {
+          this._prevSplitRatio = this.splitRatio;
+          this.splitRatio = 0;
+        } else {
+          this.splitRatio = this._prevSplitRatio || 0.5;
+        }
+      },
+
+      // Drags the divider between #home-list-pane and the editor pane.
+      // Ratio is list-pane's share of the space left over once the
+      // sidebar and resizer are accounted for (see home.css's
+      // --split-ratio/--split-ratio-inv). Dragging all the way to the
+      // sidebar collapses the list pane to 0 — the editor fills 100% of
+      // the content area (not the whole window; the sidebar stays put).
+      // Dragging the other way is capped so the editor never fully
+      // disappears while still open.
+      //
+      // Perf: mousemove can fire far faster than the display refreshes,
+      // and going through Alpine's reactive splitRatio on every one of
+      // those events would re-run the whole :style expression (string
+      // concat + reparse) well more often than needed. Instead this
+      // writes the two CSS vars straight to the element, coalesced to one
+      // update per animation frame — self.splitRatio (and its Alpine
+      // side-effects: persistence, the maximize-button icon, etc.) is
+      // synced exactly once, on mouseup. A full-viewport capture layer
+      // owns the drag's mousemove/mouseup for the same reason a native
+      // <input type=range> thumb does: without it, a fast drag can carry
+      // the pointer over CodeMirror's contenteditable mid-gesture, which
+      // would otherwise start a text selection instead of resizing.
+      startPaneResize(e) {
+        e.preventDefault();
+        var self = this;
+        var shell = document.querySelector('.home-shell');
+        var side = document.getElementById('home-side');
+        var resizer = document.getElementById('home-pane-resizer');
+        if (!shell || !side || !resizer) return;
+        var shellRect = shell.getBoundingClientRect();
+        var sideW = side.offsetWidth;
+        var resizerW = resizer.offsetWidth;
+        var avail = shellRect.width - sideW - resizerW;
+        if (avail <= 0) return;
+
+        self.isPaneResizing = true;
+        var prevCursor = document.body.style.cursor;
+        var prevUserSelect = document.body.style.userSelect;
+        document.body.style.cursor = 'col-resize';
+        document.body.style.userSelect = 'none';
+
+        var capture = document.createElement('div');
+        capture.style.cssText = 'position:fixed;inset:0;z-index:9999;cursor:col-resize;';
+        document.body.appendChild(capture);
+
+        var latestRatio = self.splitRatio;
+        var rafId = null;
+        function applyRatio() {
+          rafId = null;
+          shell.style.setProperty('--split-ratio', latestRatio);
+          shell.style.setProperty('--split-ratio-inv', 1 - latestRatio);
+        }
+        function onMove(ev) {
+          var x = ev.clientX - shellRect.left - sideW - (resizerW / 2);
+          var ratio = x / avail;
+          latestRatio = Math.min(0.9, Math.max(0, ratio));
+          if (rafId == null) rafId = requestAnimationFrame(applyRatio);
+        }
+        function onUp() {
+          if (rafId != null) { cancelAnimationFrame(rafId); applyRatio(); }
+          document.removeEventListener('mousemove', onMove);
+          document.removeEventListener('mouseup', onUp);
+          capture.remove();
+          document.body.style.cursor = prevCursor;
+          document.body.style.userSelect = prevUserSelect;
+          self.isPaneResizing = false;
+          self.splitRatio = latestRatio;
+          try { localStorage.setItem('vaultr.splitRatio', String(latestRatio)); } catch(_) {}
+        }
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseup', onUp);
+      },
 
       _persist() {
         try {
-          localStorage.setItem('vaultr.drawer', JSON.stringify({
+          localStorage.setItem('vaultr.content-pane', JSON.stringify({
             tabs: this.tabs.map(function(t){
               var obj = {id:t.id, title:t.title, path:t.path, isKnowledge:!!t.isKnowledge, pinned:!!t.pinned, isIndex:!!t.isIndex, canCompile:!!t.canCompile};
               if (!t.path) {
@@ -1159,7 +1228,7 @@
 
       _restore() {
         try {
-          var raw = localStorage.getItem('vaultr.drawer'); if (!raw) return;
+          var raw = localStorage.getItem('vaultr.content-pane'); if (!raw) return;
           var data = JSON.parse(raw);
           if (!data || !Array.isArray(data.tabs) || !data.tabs.length) return;
           var tabs = data.tabs;
@@ -1188,156 +1257,152 @@
         } catch(_) {}
       },
 
-      initDrawer() {
-        window.__vaultrDrawer = this;
+      initContentPane() {
+        window.__vaultrContentPane = this;
         this._restore();
-        __vaultrDESetupCreateMode();
+        try {
+          var savedRatio = parseFloat(localStorage.getItem('vaultr.splitRatio'));
+          if (!isNaN(savedRatio) && savedRatio >= 0 && savedRatio <= 0.9) this.splitRatio = savedRatio;
+        } catch(_) {}
+        __vaultrEditorSetupCreateMode();
 
         var self = this; var prevOpen = false;
-        var _drawerEscClose = function() {
-          var moreMenu = document.querySelector('.drawer-more-menu');
+        // Esc still closes whatever's layered on top of the editor (the
+        // more/tabs dropdowns, CodeMirror's search panel) — it just no
+        // longer closes the editor itself once those are all closed.
+        var _paneEscClose = function() {
+          var moreMenu = document.querySelector('.content-pane-more-menu');
           if (moreMenu && moreMenu.style.display !== 'none') {
-            document.dispatchEvent(new CustomEvent('drawer:close-more'));
+            document.dispatchEvent(new CustomEvent('content-pane:close-more'));
+            focusManager.blurActive();
+            return;
+          }
+          var tabsMenu = document.querySelector('.content-pane-tabs-menu');
+          if (tabsMenu && tabsMenu.style.display !== 'none') {
+            document.dispatchEvent(new CustomEvent('content-pane:close-tabs'));
             focusManager.blurActive();
             return;
           }
           if (document.querySelector('.vaultr-search-panel')) {
-            var _s = __vaultrDE;
+            var _s = __vaultrEditor;
             if (_s.view && _s.cmCloseSearchPanel) _s.cmCloseSearchPanel(_s.view);
             return;
           }
-          self.drawerOpen = false;
         };
-        this.$watch('drawerExpanded', function(expanded) {
-          if (window.vaultrDesktop && window.vaultrDesktop.setWindowButtonVisibility) {
-            window.vaultrDesktop.setWindowButtonVisibility(!expanded);
-          }
-          if (expanded) {
-            if (window.__vaultrEscPop) window.__vaultrEscPop('drawer');
-          } else if (self.drawerOpen) {
-            if (window.__vaultrEscPush) window.__vaultrEscPush('drawer', _drawerEscClose);
-          }
-        });
-        this.$watch('drawerOpen', async function(isOpen) {
+        this.$watch('contentPaneOpen', async function(isOpen) {
           if (!isOpen) {
-            if (window.__vaultrEscPop) window.__vaultrEscPop('drawer');
-            if (self.drawerExpanded) {
-              self.drawerExpanded = false;
-              if (window.vaultrDesktop && window.vaultrDesktop.setWindowButtonVisibility) {
-                window.vaultrDesktop.setWindowButtonVisibility(true);
-              }
-            }
+            if (window.__vaultrEscPop) window.__vaultrEscPop('content-pane');
             // Save state BEFORE blur — blur can trigger scrollIntoView which resets scrollTop
             var currentTab = self.tabs[self.activeTab];
-            if (currentTab) await __vaultrDESaveTabForLeave(currentTab);
+            if (currentTab) await __vaultrEditorSaveTabForLeave(currentTab);
             focusManager.blurActive();
             prevOpen = false; return;
           }
           prevOpen = true;
-          var _drawerOverlayEl = document.querySelector('.drawer-overlay');
-          if (_drawerOverlayEl) {
-            _drawerOverlayEl.classList.add('drawer-is-opening');
-            setTimeout(function() { _drawerOverlayEl.classList.remove('drawer-is-opening'); }, 320);
+          // The inbox detail panel shares this same pane (see content_pane.html's
+          // inbox-detail-panel) — always one or the other.
+          if (self.inboxSheetOpen) self.inboxSheetOpen = false;
+          var _paneOverlayEl = document.querySelector('.content-pane');
+          if (_paneOverlayEl) {
+            _paneOverlayEl.classList.add('content-pane-is-opening');
+            setTimeout(function() { _paneOverlayEl.classList.remove('content-pane-is-opening'); }, 320);
           }
-          if (window.__vaultrEscPush) window.__vaultrEscPush('drawer', _drawerEscClose);
+          if (window.__vaultrEscPush) window.__vaultrEscPush('content-pane', _paneEscClose);
           // Refresh key-behavior config on every open so settings changes take
           // effect immediately without restarting the app. Called before any
           // content loading so all code paths (same note, new note, draft) pick
           // it up. No-op if the editor hasn't been created yet (handled later in
-          // __vaultrEnsureDrawerEditor's initPromise).
+          // __vaultrEnsureContentPaneEditor's initPromise).
           // Always read latest tabs from localStorage before opening — other
           // WebContentsViews (same session, different JS context) may have
           // added tabs since this view last called _restore().
           self._restore();
           var tab = self.tabs[self.activeTab];
           if (!tab) return;
-          __vaultrDEScheduleActiveTabScroll();
-          
-          var savedState = __vaultrDERestoreTabState(tab.id);
+
+          var savedState = __vaultrEditorRestoreTabState(tab.id);
           
           if (!tab.path) {
             await self._activateDraftTab(tab, savedState);
             return;
           }
-          if (__vaultrDE.currentPath !== tab.path || !__vaultrDE.dirty) {
-            void __vaultrDrawerLoadNote(tab.path, tab.id, savedState);
+          if (__vaultrEditor.currentPath !== tab.path || !__vaultrEditor.dirty) {
+            void __vaultrContentPaneLoadNote(tab.path, tab.id, savedState);
           } else if (savedState) {
             // Same note with unsaved edits — restore scroll only. Two passes:
             // 1) rAF: fire immediately so scroll looks right during slide-in animation
             // 2) setTimeout(250): fire after the 240ms CSS transition in case the browser
             //    resets scrollTop when the GPU compositing layer is torn down at animation end
-            var s = __vaultrDE;
+            var s = __vaultrEditor;
             var sc = savedState.scrollTop || 0;
-            function __applyDrawerScroll() {
-              var scroller = document.querySelector('#drawer-edit-area .cm-scroller');
+            function __applyContentPaneScroll() {
+              var scroller = document.querySelector('#content-pane-edit-area .cm-scroller');
               if (scroller) scroller.scrollTop = sc;
             }
             if (s.pendingScrollRaf) { cancelAnimationFrame(s.pendingScrollRaf); s.pendingScrollRaf = null; }
             clearTimeout(s.pendingOpenScroll);
             s.pendingScrollRaf = requestAnimationFrame(function() {
               s.pendingScrollRaf = null;
-              __applyDrawerScroll();
+              __applyContentPaneScroll();
               if (!focusManager.isInsideEditor()) {
                 focusManager.focusEditor();
               }
             });
             s.pendingOpenScroll = setTimeout(function() {
               s.pendingOpenScroll = null;
-              __applyDrawerScroll();
+              __applyContentPaneScroll();
             }, 250);
           }
         });
         this.$watch('tabs', function(){ self._persist(); });
         this.$watch('activeTab', function(i) {
           self._persist();
-          self.$nextTick(function() { __vaultrDEScheduleActiveTabScroll(); });
         });
 
-        // Sync drawer state from other section views (each section is a separate
+        // Sync pane state from other section views (each section is a separate
         // WebContentsView with its own JS context; storage events cross view boundaries).
         window.addEventListener('storage', function(e) {
-          if (e.key !== 'vaultr.drawer' || !e.newValue || self.drawerOpen) return;
+          if (e.key !== 'vaultr.content-pane' || !e.newValue || self.contentPaneOpen) return;
           self._restore();
         });
       },
 
-      // Open an existing note in the drawer.
-      async openNoteInDrawer(path, title, isKnowledge, pinned, isIndex, canCompile) {
+      // Open an existing note in the pane.
+      async openNoteInContentPane(path, title, isKnowledge, pinned, isIndex, canCompile) {
         if (!path) return;
         var prevTab = this.tabs[this.activeTab];
-        if (this.drawerOpen && prevTab) await __vaultrDESaveTabForLeave(prevTab);
+        if (this.contentPaneOpen && prevTab) await __vaultrEditorSaveTabForLeave(prevTab);
         this.upsertTab(path, title, isKnowledge, pinned, isIndex, canCompile);
-        __vaultrDEResetCompileBtn();
-        this.drawerOpen = true;
-        this.$nextTick(function() { __vaultrDEScheduleActiveTabScroll(); });
+        __vaultrEditorResetCompileBtn();
+        this.contentPaneOpen = true;
         // Already loaded with unsaved edits — don't clobber with a server fetch
-        if (__vaultrDE.currentPath === path && __vaultrDE.dirty) return;
+        if (__vaultrEditor.currentPath === path && __vaultrEditor.dirty) return;
         var tab = this.tabs[this.activeTab];
-        var savedState = tab ? __vaultrDERestoreTabState(tab.id) : null;
-        await __vaultrDrawerLoadNote(path, tab ? tab.id : null, savedState);
+        var savedState = tab ? __vaultrEditorRestoreTabState(tab.id) : null;
+        await __vaultrContentPaneLoadNote(path, tab ? tab.id : null, savedState);
       },
 
-      // Open the drawer in create mode (new note or imported file).
-      async openNewInDrawer(content, suggestedName) {
-        var s = __vaultrDE;
+      // Open the pane in create mode (new note or imported file).
+      async openNewInContentPane(content, suggestedName) {
+        var s = __vaultrEditor;
         var prevTab = this.tabs[this.activeTab];
-        if (this.drawerOpen && prevTab) await __vaultrDESaveTabForLeave(prevTab);
-        if (s.dirty && s.currentPath) { clearTimeout(s.saveTimer); s.saveTimer = null; await __vaultrDEDoSave(); }
+        if (this.contentPaneOpen && prevTab) await __vaultrEditorSaveTabForLeave(prevTab);
+        if (s.dirty && s.currentPath) { clearTimeout(s.saveTimer); s.saveTimer = null; await __vaultrEditorDoSave(); }
         else { clearTimeout(s.saveTimer); s.saveTimer = null; }
-        __vaultrDESaveStatus('');
+        __vaultrEditorSaveStatus('');
 
         var rawName = suggestedName || '';
         var title = rawName ? rawName.replace(/\.md$/i,'').split('/').pop() || 'New note' : 'New note';
-        var normalizedContent = __vaultrDETightenLists(content || '');
-        var newTab = {id:__vaultrDENewTabId(), title:title, path:'', isKnowledge:false, pinned:false,
-                      draftId:__vaultrDENewDraftId(), _draftContent:normalizedContent, _pathVal: rawName,
+        var normalizedContent = __vaultrEditorTightenLists(content || '');
+        var newTab = {id:__vaultrEditorNewTabId(), title:title, path:'', isKnowledge:false, pinned:false,
+                      draftId:__vaultrEditorNewDraftId(), _draftContent:normalizedContent, _pathVal: rawName,
                       createdAt: Date.now()};
         this.tabs.push(newTab);
         this.activeTab = this.tabs.length - 1;
         s.currentPath = ''; s.currentDraftId = newTab.draftId; s.currentMd = normalizedContent; s.dirty = false;
-        var initialPi = document.getElementById('drawer-path-input');
+        var initialPi = document.getElementById('content-pane-path-input');
         if (initialPi) initialPi.value = rawName;
-        await __vaultrDEFlushDraft(newTab);
+        await __vaultrEditorFlushDraft(newTab);
         
         var MAX_TABS = 10;
         if (this.tabs.length > MAX_TABS) {
@@ -1346,26 +1411,39 @@
             if (j !== this.activeTab && this.tabs[j].path && this.tabs[j].id < oldestId)
               { oldestIdx = j; oldestId = this.tabs[j].id; }
           }
-          if (oldestIdx >= 0) { 
+          if (oldestIdx >= 0) {
             var evictedTab = this.tabs[oldestIdx];
-            __vaultrDEClearTabState(evictedTab.id);
-            this.tabs.splice(oldestIdx,1); 
-            if (oldestIdx < this.activeTab) this.activeTab--; 
+            __vaultrEditorClearTabState(evictedTab.id);
+            this.tabs.splice(oldestIdx,1);
+            if (oldestIdx < this.activeTab) this.activeTab--;
           }
         }
-        this.drawerOpen = true;
-        this.$nextTick(function() { __vaultrDEScheduleActiveTabScroll(); });
+        this._moveActiveTabToFront();
+        this.contentPaneOpen = true;
 
         s.currentPath = ''; s.currentDraftId = newTab.draftId; s.currentMd = normalizedContent; s.dirty = false;
         
         // Use the new state application method
-        await __vaultrDEApplyState({ content: normalizedContent, inSource: false, scrollTop: 0 }, newTab.id);
+        await __vaultrEditorApplyState({ content: normalizedContent, inSource: false, scrollTop: 0 }, newTab.id);
 
         setTimeout(function() {
-          var pi = document.getElementById('drawer-path-input');
-          if (pi) { pi.value = rawName; pi.classList.remove('invalid'); pi.placeholder='filename.md  ·  or  /folder/note.md'; __vaultrDEPathAc && __vaultrDEPathAc.close(); }
+          var pi = document.getElementById('content-pane-path-input');
+          if (pi) { pi.value = rawName; pi.classList.remove('invalid'); pi.placeholder='filename.md  ·  or  /folder/note.md'; __vaultrEditorPathAc && __vaultrEditorPathAc.close(); }
           focusManager.focusPathInput();
         }, 0);
+      },
+
+      // Keeps the tabs list ordered most-recently-opened-first, so the
+      // tabs panel always shows whatever was just opened/switched to at
+      // the top. Called with this.activeTab already pointing at the tab
+      // to promote — a plain array move, since callers key everything
+      // else off tab object references (nextTab/newTab/etc.), not index.
+      _moveActiveTabToFront() {
+        var i = this.activeTab;
+        if (i <= 0 || i >= this.tabs.length) return;
+        var tab = this.tabs.splice(i, 1)[0];
+        this.tabs.unshift(tab);
+        this.activeTab = 0;
       },
 
       upsertTab(path, title, isKnowledge, pinned, isIndex, canCompile) {
@@ -1379,7 +1457,7 @@
           if (canCompile !== undefined) this.tabs[idx].canCompile = !!canCompile;
           this.activeTab = idx;
         } else {
-          this.tabs.push({id:__vaultrDENewTabId(), title:title||'Note', path:path, isKnowledge:!!isKnowledge, pinned:!!pinned, isIndex:!!isIndex, canCompile:!!canCompile});
+          this.tabs.push({id:__vaultrEditorNewTabId(), title:title||'Note', path:path, isKnowledge:!!isKnowledge, pinned:!!pinned, isIndex:!!isIndex, canCompile:!!canCompile});
           this.activeTab = this.tabs.length - 1;
           var MAX_TABS = 10;
           if (this.tabs.length > MAX_TABS) {
@@ -1389,12 +1467,13 @@
             }
             if (oldestIdx >= 0) {
               var evicted = this.tabs[oldestIdx];
-              __vaultrDEClearTabState(evicted.id);
+              __vaultrEditorClearTabState(evicted.id);
               this.tabs.splice(oldestIdx,1);
               if (oldestIdx < this.activeTab) this.activeTab--;
             }
           }
         }
+        this._moveActiveTabToFront();
       },
 
       markTabCompiled(path) {
@@ -1406,19 +1485,19 @@
       // Activate a draft tab: load draft, populate path input, focus it.
       // savedState comes from tabStateManager.restore() — pass null if unavailable.
       async _activateDraftTab(tab, savedState) {
-        var draft = await __vaultrDELoadDraft(tab);
-        if (!__vaultrDEIsActiveTabId(tab.id)) return;
-        var draftState = __vaultrDEDraftEditorState(draft, savedState);
-        await __vaultrDrawerSetContent(draftState.content, tab.id, draftState, tab.draftId);
+        var draft = await __vaultrEditorLoadDraft(tab);
+        if (!__vaultrEditorIsActiveTabId(tab.id)) return;
+        var draftState = __vaultrEditorDraftEditorState(draft, savedState);
+        await __vaultrContentPaneSetContent(draftState.content, tab.id, draftState, tab.draftId);
         setTimeout(function() {
-          if (!__vaultrDEIsActiveTabId(tab.id)) return;
-          var pi = document.getElementById('drawer-path-input');
+          if (!__vaultrEditorIsActiveTabId(tab.id)) return;
+          var pi = document.getElementById('content-pane-path-input');
           if (pi) { pi.value = draft.pathInput || ''; pi.classList.remove('invalid'); pi.placeholder = 'filename.md  ·  or  /folder/note.md'; }
           focusManager.focusPathInput();
         }, 0);
       },
 
-      async drawerSwitchTab(i) {
+      async contentPaneSwitchTab(i) {
         focusManager.blurActive();
         if (i === this.activeTab) return;
 
@@ -1428,32 +1507,33 @@
         
         // Save current tab's state
         if (prevTab) {
-          await __vaultrDESaveTabForLeave(prevTab);
-          if (!prevTab.path) __vaultrDEPathAc && __vaultrDEPathAc.close();
+          await __vaultrEditorSaveTabForLeave(prevTab);
+          if (!prevTab.path) __vaultrEditorPathAc && __vaultrEditorPathAc.close();
         }
         
         // Switch active tab
         this.activeTab = i;
-        __vaultrDEResetCompileBtn();
+        this._moveActiveTabToFront();
+        __vaultrEditorResetCompileBtn();
 
         // Load next tab's content with saved state
-        var savedState = __vaultrDERestoreTabState(nextTab.id);
+        var savedState = __vaultrEditorRestoreTabState(nextTab.id);
         
         if (!nextTab.path) {
           await this._activateDraftTab(nextTab, savedState);
         } else {
-          await __vaultrDrawerLoadNote(nextTab.path, nextTab.id, savedState);
+          await __vaultrContentPaneLoadNote(nextTab.path, nextTab.id, savedState);
         }
       },
 
-      async drawerCloseTab(i) {
+      async contentPaneCloseTab(i) {
         if (i < 0 || i >= this.tabs.length) return;
         var wasActive = (i === this.activeTab);
         var closingTab = this.tabs[i];
         var closingCreate = !closingTab.path;
-        if (wasActive && closingTab.path && __vaultrDE.dirty && __vaultrDE.currentPath === closingTab.path) {
-          clearTimeout(__vaultrDE.saveTimer); __vaultrDE.saveTimer = null;
-          await __vaultrDEDoSave();
+        if (wasActive && closingTab.path && __vaultrEditor.dirty && __vaultrEditor.currentPath === closingTab.path) {
+          clearTimeout(__vaultrEditor.saveTimer); __vaultrEditor.saveTimer = null;
+          await __vaultrEditorDoSave();
           var liveIdx = this.tabs.indexOf(closingTab);
           if (liveIdx < 0) return;
           i = liveIdx;
@@ -1461,27 +1541,27 @@
         }
         
         // Clear saved state for this tab
-        __vaultrDEClearTabState(closingTab.id);
-        if (closingCreate) void __vaultrDEDeleteDraft(closingTab);
+        __vaultrEditorClearTabState(closingTab.id);
+        if (closingCreate) void __vaultrEditorDeleteDraft(closingTab);
         
         this.tabs.splice(i, 1);
-        if (closingCreate && wasActive) __vaultrDEPathAc && __vaultrDEPathAc.close();
+        if (closingCreate && wasActive) __vaultrEditorPathAc && __vaultrEditorPathAc.close();
         
         if (this.tabs.length === 0) {
-          this.drawerOpen = false; this.activeTab = -1;
-          clearTimeout(__vaultrDE.saveTimer); __vaultrDE.saveTimer = null;
-          __vaultrDE.currentPath = ''; __vaultrDE.currentDraftId = ''; __vaultrDE.currentMd = ''; __vaultrDE.dirty = false;
-          __vaultrDESaveStatus('');
-          if (__vaultrDE.view) {
-            __vaultrDE.loading = true;
+          this.contentPaneOpen = false; this.activeTab = -1;
+          clearTimeout(__vaultrEditor.saveTimer); __vaultrEditor.saveTimer = null;
+          __vaultrEditor.currentPath = ''; __vaultrEditor.currentDraftId = ''; __vaultrEditor.currentMd = ''; __vaultrEditor.dirty = false;
+          __vaultrEditorSaveStatus('');
+          if (__vaultrEditor.view) {
+            __vaultrEditor.loading = true;
             // Clearing to empty removes the frontmatter range too — needs
             // the same escape hatch as syncContent() above, or a note with
             // frontmatter left behind a leftover (blocked) suppressed range.
-            __vaultrDE.view.dispatch({
-              changes: {from: 0, to: __vaultrDE.view.state.doc.length, insert: ''},
-              annotations: __vaultrDE.allowFrontmatterEdit ? __vaultrDE.allowFrontmatterEdit.of(true) : undefined,
+            __vaultrEditor.view.dispatch({
+              changes: {from: 0, to: __vaultrEditor.view.state.doc.length, insert: ''},
+              annotations: __vaultrEditor.allowFrontmatterEdit ? __vaultrEditor.allowFrontmatterEdit.of(true) : undefined,
             });
-            setTimeout(function(){ __vaultrDE.loading = false; }, 50);
+            setTimeout(function(){ __vaultrEditor.loading = false; }, 50);
           }
           return;
         }
@@ -1490,14 +1570,13 @@
           this.activeTab -= 1; 
         } else if (wasActive) {
           this.activeTab = Math.min(i, this.tabs.length-1);
-          this.$nextTick(function() { __vaultrDEScheduleActiveTabScroll(); });
-          var t = this.tabs[this.activeTab]; 
+          var t = this.tabs[this.activeTab];
           if (!t) return;
           
-          var savedState = __vaultrDERestoreTabState(t.id);
+          var savedState = __vaultrEditorRestoreTabState(t.id);
           
           if (t.path) {
-            void __vaultrDrawerLoadNote(t.path, t.id, savedState);
+            void __vaultrContentPaneLoadNote(t.path, t.id, savedState);
           } else {
             void this._activateDraftTab(t, savedState);
           }
@@ -1507,7 +1586,7 @@
       discardNewNote() {
         var i = this.activeTab;
         if (i < 0 || !this.tabs[i] || this.tabs[i].path) return;
-        void this.drawerCloseTab(i);
+        void this.contentPaneCloseTab(i);
       },
 
       async togglePinActiveNote() {
@@ -1540,32 +1619,31 @@
         var reqBody = {path:tab.path};
         var resp = await fetch('/api/vault/delete', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(reqBody)});
         if (!resp.ok) return;
-        clearTimeout(__vaultrDE.saveTimer); __vaultrDE.saveTimer = null; __vaultrDE.dirty = false;
+        clearTimeout(__vaultrEditor.saveTimer); __vaultrEditor.saveTimer = null; __vaultrEditor.dirty = false;
         var cur = this.activeTab;
         var deletedTab = this.tabs[cur];
-        if (deletedTab) __vaultrDEClearTabState(deletedTab.id);
+        if (deletedTab) __vaultrEditorClearTabState(deletedTab.id);
         this.tabs.splice(cur, 1);
         if (this.tabs.length === 0) {
-          this.drawerOpen = false; this.activeTab = -1;
-          __vaultrDE.currentPath = ''; __vaultrDE.currentDraftId = ''; __vaultrDE.currentMd = ''; __vaultrDESaveStatus('');
-          if (__vaultrDE.view) {
-            __vaultrDE.loading = true;
+          this.contentPaneOpen = false; this.activeTab = -1;
+          __vaultrEditor.currentPath = ''; __vaultrEditor.currentDraftId = ''; __vaultrEditor.currentMd = ''; __vaultrEditorSaveStatus('');
+          if (__vaultrEditor.view) {
+            __vaultrEditor.loading = true;
             // Clearing to empty removes the frontmatter range too — needs
             // the same escape hatch as syncContent() above, or a note with
             // frontmatter left behind a leftover (blocked) suppressed range.
-            __vaultrDE.view.dispatch({
-              changes: {from: 0, to: __vaultrDE.view.state.doc.length, insert: ''},
-              annotations: __vaultrDE.allowFrontmatterEdit ? __vaultrDE.allowFrontmatterEdit.of(true) : undefined,
+            __vaultrEditor.view.dispatch({
+              changes: {from: 0, to: __vaultrEditor.view.state.doc.length, insert: ''},
+              annotations: __vaultrEditor.allowFrontmatterEdit ? __vaultrEditor.allowFrontmatterEdit.of(true) : undefined,
             });
-            setTimeout(function(){ __vaultrDE.loading=false; },50);
+            setTimeout(function(){ __vaultrEditor.loading=false; },50);
           }
         } else {
           this.activeTab = cur > 0 ? cur-1 : 0;
-          this.$nextTick(function() { __vaultrDEScheduleActiveTabScroll(); });
           var nextTab = this.tabs[this.activeTab];
-          if (nextTab && nextTab.path) void __vaultrDrawerLoadNote(nextTab.path, nextTab.id, __vaultrDERestoreTabState(nextTab.id));
+          if (nextTab && nextTab.path) void __vaultrContentPaneLoadNote(nextTab.path, nextTab.id, __vaultrEditorRestoreTabState(nextTab.id));
           else if (nextTab) {
-            void this._activateDraftTab(nextTab, __vaultrDERestoreTabState(nextTab.id));
+            void this._activateDraftTab(nextTab, __vaultrEditorRestoreTabState(nextTab.id));
           }
         }
         if (window.__vaultrAfterVaultMutation) await window.__vaultrAfterVaultMutation();
@@ -1573,42 +1651,42 @@
     };
   }
 
-  // ── Compile raw note from drawer ─────────────────────────────────────────────
-  function __vaultrDECompileLabel(btn, text) {
-    var label = btn.querySelector('.drawer-compile-label');
+  // ── Compile raw note from pane ─────────────────────────────────────────────
+  function __vaultrEditorCompileLabel(btn, text) {
+    var label = btn.querySelector('.content-pane-compile-label');
     if (label) label.textContent = text;
   }
-  function __vaultrDECloseMoreMenu() {
-    document.dispatchEvent(new CustomEvent('drawer:close-more'));
+  function __vaultrEditorCloseMoreMenu() {
+    document.dispatchEvent(new CustomEvent('content-pane:close-more'));
   }
-  function __vaultrDEResetCompileBtn() {
-    var btn = document.querySelector('.drawer-compile-btn');
+  function __vaultrEditorResetCompileBtn() {
+    var btn = document.querySelector('.content-pane-compile-btn');
     if (!btn) return;
     btn.classList.remove('is-compiling', 'success');
     btn.disabled = false;
     btn.title = 'Compile to knowledge note';
-    __vaultrDECompileLabel(btn, 'Compile');
+    __vaultrEditorCompileLabel(btn, 'Compile');
   }
 
-  async function compileDrawerNote(event) {
+  async function compileContentPaneNote(event) {
     var btn = event && event.currentTarget;
     if (!btn || btn.disabled) return;
-    var drawer = window.__vaultrDrawer;
-    var tab = drawer ? drawer.tabs[drawer.activeTab] : null;
+    var pane = window.__vaultrContentPane;
+    var tab = pane ? pane.tabs[pane.activeTab] : null;
     if (!tab || !tab.path || !tab.canCompile) return;
     var rawPath = tab.path;
 
-    if (__vaultrDE.dirty && __vaultrDE.currentPath === rawPath) {
-      clearTimeout(__vaultrDE.saveTimer);
-      __vaultrDE.saveTimer = null;
-      await __vaultrDEDoSave();
+    if (__vaultrEditor.dirty && __vaultrEditor.currentPath === rawPath) {
+      clearTimeout(__vaultrEditor.saveTimer);
+      __vaultrEditor.saveTimer = null;
+      await __vaultrEditorDoSave();
     }
 
     var originalTitle = btn.title;
     btn.disabled = true;
     btn.classList.add('is-compiling');
     btn.title = 'Compiling…';
-    __vaultrDECompileLabel(btn, 'Compiling…');
+    __vaultrEditorCompileLabel(btn, 'Compiling…');
 
     try {
       var resp = await fetch('/api/compile/trigger', {
@@ -1624,7 +1702,7 @@
       if (resp.status === 409) {
         btn.disabled = false;
         btn.title = originalTitle;
-        __vaultrDECompileLabel(btn, 'Compile');
+        __vaultrEditorCompileLabel(btn, 'Compile');
         return;
       }
 
@@ -1636,15 +1714,15 @@
         if (pr.ok) {
           var st = await pr.json();
           if (st.status === 'succeeded') {
-            if (drawer && drawer.markTabCompiled) drawer.markTabCompiled(rawPath);
+            if (pane && pane.markTabCompiled) pane.markTabCompiled(rawPath);
             btn.classList.add('success');
             btn.title = 'Compiled';
-            __vaultrDECompileLabel(btn, 'Compiled');
+            __vaultrEditorCompileLabel(btn, 'Compiled');
             setTimeout(function() {
               btn.disabled = false;
               btn.classList.remove('success');
-              __vaultrDECompileLabel(btn, 'Compile');
-              __vaultrDECloseMoreMenu();
+              __vaultrEditorCompileLabel(btn, 'Compile');
+              __vaultrEditorCloseMoreMenu();
             }, 1500);
             if (window.__vaultrAfterVaultMutation) await window.__vaultrAfterVaultMutation();
             return;
@@ -1659,7 +1737,7 @@
     } catch (err) {
       btn.disabled = false;
       btn.title = err && err.message ? err.message : 'Compile failed';
-      __vaultrDECompileLabel(btn, 'Compile');
+      __vaultrEditorCompileLabel(btn, 'Compile');
     } finally {
       btn.classList.remove('is-compiling');
     }
@@ -1668,11 +1746,11 @@
   // Global undo/redo called by Electron main process via executeJavaScript.
   // Calls CodeMirror undo directly, bypassing browser native undo.
   window.__vaultrUndo = function() {
-    var s = __vaultrDE;
+    var s = __vaultrEditor;
     if (s.view && s.cmUndo) s.cmUndo(s.view);
   };
   window.__vaultrRedo = function() {
-    var s = __vaultrDE;
+    var s = __vaultrEditor;
     if (s.view && s.cmRedo) s.cmRedo(s.view);
   };
 
@@ -1683,82 +1761,146 @@
     } catch(_) { return '/home'; }
   };
 
-  window.__vaultrHotkeys.register('drawer', 'e', function() {
-    if (window.__vaultrDrawer) window.__vaultrDrawer.drawerOpen = !window.__vaultrDrawer.drawerOpen;
+  window.__vaultrHotkeys.register('content-pane', 'e', function() {
+    if (window.__vaultrContentPane) window.__vaultrContentPane.contentPaneOpen = !window.__vaultrContentPane.contentPaneOpen;
   });
 
   window.__vaultrHotkeys.register('new-note', 'n', function() {
-    if (window.__vaultrDrawer) void window.__vaultrDrawer.openNewInDrawer('', '');
+    if (window.__vaultrContentPane) void window.__vaultrContentPane.openNewInContentPane('', '');
   });
 
-  window.__vaultrHotkeys.registerRaw('drawer-scroll', function(e, mod) {
+  window.__vaultrHotkeys.register('content-pane-maximize', '\\', function() {
+    var _pane = window.__vaultrContentPane;
+    if (_pane && _pane.contentPaneOpen) _pane.toggleMaximizeEditor();
+  });
+
+  window.__vaultrHotkeys.registerRaw('content-pane-scroll', function(e, mod) {
     if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
     if (mod || e.altKey) return;
     var ae = document.activeElement;
     var tag = ae && ae.tagName;
     if (tag === 'INPUT' || tag === 'TEXTAREA') return;
-    var _drawer = window.__vaultrDrawer;
-    if (!_drawer || !_drawer.drawerOpen) return;
-    var _editArea = document.getElementById('drawer-edit-area');
+    var _pane = window.__vaultrContentPane;
+    if (!_pane || !_pane.contentPaneOpen) return;
+    var _editArea = document.getElementById('content-pane-edit-area');
     if (_editArea && _editArea.contains(ae)) return;
     e.preventDefault();
-    var _scroller = document.querySelector('#drawer-edit-area .cm-scroller');
+    var _scroller = document.querySelector('#content-pane-edit-area .cm-scroller');
     if (_scroller) _scroller.scrollBy(0, e.key === 'ArrowDown' ? 80 : -80);
     return true;
   });
 
-  window.__vaultrHotkeys.register('drawer-focus', '\\', function() {
-    if (window.__vaultrDrawer && window.__vaultrDrawer.drawerOpen) {
-      window.__vaultrDrawer.drawerExpanded = !window.__vaultrDrawer.drawerExpanded;
-    }
-  });
-
-  window.__vaultrHotkeys.registerRaw('drawer-close-tab', function(e, mod) {
+  window.__vaultrHotkeys.registerRaw('content-pane-close-tab', function(e, mod) {
     if (!mod || e.shiftKey || e.altKey || e.key.toLowerCase() !== 'w') return;
-    var drawer = window.__vaultrDrawer;
-    if (!drawer || !drawer.drawerOpen || drawer.activeTab < 0) return;
+    var pane = window.__vaultrContentPane;
+    if (!pane || !pane.contentPaneOpen || pane.activeTab < 0) return;
     e.preventDefault();
-    var at = drawer.tabs[drawer.activeTab];
-    if (at && at.path) drawer.drawerCloseTab(drawer.activeTab);
+    var at = pane.tabs[pane.activeTab];
+    if (at && at.path) pane.contentPaneCloseTab(pane.activeTab);
     return true;
   });
 
-  window.__vaultrHotkeys.registerRaw('drawer-find', function(e, mod) {
+  // Shared by the Mod-F hotkey below and the editor's "more" menu (Find
+  // item, content_pane.html) so there's one place that knows how to open it.
+  function __vaultrEditorOpenFind() {
+    var s = __vaultrEditor;
+    if (!s.cmOpenSearchPanel || !s.view) return;
+    s.cmOpenSearchPanel(s.view);
+  }
+
+  window.__vaultrHotkeys.registerRaw('content-pane-find', function(e, mod) {
     if (!mod || e.shiftKey || e.altKey || e.key.toLowerCase() !== 'f') return;
-    var _fDrawer = window.__vaultrDrawer;
-    if (!_fDrawer || !_fDrawer.drawerOpen) return;
-    var _de = __vaultrDE;
-    if (!_de.cmOpenSearchPanel || !_de.view) return;
+    var _fContentPane = window.__vaultrContentPane;
+    if (!_fContentPane || !_fContentPane.contentPaneOpen) return;
+    if (!__vaultrEditor.cmOpenSearchPanel || !__vaultrEditor.view) return;
     e.preventDefault();
-    _de.cmOpenSearchPanel(_de.view);
+    __vaultrEditorOpenFind();
     return true;
   });
 
-  // Mod-T toggles the selection-format tooltip (see tooltip.js) — replaces
-  // the old auto-popup-on-select behavior, which read as too noisy.
-  window.__vaultrHotkeys.registerRaw('drawer-format-tooltip', function(e, mod) {
+  // The tabs dropdown's own open/highlight state lives in its local x-data
+  // (content_pane.html's #content-pane-tabs-wrap) rather than on window.__vaultrContentPane —
+  // same "small local x-data for a popover" pattern as .content-pane-more-wrap.
+  // Alpine.$data bridges into it for these plain-JS hotkey handlers.
+  function __vaultrContentPaneTabsMenuScope() {
+    var el = document.getElementById('content-pane-tabs-wrap');
+    return (el && window.Alpine) ? window.Alpine.$data(el) : null;
+  }
+
+  // Mod-T opens/closes the tabs dropdown (mirrors the "switch tabs" meaning
+  // Cmd/Ctrl+T carries in most apps).
+  window.__vaultrHotkeys.registerRaw('content-pane-tabs-menu-toggle', function(e, mod) {
     if (!mod || e.shiftKey || e.altKey || e.key.toLowerCase() !== 't') return;
-    var _drawer = window.__vaultrDrawer;
-    if (!_drawer || !_drawer.drawerOpen) return;
-    var ea = document.getElementById('drawer-edit-area');
-    var ae = document.activeElement;
-    if (!ea || !ae || !ea.contains(ae)) return;
-    if (!window.__vaultrToggleFormatTooltip) return;
+    var _pane = window.__vaultrContentPane;
+    if (!_pane || !_pane.contentPaneOpen) return;
+    var scope = __vaultrContentPaneTabsMenuScope();
+    if (!scope) return;
     e.preventDefault();
-    window.__vaultrToggleFormatTooltip();
+    scope.toggleTabsMenu();
+    if (!scope.tabsMenuOpen) document.dispatchEvent(new CustomEvent('content-pane:close-tabs'));
     return true;
   });
 
-  // Intercept mouse back/forward buttons (button 3/4) to switch drawer tabs.
+  // While the tabs dropdown is open: ↑/↓ move the highlighted row, Enter
+  // switches to it. Registered after content-pane-scroll (below) so it's checked
+  // first — see keysJS's reverse-registration-order dispatch — and takes
+  // over plain arrow keys instead of letting them scroll the editor.
+  window.__vaultrHotkeys.registerRaw('content-pane-tabs-menu-nav', function(e, mod) {
+    if (mod || e.shiftKey || e.altKey) return;
+    if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown' && e.key !== 'Enter') return;
+    var menu = document.querySelector('.content-pane-tabs-menu');
+    if (!menu || menu.style.display === 'none') return;
+    var scope = __vaultrContentPaneTabsMenuScope();
+    var _pane = window.__vaultrContentPane;
+    if (!scope || !scope.tabsMenuOpen || !_pane) return;
+    var n = _pane.tabs.length;
+    if (!n) return;
+    e.preventDefault();
+    if (e.key === 'ArrowDown') {
+      scope.tabsMenuActiveIndex = (scope.tabsMenuActiveIndex + 1 + n) % n;
+    } else if (e.key === 'ArrowUp') {
+      scope.tabsMenuActiveIndex = (scope.tabsMenuActiveIndex - 1 + n) % n;
+    } else {
+      var idx = scope.tabsMenuActiveIndex;
+      if (idx >= 0 && idx < n) void _pane.contentPaneSwitchTab(idx);
+      scope.tabsMenuOpen = false;
+    }
+    return true;
+  });
+
+  // Intercept mouse back/forward buttons (button 3/4) to switch pane tabs.
   window.addEventListener('mousedown', function(e) {
-    var _drawer = window.__vaultrDrawer;
-    if (!_drawer || !_drawer.drawerOpen || _drawer.tabs.length <= 1) return;
+    var _pane = window.__vaultrContentPane;
+    if (!_pane || !_pane.contentPaneOpen || _pane.tabs.length <= 1) return;
     if (e.button === 3) {
       e.preventDefault();
-      if (_drawer.activeTab > 0) void _drawer.drawerSwitchTab(_drawer.activeTab - 1);
+      if (_pane.activeTab > 0) void _pane.contentPaneSwitchTab(_pane.activeTab - 1);
     } else if (e.button === 4) {
       e.preventDefault();
-      if (_drawer.activeTab < _drawer.tabs.length - 1) void _drawer.drawerSwitchTab(_drawer.activeTab + 1);
+      if (_pane.activeTab < _pane.tabs.length - 1) void _pane.contentPaneSwitchTab(_pane.activeTab + 1);
     }
   }, true);
+
+  // Keeps .content-pane-tool-bar's height pixel-matched to whichever
+  // #home-list-pane section is currently showing, rather than guessing a
+  // CSS constant that has to independently agree with every section's own
+  // header (Pinned's .home-list-head grows a hair past --btn-h-xs because
+  // its .seg control's own border+padding don't sum to exactly 28px — a
+  // fixed height on both sides can't account for that without measuring).
+  // Graph has no .home-list-head at all, so the property is cleared and
+  // content_pane.css's calc() fallback takes over.
+  function __vaultrSyncContentPaneHeaderHeight() {
+    var head = document.querySelector('#home-list-pane .home-list-head');
+    var root = document.documentElement;
+    if (head) {
+      var h = head.getBoundingClientRect().height;
+      if (h > 0) { root.style.setProperty('--content-header-h', h + 'px'); return; }
+    }
+    root.style.removeProperty('--content-header-h');
+  }
+  document.body.addEventListener('htmx:afterSwap', function(e) {
+    var target = e.detail && e.detail.target;
+    if (target && target.id === 'home-list-pane') __vaultrSyncContentPaneHeaderHeight();
+  });
+  __vaultrSyncContentPaneHeaderHeight();
 

@@ -31,7 +31,7 @@
     });
   }
 
-  // Global helper — call from drawer.js (or any page that includes
+  // Global helper — call from content_pane.js (or any page that includes
   // frontmatterDialogHTML). onSave receives the edited text verbatim.
   window.__vaultrEditFrontmatter = function(initialText, onSave) {
     if (!window._frontmatterDialogCtrl) return;

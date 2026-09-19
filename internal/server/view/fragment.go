@@ -15,7 +15,7 @@ import (
 
 // NoteFragment handles GET /notes/fragment?path=... or ?name=...
 // Returns a bare HTML fragment (no full-page shell) for loading into the
-// reading drawer via HTMX.
+// reading content pane via HTMX.
 func (vh *ViewHandler) NoteFragment(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)

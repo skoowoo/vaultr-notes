@@ -1,6 +1,8 @@
 <div class="home-container">
   <!-- Sidebar + note list ─────────────────────────────────────────── -->
-  <div class="home-shell">
+  <div class="home-shell"
+       :class="{'content-pane-open': (contentPaneOpen || inboxSheetOpen), 'is-resizing': isPaneResizing}"
+       :style="'--split-ratio:' + splitRatio + ';--split-ratio-inv:' + (1 - splitRatio)">
     <aside class="home-side" id="home-side">
       <div class="home-side-top">
         <button type="button" class="icon-btn-ghost"
@@ -13,7 +15,7 @@
       </div>
 
       <button type="button" class="home-side-new-btn" title="New note (Ctrl+N)"
-              onclick="window.__vaultrDrawer && void window.__vaultrDrawer.openNewInDrawer('','')">
+              onclick="window.__vaultrContentPane && void window.__vaultrContentPane.openNewInContentPane('','')">
         <svg fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14M5 12h14" />
         </svg>
@@ -203,9 +205,9 @@
             <circle cx="12" cy="12" r="3" />
           </svg>
         </button>
-        <button type="button" class="icon-btn-ghost home-side-bottom-btn" :class="{'is-active': drawerOpen}"
-                :title="/Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent) ? 'Reading drawer (⌘E)' : 'Reading drawer (Ctrl+E)'"
-                @click="drawerOpen = !drawerOpen">
+        <button type="button" class="icon-btn-ghost home-side-bottom-btn" :class="{'is-active': contentPaneOpen}"
+                :title="/Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent) ? 'Reading pane (⌘E)' : 'Reading pane (Ctrl+E)'"
+                @click="contentPaneOpen = !contentPaneOpen">
           <svg fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24">
             <rect x="3" y="3" width="18" height="18" rx="2" />
             <path stroke-linecap="round" stroke-linejoin="round" d="M15 3v18" />
@@ -218,5 +220,14 @@
     <main class="home-list-pane" id="home-list-pane">
       {{.SectionHTML}}
     </main>
-  </div>
-</div>
+
+    <!-- Resizer + editor pane below only show once a note is open in the
+         content pane (see content_pane.html) — .home-shell/.home-container are closed
+         in home.go, after the content-pane markup is spliced in right here, so
+         the editor pane sits in the same flex row as the list pane instead
+         of floating as a page-level overlay. -->
+    <div class="home-pane-resizer" id="home-pane-resizer" x-cloak
+         x-show="contentPaneOpen || inboxSheetOpen"
+         @mousedown="startPaneResize($event)"
+         @dblclick="splitRatio = 0.5"
+         title="Drag to resize"></div>

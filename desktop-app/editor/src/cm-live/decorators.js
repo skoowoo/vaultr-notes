@@ -360,7 +360,21 @@ function tableAlignments(tableNode, doc) {
   });
 }
 
-// % of .cm-line width — ch drifts between bold header and regular body.
+// Column weight — the widest cell's character count (+2 slack), across
+// every row including the header. Drives two things per column: the
+// flex-grow ratio (how much of the row's *leftover* width it claims) and,
+// capped, a min-width floor in `em` (below).
+//
+// A pure percent-of-total-weight split (the old approach: width = weight /
+// sum(weights) * 100%) ties a column's actual pixel width to every OTHER
+// column's content — a short label column (e.g. 4 CJK chars, weight 6)
+// sitting next to a column with a long sentence (weight 20+) gets squeezed
+// to a sliver of its "share" once the heavy column inflates the total,
+// often below the width its own 4 characters need to avoid wrapping one
+// character per line. flex-grow + min-width fixes this the way a real
+// <table> would: every column gets at least enough room for its own
+// content first, and only the space left over after that gets divided by
+// weight.
 function tableColumnWeights(tableNode, doc) {
   const weights = [];
   const rows = [];
@@ -384,18 +398,20 @@ function tableColumnWeights(tableNode, doc) {
   return weights.map((w) => Math.max((w || 0) + 2, 4));
 }
 
-function tableColumnPercents(tableNode, doc) {
-  const weights = tableColumnWeights(tableNode, doc);
-  const total = weights.reduce((sum, w) => sum + w, 0) || 1;
-  return weights.map((w) => (w / total) * 100);
+// Capped at 6em: enough for a short label (~4-6 CJK glyphs, which are ~1em
+// wide each) to never wrap character-by-character, without also handing a
+// genuinely long column (weight 20+) a floor so big it starves everyone
+// else before flex-grow even gets a say.
+function tableColumnMinEm(weight) {
+  return Math.min(weight, 6);
 }
 
 // Cache per table — rebuilds on selection change would recompute every row.
 function getTableLayout(tableNode, doc, cache) {
-  if (!cache) return { alignments: tableAlignments(tableNode, doc), percents: tableColumnPercents(tableNode, doc) };
+  if (!cache) return { alignments: tableAlignments(tableNode, doc), weights: tableColumnWeights(tableNode, doc) };
   let layout = cache.get(tableNode.from);
   if (!layout) {
-    layout = { alignments: tableAlignments(tableNode, doc), percents: tableColumnPercents(tableNode, doc) };
+    layout = { alignments: tableAlignments(tableNode, doc), weights: tableColumnWeights(tableNode, doc) };
     cache.set(tableNode.from, layout);
   }
   return layout;
@@ -431,9 +447,9 @@ function decorateTableRow(isHeader) {
 
     if (selectionTouchesLine(state, line)) return;
 
-    const layout = tableNode ? getTableLayout(tableNode, doc, tableCache) : { alignments: [], percents: [] };
+    const layout = tableNode ? getTableLayout(tableNode, doc, tableCache) : { alignments: [], weights: [] };
     const alignments = layout.alignments;
-    const percents = layout.percents;
+    const weights = layout.weights;
 
     const colCells = [];
     let colIndex = -1;
@@ -449,15 +465,20 @@ function decorateTableRow(isHeader) {
     }
 
     // Column count from header alignments — trailing empty cells still need boxes.
-    const colCount = Math.max(alignments.length, percents.length, colCells.length);
+    const colCount = Math.max(alignments.length, weights.length, colCells.length);
     let pos = line.from;
     for (let col = 0; col < colCount; col++) {
       const cls = ['cm-lp-table-cell'];
       if (col === 0) cls.push('cm-lp-table-cell-first');
       if (col === colCount - 1) cls.push('cm-lp-table-cell-last');
       const align = alignments[col];
-      const pct = percents[col] || 100 / colCount;
-      const styleParts = ['width:' + pct.toFixed(4) + '%'];
+      const weight = weights[col] || 4;
+      // flex-grow:weight, flex-shrink:1, flex-basis:0% — divide the row's
+      // width by weight ratio same as before, but only after every column
+      // has already claimed its own min-width floor (tableColumnMinEm), so
+      // a short column can never be squeezed narrower than its own content
+      // needs just because a sibling column is much longer.
+      const styleParts = ['flex:' + weight + ' 1 0%', 'min-width:' + tableColumnMinEm(weight) + 'em'];
       if (align) styleParts.push('text-align:' + align);
       const style = styleParts.join(';');
       const cell = colCells[col];
@@ -564,9 +585,26 @@ function frontmatterLabelWidthCh(doc, fromLineNo, toLineNo) {
   return Math.ceil(maxLen * 1.15) + 1;
 }
 
+// System-defined keys get a fixed icon regardless of value shape — value-type
+// icons (tag/list/number/text) below are the fallback for everything else.
+const FM_KEY_ICON_OVERRIDES = {
+  title: 'heading',
+  kind: 'layers',
+  tags: 'tag',
+  author: 'user',
+  source: 'link',
+  source_notes: 'link',
+  clipped: 'clock',
+  clipped_at: 'clock',
+  created_at: 'clock',
+  last_compiled_at: 'clock',
+};
+
 // Type drives which icon renders next to the key — 'tags' is special-cased
 // (Obsidian does the same), other arrays/lists get the generic list icon.
 function fmFieldType(key, rawValue, isArrayGroup) {
+  const override = FM_KEY_ICON_OVERRIDES[key.trim().toLowerCase()];
+  if (override) return override;
   if (isArrayGroup) return key.trim().toLowerCase() === 'tags' ? 'tag' : 'list';
   return FM_NUMBER_RE.test(rawValue.trim()) ? 'number' : 'text';
 }

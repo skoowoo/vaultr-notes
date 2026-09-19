@@ -449,11 +449,19 @@ const homeShortsSectionHTML = `<div class="shorts-view">
 
   <div class="shorts-stream-wrap">
     <div class="shorts-stream-inner">
-      <button type="button" class="shorts-compose"
-              onclick="window.openShortDialog && window.openShortDialog()">
-        Write a short...
-        <svg fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
-      </button>
+      <div class="shorts-compose-card">
+        <textarea id="shorts-compose-input" class="shorts-compose-input" rows="2"
+                  placeholder="Write a short…" spellcheck="false" x-model="shortComposeText"
+                  :disabled="shortComposeSaving"
+                  @keydown="handleShortComposeKeydown($event)"
+                  @input="autoResize($event.target)"></textarea>
+        <div class="shorts-compose-footer">
+          <span class="shorts-compose-hint" x-text="(isMac ? '⌘' : 'Ctrl+') + '↵ to save'"></span>
+          <button type="button" class="shorts-compose-send"
+                  :disabled="!shortComposeText.trim() || shortComposeSaving"
+                  @click="saveShortCompose()">Save</button>
+        </div>
+      </div>
       <div id="shorts-stream-groups">
         {{range .Groups}}
         <div class="shorts-day">
@@ -472,7 +480,7 @@ const homeShortsSectionHTML = `<div class="shorts-view">
           </div>
           <p class="shorts-empty-label">No shorts yet</p>
           <button type="button" class="shorts-empty-btn"
-                  onclick="window.openShortDialog && window.openShortDialog()">
+                  onclick="var el=document.getElementById('shorts-compose-input'); if (el) el.focus();">
             <svg fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></svg>Write a short
           </button>
         </div>
@@ -583,7 +591,6 @@ const homeImagesLightboxHTML = `
        x-transition:leave-start="lb-leave-start"
        x-transition:leave-end="lb-leave-end"
        @click.self="closeLightbox()"
-       @keydown.escape.window="closeLightbox()"
        style="display:none">
     <div class="lb-panel" @click.stop>
       <div class="lb-viewer">
@@ -696,7 +703,7 @@ const homeGraphSectionHTML = `<div class="graph-main">
       </div>
       <div class="graph-node-panel-title" x-text="nodePanel ? nodePanel.label : ''"></div>
       <button type="button" class="btn-solid graph-node-open-btn"
-              @click="nodePanel && openNodeInDrawer(nodePanel.path, nodePanel.label, nodePanel.entityType)">
+              @click="nodePanel && openNodeInContentPane(nodePanel.path, nodePanel.label, nodePanel.entityType)">
         Open
         <svg fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" d="M15 3h6v6"/>
@@ -733,8 +740,9 @@ const homeGraphSectionHTML = `<div class="graph-main">
 // than the standalone /agent/inbox page's narrow sidebar rows. Entirely
 // client-rendered — home.js fetches /api/inbox once this markup lands in the
 // DOM (see the htmx:afterSwap listener) and drives the x-for below.
-// Selecting a card opens the read-only message sheet (homeInboxSheetHTML),
-// not the note-editor drawer.
+// Selecting a card opens the read-only message detail, which shares the
+// editor's split pane (see contentPaneHTML's inbox-detail-panel) — the two are
+// mutually exclusive there, never both visible.
 const homeInboxSectionHTML = `<div class="home-inbox-section">
   <div class="home-list-head">
     <span class="home-list-title">Inbox</span>
@@ -766,34 +774,6 @@ const homeInboxSectionHTML = `<div class="home-inbox-section">
     <div class="home-list-empty" x-show="inboxLoadingMore" style="padding:1rem 0">Loading more…</div>
   </div>
 </div>`
-
-// homeInboxSheetHTML is the read-only slide-in panel opened by clicking an
-// inbox card — distinct from the note-editor drawer (drawerHTML): it only
-// ever displays a message's rendered body, never edits anything. Lives once
-// at the page level (spliced into homePageHTML below), not inside the
-// swappable #home-list-pane, so it survives switching sidebar sections while
-// still animating closed via inboxSheetOpen.
-const homeInboxSheetHTML = `
-  <div class="inbox-sheet-overlay" :class="{ open: inboxSheetOpen }"
-       @click.self="closeInboxSheet()"
-       @keydown.escape.window="closeInboxSheet()">
-    <div class="inbox-sheet-panel">
-      <div class="inbox-sheet-head">
-        <span class="inbox-sheet-title" x-text="inboxSelected ? (inboxSelected.title || inboxSelected.source) : ''"></span>
-        <button type="button" class="icon-btn-ghost inbox-sheet-close" @click="closeInboxSheet()" title="Close (Esc)">
-          <svg fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path stroke-linecap="round" d="M18 6 6 18"/><path stroke-linecap="round" d="m6 6 12 12"/></svg>
-        </button>
-      </div>
-      <div class="inbox-sheet-meta">
-        <span x-text="inboxSelected ? inboxSelected.source : ''"></span>
-        <span>·</span>
-        <span x-text="inboxSelected ? fullTime(inboxSelected.createdAt) : ''"></span>
-      </div>
-      <div class="inbox-sheet-scroll">
-        <div class="prose inbox-sheet-body" x-html="inboxSelected ? renderMarkdown(inboxSelected.body) : ''"></div>
-      </div>
-    </div>
-  </div>`
 
 // homeChatSectionHTML mirrors agent_chat.html's .chat-main block (agent bot
 // chips, message thread, composer) verbatim — everything except the
@@ -1024,8 +1004,8 @@ const homeChatSectionHTML = `<div class="chat-main">
 </div>`
 
 // homeChatToastHTML mirrors agent_chat.html's run-completion toast — a
-// position:fixed element, so like homeImagesLightboxHTML/homeInboxSheetHTML
-// it lives once at the page level rather than inside the swappable
+// position:fixed element, so like homeImagesLightboxHTML it lives once at
+// the page level rather than inside the swappable
 // #home-list-pane: a background chat run can finish while a different
 // sidebar section is showing, and the toast should still surface.
 const homeChatToastHTML = `
@@ -1062,16 +1042,17 @@ var homePageHTML = `<!DOCTYPE html>
   </script>
   <style>
 ` + appTokensCSS + `
-` + infoDialogCSS + baseCSS + cselectCSS + homeCSS + imagesCSS + graphCSS + agentChatCSS + drawerCSS + noteSharedCSS + noteEditorCSS + shortsCSS + searchOverlayStyles + confirmDialogCSS + shortDialogCSS + settingsModalCSS + frontmatterDialogCSS + `
+` + infoDialogCSS + baseCSS + cselectCSS + homeCSS + imagesCSS + graphCSS + agentChatCSS + contentPaneCSS + noteSharedCSS + noteEditorCSS + shortsCSS + searchOverlayStyles + confirmDialogCSS + settingsModalCSS + frontmatterDialogCSS + `
   </style>
 </head>
 <body x-data="homeCtrl()" @vaultr:insert-path.window="insertPath($event)">
-` + searchOnlyOverlayHTML + confirmDialogHTML + infoDialogHTML + shortDialogHTML + frontmatterDialogHTML + settingsModalHTML() + homeImagesLightboxHTML + homeInboxSheetHTML + homeChatToastHTML + `
+` + searchOnlyOverlayHTML + confirmDialogHTML + infoDialogHTML + frontmatterDialogHTML + settingsModalHTML() + homeImagesLightboxHTML + homeChatToastHTML + `
   <div class="lib-body">
-` + homeMainHTML + `
-  </div>
+` + homeMainHTML + contentPaneHTML + `
+  </div><!-- /.home-shell -->
+</div><!-- /.home-container -->
+  </div><!-- /.lib-body -->
 
-` + drawerHTML + `
   <div id="graph-tooltip" class="graph-tooltip"></div>
 
   <script>
@@ -1079,7 +1060,7 @@ var homePageHTML = `<!DOCTYPE html>
 ` + alpineStoresScript + `
   });
 
-` + keysJS + pathAcScript + drawerScript + searchOverlayScript + confirmDialogJS + infoDialogJS + shortDialogJS + frontmatterDialogJS + settingsCtrlJS + homeJS + `
+` + keysJS + pathAcScript + contentPaneScript + searchOverlayScript + confirmDialogJS + infoDialogJS + frontmatterDialogJS + settingsCtrlJS + homeJS + `
   </script>
 ` + noteSharedJS + `
 </body>

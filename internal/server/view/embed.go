@@ -14,23 +14,6 @@ var infoDialogJS string
 //go:embed assets/base.css
 var baseCSS string
 
-// shortDialogCSS, shortDialogHTML, and shortDialogJS form a self-contained
-// quick-capture dialog for short notes. Drop all three into any page shell to
-// get a modal reachable via the Shorts section's "Write a short…" button or
-// the keyboard shortcut Ctrl+. (⌘. on macOS).
-//
-// The dialog POSTs to POST /api/vault/shorts and calls
-// window.__vaultrAfterVaultMutation (if defined) on success.
-
-//go:embed assets/short_dialog.css
-var shortDialogCSS string
-
-//go:embed assets/short_dialog.html
-var shortDialogHTML string
-
-//go:embed assets/short_dialog.js
-var shortDialogJS string
-
 //go:embed assets/confirm_dialog.css
 var confirmDialogCSS string
 
@@ -41,7 +24,7 @@ var confirmDialogHTML string
 var confirmDialogJS string
 
 // frontmatterDialogCSS/HTML/JS form the "Edit metadata" dialog opened from
-// the CM6 live-preview editor's frontmatter header (drawer.js) — a plain
+// the CM6 live-preview editor's frontmatter header (content_pane.js) — a plain
 // YAML textarea + Save/Cancel, same window.vaultrOverlay shell as
 // confirm_dialog/short_dialog.
 
@@ -54,17 +37,17 @@ var frontmatterDialogHTML string
 //go:embed assets/frontmatter_dialog.js
 var frontmatterDialogJS string
 
-//go:embed assets/drawer.css
-var drawerCSS string
+//go:embed assets/content_pane.css
+var contentPaneCSS string
 
-//go:embed assets/drawer.html
-var drawerHTML string
+//go:embed assets/content_pane.html
+var contentPaneHTML string
 
 //go:embed assets/path_ac.js
 var pathAcScript string
 
-//go:embed assets/drawer.js
-var drawerScript string
+//go:embed assets/content_pane.js
+var contentPaneScript string
 
 //go:embed assets/agent_chat.css
 var agentChatCSS string

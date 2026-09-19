@@ -17,7 +17,7 @@ type noteItem struct {
 	Path        string
 	UpdatedAt   string
 	URL         string // full view page URL
-	FragmentURL string // drawer fragment URL
+	FragmentURL string // content-pane fragment URL
 	CursorNs    int64  // Unix nanoseconds for pagination cursor
 	IsKnowledge bool   // true for knowledge notes; drives data-knowledge on the read button
 	IsIndex     bool   // true for index notes (origin = "plugin:index")

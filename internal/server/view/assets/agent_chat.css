@@ -315,8 +315,11 @@
       background: var(--surface-soft);
       border-radius: var(--r-md);
       color: var(--fg);
-      font-size: var(--text-body);
-      line-height: var(--lh-relaxed);
+      /* Chat is a stream of short exchanges, not long-form prose, so it
+         reads one tier down from editor/reader-scale type. Matches
+         .msg-body .prose below. */
+      font-size: var(--text-base);
+      line-height: 1.6;
       white-space: pre-wrap;
       word-break: break-word;
     }
@@ -358,10 +361,13 @@
     }
 
     /* Assistant markdown — reuse .prose from noteSharedCSS (same tokens as
-       Milkdown) at its own default size (--text-body, 16px) rather than
-       shrinking it — message content is primary reading copy, same tier as
-       the note editor/drawer's prose, not compact chrome text. */
+       the note editor's prose) but sized down a tier from the reading-view
+       default: this is chat, not editing content, so compact/tight-set
+       type reads more polished here than editor-scale (--text-body, 16px)
+       text would. Headings/inline code stay proportional (.prose sizes
+       them in em off this). */
     .msg-body .prose {
+      font-size: var(--text-base);
       word-break: break-word;
       min-width: 0;
     }
@@ -373,6 +379,11 @@
     .msg-body .prose li>p {
       margin-top: 0;
       margin-bottom: 0;
+    }
+
+    .msg-body .prose p,
+    .msg-body .prose li {
+      line-height: 1.6;
     }
 
     .msg-body .prose p {
@@ -907,7 +918,7 @@
       display: none;
     }
 
-    html.macos .drawer-overlay.open {
+    html.macos .content-pane.open {
       -webkit-app-region: no-drag;
     }
 

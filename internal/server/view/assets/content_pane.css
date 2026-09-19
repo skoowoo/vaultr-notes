@@ -1,0 +1,421 @@
+    /* ── Editor pane ─────────────────────────────────────────────────
+       Used to be a fixed, full-viewport overlay (position:fixed + a
+       backdrop scrim) that slid in over the note list. It's now a normal
+       flex item living inside .home-shell, right of #home-list-pane (see
+       home.html/home.css) — closed state is flex-grow:0 (collapsed to 0
+       width, contents clipped by overflow:hidden) rather than off-screen/
+       transparent, and open width is a share of .home-shell's free space
+       set by home.css's .content-pane-open rule (driven by --split-ratio,
+       written by content_pane.js's startPaneResize/toggleMaximizeEditor).
+       There's no separate "focus mode" state — the maximize button and
+       dragging the divider to the sidebar both just push --split-ratio to
+       0, giving the editor 100% of the content area (the sidebar itself
+       stays put; this never covers the whole window).
+
+       flex-grow itself is always a zero-duration change (see home.css's
+       .home-shell comment for the full reasoning) — tweening it would
+       force layout every frame and, worse, fire CodeMirror's own
+       ResizeObserver continuously. The slide/fade you actually see is
+       .content-pane-panel's transform/opacity below, which runs purely on the
+       compositor against an already-correctly-sized box; on close, this
+       pane's transition-delay (home.css) holds the actual collapse until
+       that fade has finished. */
+    .content-pane {
+      position: relative;
+      flex: 0 0 0%; min-width: 0; overflow: hidden;
+      border-radius: 0;
+      transition: flex-grow 0s linear var(--content-pane-exit-ms, 200ms);
+      contain: layout paint style;
+      /* Explicit for the same reason #home-list-pane sets it (home.css):
+         html.macos makes body transparent so the sidebar's vibrancy shows
+         through. .content-pane-panel's own background fades in/out with its
+         opacity transition below, so without this, that fade briefly
+         exposed the (lighter) vibrancy blur through this now-empty box
+         before the panel's solid bg caught up — this pane never actually
+         needs the vibrancy showing through it, so it just stays opaque. */
+      background: var(--bg);
+    }
+    .content-pane-panel {
+      position: relative;
+      width: 100%; height: 100%;
+      /* No border-left — .home-pane-resizer (home.css) is the one and
+         only dividing line between the two content-area panes; this
+         panel doesn't draw its own edge on top of it. */
+      background: var(--bg);
+      border-radius: 0;
+      display: flex; flex-direction: column; overflow: hidden;
+      /* Shared by every floating popover in here — tabs menu, more menu,
+         the find/replace card — so they all sit the same distance off
+         whatever they're anchored to, instead of each panel guessing its
+         own gap. */
+      --float-panel-gap: 0.5rem;
+      transform: translateX(16px);
+      opacity: 0;
+      transition:
+        transform 220ms cubic-bezier(0.25, 0.8, 0.25, 1),
+        opacity 200ms ease;
+    }
+    .content-pane.open .content-pane-panel { transform: translateX(0); opacity: 1; }
+
+    /* ── Tool bar ────────────────────────────────────────────────── */
+    /* The old horizontal tab strip is gone — tabs now live in the
+       dropdown below (.content-pane-tabs-menu), reachable via .content-pane-tabs-btn
+       next to the more-actions button. .content-pane-expand-btn (maximize/
+       restore) used to sit in that strip's own left slot; it's now just
+       the tool bar's first child. .content-pane-tab-draft-icon is still used —
+       each tab, wherever it's listed, marks an unsaved draft with it. */
+    .content-pane-expand-btn {
+      display: flex; align-items: center; justify-content: center;
+      width: var(--action-btn-sz); height: var(--action-btn-sz);
+      border: none; background: transparent; color: var(--muted);
+      cursor: pointer; padding: 0; flex-shrink: 0;
+    }
+    .content-pane-expand-btn:hover { color: var(--fg); background: var(--icon-hov); }
+    .content-pane-expand-btn:focus { outline: none; }
+    .content-pane-panel button:focus { outline: none; }
+    .content-pane-expand-btn svg { width: 13px; height: 13px; }
+    .content-pane-tab-draft-icon {
+      flex-shrink: 0; width: 16px; height: 16px;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--s-warn); opacity: 0.9;
+    }
+    .content-pane-tab-draft-icon svg { width: 11px; height: 11px; }
+    .content-pane-tool-bar {
+      flex-shrink: 0; display: flex; align-items: center; gap: 0.5rem;
+      padding: 0 0.625rem 0 0.75rem;
+      border-bottom: var(--bd-w) solid var(--hairline); background: var(--bg);
+      border-radius: 0; /* flush chrome strip */
+      /* --content-header-h is the *measured* height of whichever
+         #home-list-pane section is currently showing (content_pane.js's
+         __vaultrSyncContentPaneHeaderHeight) — a calc() guess here can't
+         account for a specific section's controls (e.g. Pinned's .seg
+         toggle) rendering a hair taller than --btn-h-xs. The calc()
+         fallback only matters before that first sync runs, or for a
+         section with no .home-list-head at all (Graph). */
+      height: var(--content-header-h, calc(8px + 8px + var(--btn-h-xs)));
+    }
+    /* Create-mode half */
+    .content-pane-create-bar {
+      flex: 1; min-width: 0; display: flex; align-items: center; gap: 0.5rem;
+    }
+    .content-pane-path-input-wrap {
+      flex: 1; min-width: 0; position: relative; display: flex; align-items: center;
+    }
+    .content-pane-path-input {
+      width: 100%; background: transparent; border: none; outline: none;
+      border-radius: 0; /* no padding at the start edge — the 8px default would clip the caret there */
+      font-size: var(--text-xs); line-height: var(--lh-relaxed); color: var(--muted);
+      font-family: var(--font-mono);
+      transition: color var(--motion-fast);
+    }
+    .content-pane-path-input:focus { color: var(--fg); }
+    .content-pane-path-input.invalid { color: var(--s-err); }
+    .content-pane-path-input::placeholder { color: var(--muted-soft); font-style: italic; }
+    .content-pane-path-ac {
+      display: none; position: absolute; top: calc(100% + 4px); left: 0;
+      min-width: 360px; max-width: min(440px, 90vw); max-height: min(240px, 40vh); overflow-y: auto;
+      margin: 0; padding: 4px 0; list-style: none;
+      background: var(--surface-soft); border: var(--bd-w) solid var(--border-strong);
+      box-shadow: var(--shadow-sm) var(--shadow-color);
+      z-index: 200;
+    }
+    .content-pane-path-ac.open { display: block; }
+    .content-pane-path-ac li {
+      padding: 0.4rem 0.65rem; font-size: var(--text-xs);
+      font-family: var(--font-mono);
+      color: var(--fg); cursor: pointer; user-select: none;
+    }
+    .content-pane-path-ac li:hover, .content-pane-path-ac li[aria-selected="true"] { background: var(--card-hov); }
+    .content-pane-path-ac li:not(.path-ac-muted):active { opacity: 0.85; }
+    .content-pane-path-ac li.path-ac-muted { color: var(--muted); cursor: default; font-style: italic; }
+    .content-pane-path-ac li.path-ac-muted:hover { background: transparent; }
+    /* #content-pane-publish-btn's structure/color now come from the shared
+       .btn-solid.btn--xs (base.css); only its transient "just published"
+       state is local. */
+    #content-pane-publish-btn.success { background: var(--s-ok); color: var(--s-ok-fg); opacity: 1; }
+    /* Discard button now uses the shared .btn-outline.btn--xs (base.css). */
+    /* Edit-mode half */
+    .content-pane-path-text {
+      flex: 1; min-width: 0; font-size: var(--text-xs);
+      font-family: var(--font-mono);
+      color: var(--muted);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      border-radius: 0;
+    }
+    .content-pane-tool-actions { flex-shrink: 0; display: flex; align-items: center; gap: 0.3rem; }
+    .content-pane-save-status {
+      flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+      width: 16px; height: 16px; margin-left: 0.4rem;
+    }
+    .content-pane-save-status .ssi-pending,
+    .content-pane-save-status .ssi-saved { display: none; }
+    .content-pane-save-status[data-state="pending"] .ssi-pending { display: block; }
+    .content-pane-save-status[data-state="saved"] .ssi-saved { display: block; }
+    .ssi-pending { color: var(--fg); animation: ssi-pulse 1.2s ease-in-out infinite; }
+    @keyframes ssi-pulse {
+      0%, 100% { opacity: 0.35; transform: scale(0.85); }
+      50%       { opacity: 1;    transform: scale(1); }
+    }
+    .ssi-saved { color: var(--accent); animation: ssi-fadein 0.25s ease; }
+    @keyframes ssi-fadein { from { opacity: 0; transform: scale(0.7); } to { opacity: 1; transform: scale(1); } }
+    /* ── Tabs menu ──────────────────────────────────────────────── */
+    /* Same dropdown shape/positioning as the more menu right next to it
+       (below) — a vertical list instead of the old horizontal strip, one
+       row per open tab/draft. */
+    .content-pane-tabs-wrap { position: relative; flex-shrink: 0; }
+    .content-pane-tabs-btn.active { color: var(--accent); background: var(--tint-md); }
+    .content-pane-tabs-menu {
+      position: absolute; top: calc(100% + var(--float-panel-gap)); right: 0; z-index: 50;
+      /* The enter/leave scale (content_pane.html's x-transition) unfurls from
+         this top edge — anchored where the panel actually docks, not its
+         own center. */
+      transform-origin: top;
+      min-width: 220px; max-width: min(320px, 90vw);
+      /* Exactly 10 rows before scrolling kicks in (an 11th+ tab is the
+         overflow case) — rows have a fixed height (below) specifically so
+         this arithmetic is exact instead of a guessed cap that clips a
+         fraction of the 10th row. */
+      max-height: calc(10 * var(--btn-h-xs) + 0.5rem);
+      overflow-y: auto;
+      padding: 0.25rem;
+      background: var(--surface-soft); border: var(--bd-w) solid var(--border);
+      border-radius: var(--r-md);
+      box-shadow: var(--shadow-sm) var(--shadow-color);
+    }
+    .content-pane-tabs-menu-row {
+      display: flex; align-items: center; gap: 0.45rem;
+      height: var(--btn-h-xs);
+      padding: 0 0.55rem;
+      border-radius: var(--r-sm);
+      color: var(--muted);
+      font-size: var(--text-sm);
+      cursor: pointer;
+    }
+    .content-pane-tabs-menu-row:hover { color: var(--fg); background: var(--icon-hov); }
+    .content-pane-tabs-menu-row.active { color: var(--accent); background: var(--tint-soft); }
+    /* Keyboard-nav highlight (Cmd/Ctrl+T then ↑/↓) — a ring layered on top
+       so it stays visible whether or not the row is also .active. */
+    .content-pane-tabs-menu-row.kbd-active { box-shadow: inset 0 0 0 1px var(--accent); }
+    .content-pane-tabs-menu-title { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .content-pane-tabs-menu-close {
+      flex-shrink: 0; width: 16px; height: 16px;
+      border: none; background: transparent; color: inherit; cursor: pointer; padding: 0;
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0.4;
+    }
+    .content-pane-tabs-menu-row:hover .content-pane-tabs-menu-close { opacity: 0.75; }
+    .content-pane-tabs-menu-close:hover { opacity: 1 !important; background: var(--tint-strong); }
+    .content-pane-tabs-menu-empty { padding: 0.5rem 0.55rem; font-size: var(--text-sm); color: var(--muted-soft); }
+
+    /* ── More menu ──────────────────────────────────────────────── */
+    .content-pane-more-wrap { position: relative; flex-shrink: 0; }
+    .content-pane-more-menu {
+      position: absolute; top: calc(100% + var(--float-panel-gap)); right: 0; z-index: 50;
+      transform-origin: top;
+      min-width: 130px; max-width: min(320px, 90vw); padding: 0.25rem;
+      background: var(--surface-soft); border: var(--bd-w) solid var(--border);
+      border-radius: var(--r-md);
+      box-shadow: var(--shadow-sm) var(--shadow-color);
+    }
+    .content-pane-more-item {
+      display: flex; align-items: center; gap: 0.45rem;
+      width: 100%; padding: 0.4rem 0.55rem;
+      border: none; background: transparent;
+      font-size: var(--text-sm); font-family: inherit; color: var(--muted);
+      cursor: pointer; text-align: left;
+      white-space: nowrap;
+    }
+    .content-pane-more-item svg { width: 13px; height: 13px; flex-shrink: 0; }
+    .content-pane-more-item:hover { color: var(--fg); background: var(--icon-hov); }
+    .content-pane-more-item-danger:hover { color: var(--s-err); background: var(--s-err-bg); }
+    /* Pin/compile live in the more menu as regular .content-pane-more-item rows —
+       active/is-compiling/success below are their only bespoke states, all
+       using the brand accent since they read as "engaged" toggles, not
+       app-wide row selection (base.css's shared .icon-btn.active/.seg-btn
+       .active default to a neutral surface-2 fill instead). */
+    .content-pane-more-item.frag-pin-btn.active,
+    .content-pane-more-item.frag-pin-btn.active:hover { color: var(--accent); background: var(--tint-soft); }
+    .frag-pin-btn.active svg { fill: currentColor; }
+    /* Source/preview toggle folded into the more menu as a single row (was
+       a two-button .seg in the toolbar) — icon+label swap to describe the
+       action the click will take, "engaged" accent treatment matches
+       pin/compile above rather than the toolbar seg's neutral row-selection
+       styling, since there's only one row here, not two to pick between. */
+    .content-pane-source-toggle-btn .dstb-goto-wysiwyg { display: none; }
+    .content-pane-source-toggle-btn.active .dstb-goto-source { display: none; }
+    .content-pane-source-toggle-btn.active .dstb-goto-wysiwyg { display: inline; }
+    .content-pane-source-toggle-btn.active,
+    .content-pane-source-toggle-btn.active:hover { color: var(--accent); background: var(--tint-soft); }
+    .content-pane-compile-btn:disabled { cursor: progress; }
+    .content-pane-compile-btn.success { color: var(--s-ok); background: var(--s-ok-bg); }
+    @keyframes content-pane-compile-pulse { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; } }
+    .content-pane-compile-btn.is-compiling { color: var(--accent); animation: content-pane-compile-pulse 1.2s ease-in-out infinite; }
+    /* .content-pane-more-btn uses the shared .icon-btn-ghost component (base.css,
+       borderless) for its base shape, hover, and press states — active
+       (menu open) is overridden here with the same brand-accent treatment
+       as above. */
+    .content-pane-more-btn.active { color: var(--accent); background: var(--tint-md); }
+    /* Source/Preview view toggle uses the shared .seg-btn.active as-is
+       (neutral surface-2 fill, base.css) — it's a row-selection control
+       like every other .seg/.seg-btn picker, not an "engaged" brand
+       toggle like pin/compile/the more-menu above. Only the tighter
+       horizontal padding stays local, for this toolbar's tight fit. */
+    .content-pane-view-seg .seg-btn { padding: 0.3rem 0.5rem; }
+
+    /* ── Editor area ─────────────────────────────────────────────── */
+    /* One CodeMirror 6 view mounts directly into #content-pane-edit-area now
+       (both live-preview and source modes — see content_pane.js's editorMode) —
+       no more separate #drawer-milkdown / #drawer-cm-wrap (their old names,
+       back when this pane was still called the drawer). .cm-scroller is
+       CM's own internal scrolling element, so overflow/padding move there;
+       the outer container no longer scrolls itself. The scroller's
+       horizontal padding formula keeps the same ~720px centered reading
+       column the old #drawer-milkdown max-width produced, without needing
+       a separate wrapper div (CM's content structure doesn't have one to
+       hang that off of). */
+    #content-pane-edit-area {
+      flex: 1; overflow: hidden; position: relative; z-index: 1; isolation: isolate;
+    }
+    #content-pane-edit-area:focus { outline: none; }
+    #content-pane-edit-area .cm-editor {
+      height: 100%;
+      outline: none;
+    }
+    #content-pane-edit-area .cm-editor.cm-focused { outline: none; }
+    #content-pane-edit-area .cm-scroller {
+      overflow-y: auto;
+      padding: 2.5rem max(clamp(1.25rem, 4vw, 2.5rem), calc(50% - 360px));
+    }
+    #content-pane-edit-area .cm-content { padding: 0; }
+    #content-pane-edit-area .cm-line { padding: 0; }
+
+    /* ── Search panel (floating card, not inline in the note) ──────
+       CodeMirror's own panel API still owns open/close/mount (see
+       __vaultrCreateSearchPanel) — it just gets absolutely positioned
+       here instead of left in-flow, so it floats over the top-right
+       corner of the editor like a popover card (same recipe as
+       .content-pane-tabs-menu/.content-pane-more-menu) rather than pushing the note
+       content down. #content-pane-edit-area (position:relative) is what it's
+       positioned against. */
+    #content-pane-edit-area .cm-panels-top {
+      /* CodeMirror's own base theme styles this element too (for its
+         normal in-flow layout) and injects its <style> after this page's
+         own — every box-model property pinned explicitly here, including
+         ones that sound redundant (left/bottom), so nothing it sets can
+         still apply and stretch or reposition the card. Same
+         --float-panel-gap as the tabs/more menus, so all three floating
+         panels sit off their anchor by the same amount. */
+      position: absolute !important;
+      top: var(--float-panel-gap) !important; right: var(--float-panel-gap) !important;
+      left: auto !important; bottom: auto !important;
+      width: max-content !important;
+      z-index: 20;
+      background: var(--surface-soft); color: var(--fg);
+      border: var(--bd-w) solid var(--border);
+      border-radius: var(--r-md);
+      box-shadow: var(--shadow-sm) var(--shadow-color);
+      overflow: hidden;
+      transform-origin: top right;
+      /* Mirrors the tabs/more menus' Alpine x-transition (same durations/
+         easing, see content_pane.html's Tailwind classes and shared_tokens.go's
+         --tw-ease-out/in) — CodeMirror's panel API has no declarative
+         x-show equivalent, so .is-entering/.is-closing are toggled
+         imperatively by __vaultrCreateSearchPanel's mount() and the
+         cmCloseSearchPanel wrapper (content_pane.js). */
+      transition: transform 150ms cubic-bezier(0, 0, 0.2, 1), opacity 150ms cubic-bezier(0, 0, 0.2, 1);
+    }
+    #content-pane-edit-area .cm-panels-top.is-entering,
+    #content-pane-edit-area .cm-panels-top.is-closing {
+      opacity: 0;
+      transform: translateY(-8px) scale(0.97);
+    }
+    #content-pane-edit-area .cm-panels-top.is-closing {
+      transition-duration: 100ms;
+      transition-timing-function: cubic-bezier(0.4, 0, 1, 1);
+    }
+    .vaultr-search-panel {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      row-gap: 0.4rem; column-gap: 0.5rem;
+      align-items: center;
+      padding: 0.625rem 0.75rem;
+      width: 300px;
+    }
+    .vaultr-sr-row { display: contents; }
+    .vaultr-sr-input-wrap { position: relative; display: flex; align-items: center; }
+    .vaultr-sr-inset-btns {
+      position: absolute; right: 3px;
+      display: flex; align-items: center; gap: 1px;
+    }
+    .vaultr-sr-input {
+      width: 100%; height: var(--btn-h-xs);
+      padding: 0 0.5rem;
+      background: transparent; border: var(--bd-w) solid var(--border-strong);
+      color: var(--fg);
+      font-family: inherit; font-size: var(--text-sm); outline: none;
+    }
+    .vaultr-sr-input[main-field]       { padding-right: 4.5rem; }
+    .vaultr-sr-input:not([main-field]) { padding-right: 3rem; }
+    .vaultr-sr-input:focus { border-color: var(--accent); }
+    .vaultr-sr-input::placeholder { color: var(--muted-soft); }
+    .vaultr-sr-ibtn {
+      flex-shrink: 0; width: 20px; height: 20px;
+      display: flex; align-items: center; justify-content: center;
+      background: transparent; border: none;
+      color: var(--muted); cursor: pointer; padding: 0;
+    }
+    .vaultr-sr-ibtn:hover { color: var(--fg); background: var(--card-hov); }
+    .vaultr-sr-toggle {
+      width: auto; padding: 0 3px;
+      font-size: var(--text-3xs); font-weight: 800; font-family: inherit; letter-spacing: -0.02em;
+    }
+    .vaultr-sr-toggle.active {
+      color: var(--control-active-fg);
+      background: var(--control-active-bg);
+    }
+    /* Match highlights */
+    #content-pane-edit-area .cm-searchMatch {
+      background: color-mix(in srgb, var(--accent) 22%, transparent);
+      outline: none;
+    }
+    #content-pane-edit-area .cm-searchMatch.cm-searchMatch-selected {
+      background: color-mix(in srgb, var(--accent) 46%, transparent);
+    }
+
+    html.macos .content-pane.open { -webkit-app-region: no-drag; }
+    html.macos .content-pane.open .content-pane-panel { -webkit-app-region: no-drag; }
+    /* Inbox message detail reuses .content-pane-tool-bar for its header (see
+       content_pane.html's inbox-detail-panel) but, unlike the editor toolbar,
+       doesn't sit directly above other chrome that needs a dividing line. */
+    .inbox-detail-panel .content-pane-tool-bar { border-bottom: none; }
+
+    html.macos .content-pane.open .content-pane-tool-bar { -webkit-app-region: drag; cursor: default; }
+    html.macos .content-pane.open .content-pane-tool-bar button,
+    html.macos .content-pane.open .content-pane-tool-bar input,
+    html.macos .content-pane.open .content-pane-path-ac,
+    html.macos .content-pane.open .content-pane-tabs-menu,
+    html.macos .content-pane.open .content-pane-more-menu { -webkit-app-region: no-drag; }
+    html.macos .content-pane.open.content-pane-is-opening .content-pane-tool-bar { -webkit-app-region: no-drag; }
+
+    /* ── Content-pane scrollbars ─────────────────────────────────────── */
+    #content-pane-edit-area .cm-scroller {
+      scrollbar-width: thin;
+      scrollbar-color: var(--scrollbar-thumb) transparent;
+    }
+    #content-pane-edit-area .cm-scroller::-webkit-scrollbar { width: 5px; }
+    #content-pane-edit-area .cm-scroller::-webkit-scrollbar-track { background: transparent; }
+    #content-pane-edit-area .cm-scroller::-webkit-scrollbar-thumb {
+      background: var(--scrollbar-thumb);
+    }
+    #content-pane-edit-area .cm-scroller::-webkit-scrollbar-thumb:hover {
+      background: var(--scrollbar-thumb-hov);
+    }
+    @keyframes vaultr-ep {
+      0%   { transform: translate(0,0) scale(1); opacity: 0.85; }
+      100% { transform: translate(var(--ex),var(--ey)) scale(0); opacity: 0; }
+    }
+    .vaultr-ep {
+      position: fixed; pointer-events: none; z-index: 9999;
+      width: 5px; height: 5px; border-radius: 50%;
+      animation: vaultr-ep 0.55s cubic-bezier(.2,.8,.4,1) forwards;
+    }
