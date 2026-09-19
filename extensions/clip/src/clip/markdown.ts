@@ -12,6 +12,7 @@ import { Readability } from "@mozilla/readability";
 import { captureCanvasDataUrls, prepareDocument } from "./pre-readability";
 import { turndown } from "./turndown";
 import { convertRemainingHtmlTables } from "./post-markdown";
+import { appendOgFrontMatter, extractOgPreview } from "./og";
 
 // ── Utilities ─────────────────────────────────────────────────────────────────
 
@@ -84,6 +85,7 @@ export function clipPageToMarkdown(doc: Document, locationHref: string): ClipRes
 
   // Assemble YAML front matter + body.
   const clipped = new Date().toISOString();
+  const og = extractOgPreview(doc, base);
   const fm: string[] = [
     "---",
     `title: ${yamlDoubleQuoted(title)}`,
@@ -93,6 +95,7 @@ export function clipPageToMarkdown(doc: Document, locationHref: string): ClipRes
   if (article?.byline?.trim()) {
     fm.push(`author: ${yamlDoubleQuoted(article.byline.trim())}`);
   }
+  appendOgFrontMatter(fm, og, yamlDoubleQuoted);
   fm.push("---", "", `# ${title}`, "", body);
   const markdown = fm.join("\n");
 

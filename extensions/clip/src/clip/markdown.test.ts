@@ -23,6 +23,49 @@ describe('Unit Tests', () => {
     expect(result.markdown).toContain('\n---\n\n# Test Article\n\n');
   });
 
+  it('should emit flattened OG fields in YAML front matter', () => {
+    const html = `<!DOCTYPE html><html><head>
+      <title>Test Article</title>
+      <meta property="og:title" content="OG Title" />
+      <meta property="og:description" content="A preview description." />
+      <meta property="og:image" content="/preview.jpg" />
+      <meta property="og:url" content="https://example.com/page" />
+      <meta property="og:type" content="article" />
+      <meta property="og:site_name" content="Example" />
+    </head><body><article><h1>Main Title</h1><p>Some introductory text that provides context. Multiple sentences are needed here. This should be sufficient content for the article extraction to work properly.</p></article></body></html>`;
+    const dom = new JSDOM(html, { url: 'https://example.com/page' });
+    const result = clipPageToMarkdown(dom.window.document, 'https://example.com/page');
+    expect(result.markdown).not.toContain('\nog:\n');
+    expect(result.markdown).toContain('description: "A preview description."');
+    expect(result.markdown).toContain('site_name: "Example"');
+    expect(result.markdown).toContain('image_url: "https://example.com/preview.jpg"');
+    expect(result.markdown).not.toContain('og:title');
+    expect(result.markdown).not.toMatch(/^type: /m);
+  });
+
+  it('should fall back to twitter image when og:image is missing', () => {
+    const html = `<!DOCTYPE html><html><head>
+      <title>Test Article</title>
+      <meta name="twitter:description" content="Tweet desc" />
+      <meta name="twitter:image" content="https://cdn.example.com/card.png" />
+    </head><body><article><h1>Main Title</h1><p>Some introductory text that provides context. Multiple sentences are needed here. This should be sufficient content for the article extraction to work properly.</p></article></body></html>`;
+    const dom = new JSDOM(html, { url: 'https://example.com/page' });
+    const result = clipPageToMarkdown(dom.window.document, 'https://example.com/page');
+    expect(result.markdown).toContain('description: "Tweet desc"');
+    expect(result.markdown).toContain('image_url: "https://cdn.example.com/card.png"');
+    expect(result.markdown).not.toContain('\nog:\n');
+  });
+
+  it('should omit OG fields when no preview tags exist', () => {
+    const html = '<!DOCTYPE html><html><head><title>Test Article</title></head><body><article><h1>Main Title</h1><p>Some introductory text that provides context. Multiple sentences are needed here. This should be sufficient content for the article extraction to work properly.</p></article></body></html>';
+    const dom = new JSDOM(html, { url: 'https://example.com/page' });
+    const result = clipPageToMarkdown(dom.window.document, 'https://example.com/page');
+    expect(result.markdown).not.toContain('\nog:\n');
+    expect(result.markdown).not.toContain('description:');
+    expect(result.markdown).not.toContain('site_name:');
+    expect(result.markdown).not.toContain('image_url:');
+  });
+
   it('should convert object SVG embeds', () => {
     const html = '<!DOCTYPE html><html><head><title>Test Article</title></head><body><article><h1>Main Article Title</h1><p>This is a paragraph with enough content to make Readability happy. We need multiple sentences here. This should be sufficient content for the article extraction to work properly.</p><object type="image/svg+xml" data="test.svg" alt="Test SVG"></object><p>More content after the image. Another sentence here. And yet another one to make sure we have enough text.</p></article></body></html>';
     const dom = new JSDOM(html, { url: 'https://example.com/' });
