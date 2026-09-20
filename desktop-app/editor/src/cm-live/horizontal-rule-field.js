@@ -4,7 +4,7 @@
 import { StateField } from '@codemirror/state';
 import { Decoration, EditorView } from '@codemirror/view';
 import { syntaxTree } from '@codemirror/language';
-import { selectionTouchesLine } from './selection.js';
+import { selectionTouchesLine, readingModeToggled } from './selection.js';
 import { HorizontalRuleWidget } from './widgets.js';
 
 // Unlike Frontmatter, a HorizontalRule can appear anywhere — finding them
@@ -49,7 +49,7 @@ export function horizontalRuleField() {
       return { positions, decorations: buildDecorations(state, positions) };
     },
     update(value, tr) {
-      if (!tr.docChanged && !tr.selection) return value;
+      if (!tr.docChanged && !tr.selection && !readingModeToggled(tr.startState, tr.state)) return value;
       const positions = tr.docChanged ? findHorizontalRulePositions(tr.state) : value.positions;
       return { positions, decorations: buildDecorations(tr.state, positions) };
     },

@@ -13,7 +13,7 @@ import { StateField, StateEffect } from '@codemirror/state';
 import { Decoration, EditorView } from '@codemirror/view';
 import { FrontmatterHeaderWidget } from './widgets.js';
 import { findFrontmatterNode } from './frontmatter-syntax.js';
-import { selectionTouchesRange } from './selection.js';
+import { selectionTouchesRange, readingModeToggled } from './selection.js';
 
 export const setFrontmatterCollapsed = StateEffect.define();
 
@@ -40,6 +40,7 @@ function buildHeaderDecorations(state, options) {
   // it's the one escape hatch into frontmatterReadOnly()'s otherwise
   // uneditable block, so surfacing it only on approach (not as permanent
   // chrome) keeps the collapsed header from looking editable at a glance.
+  // Reading view never touches, so the pencil stays hidden there.
   const showEdit = selectionTouchesRange(state, from, to);
   return Decoration.set([
     Decoration.widget({
@@ -74,7 +75,7 @@ export function frontmatterHeaderField(options) {
       // edit pencil's visibility. Cheap to check on every selection change
       // now — buildHeaderDecorations locates the node in O(1)
       // (findFrontmatterNode), not a full tree walk.
-      if (!tr.docChanged && !tr.selection && !tr.effects.some((e) => e.is(setFrontmatterCollapsed))) return value;
+      if (!tr.docChanged && !tr.selection && !readingModeToggled(tr.startState, tr.state) && !tr.effects.some((e) => e.is(setFrontmatterCollapsed))) return value;
       return buildHeaderDecorations(tr.state, options);
     },
     provide: (f) => EditorView.decorations.from(f),

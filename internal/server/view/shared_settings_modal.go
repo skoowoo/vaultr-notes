@@ -1526,7 +1526,8 @@ const settingsCtrlJS = `
         { id: 'toggle-editor',  label: 'Toggle Editor',          desc: 'Open or close the editor panel',            mac: '⌘E',   win: 'Ctrl+E' },
         { id: 'close-tab',      label: 'Close Editor Tab',       desc: 'Close the active tab in the editor',        mac: '⌘W',   win: 'Ctrl+W' },
         { id: 'expand-editor',  label: 'Expand / Shrink Editor', desc: 'Toggle editor between 80% and 100% width',  mac: '⌘\\',  win: 'Ctrl+\\' },
-        { id: 'refresh',        label: 'Refresh',                desc: 'Reload the current page',                   mac: '⌘R',   win: 'Ctrl+R' },
+        { id: 'reading-mode',   label: 'Reading Mode',           desc: 'Toggle read-only view for saved notes',     mac: '⌘⇧E',  win: 'Ctrl+Shift+E' },
+        { id: 'refresh',        label: 'Refresh',               desc: 'Reload the current page',                   mac: '⌘R',   win: 'Ctrl+R' },
         { id: 'open-settings',  label: 'Settings',               desc: 'Open the settings dialog',                  mac: '⌘,',   win: 'Ctrl+,' },
       ],
       getEffectiveKeys(s) {

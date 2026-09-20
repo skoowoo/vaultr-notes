@@ -37,7 +37,8 @@ export {
   BulletWidget,
   HorizontalRuleWidget,
 } from './widgets.js';
-export { selectionTouchesRange, selectionTouchesLine, selectionInsideRange } from './selection.js';
+export { selectionTouchesRange, selectionTouchesLine, selectionInsideRange, readingMode } from './selection.js';
+export { readingExtensions } from './reading.js';
 
 // Shared by live-preview mode and (Phase 4) plain source mode, so toggling
 // between them reconfigures a Compartment around the *same* parse instead

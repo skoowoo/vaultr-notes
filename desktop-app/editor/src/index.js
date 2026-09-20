@@ -24,4 +24,5 @@ export {
   livePreviewTheme,
   codeHighlightStyle,
   listIndentExtension,
+  readingExtensions,
 } from './cm-live/index.js';

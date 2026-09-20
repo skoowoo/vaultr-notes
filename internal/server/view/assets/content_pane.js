@@ -20,9 +20,18 @@
     SearchQuery: null, getSearchQuery: null, setSearchQuery: null,
     livePreviewPlugin: null, livePreviewAtomicRanges: null,
     livePreviewTheme: null, wikiMarkdownLanguage: null,
-    decoCompartment: null, sharedLanguage: null,
+    decoCompartment: null, readCompartment: null, sharedLanguage: null,
     inSource: false, pendingScrollRaf: null, pendingOpenScroll: null,
+    // reading: global user preference, survives note/tab switches and restarts.
+    // readingActive: what the view is actually showing — drafts stay editable
+    // even while the preference is on.
+    reading: false, readingActive: false,
   };
+  try { __vaultrEditor.reading = localStorage.getItem('vaultr.reading') === '1'; } catch(_) {}
+  function __vaultrEditorSetReadingPref(on) {
+    __vaultrEditor.reading = on;
+    try { localStorage.setItem('vaultr.reading', on ? '1' : '0'); } catch(_) {}
+  }
 
   // ── Editor visual effects plugin system ─────────────────────────────────────
   window.__vaultrEditorEffects = (function() {
@@ -411,15 +420,19 @@
   function __vaultrEditorSaveTabState(tabId) { tabStateManager.save(tabId); }
   function __vaultrEditorRestoreTabState(tabId) { return tabStateManager.restore(tabId); }
   function __vaultrEditorClearTabState(tabId) { tabStateManager.clear(tabId); }
-  function __vaultrEditorSetSourceActive(active) {
+  function __vaultrEditorSyncViewButtons() {
+    var s = __vaultrEditor;
     document.querySelectorAll('.content-pane-view-btn-wysiwyg').forEach(function(btn) {
-      btn.classList.toggle('active', !active);
+      btn.classList.toggle('active', !s.inSource);
+    });
+    document.querySelectorAll('.content-pane-reading-btn').forEach(function(btn) {
+      btn.classList.toggle('active', s.reading);
     });
     document.querySelectorAll('.content-pane-view-btn-source').forEach(function(btn) {
-      btn.classList.toggle('active', !!active);
+      btn.classList.toggle('active', s.inSource);
     });
     document.querySelectorAll('.content-pane-source-toggle-btn').forEach(function(btn) {
-      btn.classList.toggle('active', !!active);
+      btn.classList.toggle('active', s.inSource);
     });
   }
 
@@ -435,6 +448,7 @@
       s.keymap = mod.keymap;
       s.defaultKeymap = mod.defaultKeymap; s.historyKeymap = mod.historyKeymap; s.history = mod.history;
       s.listIndentExtension = mod.listIndentExtension;
+      s.readingExtensions = mod.readingExtensions;
       s.markdown = mod.markdown; s.HighlightStyle = mod.HighlightStyle;
       s.syntaxHighlighting = mod.syntaxHighlighting; s.tags = mod.tags;
       s.cmUndo = mod.cmUndo; s.cmRedo = mod.cmRedo;
@@ -519,6 +533,7 @@
         return [s.syntaxHighlighting(cmHighlight)];
       };
       s.decoCompartment = new s.Compartment();
+      s.readCompartment = new s.Compartment();
       // Own compartment so editorMode.syncContent() (below) can wipe the
       // undo stack on note/tab switch — this EditorView is a session-long
       // singleton (__vaultrEnsureContentPaneEditor only ever creates it once),
@@ -556,6 +571,7 @@
             s.frontmatterCollapseField,
             s.frontmatterHeaderField({ onEditFrontmatter: __vaultrEditorEditFrontmatter }),
             s.decoCompartment.of(s._liveModeExt()),
+            s.readCompartment.of([]),
             s.EditorView.updateListener.of(function(update) {
               if (!update.docChanged || s.loading) return;
               __vaultrEditorHandleContentChange(update.state.doc.toString(), false);
@@ -731,8 +747,9 @@
   }
 
   // ── Editor mode state machine ────────────────────────────────────────────────
-  // Single authority for live-preview ↔ source transitions. Both modes are
-  // the same EditorView/doc now — this only reconfigures s.decoCompartment
+  // Single authority for live-preview ↔ source ↔ reading transitions. All
+  // three are the same EditorView/doc — this only reconfigures s.decoCompartment
+  // (+ s.readCompartment for reading, which layers on live preview)
   // (see __vaultrEnsureContentPaneEditor) and, when the caller is about to show a
   // *different* note's content, syncs s.currentMd into the view first.
   // applySource / applyWysiwyg: low-level, called by applyState (skipFocus=true).
@@ -764,41 +781,65 @@
         });
       }
     }
+    function applyLive(reading, opts) {
+      var s = __vaultrEditor;
+      var tab = __vaultrEditorActiveTab();
+      if (tab && tab.path) __vaultrEditorMarkPendingBaselineSync();
+      s.loading = true;
+      syncContent();
+      s.view.dispatch({effects: [
+        s.decoCompartment.reconfigure(s._liveModeExt()),
+        s.readCompartment.reconfigure(reading ? s.readingExtensions() : []),
+      ]});
+      setTimeout(function() { s.loading = false; }, 50);
+      s.inSource = false;
+      s.readingActive = reading;
+      __vaultrEditorSyncViewButtons();
+      if (!(opts && opts.skipFocus)) focusManager.focusEditor();
+    }
     return {
       applySource: function(opts) {
         var s = __vaultrEditor;
         __vaultrEditorClearPendingBaselineSync();
         s.loading = true;
         syncContent();
-        s.view.dispatch({effects: s.decoCompartment.reconfigure(s._sourceModeExt())});
+        s.view.dispatch({effects: [
+          s.decoCompartment.reconfigure(s._sourceModeExt()),
+          s.readCompartment.reconfigure([]),
+        ]});
         s.loading = false;
         s.inSource = true;
-        __vaultrEditorSetSourceActive(true);
+        s.readingActive = false;
+        __vaultrEditorSyncViewButtons();
         if (!(opts && opts.skipFocus)) focusManager.focusEditor();
       },
-      applyWysiwyg: function(opts) {
-        var s = __vaultrEditor;
-        var tab = __vaultrEditorActiveTab();
-        if (tab && tab.path) __vaultrEditorMarkPendingBaselineSync();
-        s.loading = true;
-        syncContent();
-        s.view.dispatch({effects: s.decoCompartment.reconfigure(s._liveModeExt())});
-        setTimeout(function() { s.loading = false; }, 50);
-        s.inSource = false;
-        __vaultrEditorSetSourceActive(false);
-        if (!(opts && opts.skipFocus)) focusManager.focusEditor();
-      },
+      applyWysiwyg: function(opts) { applyLive(false, opts); },
+      applyReading: function(opts) { applyLive(true, opts); },
       // User-triggered: live preview → source
-      enterSource: function() { this.applySource(); },
-      // User-triggered: source → live preview
+      enterSource: function() {
+        if (__vaultrEditor.readingActive) __vaultrEditorSetReadingPref(false);
+        this.applySource();
+      },
+      // User-triggered: source / reading → live preview
       exitSource: function() {
         var s = __vaultrEditor;
+        if (s.readingActive) __vaultrEditorSetReadingPref(false);
         s.currentMd = s.view.state.doc.toString();
         this.applyWysiwyg();
+      },
+      // User-triggered: any mode → reading view
+      enterReading: function() {
+        var s = __vaultrEditor;
+        __vaultrEditorSetReadingPref(true);
+        s.currentMd = s.view.state.doc.toString();
+        this.applyReading({skipFocus: true});
       },
       toggle: function() {
         var s = __vaultrEditor;
         if (s.inSource) this.exitSource(); else this.enterSource();
+      },
+      toggleReading: function() {
+        if (__vaultrEditor.readingActive) this.exitSource(); else this.enterReading();
       },
     };
   })();
@@ -934,7 +975,9 @@
     var targetInSource = state.inSource || false;
     var targetScroll = state.scrollTop || 0;
 
-    if (targetInSource) {
+    if (s.reading && s.currentPath) {
+      editorMode.applyReading({skipFocus: true});
+    } else if (targetInSource) {
       editorMode.applySource({skipFocus: true});
     } else {
       editorMode.applyWysiwyg({skipFocus: true});
@@ -1807,6 +1850,17 @@
     if (!s.cmOpenSearchPanel || !s.view) return;
     s.cmOpenSearchPanel(s.view);
   }
+
+  window.__vaultrHotkeys.registerRaw('content-pane-reading-toggle', function(e, mod) {
+    if (!mod || !e.shiftKey || e.altKey || e.key.toLowerCase() !== 'e') return;
+    var pane = window.__vaultrContentPane;
+    if (!pane || !pane.contentPaneOpen || !__vaultrEditor.view) return;
+    var tab = pane.tabs[pane.activeTab];
+    if (!tab || !tab.path) return;
+    e.preventDefault();
+    editorMode.toggleReading();
+    return true;
+  });
 
   window.__vaultrHotkeys.registerRaw('content-pane-find', function(e, mod) {
     if (!mod || e.shiftKey || e.altKey || e.key.toLowerCase() !== 'f') return;

@@ -3,6 +3,7 @@ import { ViewPlugin, Decoration, EditorView } from '@codemirror/view';
 import { syntaxTree } from '@codemirror/language';
 import { nodeDecorators } from './decorators.js';
 import { setFrontmatterCollapsed } from './frontmatter-collapse.js';
+import { readingModeToggled } from './selection.js';
 
 class LivePreviewPlugin {
   constructor(view, options) {
@@ -20,7 +21,7 @@ class LivePreviewPlugin {
     // no selection change, so it wouldn't otherwise trigger a rebuild and
     // decorateFrontmatter's collapsed-block branch would never run.
     const collapseToggled = update.transactions.some((tr) => tr.effects.some((e) => e.is(setFrontmatterCollapsed)));
-    if (update.docChanged || update.viewportChanged || update.selectionSet || collapseToggled) {
+    if (update.docChanged || update.viewportChanged || update.selectionSet || collapseToggled || readingModeToggled(update.startState, update.state)) {
       this.rebuild(update.view);
     }
   }

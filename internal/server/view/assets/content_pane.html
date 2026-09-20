@@ -70,6 +70,15 @@
           <!-- Tabs stay functionally the same (open several notes, switch,
                close) — just a vertical dropdown list instead of a
                horizontal strip. Each row is one open tab/draft. -->
+          <button type="button" class="icon-btn-ghost content-pane-reading-btn"
+                  @click.stop="editorMode.toggleReading()"
+                  :title="'Reading view (' + (isMac ? '⌘⇧E' : 'Ctrl+Shift+E') + ')'">
+            <!-- lucide "book-open" -->
+            <svg fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+              <path d="M12 7v14"/>
+              <path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/>
+            </svg>
+          </button>
           <div class="content-pane-tabs-wrap" id="content-pane-tabs-wrap"
                x-data="{
                  tabsMenuOpen: false, tabsMenuActiveIndex: -1,
