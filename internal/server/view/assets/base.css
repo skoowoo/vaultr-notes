@@ -18,6 +18,10 @@
     *, *::before, *::after {
       border-radius: var(--r-md);
     }
+
+    /* Native selection (CM6 runs without drawSelection, so this is what
+       the editor shows too) in brand tint instead of the system blue. */
+    ::selection { background: var(--selection-bg); }
     * {
       caret-color: var(--fg);
     }
@@ -185,7 +189,7 @@
     .badge--ok     { color: var(--s-ok);   background: var(--s-ok-bg); }
     .badge--err    { color: var(--s-err);  background: var(--s-err-bg); }
     .badge--warn   { color: var(--s-warn); background: var(--s-warn-bg); }
-    .badge--accent { color: var(--accent); background: rgba(var(--accent-rgb), 0.12); }
+    .badge--accent { color: var(--accent-text); background: rgba(var(--accent-rgb), 0.12); }
 
     /* ── Shared bordered card/row box — the box itself (border-strong +
        r-lg + bg + padding) is identical everywhere it appears (note/inbox

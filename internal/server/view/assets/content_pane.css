@@ -156,15 +156,15 @@
       0%, 100% { opacity: 0.35; transform: scale(0.85); }
       50%       { opacity: 1;    transform: scale(1); }
     }
-    .ssi-saved { color: var(--accent); animation: ssi-fadein 0.25s ease; }
+    .ssi-saved { color: var(--accent-text); animation: ssi-fadein 0.25s ease; }
     @keyframes ssi-fadein { from { opacity: 0; transform: scale(0.7); } to { opacity: 1; transform: scale(1); } }
     /* ── Tabs menu ──────────────────────────────────────────────── */
     /* Same dropdown shape/positioning as the more menu right next to it
        (below) — a vertical list instead of the old horizontal strip, one
        row per open tab/draft. */
     .content-pane-tabs-wrap { position: relative; flex-shrink: 0; }
-    .content-pane-tabs-btn.active { color: var(--accent); background: var(--tint-md); }
-    .content-pane-reading-btn.active { color: var(--accent); background: var(--tint-md); }
+    .content-pane-tabs-btn.active { color: var(--accent-text); background: var(--tint-md); }
+    .content-pane-reading-btn.active { color: var(--accent-text); background: var(--tint-md); }
     .content-pane-tabs-menu {
       position: absolute; top: calc(100% + var(--float-panel-gap)); right: 0; z-index: 50;
       /* The enter/leave scale (content_pane.html's x-transition) unfurls from
@@ -193,7 +193,7 @@
       cursor: pointer;
     }
     .content-pane-tabs-menu-row:hover { color: var(--fg); background: var(--icon-hov); }
-    .content-pane-tabs-menu-row.active { color: var(--accent); background: var(--tint-soft); }
+    .content-pane-tabs-menu-row.active { color: var(--accent-text); background: var(--tint-soft); }
     /* Keyboard-nav highlight (Cmd/Ctrl+T then ↑/↓) — a ring layered on top
        so it stays visible whether or not the row is also .active. */
     .content-pane-tabs-menu-row.kbd-active { box-shadow: inset 0 0 0 1px var(--accent); }
@@ -227,6 +227,11 @@
       white-space: nowrap;
     }
     .content-pane-more-item svg { width: 13px; height: 13px; flex-shrink: 0; }
+    /* Both labels share one grid cell so the row (and the shrink-to-fit menu)
+       keeps the wider label's width instead of jittering on swap. */
+    .content-pane-copy-label { display: inline-grid; }
+    .content-pane-copy-label > span { grid-area: 1 / 1; }
+    .content-pane-copy-label > .is-hidden { visibility: hidden; }
     .content-pane-more-item:hover { color: var(--fg); background: var(--icon-hov); }
     .content-pane-more-item-danger:hover { color: var(--s-err); background: var(--s-err-bg); }
     /* Pin/compile live in the more menu as regular .content-pane-more-item rows —
@@ -235,7 +240,7 @@
        app-wide row selection (base.css's shared .icon-btn.active/.seg-btn
        .active default to a neutral surface-2 fill instead). */
     .content-pane-more-item.frag-pin-btn.active,
-    .content-pane-more-item.frag-pin-btn.active:hover { color: var(--accent); background: var(--tint-soft); }
+    .content-pane-more-item.frag-pin-btn.active:hover { color: var(--accent-text); background: var(--tint-soft); }
     .frag-pin-btn.active svg { fill: currentColor; }
     /* Source/preview toggle folded into the more menu as a single row (was
        a two-button .seg in the toolbar) — icon+label swap to describe the
@@ -246,16 +251,16 @@
     .content-pane-source-toggle-btn.active .dstb-goto-source { display: none; }
     .content-pane-source-toggle-btn.active .dstb-goto-wysiwyg { display: inline; }
     .content-pane-source-toggle-btn.active,
-    .content-pane-source-toggle-btn.active:hover { color: var(--accent); background: var(--tint-soft); }
+    .content-pane-source-toggle-btn.active:hover { color: var(--accent-text); background: var(--tint-soft); }
     .content-pane-compile-btn:disabled { cursor: progress; }
     .content-pane-compile-btn.success { color: var(--s-ok); background: var(--s-ok-bg); }
     @keyframes content-pane-compile-pulse { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; } }
-    .content-pane-compile-btn.is-compiling { color: var(--accent); animation: content-pane-compile-pulse 1.2s ease-in-out infinite; }
+    .content-pane-compile-btn.is-compiling { color: var(--accent-text); animation: content-pane-compile-pulse 1.2s ease-in-out infinite; }
     /* .content-pane-more-btn uses the shared .icon-btn-ghost component (base.css,
        borderless) for its base shape, hover, and press states — active
        (menu open) is overridden here with the same brand-accent treatment
        as above. */
-    .content-pane-more-btn.active { color: var(--accent); background: var(--tint-md); }
+    .content-pane-more-btn.active { color: var(--accent-text); background: var(--tint-md); }
     /* Source/Preview view toggle uses the shared .seg-btn.active as-is
        (neutral surface-2 fill, base.css) — it's a row-selection control
        like every other .seg/.seg-btn picker, not an "engaged" brand

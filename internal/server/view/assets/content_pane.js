@@ -471,8 +471,8 @@
         '&.cm-focused': {outline:'none'},
         '.cm-content': {caretColor:'var(--accent)'},
         '.cm-cursor,.cm-dropCursor': {borderLeftColor:'var(--accent)'},
-        '.cm-selectionBackground': {background:'var(--cm-selection-bg) !important'},
-        '&.cm-focused .cm-selectionBackground': {background:'var(--cm-selection-bg)'},
+        '.cm-selectionBackground': {background:'var(--selection-bg) !important'},
+        '&.cm-focused .cm-selectionBackground': {background:'var(--selection-bg)'},
         '.cm-activeLine': {background:'var(--cm-active-line)'},
         '.cm-gutters': {display:'none'},
       });
@@ -1849,6 +1849,18 @@
     var s = __vaultrEditor;
     if (!s.cmOpenSearchPanel || !s.view) return;
     s.cmOpenSearchPanel(s.view);
+  }
+
+  async function __vaultrEditorCopyMarkdown() {
+    var s = __vaultrEditor;
+    var text = s.view ? s.view.state.doc.toString() : s.currentMd;
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch (e) {
+      if (window.showError) window.showError((e && e.message) || 'Could not copy to clipboard.', 'Copy error');
+      return false;
+    }
   }
 
   window.__vaultrHotkeys.registerRaw('content-pane-reading-toggle', function(e, mod) {

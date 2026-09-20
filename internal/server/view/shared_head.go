@@ -25,6 +25,8 @@ func headHTML(opts headOpts) string {
 	b.WriteString("</title>\n")
 	b.WriteString(themeBootstrapScript)
 	b.WriteByte('\n')
+	b.WriteString(accentBootstrapScript)
+	b.WriteByte('\n')
 	b.WriteString(electronBootstrapScript)
 	b.WriteByte('\n')
 	b.WriteString(electronShellSafeReloadScript)

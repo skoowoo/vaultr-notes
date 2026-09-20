@@ -582,7 +582,7 @@
 
     .msg-copy-btn.copied {
       opacity: 1 !important;
-      color: var(--accent);
+      color: var(--accent-text);
     }
 
     .msg-copy-btn svg {

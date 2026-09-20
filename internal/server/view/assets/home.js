@@ -268,6 +268,11 @@ function homeCtrl() {
         try { cytoscape.use(cytoscapeFcose); } catch (_) { /* already registered */ }
       }
       this._graphTooltip = document.getElementById('graph-tooltip');
+      window.addEventListener('vaultr:accent', () => {
+        if (!this.cy) return;
+        var c = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
+        if (c) this.cy.style().selector('node:selected').style({ 'border-color': c }).update();
+      });
       // The unread badge in the sidebar must stay correct regardless of
       // which section is currently open, so both the initial count and the
       // live SSE subscription start unconditionally here.

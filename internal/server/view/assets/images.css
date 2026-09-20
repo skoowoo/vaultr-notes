@@ -88,7 +88,7 @@
        .btn-solid.btn-solid--danger with .btn--xs (base.css). */
     .toolbar-select-group { display: flex; align-items: center; gap: 0.5rem; }
     .bulk-count { flex: 1; min-width: 0; font-size: var(--text-sm); font-weight: 500; color: var(--muted); }
-    .bulk-count strong { color: var(--accent); font-weight: 600; }
+    .bulk-count strong { color: var(--accent-text); font-weight: 600; }
 
     /* ── Lightbox overlay ────────────────────────────────────────── */
     .lb-overlay {

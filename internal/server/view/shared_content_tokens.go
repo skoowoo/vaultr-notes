@@ -14,7 +14,7 @@ package view
 // palettes into the same :root blocks.
 const contentTokensShared = `
       --bq-bd:rgba(var(--accent-rgb),0.55);
-      --ul-mk:var(--accent); --ol-mk:var(--accent);
+      --ul-mk:var(--prose-body); --ol-mk:var(--prose-body);
       --code-bg:rgba(var(--ink-rgb),0.055); --code-bd:rgba(var(--ink-rgb),0.10);
       --th-bg:rgba(var(--ink-rgb),0.04); --tbl-bd:rgba(var(--ink-rgb),0.12);
       /* h6 rides the same muted-soft tier both themes already use for

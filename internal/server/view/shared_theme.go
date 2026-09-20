@@ -19,6 +19,7 @@ const themeBootstrapScript = `  <script>(function(){
       if(window.vaultrDesktop&&window.vaultrDesktop.setViewBgColor){
         window.vaultrDesktop.setViewBgColor(effectiveLight?'#f9f9fb':'#18191e',pref==='light'?'light':(pref==='dark'?'dark':''));
       }
+      if(window.__vaultrApplyAccent)window.__vaultrApplyAccent();
     }catch(_){}
   };
   var stored=localStorage.getItem('vaultr-theme');

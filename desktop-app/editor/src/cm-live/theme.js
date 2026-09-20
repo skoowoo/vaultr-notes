@@ -139,7 +139,7 @@ export const livePreviewTheme = EditorView.theme({
   // ── Links — pointer only when strictly inside (cm-lp-link-hit from link-click.js).
   // Color carries the link now, not an underline — no textDecoration.
   '.cm-lp-link': {
-    color: 'var(--accent, #5e6ad2)',
+    color: 'var(--accent-text, #5e6ad2)',
     fontWeight: '400',
   },
   '.cm-lp-link.cm-lp-link-hit': { cursor: 'pointer' },
@@ -276,7 +276,7 @@ export const livePreviewTheme = EditorView.theme({
   // Color carries the link now, not an underline — same as .cm-lp-link.
   '.cm-lp-wikilink': {
     display: 'inline',
-    color: 'var(--accent, #5e6ad2)',
+    color: 'var(--accent-text, #5e6ad2)',
     fontWeight: '400',
     cursor: 'pointer',
     userSelect: 'none',
@@ -305,7 +305,7 @@ export const livePreviewTheme = EditorView.theme({
     color: 'var(--accent-hov, #4c56c8)',
     borderRadius: '0',
   },
-  '.cm-lp-wikilink-raw': { color: 'var(--accent, #5e6ad2)' },
+  '.cm-lp-wikilink-raw': { color: 'var(--accent-text, #5e6ad2)' },
 
   // ── Images ──────────────────────────────────────────────────────────────
   '.cm-lp-wikiimage': { display: 'inline-block', verticalAlign: 'middle', maxWidth: '100%' },

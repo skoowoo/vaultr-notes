@@ -8,7 +8,7 @@ colors:
   accent-fg: "#ffffff"
   accent-hov-dark: "#7b86e8"
   accent-hov-light: "#4c56c8"
-  accent-focus: "#5e69d1"
+  accent-focus: "#5e6ad2"
   bg-dark: "#08080b"
   bg-light: "#fcfcfc"
   fg-dark: "#eef0f4"
@@ -235,9 +235,11 @@ Dark is the shipped default (bare `:root`). Light is Vaultr's own from-scratch a
 ## Colors
 
 ### Brand & Accent
-- **Accent** (`{colors.accent}`): The one chromatic color in the system — primary buttons, focus rings, selected-tab/row text, link emphasis, list-item bullet/checkbox marks.
+- **Accent** (`{colors.accent}`): The one chromatic color in the system — primary buttons, focus rings, selected-tab/row text, link emphasis. List markers (bullet, number, task checkbox) use the body ink (`--prose-body`), not accent, in every surface.
 - **Accent Hover**: Lightens on dark (`{colors.accent-hov-dark}` #7b86e8), darkens on light (`{colors.accent-hov-light}` #4c56c8) — same hue, opposite direction per theme so it always reads as "brighter than resting state" against its own canvas.
-- **Accent Focus** (`{colors.accent-focus}`): The literal ring color for `:focus-visible` — 2px outline at 50% opacity, offset 1px. The one place the system uses anything resembling a glow.
+- **Customizable**: `{colors.accent}` is the default (indigo), not a constant. Settings → Appearance offers 8 luminance-matched presets (`internal/server/view/shared_accent.go`), applied as inline `--accent`/`--accent-rgb`/`--accent-hov` on `<html>` before first paint. Components must consume only these tokens (or `rgba(var(--accent-rgb), …)`) — never a literal accent hex — or the preset won't reach them. A new preset needs white text ≥4.5:1 on its accent.
+- **Accent Text** (`--accent-text`): Accent used as *text or icon color* on the canvas (links, active tab/row labels, badges). Equals `--accent` on light; on dark it is lifted to ≈4.6:1 (presets carry a `TextDark`), because the resting accent is tuned for white-on-fill (≥4.5:1) and reads dim as small text. Use `--accent` for fills, borders and rings, `--accent-text` for `color:`.
+- **Accent Focus** (`{colors.accent-focus}`, always `var(--accent)`): The literal ring color for `:focus-visible` — 2px outline at 50% opacity, offset 1px. The one place the system uses anything resembling a glow.
 - **Selected surface** (`--control-active-bg` / `-fg`): Not an accent fill — steps up to `--surface-2` with full `--fg` text. This is the single treatment for "this tab/segment/row/toggle is currently selected" everywhere in the app (sidebar items, drawer tabs, segmented controls, search results, icon-toggle buttons). Primary-action buttons (compose, publish, save, send) use accent directly instead — never this pair.
 
 ### Surface

@@ -86,6 +86,21 @@ const settingsModalCSS = `
     /* Theme/Enter-Effect/schedule-kind pickers use the shared .seg/.seg-btn
        component (base.css) instead of their own copy. */
 
+    .accent-swatches { display: flex; flex-wrap: wrap; gap: 0.75rem; padding: 0.4rem; }
+    /* Ring is a pseudo-element border, not outline: the page-wide
+       "button:focus { outline: none }" (images.css/shorts.css) would wipe an
+       outline the moment a click focuses the swatch. */
+    .accent-swatch {
+      position: relative; width: 1.5rem; height: 1.5rem; padding: 0; border: none;
+      cursor: pointer; border-radius: var(--r-full); background: var(--sw);
+    }
+    .accent-swatch::after {
+      content: ''; position: absolute; inset: -5px; border-radius: var(--r-full);
+      border: 2px solid transparent; transition: border-color var(--motion-fast);
+    }
+    .accent-swatch:hover::after { border-color: rgba(var(--ink-rgb), 0.25); }
+    .accent-swatch.active::after { border-color: var(--sw); }
+
     /* ── Server config ────────────────────────────────────────── */
     .cfg-content { flex: 1; min-width: 0; display: flex; flex-direction: column; overflow: hidden; }
     .cfg-action-bar {
@@ -504,7 +519,7 @@ const settingsModalCSS = `
       border-radius: 0;
       transition: color var(--motion-fast), opacity var(--motion-fast);
     }
-    .skill-repo-link:hover { color: var(--accent); opacity: 1; }
+    .skill-repo-link:hover { color: var(--accent-text); opacity: 1; }
     /* Install/Uninstall now use the shared .btn-outline /
        .btn-solid.btn-solid--danger with the .btn--xs size modifier. */
 
@@ -643,6 +658,18 @@ func settingsModalHTML() string {
                   <button class="seg-btn" :class="{active: themePref==='auto'}" @click="setTheme('auto')">Auto</button>
                 </div>
                 <p class="settings-field-desc">Light, dark, or match your system setting. Takes effect immediately.</p>
+              </div>
+              <div>
+                <label class="settings-field-label">Accent Color</label>
+                <div class="accent-swatches" role="radiogroup" aria-label="Accent color">
+                  <template x-for="p in accentPresets" :key="p.id">
+                    <button type="button" class="accent-swatch" role="radio"
+                            :class="{active: accentPref===p.id}" :aria-checked="accentPref===p.id"
+                            :style="'--sw:' + p.a" :title="p.name" :aria-label="p.name"
+                            @click="setAccent(p.id)"></button>
+                  </template>
+                </div>
+                <p class="settings-field-desc">Brand color for buttons, links and text selection. Takes effect immediately.</p>
               </div>
               <div>
                 <label class="settings-field-label">Enter Effect</label>
@@ -1517,6 +1544,19 @@ const settingsCtrlJS = `
         if (window.__vaultrApplyTheme) window.__vaultrApplyTheme(key);
       },
 
+      // Presets come from accentBootstrapScript (shared_accent.go), which also
+      // owns applying them; this just persists the pick and re-runs it.
+      accentPresets: window.__vaultrAccentPresets || [],
+      accentPref: (function() {
+        var id = localStorage.getItem('vaultr-accent');
+        return (window.__vaultrAccentPresets || []).some(function(p) { return p.id === id; }) ? id : 'indigo';
+      })(),
+      setAccent(id) {
+        this.accentPref = id;
+        localStorage.setItem('vaultr-accent', id);
+        if (window.__vaultrApplyAccent) window.__vaultrApplyAccent(id);
+      },
+
       isMac: /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent),
       customKeys: JSON.parse(localStorage.getItem('vaultr-custom-keys') || '{}'),
       shortcutDefs: [
@@ -1632,6 +1672,11 @@ const settingsCtrlJS = `
 
       async init() {
         window.__vaultrSettingsShell = this;
+        // Another same-origin view can change the accent; keep the picker's ring in step.
+        window.addEventListener('vaultr:accent', () => {
+          var id = localStorage.getItem('vaultr-accent');
+          this.accentPref = this.accentPresets.some(p => p.id === id) ? id : 'indigo';
+        });
         window.__vaultrHotkeys.register('open-settings', ',', function() {
           Alpine.store('settingsModal').open = true;
         });

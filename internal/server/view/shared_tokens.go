@@ -30,7 +30,7 @@ const appTokensShared = `
       --tint-md:rgba(var(--accent-rgb),0.10);
       --tint-strong:rgba(var(--accent-rgb),0.14);
       --input-focus-ring:rgba(var(--accent-rgb),0.16);
-      --cm-selection-bg:rgba(var(--accent-rgb),0.16);
+      --selection-bg:rgba(var(--accent-rgb),0.30);
       /* --hairline: secondary seam (bg already differs, or inside a bordered card).
          --border/--border-strong: sole separator or floating outer edge. */
       --hairline:rgba(var(--ink-rgb),0.13);
@@ -45,7 +45,7 @@ const appTokensShared = `
 
       /* ═══ Layer 3: visual-regime ═══ */
       --shadow-xs:0 1px 2px; --shadow-sm:0 2px 5px; --shadow-md:0 5px 14px; --shadow-lg:0 14px 34px;
-      --accent-focus:#5e69d1;
+      --accent-focus:var(--accent);
       --r-xs:4px; --r-sm:6px; --r-md:8px; --r-lg:12px; --r-xl:16px; --r-full:999px;
       /* fast=hover, base=small toggle, slow=panel/scrim. */
       --motion-fast:100ms; --motion-base:160ms; --motion-slow:220ms;
@@ -95,6 +95,8 @@ const appTokensDark = `
       --canvas:#ffffff; --muted-soft:#656a78; --body:#d0d6e0;
       --border:#35363f; --border-strong:#44454f;
       --accent-hov:#7b86e8;
+      /* Accent as text on the canvas (links, active labels): lifted for dark; fills keep --accent. */
+      --accent-text:#707ad7;
       --cover-dir:#8d92a0;
       --cnt-tx:#9a9fa8;
       --s-ok:#34c481; --s-ok-bg:rgba(39,166,68,0.16); --s-ok-bd:rgba(39,166,68,0.4);
@@ -120,6 +122,7 @@ const appTokensLight = `
       --canvas:#ffffff; --muted-soft:#9b9eac; --body:#3f4147;
       --border:#d2d2d9; --border-strong:#bcbcc5;
       --accent-hov:#4c56c8;
+      --accent-text:var(--accent);
       --cover-dir:#6b7280;
       --cnt-tx:#6b7280;
       --s-ok:#059669; --s-ok-bg:rgba(16,185,129,0.08); --s-ok-bd:rgba(16,185,129,0.35);
