@@ -92,6 +92,26 @@ CREATE TABLE IF NOT EXISTS knowledge_links (
 );
 `
 
+// noteAssetsSchema stores extracted resources attached to a note
+// (cover now; body images / audio / video later). filename is a vault-wide
+// unique basename, matching wiki-link / /api/images/serve?name= lookup.
+// ord orders multiple rows of the same kind (cover uses 0).
+const noteAssetsSchema = `
+CREATE TABLE IF NOT EXISTS note_assets (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    note_dir   TEXT    NOT NULL,
+    note_name  TEXT    NOT NULL,
+    kind       TEXT    NOT NULL,
+    filename   TEXT    NOT NULL DEFAULT '',
+    source_url TEXT    NOT NULL DEFAULT '',
+    ord        INTEGER NOT NULL DEFAULT 0,
+    created_at INTEGER NOT NULL,
+    UNIQUE(note_dir, note_name, kind, filename)
+);
+`
+
+const noteAssetLookupBatchSize = 400
+
 // imagesSchema creates the images metadata table.
 // dir  — vault-absolute path of the directory containing the image (e.g. "/_assets/202501")
 // name — filename with extension (e.g. "photo.png")
@@ -142,6 +162,7 @@ func openDB(vaultRoot string) (*sql.DB, error) {
 	}{
 		{schema, "apply schema"},
 		{imagesSchema, "create images table"},
+		{noteAssetsSchema, "create note_assets table"},
 		{knowledgeDepsSchema, "create knowledge_deps table"},
 		{indexDepsSchema, "create index_deps table"},
 		{knowledgeLinksSchema, "create knowledge_links table"},
@@ -151,6 +172,8 @@ func openDB(vaultRoot string) (*sql.DB, error) {
 		{`CREATE INDEX IF NOT EXISTS idx_kd_source ON knowledge_deps(source_dir, source_name)`, "create idx_kd_source"},
 		{`CREATE INDEX IF NOT EXISTS idx_id_index ON index_deps(index_dir, index_name)`, "create idx_id_index"},
 		{`CREATE INDEX IF NOT EXISTS idx_id_knowledge ON index_deps(knowledge_dir, knowledge_name)`, "create idx_id_knowledge"},
+		{`CREATE INDEX IF NOT EXISTS idx_note_assets_lookup ON note_assets(kind, note_dir, note_name, ord, id)`, "create idx_note_assets_lookup"},
+		{`CREATE INDEX IF NOT EXISTS idx_note_assets_filename ON note_assets(filename)`, "create idx_note_assets_filename"},
 	} {
 		if _, err := db.Exec(step.ddl); err != nil {
 			db.Close()
@@ -493,6 +516,7 @@ func dbCountByKind(db *sql.DB, onlyKind, excludeKind string) (int, error) {
 
 // dbDelete removes the metadata row for the note identified by its path.
 func dbDelete(db *sql.DB, p Path) error {
+	_, _ = db.Exec(`DELETE FROM note_assets WHERE note_dir = ? AND note_name = ?`, p.Dir(), p.Base())
 	_, err := db.Exec(`DELETE FROM notes WHERE dir = ? AND name = ?`, p.Dir(), p.Base())
 	return err
 }
@@ -619,6 +643,164 @@ func dbUpsertKnowledgeNote(db *sql.DB, n Note) error {
 		n.Dir, n.Name, n.Size, now, updNs, string(n.Kind), n.Title, joinTags(n.Tags),
 	)
 	return err
+}
+
+// ── note_assets DB helpers ────────────────────────────────────────────────────
+
+func dbUpsertNoteAsset(db *sql.DB, a NoteAsset) error {
+	now := time.Now().UnixNano()
+	if !a.CreatedAt.IsZero() {
+		now = a.CreatedAt.UnixNano()
+	}
+	_, err := db.Exec(`
+		INSERT INTO note_assets(note_dir, note_name, kind, filename, source_url, ord, created_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?)
+		ON CONFLICT(note_dir, note_name, kind, filename) DO UPDATE SET
+		    source_url = excluded.source_url,
+		    ord        = excluded.ord`,
+		a.NoteDir, a.NoteName, string(a.Kind), a.Filename, a.SourceURL, a.Ord, now,
+	)
+	return err
+}
+
+func dbReplaceNoteAssets(db *sql.DB, p Path, kind NoteAssetKind, assets []NoteAsset) error {
+	tx, err := db.Begin()
+	if err != nil {
+		return fmt.Errorf("storage: note_assets replace: begin tx: %w", err)
+	}
+	defer tx.Rollback() //nolint:errcheck
+
+	if _, err := tx.Exec(
+		`DELETE FROM note_assets WHERE note_dir = ? AND note_name = ? AND kind = ?`,
+		p.Dir(), p.Base(), string(kind),
+	); err != nil {
+		return fmt.Errorf("storage: note_assets replace: delete: %w", err)
+	}
+
+	now := time.Now().UnixNano()
+	for i, a := range assets {
+		createdNs := now
+		if !a.CreatedAt.IsZero() {
+			createdNs = a.CreatedAt.UnixNano()
+		}
+		if a.Kind == "" {
+			a.Kind = kind
+		}
+		if a.Ord == 0 {
+			a.Ord = i
+		}
+		if _, err := tx.Exec(`
+			INSERT INTO note_assets(note_dir, note_name, kind, filename, source_url, ord, created_at)
+			VALUES (?, ?, ?, ?, ?, ?, ?)`,
+			p.Dir(), p.Base(), string(a.Kind), a.Filename, a.SourceURL, a.Ord, createdNs,
+		); err != nil {
+			return fmt.Errorf("storage: note_assets replace: insert %q: %w", a.Filename, err)
+		}
+	}
+	return tx.Commit()
+}
+
+func dbDeleteNoteAssetsByFilename(db *sql.DB, filename string) error {
+	_, err := db.Exec(`DELETE FROM note_assets WHERE filename = ?`, filename)
+	return err
+}
+
+func dbScanNoteAsset(scan func(dest ...any) error) (NoteAsset, error) {
+	var a NoteAsset
+	var createdNs int64
+	var kindRaw string
+	err := scan(&a.NoteDir, &a.NoteName, &kindRaw, &a.Filename, &a.SourceURL, &a.Ord, &createdNs)
+	if err != nil {
+		return NoteAsset{}, err
+	}
+	a.Kind = NoteAssetKind(kindRaw)
+	a.CreatedAt = time.Unix(0, createdNs)
+	return a, nil
+}
+
+func dbGetNoteAsset(db *sql.DB, p Path, kind NoteAssetKind) (NoteAsset, error) {
+	row := db.QueryRow(`
+		SELECT note_dir, note_name, kind, filename, source_url, ord, created_at
+		FROM note_assets
+		WHERE note_dir = ? AND note_name = ? AND kind = ? AND filename != ''
+		ORDER BY ord ASC, id ASC
+		LIMIT 1`,
+		p.Dir(), p.Base(), string(kind),
+	)
+	a, err := dbScanNoteAsset(row.Scan)
+	if errors.Is(err, sql.ErrNoRows) {
+		return NoteAsset{}, ErrMetadataNotFound
+	}
+	if err != nil {
+		return NoteAsset{}, err
+	}
+	return a, nil
+}
+
+func dbListNoteAssets(db *sql.DB, p Path, kind NoteAssetKind) ([]NoteAsset, error) {
+	rows, err := db.Query(`
+		SELECT note_dir, note_name, kind, filename, source_url, ord, created_at
+		FROM note_assets
+		WHERE note_dir = ? AND note_name = ? AND kind = ? AND filename != ''
+		ORDER BY ord ASC, id ASC`,
+		p.Dir(), p.Base(), string(kind),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("storage: list note_assets: %w", err)
+	}
+	defer rows.Close()
+	var out []NoteAsset
+	for rows.Next() {
+		a, err := dbScanNoteAsset(rows.Scan)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, a)
+	}
+	return out, rows.Err()
+}
+
+func dbGetNoteAssetsByKind(db *sql.DB, paths []Path, kind NoteAssetKind) (map[string]string, error) {
+	out := make(map[string]string, len(paths))
+	for start := 0; start < len(paths); start += noteAssetLookupBatchSize {
+		end := start + noteAssetLookupBatchSize
+		if end > len(paths) {
+			end = len(paths)
+		}
+		batch := paths[start:end]
+		clauses := make([]string, len(batch))
+		args := make([]any, 0, len(batch)*2+1)
+		for i, p := range batch {
+			clauses[i] = "(na.note_dir = ? AND na.note_name = ?)"
+			args = append(args, p.Dir(), p.Base())
+		}
+		args = append(args, string(kind))
+		rows, err := db.Query(`
+			SELECT na.note_dir, na.note_name, na.filename FROM note_assets na
+			WHERE (`+strings.Join(clauses, " OR ")+`) AND na.kind = ? AND na.filename != ''
+			  AND EXISTS (SELECT 1 FROM images i WHERE i.name = na.filename)
+			ORDER BY na.ord ASC, na.id ASC`, args...)
+		if err != nil {
+			return nil, fmt.Errorf("storage: note_assets by kind: %w", err)
+		}
+		for rows.Next() {
+			var dir, name, filename string
+			if err := rows.Scan(&dir, &name, &filename); err != nil {
+				rows.Close()
+				return nil, err
+			}
+			key := JoinPath(dir, name)
+			if _, exists := out[key]; !exists {
+				out[key] = filename
+			}
+		}
+		if err := rows.Err(); err != nil {
+			rows.Close()
+			return nil, err
+		}
+		rows.Close()
+	}
+	return out, nil
 }
 
 // ── image DB helpers ──────────────────────────────────────────────────────────

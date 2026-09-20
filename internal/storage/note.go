@@ -95,17 +95,17 @@ const (
 // Note is the metadata for a single markdown file inside a Vault.
 // It never carries content; use Vault.ReadNote for that.
 type Note struct {
-	Dir        string    `json:"dir"`  // vault-absolute directory path; "/" = vault root
-	Name       string    `json:"name"` // base filename, e.g. "april.md"
-	Size       int64     `json:"size,omitempty"`
-	CreatedAt  time.Time `json:"created_at,omitempty"`
-	UpdatedAt  time.Time `json:"updated_at"`
-	Indexed      bool     `json:"indexed,omitempty"`
-	Pinned       bool     `json:"pinned,omitempty"`
-	CompileCount int      `json:"compile_count,omitempty"`
-	Kind         Kind     `json:"kind,omitempty"`
-	Title        string   `json:"title,omitempty"` // human-readable title; set by plugins (e.g. compile), empty for raw notes
-	Tags         []string `json:"tags,omitempty"`  // frontmatter tags
+	Dir          string    `json:"dir"`  // vault-absolute directory path; "/" = vault root
+	Name         string    `json:"name"` // base filename, e.g. "april.md"
+	Size         int64     `json:"size,omitempty"`
+	CreatedAt    time.Time `json:"created_at,omitempty"`
+	UpdatedAt    time.Time `json:"updated_at"`
+	Indexed      bool      `json:"indexed,omitempty"`
+	Pinned       bool      `json:"pinned,omitempty"`
+	CompileCount int       `json:"compile_count,omitempty"`
+	Kind         Kind      `json:"kind,omitempty"`
+	Title        string    `json:"title,omitempty"` // human-readable title; set by plugins (e.g. compile), empty for raw notes
+	Tags         []string  `json:"tags,omitempty"`  // frontmatter tags
 }
 
 // Path returns the Note's full vault-absolute path as a Path object.

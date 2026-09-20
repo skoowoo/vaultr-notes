@@ -25,6 +25,7 @@ type noteItem struct {
 	CanCompile  bool   // true when this note is eligible to be compiled (raw, compile_count==0)
 	IsCompiled  bool   // true when raw note has been compiled at least once (compile_count>0, not knowledge/index)
 	DepCount    int    // number of knowledge deps; set on index cards
+	Cover       string // image filename only; empty = no cover
 }
 
 // noteToItem converts a storage.Note to a noteItem for template rendering.
@@ -69,6 +70,7 @@ func (vh *ViewHandler) listIndexItems() []noteItem {
 		}
 		items = append(items, item)
 	}
+	attachCovers(vh.vault, items)
 	return items
 }
 
@@ -97,10 +99,30 @@ func (vh *ViewHandler) listDirNoteItems(dir string, beforeNs int64, limit int) (
 	for _, n := range notes {
 		items = append(items, noteToItem(n))
 	}
+	attachCovers(vh.vault, items)
 
 	var nextNs int64
 	if hasMore && len(items) > 0 {
 		nextNs = items[len(items)-1].CursorNs
 	}
 	return items, nextNs
+}
+
+func attachCovers(vault *storage.Vault, items []noteItem) {
+	if vault == nil || len(items) == 0 {
+		return
+	}
+	paths := make([]storage.Path, 0, len(items))
+	for _, it := range items {
+		if p, ok := storage.ParsePath(it.Path); ok {
+			paths = append(paths, p)
+		}
+	}
+	covers, err := vault.NoteAssetFilenames(paths, storage.AssetKindCover)
+	if err != nil {
+		return
+	}
+	for i := range items {
+		items[i].Cover = covers[items[i].Path]
+	}
 }

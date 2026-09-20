@@ -18,10 +18,11 @@ import (
 	"github.com/hardhacker/vaultr/internal/config"
 	"github.com/hardhacker/vaultr/internal/mate"
 	"github.com/hardhacker/vaultr/internal/plugin"
+	"github.com/hardhacker/vaultr/internal/plugins/assets"
 	"github.com/hardhacker/vaultr/internal/plugins/compile"
+	discordplugin "github.com/hardhacker/vaultr/internal/plugins/discord"
 	"github.com/hardhacker/vaultr/internal/plugins/gitsync"
 	"github.com/hardhacker/vaultr/internal/plugins/search"
-	discordplugin "github.com/hardhacker/vaultr/internal/plugins/discord"
 	wechatplugin "github.com/hardhacker/vaultr/internal/plugins/wechat"
 	"github.com/hardhacker/vaultr/internal/skills"
 	"github.com/hardhacker/vaultr/internal/storage"
@@ -50,6 +51,9 @@ func New(cfg *config.Config, cfgFileLoaded string, logger *slog.Logger, vault *s
 	// in response to vault events and backtracks unindexed notes on startup.
 	searchPlugin := search.New(cfg.Plugins.Search, vault, logger)
 	mgr.Register(searchPlugin)
+
+	mgr.Register(assets.New(vault, logger))
+	logger.Info("assets plugin registered")
 
 	var gitPlugin *gitsync.Plugin
 	if cfg.Plugins.GitSync.Enabled {

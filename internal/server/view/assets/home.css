@@ -403,6 +403,30 @@
       -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
     }
     .home-list-body.is-grid .home-note-row-meta { margin-top: auto; padding-top: 0.5rem; }
+    /* Cover fills the whole card as a background; it is out of flow so the
+       card keeps the exact size its text gives it, cover or not. Fixed dark
+       base + scrim keep the light text readable while loading / on failure /
+       in the light theme. */
+    .home-list-body.is-grid .home-list-card.has-cover { position: relative; overflow: hidden; }
+    .home-list-body.is-grid .home-note-cover {
+      display: block; position: absolute; inset: 0; background: #26262a;
+    }
+    .home-list-body.is-grid .home-note-cover::after {
+      content: ""; position: absolute; inset: 0;
+      background: linear-gradient(to bottom, rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.66));
+    }
+    .home-list-body.is-grid .home-note-cover img {
+      display: block; width: 100%; height: 100%; object-fit: cover;
+      transition: transform var(--motion-base);
+    }
+    .home-list-body.is-grid .has-cover:hover .home-note-cover img { transform: scale(1.04); }
+    .home-list-body.is-grid .has-cover > :not(.home-note-cover) { position: relative; z-index: 1; }
+    .home-list-body.is-grid .has-cover .home-note-row-title { color: #fff; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45); }
+    .home-list-body.is-grid .has-cover .home-note-row-dir,
+    .home-list-body.is-grid .has-cover .home-note-row-time { color: rgba(255, 255, 255, 0.78); text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45); }
+    .home-list-body.is-grid .has-cover .home-note-badge { color: #fff; border-color: rgba(255, 255, 255, 0.55); }
+    .home-list-body.is-grid .has-cover .home-note-badge--pin { border-color: transparent; }
+    .home-list-body.is-grid .has-cover .home-note-badge--done { background: #fff; color: #26262a; border-color: transparent; }
     .home-list-body.is-grid .home-load-sentinel,
     .home-list-body.is-grid .home-list-empty { grid-column: 1 / -1; }
 
@@ -416,8 +440,36 @@
        .list-card.list-card--clickable (base.css). */
     .home-list-card {
       margin-bottom: 0.5rem;
+      /* overflow:hidden (has-cover) zeroes the flex min-height, so cards would
+         get squashed in the column-flex list body */
+      flex-shrink: 0;
     }
     .home-note-row { display: block; }
+    /* List mode: cover is only a right-side background layer. The card keeps
+       the same block layout and padding as rows without covers, so badges and
+       timestamps stay pinned to the far right instead of being squeezed into a
+       text-only column. */
+    .home-list-body:not(.is-grid) .home-list-card.has-cover {
+      position: relative; overflow: hidden;
+    }
+    .home-list-body:not(.is-grid) .home-note-cover {
+      display: block; position: absolute; top: 0; right: 0; bottom: 0;
+      width: min(42%, 13rem); pointer-events: none;
+      -webkit-mask-image: linear-gradient(to right, transparent, #000 42%);
+      mask-image: linear-gradient(to right, transparent, #000 42%);
+    }
+    .home-list-body:not(.is-grid) .home-note-cover img {
+      display: block; width: 100%; height: 100%;
+      object-fit: cover; object-position: center 30%;
+      transition: filter var(--motion-base), transform var(--motion-base);
+    }
+    .home-list-body:not(.is-grid) .has-cover:hover .home-note-cover img {
+      filter: brightness(1.08); transform: scale(1.02);
+    }
+    .home-list-body:not(.is-grid) .has-cover > :not(.home-note-cover) { position: relative; z-index: 1; }
+    @media (max-width: 520px) {
+      .home-list-body:not(.is-grid) .home-note-cover { display: none; }
+    }
     .home-note-row-top {
       display: flex; align-items: center; justify-content: space-between;
       gap: 0.75rem; margin-bottom: 0.3rem;
@@ -437,9 +489,9 @@
       border-radius: var(--r-full);
     }
     .home-note-badge svg { width: 10px; height: 10px; }
-    .home-note-badge--pin { background: transparent; border-color: transparent; color: var(--accent); }
+    .home-note-badge--done { background: var(--fg); color: var(--bg); border-color: transparent; }
+    .home-note-badge--pin { background: transparent; border-color: transparent; color: var(--fg); }
     .home-note-badge--pin svg { width: 14px; height: 14px; }
-    .home-note-badge--done { background: var(--accent); color: var(--accent-fg); border-color: transparent; }
     .home-note-row-meta {
       display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;
     }

@@ -1,27 +1,34 @@
 package handler
 
 import (
-	"crypto/rand"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/hardhacker/vaultr/internal/storage"
 )
 
+// writeImageHeaders sets the headers for serving a stored image. The sandbox
+// CSP and nosniff keep an SVG opened as a top-level document from running
+// scripts on the app origin; <img> embedding is unaffected.
+func writeImageHeaders(w http.ResponseWriter, ext, cacheControl string) {
+	h := w.Header()
+	h.Set("Content-Type", storage.ImageContentType(ext))
+	h.Set("Cache-Control", cacheControl)
+	h.Set("X-Content-Type-Options", "nosniff")
+	h.Set("Content-Security-Policy", "sandbox; default-src 'none'; style-src 'unsafe-inline'")
+}
+
 // UploadImage handles POST /api/vault/upload-image.
 // Accepts multipart/form-data with a "file" field containing an image.
 // Saves to {vault_root}/_assets/YYYYMM/{unixms}-{rand8}.{ext}.
-// Returns {"src": "/_assets/YYYYMM/filename.ext"}.
+// Returns {"src": "/_assets/YYYYMM/filename.ext", "name": "filename.ext"}.
 func (gh *VaultHandler) UploadImage(w http.ResponseWriter, r *http.Request) {
-	if err := r.ParseMultipartForm(10 << 20); err != nil {
+	if err := r.ParseMultipartForm(storage.MaxImageBytes); err != nil {
 		http.Error(w, "request parse error: "+err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -33,47 +40,34 @@ func (gh *VaultHandler) UploadImage(w http.ResponseWriter, r *http.Request) {
 	}
 	defer file.Close()
 
-	ext := resolveImageExt(hdr.Header.Get("Content-Type"), hdr.Filename)
+	data, err := io.ReadAll(io.LimitReader(file, storage.MaxImageBytes+1))
+	if err != nil {
+		http.Error(w, "read error: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if len(data) > storage.MaxImageBytes {
+		http.Error(w, "image too large", http.StatusRequestEntityTooLarge)
+		return
+	}
+	ext := storage.DetectImageExt(data, hdr.Header.Get("Content-Type"), hdr.Filename)
 	if ext == "" {
 		http.Error(w, "unsupported image type", http.StatusBadRequest)
 		return
 	}
 
-	data, err := io.ReadAll(io.LimitReader(file, 10<<20))
+	img, err := gh.vault.SaveImageBytes(data, ext)
 	if err != nil {
-		http.Error(w, "read error: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
-	if !checkImageMagic(data, ext) {
-		http.Error(w, "file bytes do not match declared image type", http.StatusBadRequest)
-		return
-	}
-
-	month := time.Now().UTC().Format("200601")
-	var randBuf [4]byte
-	_, _ = rand.Read(randBuf[:])
-	name := fmt.Sprintf("%d-%s%s", time.Now().UnixMilli(), hex.EncodeToString(randBuf[:]), ext)
-
-	absDir := filepath.Join(gh.vault.Root(), "_assets", month)
-	if err := os.MkdirAll(absDir, 0o750); err != nil {
-		http.Error(w, "mkdir error: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
-	if err := os.WriteFile(filepath.Join(absDir, name), data, 0o644); err != nil {
+		if errors.Is(err, storage.ErrInvalidImageRef) {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
 		http.Error(w, "write error: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	// Register in images metadata table (best-effort).
-	_ = gh.vault.RegisterImage(storage.Image{
-		Dir:  "/_assets/" + month,
-		Name: name,
-		Ext:  ext,
-		Size: int64(len(data)),
-	})
-
 	respondJSON(w, http.StatusOK, map[string]string{
-		"src": "/_assets/" + month + "/" + name,
+		"src":  img.Dir + "/" + img.Name,
+		"name": img.Name,
 	})
 }
 
@@ -108,53 +102,8 @@ func (gh *VaultHandler) ServeAsset(w http.ResponseWriter, r *http.Request) {
 	}
 	defer f.Close()
 
-	ct := imageContentType(filepath.Ext(abs))
-	w.Header().Set("Content-Type", ct)
-	w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
+	writeImageHeaders(w, filepath.Ext(abs), "public, max-age=31536000, immutable")
 	_, _ = io.Copy(w, f)
-}
-
-// ── helpers ───────────────────────────────────────────────────────────────────
-
-var imageExtByMIME = map[string]string{
-	"image/jpeg":    ".jpg",
-	"image/png":     ".png",
-	"image/gif":     ".gif",
-	"image/webp":    ".webp",
-	"image/avif":    ".avif",
-	"image/svg+xml": ".svg",
-}
-
-var imageMIMEByExt = map[string]string{
-	".jpg":  "image/jpeg",
-	".jpeg": "image/jpeg",
-	".png":  "image/png",
-	".gif":  "image/gif",
-	".webp": "image/webp",
-	".avif": "image/avif",
-	".svg":  "image/svg+xml",
-}
-
-// resolveImageExt returns the canonical extension for the upload, preferring
-// the declared Content-Type and falling back to the filename extension.
-// Returns "" when the type is not supported.
-func resolveImageExt(ct, filename string) string {
-	ct = strings.ToLower(strings.SplitN(ct, ";", 2)[0])
-	if ext, ok := imageExtByMIME[ct]; ok {
-		return ext
-	}
-	ext := strings.ToLower(filepath.Ext(filename))
-	if _, ok := imageMIMEByExt[ext]; ok {
-		return ext
-	}
-	return ""
-}
-
-func imageContentType(ext string) string {
-	if ct, ok := imageMIMEByExt[strings.ToLower(ext)]; ok {
-		return ct
-	}
-	return "application/octet-stream"
 }
 
 // ServeImageByName handles GET /api/images/serve?name=<filename>.
@@ -191,9 +140,7 @@ func (gh *VaultHandler) ServeImageByName(w http.ResponseWriter, r *http.Request)
 	}
 	defer f.Close()
 
-	ct := imageContentType(filepath.Ext(abs))
-	w.Header().Set("Content-Type", ct)
-	w.Header().Set("Cache-Control", "public, max-age=3600")
+	writeImageHeaders(w, filepath.Ext(abs), "public, max-age=3600")
 	_, _ = io.Copy(w, f)
 }
 
@@ -228,9 +175,7 @@ func (gh *VaultHandler) ServeImageAt(w http.ResponseWriter, r *http.Request) {
 	}
 	defer f.Close()
 
-	ct := imageContentType(filepath.Ext(abs))
-	w.Header().Set("Content-Type", ct)
-	w.Header().Set("Cache-Control", "public, max-age=3600")
+	writeImageHeaders(w, filepath.Ext(abs), "public, max-age=3600")
 	_, _ = io.Copy(w, f)
 }
 
@@ -260,21 +205,4 @@ func (gh *VaultHandler) DeleteGalleryImage(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
-}
-
-// checkImageMagic performs a minimal magic-bytes check for common formats.
-func checkImageMagic(data []byte, ext string) bool {
-	switch ext {
-	case ".png":
-		return len(data) >= 4 && data[0] == 0x89 && data[1] == 'P' && data[2] == 'N' && data[3] == 'G'
-	case ".jpg", ".jpeg":
-		return len(data) >= 2 && data[0] == 0xFF && data[1] == 0xD8
-	case ".gif":
-		return len(data) >= 3 && data[0] == 'G' && data[1] == 'I' && data[2] == 'F'
-	case ".webp":
-		return len(data) >= 12 && string(data[0:4]) == "RIFF" && string(data[8:12]) == "WEBP"
-	default:
-		// AVIF, SVG — skip deep check
-		return true
-	}
 }

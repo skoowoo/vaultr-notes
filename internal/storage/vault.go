@@ -8,9 +8,9 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strconv"
-	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -152,6 +152,51 @@ func (g *Vault) MarkNoteAsIndex(p Path, title string) error {
 	return dbSetKindIndex(g.db, p, title)
 }
 
+// UpsertNoteAsset records an extracted resource on a note. Does not rewrite markdown.
+// Duplicate (note, kind, filename) updates source_url and ord.
+func (g *Vault) UpsertNoteAsset(p Path, a NoteAsset) error {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	a.NoteDir = p.Dir()
+	a.NoteName = p.Base()
+	return dbUpsertNoteAsset(g.db, a)
+}
+
+// ReplaceNoteAssets atomically replaces all resources of a kind for a note.
+// Passing an empty slice clears existing resources of that kind.
+func (g *Vault) ReplaceNoteAssets(p Path, kind NoteAssetKind, assets []NoteAsset) error {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	return dbReplaceNoteAssets(g.db, p, kind, assets)
+}
+
+// DeleteNoteAssetsByFilename removes extracted asset references to filename.
+func (g *Vault) DeleteNoteAssetsByFilename(filename string) error {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	return dbDeleteNoteAssetsByFilename(g.db, filename)
+}
+
+// GetNoteAsset returns the first resource of the given kind (lowest ord).
+func (g *Vault) GetNoteAsset(p Path, kind NoteAssetKind) (NoteAsset, error) {
+	g.mu.RLock()
+	defer g.mu.RUnlock()
+	return dbGetNoteAsset(g.db, p, kind)
+}
+
+// ListNoteAssets returns all resources of the given kind, ordered by ord.
+func (g *Vault) ListNoteAssets(p Path, kind NoteAssetKind) ([]NoteAsset, error) {
+	g.mu.RLock()
+	defer g.mu.RUnlock()
+	return dbListNoteAssets(g.db, p, kind)
+}
+
+// NoteAssetFilenames returns path → first filename for the given kind across notes.
+func (g *Vault) NoteAssetFilenames(paths []Path, kind NoteAssetKind) (map[string]string, error) {
+	g.mu.RLock()
+	defer g.mu.RUnlock()
+	return dbGetNoteAssetsByKind(g.db, paths, kind)
+}
 
 // GetKnowledgeDeps returns all source note paths that the given knowledge note depends on.
 func (g *Vault) GetKnowledgeDeps(knowledge Path) ([]Path, error) {
@@ -1030,7 +1075,6 @@ func (g *Vault) GetShortDailyNote(shortsDir string, day time.Time) (Note, error)
 	}
 	return n, nil
 }
-
 
 // ── vault initialisation ──────────────────────────────────────────────────────
 

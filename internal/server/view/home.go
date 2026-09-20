@@ -124,7 +124,7 @@ func (vh *ViewHandler) homeSectionData(r *http.Request, itemsOnly bool) (homeSec
 		if err != nil {
 			return data, err
 		}
-		data.Items = noteItemsFromNotes(pinned)
+		data.Items = vh.noteItemsFromNotes(pinned)
 		data.Title = "Pinned"
 		data.EmptyMsg = "No pinned notes"
 		data.Count = len(data.Items)
@@ -360,13 +360,20 @@ var homeTemplateFuncs = template.FuncMap{
 		return dir
 	},
 	"encdir": url.QueryEscape,
+	"coverURL": func(name string) string {
+		if name == "" {
+			return ""
+		}
+		return "/api/images/serve?name=" + url.QueryEscape(name)
+	},
 }
 
 const homeSectionRowsHTML = `{{define "rows"}}{{range .Items}}
-<div class="list-card list-card--clickable home-list-card home-note-row" @click="__vaultrOpenNote($event.currentTarget)"
+<div class="list-card list-card--clickable home-list-card home-note-row{{if .Cover}} has-cover{{end}}" @click="__vaultrOpenNote($event.currentTarget)"
      data-note-path="{{.Path}}" data-note-title="{{label .}}"
      data-note-is-knowledge="{{.IsKnowledge}}" data-note-is-index="{{.IsIndex}}"
      data-note-can-compile="{{.CanCompile}}" data-note-pinned="{{.Pinned}}">
+  {{if .Cover}}<div class="home-note-cover" aria-hidden="true"><img src="{{coverURL .Cover}}" alt="" draggable="false" loading="lazy" decoding="async"></div>{{end}}
   <div class="home-note-row-top">
     <span class="home-note-row-title">{{label .}}</span>
     <div class="home-note-row-badges">
@@ -1020,11 +1027,12 @@ const homeChatToastHTML = `
     </button>
   </div>`
 
-func noteItemsFromNotes(notes []storage.Note) []noteItem {
+func (vh *ViewHandler) noteItemsFromNotes(notes []storage.Note) []noteItem {
 	items := make([]noteItem, 0, len(notes))
 	for _, n := range notes {
 		items = append(items, noteToItem(n))
 	}
+	attachCovers(vh.vault, items)
 	return items
 }
 
