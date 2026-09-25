@@ -285,6 +285,30 @@ func (c *Client) DeleteNote(relPath string) error {
 	return nil
 }
 
+// MoveNote moves the note at relPath to the same-named file under newDir,
+// returning its new vault-absolute path.
+func (c *Client) MoveNote(relPath, newDir string) (string, error) {
+	resp, err := c.postJSON(c.baseURL+"/api/vault/move", map[string]any{"path": relPath, "newDir": newDir})
+	if err != nil {
+		return "", wrapConnErr(err)
+	}
+	defer resp.Body.Close()
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", fmt.Errorf("move %q: read response: %w", relPath, err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("move %q: %s", relPath, statusMsg(resp.StatusCode, body))
+	}
+	var out struct {
+		Path string `json:"path"`
+	}
+	if err := json.Unmarshal(body, &out); err != nil {
+		return "", fmt.Errorf("move %q: decode response: %w", relPath, err)
+	}
+	return out.Path, nil
+}
+
 // ShortEntry mirrors storage.ShortEntry for JSON decoding.
 type ShortEntry struct {
 	Content   string    `json:"content"`

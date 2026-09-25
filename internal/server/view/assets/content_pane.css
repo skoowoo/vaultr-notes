@@ -530,12 +530,3 @@
     #content-pane-edit-area .cm-scroller::-webkit-scrollbar-thumb:hover {
       background: var(--scrollbar-thumb-hov);
     }
-    @keyframes vaultr-ep {
-      0%   { transform: translate(0,0) scale(1); opacity: 0.85; }
-      100% { transform: translate(var(--ex),var(--ey)) scale(0); opacity: 0; }
-    }
-    .vaultr-ep {
-      position: fixed; pointer-events: none; z-index: 9999;
-      width: 5px; height: 5px; border-radius: 50%;
-      animation: vaultr-ep 0.55s cubic-bezier(.2,.8,.4,1) forwards;
-    }

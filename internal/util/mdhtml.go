@@ -86,8 +86,9 @@ func MarkdownToHTMLFragmentChecked(src []byte, exists func(string) bool) ([]byte
 	return buf.Bytes(), nil
 }
 
-// expandWikilinksChecked is like expandWikilinks but emits raw HTML with class
-// "wikilink-broken" for targets that fail the exists check.
+// expandWikilinksChecked is like expandWikilinks but emits a non-navigable
+// <span class="wikilink-broken"> for targets that fail the exists check,
+// instead of a link — the target note is gone, so there's nowhere to go.
 func expandWikilinksChecked(src []byte, exists func(string) bool) []byte {
 	return wikilinkRe.ReplaceAllFunc(src, func(match []byte) []byte {
 		m := wikilinkRe.FindSubmatch(match)
@@ -100,11 +101,11 @@ func expandWikilinksChecked(src []byte, exists func(string) bool) []byte {
 		if !strings.HasSuffix(name, ".md") {
 			name += ".md"
 		}
-		href := "/notes?name=" + url.QueryEscape(name)
 		if exists != nil && !exists(name) {
-			return []byte(fmt.Sprintf(`<a href="%s" class="wikilink-broken">%s</a>`,
-				href, html.EscapeString(display)))
+			return []byte(fmt.Sprintf(`<span class="wikilink-broken" title="Note not found">%s</span>`,
+				html.EscapeString(display)))
 		}
+		href := "/notes?name=" + url.QueryEscape(name)
 		return []byte(fmt.Sprintf("[%s](%s)", display, href))
 	})
 }

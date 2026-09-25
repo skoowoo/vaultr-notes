@@ -104,8 +104,6 @@ function doHomeRefresh() {
 // Matches internal/inbox.defaultListLimit — the server-side page size used
 // when a request omits ?limit=. Kept in sync manually since the client
 // needs to know a full page was returned to decide whether more exist.
-// (Mirrors inbox.go's inboxJS constant of the same name for the standalone
-// /agent/inbox page.)
 var INBOX_PAGE_SIZE = 50;
 
 // ── Chat path autocomplete (mirrors agent_chat.js's module-level helpers
@@ -189,7 +187,7 @@ function homeCtrl() {
     _graphTooltip: null,
     _focusedPath: '',
     nodePanel: null,
-    // ── Inbox (mirrors inbox.go's inboxCtrl for the standalone /agent/inbox page) ──
+    // ── Inbox ────────────────────────────────────────────────────────────
     inboxMessages: [],
     inboxLoading: true,
     inboxLoadingMore: false,
@@ -232,6 +230,9 @@ function homeCtrl() {
     init() {
       this.initContentPane();
       window._homeData = this;
+      // First render isn't an htmx swap (home.html, not htmx:afterSwap
+      // below), so the drag-to-move cards need their initial pass here too.
+      __vaultrUpdateDraggableCards();
       window.__vaultrHotkeys.register('refresh', 'r', function () {
         if (typeof window.__vaultrBackgroundRefresh === 'function') {
           window.__vaultrBackgroundRefresh();
@@ -262,6 +263,34 @@ function homeCtrl() {
           overlayEl.classList.add('content-pane-is-opening');
           setTimeout(function () { overlayEl.classList.remove('content-pane-is-opening'); }, 320);
         }
+      });
+      // #home-list-pane's flex-grow (and so #graph-canvas's box) changes
+      // with this class, but cytoscape caches its container size and never
+      // notices — same fixup as clicking "Fit all nodes" by hand, just
+      // automatic. Opening applies flex-grow with 0 delay (truly instant,
+      // no transition event fires for it), so rAF is enough to let that
+      // land. Closing holds flex-grow behind --content-pane-exit-ms (home.css)
+      // until the panel's own slide-out finishes — a real, if zero-duration,
+      // transition — so wait for its transitionend rather than guessing the
+      // delay in JS; a timeout is only the fallback if that event never comes.
+      this.$watch('contentPaneOpen', (isOpen) => {
+        if (!this.cy) return;
+        var cy = this.cy;
+        var run = () => {
+          if (cy !== this.cy) return;
+          cy.resize();
+          var node = this._focusedPath ? cy.getElementById(this._focusedPath) : null;
+          if (node && !node.empty()) cy.animate({ center: { eles: node } }, { duration: 150 });
+          else cy.fit(undefined, 48);
+        };
+        if (isOpen) { requestAnimationFrame(run); return; }
+        var listEl = document.getElementById('home-list-pane');
+        if (!listEl) { setTimeout(run, 220); return; }
+        var done = false;
+        var finish = () => { if (done) return; done = true; listEl.removeEventListener('transitionend', onEnd); run(); };
+        var onEnd = (e) => { if (e.target === listEl && e.propertyName === 'flex-grow') finish(); };
+        listEl.addEventListener('transitionend', onEnd);
+        setTimeout(finish, 260); // covers the rare case flex-grow was already at rest and no transition ran
       });
       window._imgUpdateSelected = () => {
         this.selectedCount = document.querySelectorAll('.img-card.is-selected').length;
@@ -489,6 +518,9 @@ function homeCtrl() {
         edgeCount: connected.length,
         connected: connectedData,
       };
+      // Selecting a node now drives the editor directly — the card stays,
+      // but "Open" is no longer required to see the note.
+      this.openNodeInContentPane(this.nodePanel.path, this.nodePanel.label);
     },
 
     _clearFocus() {
@@ -794,9 +826,8 @@ function homeCtrl() {
     initInboxStream() {
       // Subscribes to /api/inbox/notifications (internal/inbox.Bus) so a
       // message created while home is open updates the badge/list live
-      // instead of waiting for a manual refresh — mirrors inbox.go's
-      // inboxCtrl.initStream(), but runs regardless of which sidebar section
-      // is active since the unread badge is always visible.
+      // instead of waiting for a manual refresh. Runs regardless of which
+      // sidebar section is active since the unread badge is always visible.
       if (typeof EventSource === 'undefined') return;
       var es = new EventSource('/api/inbox/notifications');
       es.addEventListener('message', (e) => {
@@ -891,11 +922,9 @@ function homeCtrl() {
     fullTime(iso) {
       try { return new Date(iso).toLocaleString(); } catch (e) { return iso; }
     },
-    // Mirrors agent_chat.js/inbox.go's renderMarkdown(): same wiki-link
-    // handling and sanitize allowlist, so message bodies render identically
-    // across the inbox sheet and assistant chat replies. Caches settled text
-    // (skipped while a chat reply is still streaming, since content changes
-    // every delta) — mirrors agent_chat.js's _mdCache behavior verbatim.
+    // Same wiki-link handling and sanitize allowlist for the inbox sheet and
+    // assistant chat replies. Caches settled text (skipped while a chat
+    // reply is still streaming, since content changes every delta).
     renderMarkdown(text) {
       if (!text || typeof text !== 'string') return '';
       var useCache = !this.isRunning;
@@ -1543,8 +1572,15 @@ function homeCtrl() {
     },
 
     showCompletionToast(status, agentBotName) {
-      this.toastText = (agentBotName || 'Agent') + (status === 'succeeded' ? ' finished' : ' failed');
-      this.toastKind = status === 'succeeded' ? 'ok' : 'err';
+      this.showToast((agentBotName || 'Agent') + (status === 'succeeded' ? ' finished' : ' failed'), status === 'succeeded' ? 'ok' : 'err');
+    },
+
+    // Generic version of the above — same .run-toast element (home.go), any
+    // caller (e.g. home.js's drag-to-move flow) can use it, not just agent
+    // run completions.
+    showToast(text, kind) {
+      this.toastText = text;
+      this.toastKind = kind === 'err' ? 'err' : 'ok';
       this.toastVisible = true;
       if (this._toastTimer) clearTimeout(this._toastTimer);
       this._toastTimer = setTimeout(() => { this.toastVisible = false; }, 6000);
@@ -1727,6 +1763,7 @@ function homeCtrl() {
 document.body.addEventListener('htmx:afterSwap', function (e) {
   var target = e.detail && e.detail.target;
   if (!target || target.id !== 'home-list-pane' || !window._homeData) return;
+  __vaultrUpdateDraggableCards();
   var xhr = e.detail.xhr;
   if (!xhr || !xhr.responseURL) return;
   try {
@@ -1771,4 +1808,181 @@ document.addEventListener('click', function (e) {
     window.open(href, '_blank', 'noopener,noreferrer');
   }
 }, true);
+
+// ── Drag a note card onto a sidebar folder to move it ──────────────────────
+// Folder-view only (activeKey 'dir:...') — Knowledge/Shorts have their own
+// list views and no drop path here, by design (backend Vault.MoveNote has no
+// such restriction; this is a UI-only choice). Cards are htmx-swapped in/out
+// of #home-list-pane on every section/page change, so this is delegated on
+// document rather than bound per-card — a per-card listener would silently
+// stop working the moment htmx replaces the card it was attached to.
+var __vaultrDragSourcePath = null;
+var __vaultrDragSourceCard = null;
+var __vaultrDragOverTarget = null;
+
+function __vaultrDragNoteEligible(card) {
+  return !!(card && card.dataset.notePath &&
+    card.dataset.noteIsKnowledge !== 'true' && card.dataset.noteIsIndex !== 'true');
+}
+
+// Reflects the current section onto every visible card's draggable property
+// (not just gating it at dragstart) so the cursor/affordance is honest —
+// hovering a card outside folder view no longer shows a grab cursor for a
+// drag that was never going to start. Native `draggable` is a reflected
+// attribute, so home.css's [draggable="true"] selectors track this for free.
+// Called after every #home-list-pane swap (htmx:afterSwap, below) and once
+// on init for the page's first, non-htmx render.
+function __vaultrUpdateDraggableCards() {
+  var isFolderView = !!(window._homeData && String(window._homeData.activeKey || '').indexOf('dir:') === 0);
+  var cards = document.querySelectorAll('.home-note-row');
+  for (var i = 0; i < cards.length; i++) {
+    cards[i].draggable = isFolderView && __vaultrDragNoteEligible(cards[i]);
+  }
+}
+
+document.addEventListener('dragstart', function (e) {
+  var card = e.target.closest ? e.target.closest('.home-note-row') : null;
+  if (!card) return;
+  // A card mid-move (is-move-pending) is also pointer-events:none (home.css),
+  // so it can't be the drag source here — this check is defense in depth.
+  if (!card.draggable || card.classList.contains('is-move-pending')) { e.preventDefault(); return; }
+  __vaultrDragSourcePath = card.dataset.notePath;
+  __vaultrDragSourceCard = card;
+  e.dataTransfer.effectAllowed = 'move';
+  try { e.dataTransfer.setData('text/plain', __vaultrDragSourcePath); } catch (_) { /* ignore */ }
+  card.classList.add('is-dragging');
+  // Without this, the drag image defaults to a full-size snapshot of the
+  // card (as wide as the whole list) — swap in a small title-only chip that
+  // sizes to its own text instead. Has to be in the DOM (even off-screen)
+  // for setDragImage to snapshot it, then comes back out next tick.
+  var ghost = document.createElement('div');
+  ghost.className = 'home-drag-ghost';
+  ghost.textContent = card.dataset.noteTitle || 'Note';
+  document.body.appendChild(ghost);
+  e.dataTransfer.setDragImage(ghost, 12, 14);
+  setTimeout(function () { ghost.remove(); }, 0);
+});
+
+document.addEventListener('dragend', function () {
+  // Only clears the *gesture* state — if drop actually kicked off a move,
+  // the card keeps is-move-pending (added there) until the request settles,
+  // so a second drag can't fire a second move on the same file mid-flight.
+  var card = __vaultrDragSourceCard;
+  if (card && !card.classList.contains('is-move-pending')) card.classList.remove('is-dragging');
+  if (__vaultrDragOverTarget) { __vaultrDragOverTarget.classList.remove('drag-over'); __vaultrDragOverTarget = null; }
+  __vaultrDragSourcePath = null;
+  __vaultrDragSourceCard = null;
+});
+
+// Per spec, both dragenter and dragover need preventDefault() for an element
+// to register as a valid drop target — dragover alone is enough in most
+// browsers but not guaranteed, so both get the same handling.
+document.addEventListener('dragenter', function (e) {
+  if (!__vaultrDragSourcePath) return;
+  var target = e.target.closest ? e.target.closest('.home-drop-target') : null;
+  if (target) e.preventDefault();
+});
+
+document.addEventListener('dragover', function (e) {
+  if (!__vaultrDragSourcePath) return;
+  var target = e.target.closest ? e.target.closest('.home-drop-target') : null;
+  if (target !== __vaultrDragOverTarget) {
+    if (__vaultrDragOverTarget) __vaultrDragOverTarget.classList.remove('drag-over');
+    if (target) target.classList.add('drag-over');
+    __vaultrDragOverTarget = target;
+  }
+  if (target) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }
+});
+
+document.addEventListener('drop', function (e) {
+  if (!__vaultrDragSourcePath) return;
+  // Always suppress the browser's own drop handling while our drag is live —
+  // dropping outside a valid target (e.g. onto the open editor) would
+  // otherwise insert the dragged path as plain text into it.
+  e.preventDefault();
+  var target = e.target.closest ? e.target.closest('.home-drop-target') : null;
+  var sourcePath = __vaultrDragSourcePath;
+  var card = __vaultrDragSourceCard;
+  var hoverTarget = __vaultrDragOverTarget;
+  __vaultrDragOverTarget = null;
+  __vaultrDragSourcePath = null;
+  if (!target) { if (hoverTarget) hoverTarget.classList.remove('drag-over'); __vaultrShakeCard(card, false); return; }
+  var targetDir = target.dataset.dropDir;
+  var slash = sourcePath.lastIndexOf('/');
+  var currentDir = slash <= 0 ? '/' : sourcePath.slice(0, slash);
+  if (currentDir === targetDir) { target.classList.remove('drag-over'); __vaultrShakeCard(card, false); return; }
+  if (card) { card.classList.remove('is-dragging'); card.classList.add('is-move-pending'); }
+  // .drag-over stays through the request itself (its breathing glow doubles
+  // as "still working on it") — __vaultrDragMoveNote swaps it for a receipt
+  // bounce on success or clears it on failure.
+  void __vaultrDragMoveNote(sourcePath, targetDir, card, target);
+});
+
+// Plain "that didn't do anything" feedback — dropped outside any folder, or
+// back into the folder the note is already in. rejected=false, no color.
+function __vaultrShakeCard(card, rejected) {
+  if (!card) return;
+  card.classList.remove('is-dragging', 'is-move-pending');
+  var cls = rejected ? 'is-move-rejected' : 'is-move-noop';
+  card.classList.add(cls);
+  // 500ms comfortably outlasts both animations home.css puts on these
+  // classes (home-shake: --motion-base*2.5 = 400ms; the rejected variant's
+  // extra home-reject-flash: --motion-base*3 = 480ms).
+  setTimeout(function () { card.classList.remove(cls); }, 500);
+}
+
+// Move actually landed — flies the card toward the drop target and shrinks
+// it away, then removes it from the DOM itself rather than waiting for
+// reloadActiveSection()'s round trip to do it. Also gives the target a quick
+// receipt bounce. Safe to no-op if either element isn't in the document any
+// more (e.g. the section changed mid-request).
+function __vaultrFlyCardToTarget(card, targetEl) {
+  if (targetEl && targetEl.isConnected) {
+    targetEl.classList.remove('drag-over');
+    targetEl.classList.add('just-received');
+    // home-drop-received runs --motion-base*2 = 320ms — 340ms clears a beat after.
+    setTimeout(function () { targetEl.classList.remove('just-received'); }, 340);
+  }
+  if (!card || !card.isConnected) return;
+  card.classList.remove('is-move-pending');
+  if (!targetEl || !targetEl.isConnected) { card.remove(); return; }
+  var cardRect = card.getBoundingClientRect();
+  var targetRect = targetEl.getBoundingClientRect();
+  card.style.setProperty('--fly-dx', ((targetRect.left + targetRect.width / 2) - (cardRect.left + cardRect.width / 2)) + 'px');
+  card.style.setProperty('--fly-dy', ((targetRect.top + targetRect.height / 2) - (cardRect.top + cardRect.height / 2)) + 'px');
+  card.classList.add('is-move-success');
+  var done = false;
+  var remove = function () { if (done) return; done = true; card.remove(); };
+  card.addEventListener('transitionend', remove, { once: true });
+  // .is-move-success's longer transition (transform) runs --motion-base*2 =
+  // 320ms — 400ms is the fallback in case transitionend never fires.
+  setTimeout(remove, 400);
+}
+
+async function __vaultrDragMoveNote(sourcePath, targetDir, card, targetEl) {
+  if (window.__vaultrContentPane) await window.__vaultrContentPane.flushPendingSaveFor(sourcePath);
+  var resp;
+  try {
+    resp = await fetch('/api/vault/move', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path: sourcePath, newDir: targetDir }),
+    });
+  } catch (e) {
+    if (targetEl) targetEl.classList.remove('drag-over');
+    if (card) { card.classList.remove('is-move-pending'); __vaultrShakeCard(card, true); }
+    if (window.showError) window.showError((e && e.message) || 'Network error.', 'Cannot move');
+    return;
+  }
+  if (!resp.ok) {
+    if (targetEl) targetEl.classList.remove('drag-over');
+    if (card) { card.classList.remove('is-move-pending'); __vaultrShakeCard(card, true); }
+    var msg = (await resp.text()).trim() || 'Move failed.';
+    if (window.showError) window.showError(resp.status === 409 ? 'A note already exists at that location.' : msg, 'Cannot move');
+    return;
+  }
+  var data = await resp.json();
+  if (window.__vaultrContentPane) window.__vaultrContentPane.noteMoved(sourcePath, data.path);
+  __vaultrFlyCardToTarget(card, targetEl);
+  if (window.__vaultrAfterVaultMutation) await window.__vaultrAfterVaultMutation();
+}
 

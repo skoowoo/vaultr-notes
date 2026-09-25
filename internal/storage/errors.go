@@ -37,4 +37,8 @@ var (
 	// ErrBinaryContent is returned when the content to be written is not valid UTF-8 text.
 	ErrBinaryContent = errors.New("content must be valid UTF-8 text, not binary data")
 
+	// ErrAlreadyExists is returned when an operation's destination path is
+	// already occupied by another note (on disk or in the metadata DB) and
+	// the operation would silently overwrite it. Used by MoveNote.
+	ErrAlreadyExists = errors.New("a note already exists at the destination")
 )

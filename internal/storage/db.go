@@ -514,11 +514,181 @@ func dbCountByKind(db *sql.DB, onlyKind, excludeKind string) (int, error) {
 	return n, err
 }
 
-// dbDelete removes the metadata row for the note identified by its path.
+// dbDelete removes the metadata row for the note at p and cascades to every
+// relation table it might participate in, regardless of its kind:
+// note_assets (owned resources), knowledge_deps (as the knowledge side or
+// the source side), index_deps (as the index side or the knowledge side),
+// and knowledge_links (as source or target of a wikilink edge). It never
+// deletes another note — only join-table rows that reference p.
+//
+// A source note left with no remaining knowledge dependents has its
+// compile_count reset to 0 so it becomes eligible for re-compilation.
+//
+// Everything runs in one transaction so a partial failure can't leave
+// orphaned relation rows or a stale compile_count behind.
 func dbDelete(db *sql.DB, p Path) error {
-	_, _ = db.Exec(`DELETE FROM note_assets WHERE note_dir = ? AND note_name = ?`, p.Dir(), p.Base())
-	_, err := db.Exec(`DELETE FROM notes WHERE dir = ? AND name = ?`, p.Dir(), p.Base())
-	return err
+	tx, err := db.Begin()
+	if err != nil {
+		return fmt.Errorf("storage: delete: begin tx: %w", err)
+	}
+	defer tx.Rollback() //nolint:errcheck
+
+	// Sources this note depends on (if it's a knowledge note) — recorded before
+	// the dependency rows are deleted, so we can recheck each one afterwards.
+	rows, err := tx.Query(
+		`SELECT source_dir, source_name FROM knowledge_deps WHERE knowledge_dir = ? AND knowledge_name = ?`,
+		p.Dir(), p.Base(),
+	)
+	if err != nil {
+		return fmt.Errorf("storage: delete: knowledge_deps lookup: %w", err)
+	}
+	sources, err := dbScanPaths(rows)
+	if err != nil {
+		return fmt.Errorf("storage: delete: knowledge_deps scan: %w", err)
+	}
+
+	if _, err := tx.Exec(`DELETE FROM note_assets WHERE note_dir = ? AND note_name = ?`, p.Dir(), p.Base()); err != nil {
+		return fmt.Errorf("storage: delete: note_assets: %w", err)
+	}
+	if _, err := tx.Exec(`DELETE FROM notes WHERE dir = ? AND name = ?`, p.Dir(), p.Base()); err != nil {
+		return fmt.Errorf("storage: delete: notes: %w", err)
+	}
+	if _, err := tx.Exec(
+		`DELETE FROM knowledge_deps WHERE knowledge_dir = ? AND knowledge_name = ?`,
+		p.Dir(), p.Base(),
+	); err != nil {
+		return fmt.Errorf("storage: delete: knowledge_deps (as knowledge): %w", err)
+	}
+	if _, err := tx.Exec(
+		`DELETE FROM knowledge_deps WHERE source_dir = ? AND source_name = ?`,
+		p.Dir(), p.Base(),
+	); err != nil {
+		return fmt.Errorf("storage: delete: knowledge_deps (as source): %w", err)
+	}
+	if _, err := tx.Exec(
+		`DELETE FROM index_deps WHERE index_dir = ? AND index_name = ?`,
+		p.Dir(), p.Base(),
+	); err != nil {
+		return fmt.Errorf("storage: delete: index_deps (as index): %w", err)
+	}
+	if _, err := tx.Exec(
+		`DELETE FROM index_deps WHERE knowledge_dir = ? AND knowledge_name = ?`,
+		p.Dir(), p.Base(),
+	); err != nil {
+		return fmt.Errorf("storage: delete: index_deps (as knowledge): %w", err)
+	}
+	if _, err := tx.Exec(
+		`DELETE FROM knowledge_links WHERE (source_dir = ? AND source_name = ?) OR (target_dir = ? AND target_name = ?)`,
+		p.Dir(), p.Base(), p.Dir(), p.Base(),
+	); err != nil {
+		return fmt.Errorf("storage: delete: knowledge_links: %w", err)
+	}
+
+	for _, src := range sources {
+		var remaining int
+		if err := tx.QueryRow(
+			`SELECT COUNT(*) FROM knowledge_deps WHERE source_dir = ? AND source_name = ?`,
+			src.Dir(), src.Base(),
+		).Scan(&remaining); err != nil {
+			return fmt.Errorf("storage: delete: recheck source %q: %w", src.String(), err)
+		}
+		if remaining == 0 {
+			if _, err := tx.Exec(
+				`UPDATE notes SET compile_count = 0 WHERE dir = ? AND name = ?`,
+				src.Dir(), src.Base(),
+			); err != nil {
+				return fmt.Errorf("storage: delete: reset compile_count %q: %w", src.String(), err)
+			}
+		}
+	}
+
+	return tx.Commit()
+}
+
+// dbMove updates the metadata row for the note at old to live under newDir
+// (same filename) and cascades the directory change to every relation table
+// it might participate in, regardless of its kind — the same table list
+// dbDelete cascades to, but UPDATE instead of DELETE since nothing is being
+// removed: note_assets, knowledge_deps (as the knowledge side or the source
+// side), index_deps (as the index side or the knowledge side), and
+// knowledge_links (as source or target).
+//
+// Returns ErrAlreadyExists if a note already occupies (newDir, old.Base())
+// without touching anything.
+//
+// This only keeps the DB in sync for the moved note itself. A dependent
+// knowledge/index note's frontmatter or table may still hold old's full path
+// as a literal string (see skills/vaultr-compile-note and
+// skills/vaultr-index-knowledge) — the compile plugin resyncs knowledge_deps/
+// index_deps from that text on every save, so leaving it stale would
+// eventually overwrite this update. Vault.MoveNote handles that separately by
+// rewriting the literal path in whichever dependent notes reference old.
+func dbMove(db *sql.DB, old Path, newDir string) error {
+	tx, err := db.Begin()
+	if err != nil {
+		return fmt.Errorf("storage: move: begin tx: %w", err)
+	}
+	defer tx.Rollback() //nolint:errcheck
+
+	oldDir, name := old.Dir(), old.Base()
+
+	var occupied int
+	if err := tx.QueryRow(
+		`SELECT COUNT(*) FROM notes WHERE dir = ? AND name = ?`, newDir, name,
+	).Scan(&occupied); err != nil {
+		return fmt.Errorf("storage: move: destination check: %w", err)
+	}
+	if occupied > 0 {
+		return ErrAlreadyExists
+	}
+
+	if _, err := tx.Exec(`UPDATE notes SET dir = ? WHERE dir = ? AND name = ?`, newDir, oldDir, name); err != nil {
+		return fmt.Errorf("storage: move: notes: %w", err)
+	}
+	if _, err := tx.Exec(
+		`UPDATE note_assets SET note_dir = ? WHERE note_dir = ? AND note_name = ?`,
+		newDir, oldDir, name,
+	); err != nil {
+		return fmt.Errorf("storage: move: note_assets: %w", err)
+	}
+	if _, err := tx.Exec(
+		`UPDATE knowledge_deps SET knowledge_dir = ? WHERE knowledge_dir = ? AND knowledge_name = ?`,
+		newDir, oldDir, name,
+	); err != nil {
+		return fmt.Errorf("storage: move: knowledge_deps (as knowledge): %w", err)
+	}
+	if _, err := tx.Exec(
+		`UPDATE knowledge_deps SET source_dir = ? WHERE source_dir = ? AND source_name = ?`,
+		newDir, oldDir, name,
+	); err != nil {
+		return fmt.Errorf("storage: move: knowledge_deps (as source): %w", err)
+	}
+	if _, err := tx.Exec(
+		`UPDATE index_deps SET index_dir = ? WHERE index_dir = ? AND index_name = ?`,
+		newDir, oldDir, name,
+	); err != nil {
+		return fmt.Errorf("storage: move: index_deps (as index): %w", err)
+	}
+	if _, err := tx.Exec(
+		`UPDATE index_deps SET knowledge_dir = ? WHERE knowledge_dir = ? AND knowledge_name = ?`,
+		newDir, oldDir, name,
+	); err != nil {
+		return fmt.Errorf("storage: move: index_deps (as knowledge): %w", err)
+	}
+	if _, err := tx.Exec(
+		`UPDATE knowledge_links SET source_dir = ? WHERE source_dir = ? AND source_name = ?`,
+		newDir, oldDir, name,
+	); err != nil {
+		return fmt.Errorf("storage: move: knowledge_links (as source): %w", err)
+	}
+	if _, err := tx.Exec(
+		`UPDATE knowledge_links SET target_dir = ? WHERE target_dir = ? AND target_name = ?`,
+		newDir, oldDir, name,
+	); err != nil {
+		return fmt.Errorf("storage: move: knowledge_links (as target): %w", err)
+	}
+
+	return tx.Commit()
 }
 
 // dbClearAll removes every row from the notes table.
@@ -957,16 +1127,6 @@ func dbGetSourceKnowledges(db *sql.DB, source Path) ([]Path, error) {
 	}
 	defer rows.Close()
 	return dbScanPaths(rows)
-}
-
-// dbDeleteKnowledgeDepsForNote removes all dependency rows where the given path
-// appears as the knowledge note. Used when a knowledge note is deleted.
-func dbDeleteKnowledgeDepsForNote(db *sql.DB, knowledge Path) error {
-	_, err := db.Exec(
-		`DELETE FROM knowledge_deps WHERE knowledge_dir = ? AND knowledge_name = ?`,
-		knowledge.Dir(), knowledge.Base(),
-	)
-	return err
 }
 
 // ── index_deps DB helpers ─────────────────────────────────────────────────────

@@ -1,9 +1,12 @@
 {{range .Groups}}
+{{$group := .}}
 <div class="shorts-day">
-  <div class="shorts-day-label">{{if .IsToday}}Today{{else if .IsYesterday}}Yesterday{{else}}{{.DateLabel}}{{end}}</div>
   {{range .Entries}}
-  <div class="shorts-entry">
-    <span class="shorts-entry-time">{{.Time}}</span>
+  <div class="list-card shorts-entry">
+    <div class="shorts-entry-meta">
+      <span class="shorts-entry-date">{{if $group.IsToday}}Today{{else if $group.IsYesterday}}Yesterday{{else}}{{$group.DateLabel}}{{end}}</span>
+      <span class="shorts-entry-time">{{.Time}}</span>
+    </div>
     <div class="prose shorts-entry-prose">{{.HTML}}</div>
   </div>
   {{end}}

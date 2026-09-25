@@ -172,6 +172,7 @@ func newRouter(
 	mux.HandleFunc("GET /notes/fragment", vh.NoteFragment)
 
 	mux.Handle("POST /api/notes/resolve", handler.NewNoteResolve(vault))
+	mux.Handle("POST /api/notes/exist", handler.NewNoteExist(vault))
 
 	// Vault REST
 	mux.HandleFunc("POST /api/vault/read", gh.Read)
@@ -180,6 +181,7 @@ func newRouter(
 	mux.HandleFunc("POST /api/vault/list-dirs", gh.ListDirs)
 	mux.HandleFunc("POST /api/vault/write", gh.Write)
 	mux.HandleFunc("POST /api/vault/delete", gh.Delete)
+	mux.HandleFunc("POST /api/vault/move", gh.Move)
 	mux.HandleFunc("POST /api/vault/upload-image", gh.UploadImage)
 	mux.HandleFunc("POST /api/vault/pin", gh.Pin)
 	mux.HandleFunc("POST /api/vault/shorts", gh.Short)

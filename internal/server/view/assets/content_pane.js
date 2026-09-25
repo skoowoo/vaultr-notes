@@ -17,8 +17,13 @@
     cmSearch: null, cmOpenSearchPanel: null, cmCloseSearchPanel: null,
     cmFindNext: null, cmFindPrev: null, cmReplaceNext: null, cmReplaceAll: null,
     SearchQuery: null, getSearchQuery: null, setSearchQuery: null,
-    livePreviewPlugin: null, livePreviewAtomicRanges: null,
+    livePreviewPlugin: null, livePreviewAtomicRanges: null, wikiLinksRevalidated: null,
     livePreviewTheme: null, wikiMarkdownLanguage: null,
+    // Names (with ".md") confirmed missing from the vault for the note
+    // currently loaded — see __vaultrEditorRevalidateWikiLinks. Cleared and
+    // recomputed on every note/tab load; stale until that async check lands.
+    brokenWikiLinkNames: new Set(),
+    wikiLinkRevalidateSeq: 0,
     decoCompartment: null, readCompartment: null, sharedLanguage: null,
     inSource: false, pendingScrollRaf: null, pendingOpenScroll: null,
     // reading: global user preference, survives note/tab switches and restarts.
@@ -31,46 +36,6 @@
     __vaultrEditor.reading = on;
     try { localStorage.setItem('vaultr.reading', on ? '1' : '0'); } catch(_) {}
   }
-
-  // ── Editor visual effects plugin system ─────────────────────────────────────
-  window.__vaultrEditorEffects = (function() {
-    var KEY = 'vaultr-editor-effect';
-    var effects = {
-      none: { label: 'None', desc: 'No effect' },
-      particles: {
-        label: 'Particles', desc: 'Colorful dots burst from cursor',
-        fn: function(c) {
-          var colors = ['var(--accent)','var(--p2)','var(--p3)','var(--p1)','var(--p0)','var(--accent-hov)'];
-          for (var i = 0; i < 7; i++) {
-            var p = document.createElement('div');
-            p.className = 'vaultr-ep';
-            var angle = (i / 7) * Math.PI * 2 - Math.PI / 2;
-            var dist = 18 + Math.random() * 22;
-            p.style.cssText = 'left:'+c.left+'px;top:'+c.top+'px;background:'+colors[i%colors.length]+';--ex:'+(Math.cos(angle)*dist).toFixed(1)+'px;--ey:'+(Math.sin(angle)*dist).toFixed(1)+'px';
-            document.body.appendChild(p);
-            setTimeout(function(el) { el.remove(); }, 620, p);
-          }
-        },
-      },
-    };
-    return {
-      all: function() {
-        return Object.keys(effects).map(function(k) {
-          return { key: k, label: effects[k].label, desc: effects[k].desc };
-        });
-      },
-      get current() { return localStorage.getItem(KEY) || 'particles'; },
-      set: function(key) { localStorage.setItem(KEY, key); },
-      trigger: function(view) {
-        var eff = effects[this.current];
-        if (!eff || !eff.fn) return;
-        try {
-          var c = view.coordsAtPos(view.state.selection.from);
-          eff.fn(c);
-        } catch(_) {}
-      },
-    };
-  })();
 
   var CONTENT_PANE_CREATE_KEY = 'vaultr.content-pane-create';
   var __vaultrEditorTabSeq = 0;
@@ -348,6 +313,55 @@
     __vaultrEditorScheduleSave();
   }
 
+  // Mirrors internal/util/mdhtml.go's wikilinkRe + name normalization so the
+  // client can batch-check the same target names the server would resolve.
+  var __vaultrWikilinkRe = /\[\[([^\]\[|]+?)(?:\|[^\]\[]+?)?\]\]/g;
+
+  function __vaultrWikiLinkTargetName(raw) {
+    var name = (raw || '').trim();
+    if (!/\.md$/i.test(name)) name += '.md';
+    return name;
+  }
+
+  function __vaultrExtractWikilinkNames(md) {
+    var names = [], seen = {}, m;
+    __vaultrWikilinkRe.lastIndex = 0;
+    while ((m = __vaultrWikilinkRe.exec(md || ''))) {
+      var name = __vaultrWikiLinkTargetName(m[1]);
+      if (!seen[name]) { seen[name] = true; names.push(name); }
+    }
+    return names;
+  }
+
+  // Batch-checks which [[wikilink]] targets in the note just loaded into the
+  // editor still exist, then dispatches wikiLinksRevalidated so the live
+  // preview repaints any that are gone as broken (see liveOptions.isWikiLinkBroken
+  // above). Fire-and-forget; wikiLinkRevalidateSeq (bumped by the caller
+  // before this runs) guards against a slow response landing after the user
+  // has already switched to a different note.
+  async function __vaultrEditorRevalidateWikiLinks() {
+    var s = __vaultrEditor;
+    var seq = s.wikiLinkRevalidateSeq;
+    var names = __vaultrExtractWikilinkNames(s.currentMd);
+    if (!names.length) return;
+    try {
+      var r = await fetch('/api/notes/exist', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({names: names}),
+      });
+      if (!r.ok || seq !== s.wikiLinkRevalidateSeq) return;
+      var data = await r.json();
+      var existing = {};
+      (data.existing || []).forEach(function(n) { existing[n] = true; });
+      var broken = new Set();
+      names.forEach(function(n) { if (!existing[n]) broken.add(n); });
+      s.brokenWikiLinkNames = broken;
+      if (s.view && s.wikiLinksRevalidated) {
+        s.view.dispatch({effects: s.wikiLinksRevalidated.of(null)});
+      }
+    } catch (_) {}
+  }
+
   // Open a wiki-link target in the pane.  value is the raw [[…]] inner text.
   async function __vaultrContentPaneOpenWikiLink(value) {
     var pane = window.__vaultrContentPane;
@@ -434,6 +448,7 @@
       s.cmReplaceNext = mod.replaceNext; s.cmReplaceAll = mod.cmReplaceAll;
       s.SearchQuery = mod.SearchQuery; s.getSearchQuery = mod.getSearchQuery; s.setSearchQuery = mod.setSearchQuery;
       s.livePreviewPlugin = mod.livePreviewPlugin; s.livePreviewAtomicRanges = mod.livePreviewAtomicRanges;
+      s.wikiLinksRevalidated = mod.wikiLinksRevalidated;
       s.livePreviewTheme = mod.livePreviewTheme; s.codeHighlightStyle = mod.codeHighlightStyle;
       s.wikiMarkdownLanguage = mod.wikiMarkdownLanguage; s.linkClickHandler = mod.linkClickHandler;
       s.horizontalRuleField = mod.horizontalRuleField;
@@ -478,6 +493,12 @@
           return '/api/images/serve?name=' + encodeURIComponent(filename);
         },
         onWikiLinkClick: function(target) { void __vaultrContentPaneOpenWikiLink(target); },
+        // Populated (async, after each note load) by __vaultrEditorRevalidateWikiLinks
+        // below with the names confirmed missing from the vault. Checked by
+        // decorateWikiLink on every rebuild — see that function's comment for why
+        // mutating this set alone isn't enough to repaint until a
+        // wikiLinksRevalidated effect is also dispatched.
+        isWikiLinkBroken: function(target) { return s.brokenWikiLinkNames.has(__vaultrWikiLinkTargetName(target)); },
       };
       // Exposed on s so editorMode (a separate closure) can reconfigure
       // s.decoCompartment without rebuilding these from scratch. Frontmatter
@@ -584,10 +605,6 @@
                 window.showError((e && e.message) || 'Image upload failed.', 'Upload error');
               });
               return true;
-            },
-            keydown: function(e) {
-              if (e.key === 'Enter' && !e.isComposing) window.__vaultrEditorEffects.trigger(s.view);
-              return false;
             },
           }),
         ];
@@ -1031,11 +1048,19 @@
     var wantReading = !!(s.reading && s.currentPath);
     var wantSource = !wantReading && targetInSource;
 
+    // Clear the previous note's broken-wikilink set before the new one's
+    // decorations render, so a stale "broken" flag can't flash on a target
+    // that's perfectly fine in *this* note — __vaultrEditorRevalidateWikiLinks
+    // repopulates it (and repaints) once the batch check comes back.
+    s.brokenWikiLinkNames = new Set();
+    s.wikiLinkRevalidateSeq++;
+
     // A note/tab switch: brand-new EditorState (mode baked in from the
     // start) swapped in via setState(), not a dispatch()'d replace onto the
     // previous tab's state — see s._buildState's comment for why.
     s.view.setState(s._buildState(s.currentMd, wantSource, wantReading));
     __vaultrEditorSetModeState(wantSource, wantReading);
+    void __vaultrEditorRevalidateWikiLinks();
 
     if (s.pendingScrollRaf) { cancelAnimationFrame(s.pendingScrollRaf); s.pendingScrollRaf = null; }
     clearTimeout(s.pendingOpenScroll);
@@ -1730,6 +1755,31 @@
           }
         }
         if (window.__vaultrAfterVaultMutation) await window.__vaultrAfterVaultMutation();
+      },
+
+      // Moving a note is driven entirely from the home list (drag a card onto
+      // a sidebar folder — see home.js's drag-and-drop handlers), not from
+      // here. These two are the seam that side needs into the editor:
+      // flush a dirty active tab before the move (so the file that actually
+      // gets renamed has the latest content) and re-point an open tab at the
+      // new path afterward (autosave targets __vaultrEditor.currentPath, not
+      // tab.path — miss that and the next edit would silently recreate the
+      // note at its old spot).
+      async flushPendingSaveFor(path) {
+        if (__vaultrEditor.dirty && __vaultrEditor.currentPath === path) {
+          clearTimeout(__vaultrEditor.saveTimer); __vaultrEditor.saveTimer = null;
+          await __vaultrEditorDoSave();
+        }
+      },
+      noteMoved(oldPath, newPath) {
+        var tab = this.tabs.find(function(t) { return t.path === oldPath; });
+        if (!tab) return;
+        tab.path = newPath;
+        if (__vaultrEditor.currentPath === oldPath) __vaultrEditor.currentPath = newPath;
+        if (this.tabs[this.activeTab] === tab) {
+          var ptEl = document.getElementById('content-pane-path-text');
+          if (ptEl) ptEl.textContent = newPath;
+        }
       },
     };
   }

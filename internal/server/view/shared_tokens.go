@@ -56,8 +56,23 @@ const appTokensShared = `
       --shadow-xs:0 1px 2px; --shadow-sm:0 2px 5px; --shadow-md:0 5px 14px; --shadow-lg:0 14px 34px;
       --accent-focus:var(--accent);
       --r-xs:4px; --r-sm:6px; --r-md:8px; --r-lg:12px; --r-xl:16px; --r-full:999px;
-      /* fast=hover, base=small toggle, slow=panel/scrim. */
-      --motion-fast:100ms; --motion-base:160ms; --motion-slow:220ms;
+      /* fast=hover, base=small toggle, slow=panel/scrim, view=a bigger
+         spatial change (view switch, shared-element motion) — reserved,
+         nothing uses it yet. */
+      --motion-fast:100ms; --motion-base:160ms; --motion-slow:220ms; --motion-view:320ms;
+      /* Named curves, paired with --motion-* above. --ease-standard just
+         gives a name to the plain "ease" this app already defaults to
+         everywhere; --ease-out/--ease-in match the curves Tailwind's
+         ease-out/ease-in utility classes already use for the menu/dialog
+         x-transitions (content_pane.html), so a hand-rolled @keyframes/
+         transition and an Alpine x-transition read as the same motion.
+         --ease-spring is the one deliberate exception to that restrained
+         default — an overshoot, reserved for a receipt/confirmation instant
+         (e.g. a drop landing), never for ambient or enter/exit motion. */
+      --ease-standard:ease;
+      --ease-out:cubic-bezier(0,0,.2,1);
+      --ease-in:cubic-bezier(.4,0,1,1);
+      --ease-spring:cubic-bezier(.34,1.56,.64,1);
       --bd-w:1px; /* whole px — fractional breaks AA at radius arcs */
       --glass-scrim-filter:blur(3px);
 
@@ -159,4 +174,19 @@ const appTokensCSS = `    :root {` + appTokensShared + appTokensDark + contentTo
     /* Floor — component :active still wins by specificity. */
     button:not(:disabled):active {
       opacity: 0.85;
+    }
+    /* OS-level "reduce motion" (System Settings/Control Panel accessibility,
+       not an in-app toggle) — collapses every --motion-* duration app-wide in
+       one place, since virtually every transition/animation in the app is
+       already written against these tokens rather than a literal duration.
+       Not 0: a literal 0ms transition/animation doesn't fire transitionend/
+       animationend in some engines, and code elsewhere (e.g. home.js's
+       drag-to-move cleanup) depends on that event actually firing — 0.01ms
+       is imperceptible but still real enough to fire correctly. This mutes
+       the *motion*; it never removes the feedback itself (e.g. a failed
+       move still turns the card red, just without the animated shake). */
+    @media (prefers-reduced-motion: reduce) {
+      :root {
+        --motion-fast:0.01ms; --motion-base:0.01ms; --motion-slow:0.01ms; --motion-view:0.01ms;
+      }
     }`

@@ -1,6 +1,6 @@
   <!-- Sidebar + note list ─────────────────────────────────────────── -->
   <div class="home-shell"
-       :class="{'content-pane-open': (contentPaneOpen || inboxSheetOpen), 'is-resizing': isPaneResizing}"
+       :class="{'content-pane-open': (contentPaneOpen || inboxSheetOpen), 'is-resizing': isPaneResizing, 'is-editor-maximized': splitRatio <= 0.02}"
        :style="'--split-ratio:' + splitRatio + ';--split-ratio-inv:' + (1 - splitRatio)">
     <aside class="home-side" id="home-side">
       <div class="home-side-top">
@@ -170,7 +170,8 @@
           <div class="home-side-children" id="home-side-folders-body" :class="{'is-open': foldersOpen}" x-cloak>
             <div class="home-side-children-inner">
               {{range .Folders}}
-              <button type="button" class="side-nav-item home-side-child" :class="{'is-active': activeKey === 'dir:{{.Dir}}'}"
+              <button type="button" class="side-nav-item home-side-child home-drop-target" :class="{'is-active': activeKey === 'dir:{{.Dir}}'}"
+                      data-drop-dir="{{.Dir}}"
                       @click="selectFolder('{{.Dir}}', '/home/section?type=folder&path={{encdir .Dir}}')">
                 <svg class="home-side-child-icon" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"
                      stroke-linejoin="round" viewBox="0 0 24 24">

@@ -1,25 +1,29 @@
 import { WidgetType } from '@codemirror/view';
 
 // Clickable [[wikilink]] chip; onClick injected by content_pane.js (no Vaultr routing here).
+// broken (from options.isWikiLinkBroken, also app-injected) means the target note
+// doesn't exist any more — nothing to navigate to, so it renders struck-through
+// and skips the click handler entirely rather than firing onClick into a dead end.
 export class WikiLinkWidget extends WidgetType {
-  constructor(target, alias, onClick) {
+  constructor(target, alias, onClick, broken) {
     super();
     this.target = target;
     this.alias = alias;
     this.onClick = onClick;
+    this.broken = !!broken;
   }
 
   eq(other) {
-    return other.target === this.target && other.alias === this.alias;
+    return other.target === this.target && other.alias === this.alias && other.broken === this.broken;
   }
 
   toDOM() {
     const span = document.createElement('span');
-    span.className = 'cm-lp-wikilink';
+    span.className = this.broken ? 'cm-lp-wikilink cm-lp-wikilink-broken' : 'cm-lp-wikilink';
     span.textContent = this.alias || this.target;
-    span.title = this.target;
+    span.title = this.broken ? 'Note not found' : this.target;
     span.setAttribute('data-wl-value', this.target);
-    if (this.onClick) {
+    if (this.onClick && !this.broken) {
       span.addEventListener('mousedown', (e) => {
         e.preventDefault();
         this.onClick(this.target, this.alias, e);

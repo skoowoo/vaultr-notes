@@ -22,7 +22,7 @@ import { livePreviewTheme, codeHighlightStyle } from './theme.js';
 export { wikiSyntax, wikiNodeInner, splitWikiLinkInner } from './wiki-syntax.js';
 export { frontmatterSyntax } from './frontmatter-syntax.js';
 export { nodeDecorators } from './decorators.js';
-export { livePreviewPlugin, livePreviewAtomicRanges } from './live-preview.js';
+export { livePreviewPlugin, livePreviewAtomicRanges, wikiLinksRevalidated } from './live-preview.js';
 export { horizontalRuleField } from './horizontal-rule-field.js';
 export { frontmatterCollapseField, frontmatterHeaderField, setFrontmatterCollapsed } from './frontmatter-collapse.js';
 export { frontmatterReadOnly, allowFrontmatterEdit } from './frontmatter-readonly.js';
@@ -61,6 +61,12 @@ export function wikiMarkdownLanguage() {
  *   filename verbatim, which only works for demo/test fixtures.
  * @param {(target: string, alias: string|null, event: MouseEvent) => void}
  *   [options.onWikiLinkClick] Called when a [[wikilink]] chip is clicked.
+ * @param {(target: string) => boolean} [options.isWikiLinkBroken]
+ *   Reports whether a [[wikilink]] target note no longer exists, so the
+ *   widget renders struck-through and skips the click handler. Read fresh
+ *   on every rebuild — dispatch wikiLinksRevalidated after updating whatever
+ *   this closes over (e.g. an existence Set) to force a re-check without a
+ *   doc/selection change.
  * @param {(view: import('@codemirror/view').EditorView, from: number, to: number) => void}
  *   [options.onEditFrontmatter] Called with the Frontmatter node's range
  *   when the "Metadata" header's pencil button is clicked — see

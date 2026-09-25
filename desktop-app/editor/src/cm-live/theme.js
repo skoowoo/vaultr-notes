@@ -306,6 +306,18 @@ export const livePreviewTheme = EditorView.theme({
     borderRadius: '0',
   },
   '.cm-lp-wikilink-raw': { color: 'var(--accent-text, #5e6ad2)' },
+  // Target note no longer exists — struck through, muted, not interactive
+  // (mirrors .wikilink-broken in note_shared_prose.css for the read view).
+  '.cm-lp-wikilink-broken': {
+    textDecoration: 'line-through',
+    textDecorationColor: 'var(--muted, #6d7080)',
+    color: 'var(--muted, #6d7080)',
+    opacity: '0.55',
+    cursor: 'default',
+    userSelect: 'none',
+  },
+  '.cm-lp-wikilink-broken::before': { backgroundColor: 'var(--muted, #6d7080)' },
+  '.cm-lp-wikilink-broken:hover': { background: 'transparent', color: 'var(--muted, #6d7080)' },
 
   // ── Images ──────────────────────────────────────────────────────────────
   '.cm-lp-wikiimage': { display: 'inline-block', verticalAlign: 'middle', maxWidth: '100%' },

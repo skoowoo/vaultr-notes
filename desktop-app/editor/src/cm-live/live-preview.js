@@ -1,9 +1,17 @@
 // Viewport-scoped tree walk → decorators.js. Publishes decorations + atomicRanges.
 import { ViewPlugin, Decoration, EditorView } from '@codemirror/view';
+import { StateEffect } from '@codemirror/state';
 import { syntaxTree } from '@codemirror/language';
 import { nodeDecorators } from './decorators.js';
 import { setFrontmatterCollapsed } from './frontmatter-collapse.js';
 import { readingModeToggled } from './selection.js';
+
+// Dispatched by app wiring (content_pane.js) once it has (re)computed which
+// [[wikilink]] targets exist — e.g. after the async /api/notes/exist batch
+// resolves, or after a vault delete elsewhere touches this note's links —
+// so the next rebuild re-reads options.isWikiLinkBroken even though nothing
+// in the document itself changed. Same seam as setFrontmatterCollapsed below.
+export const wikiLinksRevalidated = StateEffect.define();
 
 class LivePreviewPlugin {
   constructor(view, options) {
@@ -35,7 +43,8 @@ class LivePreviewPlugin {
     // no selection change, so it wouldn't otherwise trigger a rebuild and
     // decorateFrontmatter's collapsed-block branch would never run.
     const collapseToggled = update.transactions.some((tr) => tr.effects.some((e) => e.is(setFrontmatterCollapsed)));
-    if (treeChanged || update.docChanged || update.viewportChanged || update.selectionSet || collapseToggled || readingModeToggled(update.startState, update.state)) {
+    const linksRevalidated = update.transactions.some((tr) => tr.effects.some((e) => e.is(wikiLinksRevalidated)));
+    if (treeChanged || update.docChanged || update.viewportChanged || update.selectionSet || collapseToggled || linksRevalidated || readingModeToggled(update.startState, update.state)) {
       this.tree = tree;
       this.rebuild(update.view);
     }

@@ -699,14 +699,6 @@ func settingsModalHTML() string {
                 <p class="settings-field-desc">Brand color for buttons, links and text selection. Takes effect immediately.</p>
               </div>
               <div>
-                <label class="settings-field-label">Enter Effect</label>
-                <div class="seg">
-                  <button class="seg-btn" :class="{active: effectPref==='none'}" @click="setEffect('none')">None</button>
-                  <button class="seg-btn" :class="{active: effectPref==='particles'}" @click="setEffect('particles')">Particles</button>
-                </div>
-                <p class="settings-field-desc">Visual effect when pressing Enter in the editor. Takes effect immediately.</p>
-              </div>
-              <div>
                 <label class="settings-field-label">Line Breaks</label>
                 <div class="seg">
                   <button class="seg-btn" :class="{active: lineBreaksPref==='loose'}" @click="setLineBreaks('loose')">Loose</button>
@@ -1546,9 +1538,6 @@ const settingsCtrlJS = `
           return a.name.localeCompare(b.name);
         });
       },
-
-      effectPref: localStorage.getItem('vaultr-editor-effect') || 'particles',
-      setEffect(key) { this.effectPref = key; localStorage.setItem('vaultr-editor-effect', key); },
 
       // Read live by the editor's remark pipeline on every parse (breaks.js),
       // not threaded through Editor.make() config — so this takes effect on

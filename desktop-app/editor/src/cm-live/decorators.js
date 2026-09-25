@@ -324,8 +324,9 @@ function decorateWikiLink(node, view, decos, atomics, options) {
     styleRange(node.from, node.to, 'cm-lp-wikilink-raw', decos);
     return;
   }
+  const broken = !!(options && options.isWikiLinkBroken && options.isWikiLinkBroken(target));
   const range = Decoration.replace({
-    widget: new WikiLinkWidget(target, alias, options && options.onWikiLinkClick),
+    widget: new WikiLinkWidget(target, alias, options && options.onWikiLinkClick, broken),
   }).range(node.from, node.to);
   decos.push(range);
   atomics.push(range);

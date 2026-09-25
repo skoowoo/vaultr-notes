@@ -604,8 +604,10 @@ func (g *Vault) AppendNote(p Path, incoming []byte, heading string) error {
 }
 
 // DeleteNote permanently removes the note at p from the vault.
-// If the note is a knowledge note with a linked raw note, the raw note's
-// compiled mark is cleared so it can be re-compiled.
+// dbDelete cascades the metadata cleanup to every relation table p might
+// participate in (knowledge_deps, index_deps, knowledge_links, note_assets)
+// and resets compile_count on any source left with no knowledge dependents —
+// it never deletes another note, only the relation rows that reference p.
 func (g *Vault) DeleteNote(p Path) error {
 	g.mu.Lock()
 	absSrc, err := g.osPath(p)
@@ -626,6 +628,122 @@ func (g *Vault) DeleteNote(p Path) error {
 	g.mu.Unlock()
 	g.emit("vault_delete", p.String(), false, time.Now())
 	return nil
+}
+
+// MoveNote moves the note at p to the same-named file under newDir, leaving
+// the filename untouched. newDir is created if it doesn't exist yet (mirrors
+// WriteNoteWithMeta's directory auto-creation). Returns the note's new path.
+//
+// dbMove cascades every relation table p might participate in to the new
+// directory synchronously, regardless of kind — moving a raw source note,
+// a knowledge note, or an index note are all handled the same way at the DB
+// layer. On top of that, a dependent knowledge note's source_notes:
+// frontmatter or a dependent index note's table may hold p's full path as a
+// literal string (see skills/vaultr-compile-note and
+// skills/vaultr-index-knowledge); those are rewritten too, best-effort, once
+// the move itself has committed — see dbMove's comment for why leaving them
+// stale would eventually undo this.
+//
+// Returns ErrAlreadyExists if newDir already has a note named p.Base().
+func (g *Vault) MoveNote(p Path, newDir string) (Path, error) {
+	if err := validateNoteName(p.Base()); err != nil {
+		return "", err
+	}
+	nd, ok := ParsePath(newDir)
+	if !ok {
+		return "", ErrInvalidPath
+	}
+	newPath := Path(JoinPath(nd.String(), p.Base()))
+	if newPath == p {
+		return p, nil
+	}
+
+	g.mu.Lock()
+
+	absOld, err := g.osPath(p)
+	if err != nil {
+		g.mu.Unlock()
+		return "", err
+	}
+	absNew, err := g.osPath(newPath)
+	if err != nil {
+		g.mu.Unlock()
+		return "", err
+	}
+	internalRoot := filepath.Clean(vaultInternalPath(g.root))
+	if strings.HasPrefix(absNew, internalRoot+string(os.PathSeparator)) || absNew == internalRoot {
+		g.mu.Unlock()
+		return "", ErrInvalidPath
+	}
+	if _, statErr := os.Stat(absNew); statErr == nil {
+		g.mu.Unlock()
+		return "", ErrAlreadyExists
+	} else if !errors.Is(statErr, fs.ErrNotExist) {
+		g.mu.Unlock()
+		return "", mapOSError(statErr)
+	}
+
+	parent := filepath.Dir(absNew)
+	if err := os.MkdirAll(parent, 0o750); err != nil {
+		g.mu.Unlock()
+		return "", fmt.Errorf("vault: mkdir for %q: %w", newPath.String(), err)
+	}
+	if g.ensureWatch != nil {
+		g.ensureWatch(parent)
+	}
+
+	if err := os.Rename(absOld, absNew); err != nil {
+		g.mu.Unlock()
+		return "", mapOSError(err)
+	}
+
+	// Snapshot dependents before dbMove renames these very rows out from
+	// under p's old (dir, name) identity below.
+	knowledgeDependents, _ := dbGetSourceKnowledges(g.db, p)
+	indexDependents, _ := dbGetKnowledgeIndexes(g.db, p)
+
+	if dbErr := dbMove(g.db, p, nd.String()); dbErr != nil {
+		// Best-effort rollback: the file move must match the DB, or the note
+		// becomes unreadable at both its old and new path.
+		_ = os.Rename(absNew, absOld)
+		g.mu.Unlock()
+		return "", fmt.Errorf("vault: metadata move %q: %w", p.String(), dbErr)
+	}
+
+	g.mu.Unlock()
+
+	g.rewriteDependentPathRefs(knowledgeDependents, indexDependents, p, newPath)
+
+	g.emit("vault_delete", p.String(), false, time.Now())
+	g.emit("vault_create", newPath.String(), false, time.Now())
+	return newPath, nil
+}
+
+// rewriteDependentPathRefs fixes up literal old-path references left behind
+// in notes that depend on a just-moved note — see MoveNote's comment.
+// Best-effort: a read/write failure on one dependent just leaves its
+// reference stale (same as if MoveNote had never tried), it doesn't fail the
+// move, which has already committed by the time this runs.
+func (g *Vault) rewriteDependentPathRefs(knowledgeDependents, indexDependents []Path, oldPath, newPath Path) {
+	old, next := oldPath.String(), newPath.String()
+	for _, kp := range knowledgeDependents {
+		raw, err := g.ReadNote(kp)
+		if err != nil {
+			continue
+		}
+		if out, changed := util.RewriteFrontmatterPathRef(raw, old, next); changed {
+			_ = g.WriteNote(kp, out, "")
+		}
+	}
+	for _, ip := range indexDependents {
+		raw, err := g.ReadNote(ip)
+		if err != nil {
+			continue
+		}
+		if out, changed := util.RewriteTableRowPathRef(raw, old, next); changed {
+			_ = g.WriteNote(ip, out, "")
+		}
+	}
 }
 
 // AppendShort appends content as a new short note entry to today's daily file

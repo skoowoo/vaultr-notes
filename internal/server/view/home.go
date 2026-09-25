@@ -412,6 +412,7 @@ var homeTemplateFuncs = template.FuncMap{
 
 const homeSectionRowsHTML = `{{define "rows"}}{{range .Items}}
 <div class="list-card list-card--clickable home-list-card home-note-row{{if .Cover}} has-cover{{end}}" @click="__vaultrOpenNote($event.currentTarget)"
+     draggable="true"
      data-note-path="{{.Path}}" data-note-title="{{label .}}"
      data-note-is-knowledge="{{.IsKnowledge}}" data-note-is-index="{{.IsIndex}}"
      data-note-can-compile="{{.CanCompile}}" data-note-pinned="{{.Pinned}}">
@@ -522,11 +523,14 @@ const homeShortsSectionHTML = `<div class="shorts-view">
       </div>
       <div id="shorts-stream-groups">
         {{range .Groups}}
+        {{$group := .}}
         <div class="shorts-day">
-          <div class="shorts-day-label">{{if .IsToday}}Today{{else if .IsYesterday}}Yesterday{{else}}{{.DateLabel}}{{end}}</div>
           {{range .Entries}}
-          <div class="shorts-entry">
-            <span class="shorts-entry-time">{{.Time}}</span>
+          <div class="list-card shorts-entry">
+            <div class="shorts-entry-meta">
+              <span class="shorts-entry-date">{{if $group.IsToday}}Today{{else if $group.IsYesterday}}Yesterday{{else}}{{$group.DateLabel}}{{end}}</span>
+              <span class="shorts-entry-time">{{.Time}}</span>
+            </div>
             <div class="prose shorts-entry-prose">{{.HTML}}</div>
           </div>
           {{end}}
@@ -760,15 +764,6 @@ const homeGraphSectionHTML = `<div class="graph-main">
         </button>
       </div>
       <div class="graph-node-panel-title" x-text="nodePanel ? nodePanel.label : ''"></div>
-      <button type="button" class="btn-solid graph-node-open-btn"
-              @click="nodePanel && openNodeInContentPane(nodePanel.path, nodePanel.label, nodePanel.entityType)">
-        Open
-        <svg fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M15 3h6v6"/>
-          <path stroke-linecap="round" stroke-linejoin="round" d="M10 14 21 3"/>
-          <path stroke-linecap="round" stroke-linejoin="round" d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
-        </svg>
-      </button>
     </div>
 
     <div class="graph-loading" x-show="loading" x-cloak>
@@ -794,8 +789,7 @@ const homeGraphSectionHTML = `<div class="graph-main">
 
 // homeInboxSectionHTML is the right-pane inbox view: a filter bar (all/
 // unread/read + mark-all-read) over a wide-card message list, mirroring the
-// visual language of the pinned/folder note list (.home-note-row) rather
-// than the standalone /agent/inbox page's narrow sidebar rows. Entirely
+// visual language of the pinned/folder note list (.home-note-row). Entirely
 // client-rendered — home.js fetches /api/inbox once this markup lands in the
 // DOM (see the htmx:afterSwap listener) and drives the x-for below.
 // Selecting a card opens the read-only message detail, which shares the
@@ -1166,7 +1160,8 @@ func (vh *ViewHandler) HomeRefresh(w http.ResponseWriter, r *http.Request) {
 var homeRefreshTemplate = template.Must(template.New("home-refresh").Funcs(homeTemplateFuncs).Parse(`<div id="home-side-folders-body" class="home-side-children" :class="{'is-open': foldersOpen}" x-cloak hx-swap-oob="true">
   <div class="home-side-children-inner">
     {{range .Folders}}
-    <button type="button" class="side-nav-item home-side-child" :class="{'is-active': activeKey === 'dir:{{.Dir}}'}"
+    <button type="button" class="side-nav-item home-side-child home-drop-target" :class="{'is-active': activeKey === 'dir:{{.Dir}}'}"
+            data-drop-dir="{{.Dir}}"
             @click="selectFolder('{{.Dir}}','/home/section?type=folder&path={{encdir .Dir}}')">
       <svg class="home-side-child-icon" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"
            stroke-linejoin="round" viewBox="0 0 24 24">

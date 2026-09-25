@@ -411,15 +411,29 @@ Full-viewport or edge-docked chrome (drawer panel and its tab bar, scrims, `<htm
 
 ## Motion
 
-Three durations, chosen by what's moving, not per-component ad hoc values:
+Restrained by default: an animation exists to confirm a user-triggered action, explain a spatial relationship, or give transient feedback — never ambient, never looping, never present while the user is reading or typing. If it's only there to look nice, it doesn't ship.
+
+Four durations, chosen by what's moving, not per-component ad hoc values:
 
 | Token | Duration | Use |
 |---|---|---|
 | `--motion-fast` | 100ms | Hover/press feedback — background, color, opacity tweaks. No easing curve; too short to perceive one. |
-| `--motion-base` | 160ms | Small reveal/toggle transforms — chevron rotate, disclosure arrows. |
+| `--motion-base` | 160ms | Small reveal/toggle transforms — chevron rotate, disclosure arrows, drag-state feedback. |
 | `--motion-slow` | 220ms | Panel/overlay-scrim fades (drawer, inbox sheet, lightbox) — gives a spatial change room to read as motion. |
+| `--motion-view` | 320ms | Reserved for a bigger spatial change — a view switch or shared-element transition. Nothing uses it yet. |
 
-Bespoke multi-property choreography (the drawer's slide-in transform+opacity, zen-mode fades) intentionally keeps its own hand-tuned durations/easing outside this scale.
+Four named curves pair with the durations above:
+
+| Token | Curve | Use |
+|---|---|---|
+| `--ease-standard` | `ease` | The default for everything above — this app's plain, un-opinionated fallback. |
+| `--ease-out` | `cubic-bezier(0,0,.2,1)` | Entering/arriving/expanding — the same curve Tailwind's `ease-out` gives the menu/dialog `x-transition`s, so a hand-rolled `transition`/`@keyframes` and an Alpine transition read as the same motion. |
+| `--ease-in` | `cubic-bezier(.4,0,1,1)` | Leaving/collapsing/dismissing — the `ease-in` counterpart to the one above. |
+| `--ease-spring` | `cubic-bezier(.34,1.56,.64,1)` | The one deliberate overshoot in the system. Reserved for a receipt/confirmation instant (a drop landing, a toggle settling) — never for ambient motion, an ordinary enter/exit, or a loop. |
+
+A bespoke `@keyframes` animation (a shake, a fly-to-target) should still borrow its *duration* from `--motion-*` as a multiple (e.g. `calc(var(--motion-base) * 2)`) even when its own keyframe curve is too specific to generalize into `--ease-*` — durations drift into inconsistency far more easily than one-off curves do, since every new feature reinvents "how long," but rarely needs a genuinely new easing shape. Older bespoke multi-property choreography that predates this rule (the drawer's slide-in transform+opacity, zen-mode fades) still keeps its own hand-tuned durations outside the scale; it hasn't been retrofitted, not exempted.
+
+`prefers-reduced-motion: reduce` collapses all four duration tokens to ~0 globally (`shared_tokens.go`) — since virtually every transition in the app already reads its duration from these tokens rather than a literal value, this one override mutes motion app-wide without a per-component reduced-motion rule. It mutes the *motion* only; the underlying feedback (a color change, a state flip) still happens, just without the animated journey there.
 
 ## Theming
 

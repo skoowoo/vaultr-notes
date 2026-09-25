@@ -159,8 +159,8 @@
        (.switch/.switch-track) is gone — every on/off control app-wide
        (bool config fields, notification prefs, agent bot enabled) now uses
        the shared .seg/.seg-btn Off/On picker instead (below), the same
-       component Theme/Enter Effect/Line Breaks already used, so a binary
-       choice and an N-way choice read as the same kind of control. */
+       component Theme/Line Breaks already used, so a binary choice and an
+       N-way choice read as the same kind of control. */
 
     /* ── Shared badge/label pill — neutral tag by default; add a semantic
        color modifier only when the color itself carries meaning (a status,

@@ -29,7 +29,8 @@ func writeVaultError(w http.ResponseWriter, err error) {
 		errors.Is(err, storage.ErrUnsupportedType),
 		errors.Is(err, storage.ErrBinaryContent):
 		http.Error(w, err.Error(), http.StatusBadRequest)
-	case errors.Is(err, storage.ErrIsDir), errors.Is(err, storage.ErrIsFile):
+	case errors.Is(err, storage.ErrIsDir), errors.Is(err, storage.ErrIsFile),
+		errors.Is(err, storage.ErrAlreadyExists):
 		http.Error(w, err.Error(), http.StatusConflict)
 	default:
 		http.Error(w, "internal error: "+err.Error(), http.StatusInternalServerError)

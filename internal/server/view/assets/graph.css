@@ -258,14 +258,4 @@
       color: var(--fg);
       line-height: var(--lh-snug);
       word-break: break-word;
-      padding-bottom: 0.65rem;
-      /* Header-to-body seam inside one floating card — the panel's own
-         outer edge (border-strong, elsewhere) already does the "distinct
-         object" job, so this internal seam only needs --hairline. */
-      border-bottom: var(--bd-w) solid var(--hairline);
-      border-radius: 0;
     }
-
-    /* Structure/color come from the shared .btn-solid (base.css); this
-       card just needs it full-width instead of content-width. */
-    .graph-node-open-btn { width: 100%; }

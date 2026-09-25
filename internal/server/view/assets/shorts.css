@@ -47,6 +47,7 @@
       margin-bottom: var(--space-lg);
       background: var(--bg);
       border: var(--bd-w) solid var(--border-strong);
+      border-radius: var(--r-xl); /* matches .chat-input-card.is-multiline */
     }
     .shorts-compose-card:focus-within { background: var(--surface-soft); }
 
@@ -101,43 +102,45 @@
     .shorts-compose-send:disabled { opacity: 0.35; cursor: not-allowed; }
 
     /* ── Day groups ───────────────────────────────────
-       One label per calendar day instead of repeating the date on every
-       entry — Today/Yesterday read as relative time, older days fall back
-       to the full weekday label (shorts.go appends the year once it's not
-       the current one). A hairline reads as a *stronger* break than plain
-       whitespace, so it belongs on the bigger jump (day to day) — same-day
-       entries below get whitespace only, a smaller break for a smaller
-       jump. */
+       Now just a spacing boundary between calendar days — the date itself
+       moved into each card's own meta row (.shorts-entry-date below), so
+       the group no longer needs a heading element of its own. */
     .shorts-day + .shorts-day {
       margin-top: var(--space-lg);
-      padding-top: var(--space-lg);
-      border-top: var(--bd-w) solid var(--hairline);
-      border-radius: 0; /* base.css rounds everything to --r-md by default; a hairline shouldn't curl at its ends */
     }
-    .shorts-day-label {
+
+    /* ── Entries — one note card per short, in the same borderless style
+       note rows use app-wide (.home-note-row, .home-inbox-card: base.css's
+       .list-card box with the border swapped for a surface-soft fill)
+       rather than the old flat/hairline feed. Static, not
+       --hover/--clickable: a short isn't itself a click target (only
+       wikilinks inside its prose are). */
+    .shorts-entry {
+      background: var(--surface-soft);
+      border-color: transparent;
+    }
+    .shorts-entry + .shorts-entry {
+      margin-top: var(--space-sm);
+    }
+
+    .shorts-entry-meta {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      margin-bottom: var(--space-xs);
+    }
+    .shorts-entry-date {
       font-size: var(--text-2xs);
       font-weight: var(--fw-medium);
       letter-spacing: var(--ls-cap);
       text-transform: uppercase;
       color: var(--muted);
-      margin-bottom: var(--space-xs);
+      user-select: none;
     }
-
-    /* ── Entries (flat feed, Twitter-style) ───────────
-       No border between entries in the same day — the padding above/below
-       each one is already the separator; a line here would outrank the
-       day-boundary line above for a break that matters less. */
-    .shorts-entry {
-      padding: var(--space-md) 0;
-      border-radius: 0;
-    }
-
     .shorts-entry-time {
-      display: block;
       font-size: var(--text-xs);
       font-family: var(--font-mono);
       color: var(--muted-soft);
-      margin-bottom: var(--space-xs);
       user-select: none;
     }
 
