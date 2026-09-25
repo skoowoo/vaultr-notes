@@ -1,6 +1,6 @@
 
 // ── Search result selection ────────────────────────────────────────────────
-// While the graph section is showing, focus the matching node instead of
+// While Knowledge's graph view is showing, focus the matching node instead of
 // opening the content pane (mirrors graph.js's override for the standalone page);
 // otherwise open the note in the content pane as usual.
 window.handleSearchResultSelection = function (el) {
@@ -9,7 +9,7 @@ window.handleSearchResultSelection = function (el) {
   if (!path) return false;
 
   var hd = window._homeData;
-  if (hd && hd.cy && hd.activeKey.indexOf('graph:') === 0) {
+  if (hd && hd.cy && hd.activeKey.indexOf('knowledge:') === 0) {
     var node = hd.cy.getElementById(path);
     if (node && !node.empty()) {
       if (hd._focusedPath === path) hd._clearFocus();
@@ -31,9 +31,10 @@ window.handleSearchResultSelection = function (el) {
 };
 
 // ── Per-section list/grid layout preference ────────────────────────────────
-// Knowledge/Memory/Pinned/Folders each get their own list-vs-grid choice
-// (all folders share the single 'folder' bucket), persisted as one JSON
-// object under a single localStorage key.
+// Knowledge/Memory/Pinned/Folders each get their own list-vs-grid choice (all
+// folders share the single 'folder' bucket, and all of Knowledge's All/category
+// items share the single 'knowledge' bucket, rather than one per selection).
+// Knowledge's value can also be 'graph' — see setListView()/listViewKey().
 function loadListViewModes() {
   var defaults = { knowledge: 'list', memory: 'list', pinned: 'list', folder: 'list' };
   try {
@@ -86,8 +87,8 @@ function extToType(ext) {
 // them again after the settle delay. That collides with Alpine's own
 // reactive style="display:none" on x-show: htmx would immediately erase the
 // inline style Alpine had just set on the freshly swapped-in
-// #home-side-graph-body/#home-side-folders-body, leaving it visible
-// regardless of graphOpen/foldersOpen — i.e. the sidebar group reads as
+// #home-side-knowledge-body/#home-side-folders-body, leaving it visible
+// regardless of knowledgeOpen/foldersOpen — i.e. the sidebar group reads as
 // auto-expanded after every /home/refresh. Nothing here relies on htmx's
 // class/style settle animation, so just disable it.
 htmx.config.attributesToSettle = [];
@@ -169,11 +170,12 @@ function homeCtrl() {
   var ctrl = Object.assign(contentPaneCtrl(), {
     activeKey: 'pinned',
     // Each of Knowledge/Memory/Pinned/Folders keeps its own list-vs-grid
-    // choice (all folders share the single 'folder' bucket, rather than one
-    // per directory) — see listViewKey()/currentListView()/setListView().
+    // choice (all folders share the single 'folder' bucket, and all of
+    // Knowledge's All/category items share the single 'knowledge' bucket,
+    // rather than one per selection) — see listViewKey()/setListView().
     listViewModes: loadListViewModes(),
     foldersOpen: true,
-    graphOpen: false,
+    knowledgeOpen: false,
     chatsOpen: true,
     _lastURL: '/home/section?type=pinned',
     lightbox: null,
@@ -182,7 +184,7 @@ function homeCtrl() {
     // ── Graph (mirrors graph.js's graphCtrl state) ─────────────────────────
     loading: false,
     empty: false,
-    graphIndexPath: '',
+    knowledgeIndexPath: '',
     cy: null,
     _graphTooltip: null,
     _focusedPath: '',
@@ -310,12 +312,22 @@ function homeCtrl() {
     // than getting one per directory.
     listViewKey() {
       if (this.activeKey.indexOf('dir:') === 0) return 'folder';
+      if (this.activeKey.indexOf('knowledge:') === 0) return 'knowledge';
       return this.activeKey;
     },
     currentListView() { return this.listViewModes[this.listViewKey()] || 'list'; },
     setListView(mode) {
-      this.listViewModes[this.listViewKey()] = mode;
+      var key = this.listViewKey();
+      this.listViewModes[key] = mode;
       try { localStorage.setItem('vaultr-list-view', JSON.stringify(this.listViewModes)); } catch (_) { /* ignore */ }
+      // Unlike list<->grid (same rows, CSS-only), graph is a different
+      // markup shape entirely and has to come from the server.
+      if (key === 'knowledge') this._load(this._knowledgeURL());
+    },
+    _knowledgeURL() {
+      var url = '/home/section?type=knowledge&view=' + this.currentListView();
+      if (this.knowledgeIndexPath) url += '&index=' + encodeURIComponent(this.knowledgeIndexPath);
+      return url;
     },
 
     // ── Images: select mode + bulk delete (mirrors images.js's imgCtrl) ────
@@ -435,7 +447,7 @@ function homeCtrl() {
       this._focusedPath = '';
       this.nodePanel = null;
       var url = '/api/graph/data';
-      if (this.graphIndexPath) url += '?index=' + encodeURIComponent(this.graphIndexPath);
+      if (this.knowledgeIndexPath) url += '?index=' + encodeURIComponent(this.knowledgeIndexPath);
       try {
         var resp = await fetch(url);
         if (!resp.ok) { this.loading = false; return; }
@@ -736,14 +748,12 @@ function homeCtrl() {
       this.cy.fit(undefined, 48);
     },
 
-    toggleGraph() { this.graphOpen = !this.graphOpen; },
+    toggleKnowledge() { this.knowledgeOpen = !this.knowledgeOpen; },
 
-    selectGraphIndex(path) {
-      this.activeKey = 'graph:' + path;
-      this.graphIndexPath = path;
-      var url = '/home/section?type=graph';
-      if (path) url += '&index=' + encodeURIComponent(path);
-      this._load(url);
+    selectKnowledgeIndex(path) {
+      this.activeKey = 'knowledge:' + path;
+      this.knowledgeIndexPath = path;
+      this._load(this._knowledgeURL());
     },
 
     toggleFolders() { this.foldersOpen = !this.foldersOpen; },
@@ -955,8 +965,8 @@ function homeCtrl() {
         });
       }
       // Arriving via the parent "Chats" button (not a specific agent bot's child
-      // row) lands here with activeKey === 'chat'. Unlike Graph's parent
-      // ("all"), chat has no distinct all-agent-bots view — whatever agent bot ends up
+      // row) lands here with activeKey === 'chat'. Unlike Knowledge's "All" child,
+      // chat has no distinct all-agent-bots view — whatever agent bot ends up
       // showing should always be the one highlighted in the sidebar.
       if (this.activeKey === 'chat' && this.selectedAgentBotId) {
         this.activeKey = 'chat:' + this.selectedAgentBotId;
@@ -1708,12 +1718,12 @@ function homeCtrl() {
 // Keep _lastURL in sync with whatever actually last loaded #home-list-pane —
 // including requests that don't go through selectSection/selectFolder, like
 // the shorts month rail's declarative hx-get — so refresh() and
-// reloadActiveSection() pick up on it too. Also: the graph/inbox/chat
-// sections' markup is static (server-rendered the same regardless of query
-// params), so once it lands in the DOM this is what actually kicks off the
-// client-side fetch + render — mirrors graph.js's init()-time loadGraph()
-// call, which has no equivalent trigger here since Alpine doesn't re-run
-// init() on swap.
+// reloadActiveSection() pick up on it too. Also: the graph canvas (Knowledge's
+// graph view) and the inbox/chat sections' markup is static (server-rendered
+// the same regardless of query params), so once it lands in the DOM this is
+// what actually kicks off the client-side fetch + render — mirrors graph.js's
+// init()-time loadGraph() call, which has no equivalent trigger here since
+// Alpine doesn't re-run init() on swap.
 document.body.addEventListener('htmx:afterSwap', function (e) {
   var target = e.detail && e.detail.target;
   if (!target || target.id !== 'home-list-pane' || !window._homeData) return;
@@ -1723,7 +1733,7 @@ document.body.addEventListener('htmx:afterSwap', function (e) {
     var u = new URL(xhr.responseURL);
     window._homeData._lastURL = u.pathname + u.search;
     if (document.getElementById('graph-canvas')) {
-      window._homeData.graphIndexPath = u.searchParams.get('index') || '';
+      window._homeData.knowledgeIndexPath = u.searchParams.get('index') || '';
       window._homeData.loadGraph();
     }
     if (document.getElementById('home-inbox-list')) {

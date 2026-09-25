@@ -16,9 +16,10 @@ import (
 const homeListPageSize = 20
 
 type homePageData struct {
-	Folders     []storage.DirSummary
-	IndexNotes  []noteItem
-	SectionHTML template.HTML
+	Folders        []storage.DirSummary
+	IndexNotes     []noteItem
+	KnowledgeCount int // total notes under the knowledge dir — the sidebar's "All" count
+	SectionHTML    template.HTML
 }
 
 // homeSectionData drives the right-hand note list — the content shown for
@@ -31,6 +32,11 @@ type homeSectionData struct {
 	Items    []noteItem
 	NextURL  string // hx-get URL for the load-more sentinel; empty = no more pages
 	EmptyMsg string
+	// ShowGraphOption/View: Knowledge only. Graph is just a third way to
+	// look at the same knowledge notes (alongside list/grid), picked via the
+	// seg control — see selectKnowledgeIndex/setListView in home.js.
+	ShowGraphOption bool
+	View            string // "list" (default) | "grid" | "graph"
 }
 
 func (vh *ViewHandler) Home(w http.ResponseWriter, r *http.Request) {
@@ -54,9 +60,10 @@ func (vh *ViewHandler) Home(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := homePageData{
-		Folders:     folders,
-		IndexNotes:  indexNotes,
-		SectionHTML: sectionHTML,
+		Folders:        folders,
+		IndexNotes:     indexNotes,
+		KnowledgeCount: vh.knowledgeCount(),
+		SectionHTML:    sectionHTML,
 	}
 
 	var buf bytes.Buffer
@@ -110,14 +117,48 @@ func (vh *ViewHandler) homeSectionData(r *http.Request, itemsOnly bool) (homeSec
 			data.Count = vh.dirNoteCount(dirPath)
 		}
 	case "knowledge":
-		dirPath := "/" + strings.Trim(vh.knowledgeDir(), "/")
-		var nextNs int64
-		data.Items, nextNs = vh.listDirNoteItems(dirPath, beforeNs, homeListPageSize)
+		view := r.URL.Query().Get("view")
+		if view == "" {
+			view = "list"
+		}
+		data.ShowGraphOption = true
+		data.View = view
 		data.Title = "Knowledge"
 		data.EmptyMsg = "No knowledge notes yet"
-		data.NextURL = homeSectionMoreURL("knowledge", "", nextNs)
-		if !itemsOnly {
-			data.Count = vh.dirNoteCount(dirPath)
+
+		indexParam := strings.TrimSpace(r.URL.Query().Get("index"))
+		if indexParam == "" {
+			dirPath := "/" + strings.Trim(vh.knowledgeDir(), "/")
+			if view != "graph" {
+				var nextNs int64
+				data.Items, nextNs = vh.listDirNoteItems(dirPath, beforeNs, homeListPageSize)
+				data.NextURL = homeSectionMoreURL("knowledge", "", nextNs)
+			}
+			if !itemsOnly {
+				data.Count = vh.knowledgeCount()
+			}
+		} else {
+			// A category: same knowledge-note set the sidebar's Graph-mode
+			// filtering already used (GetIndexDeps), just also listable as
+			// rows instead of only ever drawn as a graph.
+			idxPath, ok := storage.ParsePath(indexParam)
+			if !ok {
+				return data, fmt.Errorf(`index must be absolute (start with "/")`)
+			}
+			knowledgePaths, err := vh.vault.GetIndexDeps(idxPath)
+			if err != nil {
+				return data, err
+			}
+			if !itemsOnly {
+				data.Count = len(knowledgePaths)
+			}
+			if view != "graph" && len(knowledgePaths) > 0 {
+				notes, err := vh.vault.GetNotesByPaths(knowledgePaths)
+				if err != nil {
+					return data, err
+				}
+				data.Items = vh.noteItemsFromNotes(notes)
+			}
 		}
 	default: // "pinned"
 		pinned, err := vh.vault.ListPinnedNotes()
@@ -140,6 +181,13 @@ func (vh *ViewHandler) knowledgeDir() string {
 		return vh.cfg.Vault.KnowledgeDir
 	}
 	return "_knowledge"
+}
+
+// knowledgeCount returns the total note count under the knowledge dir — the
+// sidebar's "All" child count, and the same number homeSectionData's
+// unfiltered "knowledge" case uses for its list-head pill.
+func (vh *ViewHandler) knowledgeCount() int {
+	return vh.dirNoteCount("/" + strings.Trim(vh.knowledgeDir(), "/"))
 }
 
 // dirNoteCount looks up dirPath's note count from the full (unfiltered)
@@ -191,12 +239,6 @@ func (vh *ViewHandler) renderHomeSectionHTML(r *http.Request) (template.HTML, er
 		return vh.renderHomeShortsSection(r)
 	case "images":
 		return vh.renderHomeImagesSection(r)
-	case "graph":
-		// The graph canvas is entirely client-rendered (home.js fetches
-		// /api/graph/data itself once #graph-canvas lands in the DOM, reading
-		// ?index= off the URL that was just loaded — see the htmx:afterSwap
-		// listener in home.js), so this markup never varies with the request.
-		return template.HTML(homeGraphSectionHTML), nil //nolint:gosec // static markup, not user HTML
 	case "inbox":
 		// Same story as graph: the message list is entirely client-rendered
 		// (home.js fetches /api/inbox itself once #home-inbox-list lands in
@@ -300,7 +342,7 @@ func (vh *ViewHandler) renderHomeImagesSection(r *http.Request) (template.HTML, 
 	return template.HTML(buf.String()), nil //nolint:gosec // server-rendered fragment, not user HTML
 }
 
-// HomeSection handles GET /home/section?type=pinned|folder|shorts|images|graph|inbox|chat[&path=DIR]
+// HomeSection handles GET /home/section?type=pinned|folder|shorts|images|knowledge|inbox|chat[&path=DIR][&index=PATH&view=list|grid|graph]
 // Returns the full #home-list-pane contents, used when the sidebar selection changes.
 func (vh *ViewHandler) HomeSection(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
@@ -393,8 +435,7 @@ const homeSectionRowsHTML = `{{define "rows"}}{{range .Items}}
 {{end}}{{end}}`
 
 const homeSectionFullHTML = `{{define "full"}}<div class="home-list-head">
-  <span class="home-list-title" id="home-list-title">{{.Title}}</span>
-  <span class="home-list-count" id="home-list-count">{{.Count}}</span>
+  <span class="home-list-count" id="home-list-count" title="{{.Title}}">{{.Count}}</span>
   <div class="home-list-head-spacer"></div>
   <div class="seg">
     <button type="button" class="seg-btn" :class="currentListView() === 'list' ? 'active' : ''"
@@ -410,9 +451,20 @@ const homeSectionFullHTML = `{{define "full"}}<div class="home-list-head">
         <rect width="7" height="7" x="14" y="14" rx="1" /><rect width="7" height="7" x="3" y="14" rx="1" />
       </svg>
     </button>
+    {{if .ShowGraphOption}}
+    <button type="button" class="seg-btn" :class="currentListView() === 'graph' ? 'active' : ''"
+            @click="setListView('graph')" title="Graph view">
+      <svg fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+        <circle cx="12" cy="4.5" r="2" /><path d="m10.4 6.3-2.8 2.9" /><circle cx="4.5" cy="12" r="2" />
+        <path d="M6.5 12h11" /><circle cx="19.5" cy="12" r="2" /><path d="m13.6 15.5 2.8 2.9" /><circle cx="12" cy="19.5" r="2" />
+      </svg>
+    </button>
+    {{end}}
   </div>
 </div>
-<div class="home-list-body" id="home-list-body" :class="{'is-grid': currentListView() === 'grid'}">{{template "rows" .}}</div>{{end}}`
+{{if eq .View "graph"}}` + homeGraphSectionHTML + `{{else}}
+<div class="home-list-body" id="home-list-body" :class="{'is-grid': currentListView() === 'grid'}">{{template "rows" .}}</div>
+{{end}}{{end}}`
 
 var homeSectionTemplate = template.Must(
 	template.Must(
@@ -432,7 +484,6 @@ var homeSectionTemplate = template.Must(
 // anywhere, same as every other control here.
 const homeShortsSectionHTML = `<div class="shorts-view">
   <div class="home-list-head">
-    <span class="home-list-title">Shorts</span>
     <div class="home-list-head-spacer"></div>
     {{if gt (len .Months) 1}}
     <div class="cselect cselect--inline" x-data="{ csOpen: false }" @click.outside="csOpen = false">
@@ -517,8 +568,7 @@ var homeShortsSectionTemplate = template.Must(template.New("home-shorts-section"
 // standalone /images page, just without its own .img-main wrapper (the
 // #home-list-pane flex column already plays that role).
 const homeImagesSectionHTML = `<div class="home-list-head">
-  <span class="home-list-title">Images</span>
-  <span class="home-list-count">{{.Count}}</span>
+  <span class="home-list-count" title="Images">{{.Count}}</span>
   <div class="home-list-head-spacer"></div>
   <button type="button" class="btn-outline btn--xs" x-show="!selectMode" @click="enterSelectMode()">
     <svg fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2"/><path stroke-linecap="round" stroke-linejoin="round" d="m9 12 2 2 4-4"/></svg>
@@ -665,8 +715,9 @@ const homeImagesLightboxHTML = `
 
 // homeGraphSectionHTML mirrors graph.html's .graph-main block (canvas, zoom
 // controls, node info panel, loading/empty states) verbatim — everything
-// except the .graph-index-col sidebar, which is now the sidebar's Graph
-// group (see home.html) instead of living inside the swappable pane.
+// except the .graph-index-col sidebar, which is now the sidebar's Knowledge
+// group (see home.html) instead of living inside the swappable pane. Used by
+// homeSectionFullHTML's "full" template when View == "graph".
 const homeGraphSectionHTML = `<div class="graph-main">
   <div style="position:relative;flex:1;display:flex;flex-direction:column;overflow:hidden">
     <div id="graph-canvas" style="flex:1;width:100%"></div>
@@ -752,8 +803,7 @@ const homeGraphSectionHTML = `<div class="graph-main">
 // mutually exclusive there, never both visible.
 const homeInboxSectionHTML = `<div class="home-inbox-section">
   <div class="home-list-head">
-    <span class="home-list-title">Inbox</span>
-    <span class="home-list-count" x-show="unreadCount > 0" x-text="unreadCount + ' unread'"></span>
+    <span class="home-list-count" title="Unread" x-show="unreadCount > 0" x-text="unreadCount"></span>
     <div class="home-list-head-spacer"></div>
     <div class="seg">
       <button type="button" class="seg-btn" :class="inboxFilter === 'all' ? 'active' : ''" @click="setInboxFilter('all')">All</button>
@@ -1055,11 +1105,11 @@ var homePageHTML = `<!DOCTYPE html>
 </head>
 <body x-data="homeCtrl()" @vaultr:insert-path.window="insertPath($event)">
 ` + searchOnlyOverlayHTML + confirmDialogHTML + infoDialogHTML + frontmatterDialogHTML + settingsModalHTML() + homeImagesLightboxHTML + homeChatToastHTML + `
-  <div class="lib-body">
+  <div class="home-container">
 ` + homeMainHTML + contentPaneHTML + `
+    </div><!-- /.home-main -->
   </div><!-- /.home-shell -->
 </div><!-- /.home-container -->
-  </div><!-- /.lib-body -->
 
   <div id="graph-tooltip" class="graph-tooltip"></div>
 
@@ -1099,8 +1149,9 @@ func (vh *ViewHandler) HomeRefresh(w http.ResponseWriter, r *http.Request) {
 	indexNotes := vh.listIndexItems()
 
 	data := homePageData{
-		Folders:    folders,
-		IndexNotes: indexNotes,
+		Folders:        folders,
+		IndexNotes:     indexNotes,
+		KnowledgeCount: vh.knowledgeCount(),
 	}
 
 	var buf bytes.Buffer
@@ -1127,12 +1178,18 @@ var homeRefreshTemplate = template.Must(template.New("home-refresh").Funcs(homeT
     {{if not .Folders}}<div class="home-side-empty">No folders</div>{{end}}
   </div>
 </div>
-<div id="home-side-graph-body" class="home-side-children" :class="{'is-open': graphOpen}" x-cloak hx-swap-oob="true">
+<div id="home-side-knowledge-body" class="home-side-children" :class="{'is-open': knowledgeOpen}" x-cloak hx-swap-oob="true">
   <div class="home-side-children-inner">
+    <button type="button" class="side-nav-item home-side-child" :class="{'is-active': activeKey === 'knowledge:'}"
+            @click="selectKnowledgeIndex('')">
+      <span class="home-side-child-name">All</span>
+      <span class="home-side-count">{{.KnowledgeCount}}</span>
+    </button>
     {{range .IndexNotes}}
-    <button type="button" class="side-nav-item home-side-child" :class="{'is-active': activeKey === 'graph:{{.Path}}'}"
-            @click="selectGraphIndex('{{.Path}}')">
+    <button type="button" class="side-nav-item home-side-child" :class="{'is-active': activeKey === 'knowledge:{{.Path}}'}"
+            @click="selectKnowledgeIndex('{{.Path}}')">
       <span class="home-side-child-name">{{label .}}</span>
+      <span class="home-side-count">{{.DepCount}}</span>
     </button>
     {{end}}
   </div>

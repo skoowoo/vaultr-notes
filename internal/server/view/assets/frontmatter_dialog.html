@@ -7,7 +7,7 @@
        @click.self="cancel()">
     <div class="dialog-card fm-edit-card" @click.stop>
       <p class="dialog-title">Edit metadata</p>
-      <textarea x-ref="textarea" class="fm-edit-textarea" x-model="text"
+      <textarea x-ref="textarea" class="field-input fm-edit-textarea" x-model="text"
                 spellcheck="false" autocomplete="off" autocapitalize="off"
                 @keydown.meta.enter="save()" @keydown.ctrl.enter="save()"></textarea>
       <div class="dialog-actions">

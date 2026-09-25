@@ -87,13 +87,14 @@
       gap: 0.5rem;
       font-size: var(--text-sm);
       font-weight: 500;
-      border: var(--bd-w) solid var(--border-strong);
+      border: none;
       border-radius: var(--r-full);
-      background: transparent;
+      background: var(--btn-bg);
       color: var(--muted);
       cursor: pointer;
       white-space: nowrap;
       user-select: none;
+      transition: background-color var(--motion-fast), color var(--motion-fast);
     }
 
     .agent-bot-chip-avatar {
@@ -114,18 +115,16 @@
     }
 
     .agent-bot-chip:hover {
-      background: transparent;
+      background: var(--btn-bg-hov);
       color: var(--fg);
-      border-color: var(--border-strong);
     }
 
     .agent-bot-chip:active:not(.is-active) {
-      opacity: 0.85;
+      background: var(--btn-bg-on);
     }
 
     .agent-bot-chip.is-active {
-      background: var(--control-active-bg);
-      border: var(--bd-w) solid var(--border-strong) !important;
+      background: var(--btn-bg-on);
       color: var(--control-active-fg);
     }
 
@@ -143,20 +142,21 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      border: var(--bd-w) solid var(--border-strong);
+      border: none;
+      border-radius: var(--r-sm);
       cursor: pointer;
-      background: var(--bg);
+      background: var(--btn-bg);
       color: var(--muted);
+      transition: background-color var(--motion-fast), color var(--motion-fast);
     }
 
     .new-chat-btn:hover:not(:disabled) {
-      background: var(--card-hov);
+      background: var(--btn-bg-hov);
       color: var(--fg);
-      border-color: var(--border-strong);
     }
 
     .new-chat-btn:active:not(:disabled) {
-      opacity: 0.85;
+      background: var(--btn-bg-on);
     }
 
     .new-chat-btn:disabled {
@@ -780,7 +780,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      border: var(--bd-w) solid var(--border-strong);
+      border: none;
       border-radius: var(--r-full);
       cursor: pointer;
       background: var(--p2);

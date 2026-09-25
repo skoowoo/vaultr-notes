@@ -3,10 +3,18 @@
    forms), and Shorts' month picker (home.go, .cselect--inline variant).
    Lives here (not in the settings modal) because it is not settings-specific. */
 .cselect { position: relative; width: 100%; }
+/* Same recipe as .field-input (base.css) — no border at rest, filled with
+   the borderless-button ink wash (--btn-bg) instead of a fixed swatch, a
+   transparent (not absent) border reserved so it doesn't shift layout
+   when one appears. Not literally .field-input itself: this is a <button>
+   with its own flex layout (label + chevron) and reads as UI chrome, not
+   a form value, so it keeps --text-base/inherit instead of field-input's
+   --text-sm/mono. Focus/open already worked this way (border turning
+   accent, no fill change) before this — only the resting box changed. */
 .cselect-btn {
   width: 100%; display: flex; align-items: center; justify-content: space-between;
   gap: 0.4rem; height: var(--btn-h); padding: 0 0.75rem;
-  background: var(--bg); border: var(--bd-w) solid var(--border-strong);
+  background: var(--btn-bg); border: var(--bd-w) solid transparent;
   cursor: pointer; text-align: left;
   font-size: var(--text-base); font-family: inherit; color: var(--fg);
 }

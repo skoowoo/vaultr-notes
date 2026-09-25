@@ -87,16 +87,17 @@
     .shorts-compose-send {
       height: var(--btn-h-xs);
       padding: 0 var(--space-md);
-      background: var(--bg);
+      background: var(--btn-bg);
       color: var(--fg);
-      border: var(--bd-w) solid var(--border-strong);
+      border: none;
       font-size: var(--text-2xs);
       font-weight: var(--fw-medium);
       font-family: inherit;
       cursor: pointer;
+      transition: background-color var(--motion-fast);
     }
-    .shorts-compose-send:hover:not(:disabled) { background: var(--surface-soft); }
-    .shorts-compose-send:active:not(:disabled) { opacity: 0.85; }
+    .shorts-compose-send:hover:not(:disabled) { background: var(--btn-bg-hov); }
+    .shorts-compose-send:active:not(:disabled) { background: var(--btn-bg-on); }
     .shorts-compose-send:disabled { opacity: 0.35; cursor: not-allowed; }
 
     /* ── Day groups ───────────────────────────────────
@@ -170,21 +171,22 @@
     .shorts-loadmore-btn {
       height: var(--btn-h-xs);
       padding: 0 14px;
-      background: transparent;
+      background: var(--btn-bg);
       color: var(--muted);
-      border: var(--bd-w) solid var(--border);
+      border: none;
       font-size: var(--text-2xs);
       font-weight: var(--fw-medium);
       font-family: inherit;
       letter-spacing: 0.02em;
       cursor: pointer;
       opacity: 0.55;
+      transition: background-color var(--motion-fast), color var(--motion-fast), opacity var(--motion-fast);
     }
     .shorts-loadmore-btn:hover {
-      opacity: 1; color: var(--fg); border-color: var(--border-strong); background: var(--card-hov);
+      opacity: 1; color: var(--fg); background: var(--btn-bg-hov);
     }
     .shorts-loadmore-btn:active {
-      background: var(--tint-md);
+      background: var(--btn-bg-on);
     }
     .shorts-loadmore-btn.htmx-request { opacity: 0.25; pointer-events: none; }
 
@@ -220,15 +222,16 @@
     .shorts-empty-btn {
       display: inline-flex; align-items: center; gap: 6px;
       height: var(--btn-h); padding: 0 var(--space-md);
-      background: var(--bg); color: var(--fg);
-      border: var(--bd-w) solid var(--border-strong);
+      background: var(--btn-bg); color: var(--fg);
+      border: none;
       font-size: var(--text-base); font-weight: var(--fw-medium);
       font-family: inherit; cursor: pointer;
+      transition: background-color var(--motion-fast);
     }
     .shorts-empty-btn:hover {
-      background: transparent; border-color: var(--border-strong);
+      background: var(--btn-bg-hov);
     }
     .shorts-empty-btn:active {
-      opacity: 0.85;
+      background: var(--btn-bg-on);
     }
     .shorts-empty-btn svg { width: 14px; height: 14px; flex-shrink: 0; }

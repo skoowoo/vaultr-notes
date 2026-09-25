@@ -1,13 +1,17 @@
 
     /* ── Metadata (frontmatter) edit dialog — layers .dialog-* shared chrome
-       (base.css); only the textarea + wider card are local. ── */
+       (base.css); only the textarea + wider card are local. Box/border/
+       focus/font/placeholder now come from the shared .field-input
+       (base.css) — this just sizes it for a big raw-YAML surface instead
+       of a one-line field and keeps the code-block formatting (white-space,
+       overflow) that's specific to editing YAML rather than prose. ── */
     .fm-edit-card { max-width: min(36rem, calc(100vw - 2rem)); }
-    .fm-edit-textarea {
-      display: block; width: 100%; height: 22rem; margin-top: 0.75rem;
-      resize: vertical; box-sizing: border-box;
-      font-family: var(--font-mono); font-size: var(--text-sm); line-height: 1.6;
-      color: var(--fg); background: var(--surface-soft);
-      border: var(--bd-w) solid var(--border); border-radius: var(--r-md);
-      padding: 0.75rem 0.875rem; white-space: pre; overflow: auto;
+    /* `textarea.___`, not `.___` alone — base.css's own `textarea.field-input`
+       sizing (padding/line-height) is element+class specificity, so a
+       bare class here would lose the padding/line-height overrides below
+       regardless of stylesheet order. */
+    textarea.fm-edit-textarea {
+      display: block; height: 22rem; margin-top: 0.75rem;
+      line-height: 1.6; padding: 0.75rem 0.875rem;
+      white-space: pre; overflow: auto;
     }
-    .fm-edit-textarea:focus { outline: none; border-color: var(--accent); }

@@ -127,19 +127,17 @@ components:
     size: 28px
     rounded: none
   icon-btn:
-    backgroundColor: transparent
+    backgroundColor: "rgba(ink, 0.06)"
     textColor: "{colors.muted-dark}"
     size: 28px
-    rounded: "{rounded.xs}"
-    border: 1px solid border-strong
+    rounded: "{rounded.sm}"
   icon-btn-active:
-    backgroundColor: "{colors.surface-2-dark}"
+    backgroundColor: "rgba(ink, 0.15)"
     textColor: "{colors.fg-dark}"
-    rounded: "{rounded.xs}"
+    rounded: "{rounded.sm}"
   seg-toggle:
-    backgroundColor: transparent
-    border: 1px solid border-strong
-    padding: 2px
+    backgroundColor: "rgba(ink, 0.06)"
+    padding: 3px
     rounded: "{rounded.md}"
   button-primary:
     backgroundColor: "{colors.accent}"
@@ -148,9 +146,8 @@ components:
     rounded: "{rounded.md}"
     height: 32px
   button-secondary:
-    backgroundColor: transparent
-    textColor: "{colors.muted-dark}"
-    border: 1px solid border-strong
+    backgroundColor: "rgba(ink, 0.06)"
+    textColor: "{colors.fg-dark}"
     typography: "{typography.button}"
     rounded: "{rounded.md}"
     height: 32px
@@ -296,6 +293,8 @@ Dark is the shipped default (bare `:root`). Light is Vaultr's own from-scratch a
 - Dialog interior padding: 24px top/sides, 20px bottom (`.confirm-card`, `.info-card`).
 - Standard button height: 32px (`--btn-h`); compact/icon-only actions: 28px (`--btn-h-xs` / `--action-btn-sz`); chrome-bar height: 36px (`--btn-h-sm`).
 - Topbar height: 40px (`--topbar-h`).
+- List pane header (`.home-list-head`): the same 52px `--toolbar-h`, so its controls line up with the editor tool bar across the pane divider. No title, no bottom divider and no scroll fade (the list just scrolls to a plain edge); a section that has a number to show gets a low-key count pill (`--cnt-bg` / `--cnt-tx`, the same recipe as the graph index counts) at the left, with the tooltip naming what it counts.
+- Editor tool bar: 52px (`--toolbar-h`), fixed — it no longer tracks the list pane's header. It has no bottom divider; instead the editor's top 32px eases into `--bg` (a smoothstep ramp, so neither end reads as a gradient edge) and text scrolling under the bar dissolves rather than being cut off.
 
 ### Grid & Container
 - The app is chrome-first, not a marketing grid: a persistent list/sidebar column plus a main content pane (notes list + reading pane, drawer over content, graph canvas with an index column).
@@ -345,17 +344,22 @@ Full-viewport or edge-docked chrome (drawer panel and its tab bar, scrims, `<htm
 **`button-primary`** — Accent-filled. The default primary action (confirm, save, send).
 - Background `{colors.accent}`, text `{colors.accent-fg}`, height 32px, rounded `{rounded.md}`. Hover shifts to accent-hover; active press dims to 85% opacity app-wide as a baseline (any component-specific `:active` rule wins over this floor).
 
-**`button-secondary`** — Bordered, transparent fill. Cancel/dismiss actions.
-- Transparent background, `--muted` text, 1px `--border-strong` border, height 32px. Hover: text to `--fg`, background to `--card-hov` (a soft accent tint).
+**No button carries a border.** Hierarchy comes from fill alone, using a three-step neutral ladder built on the theme's ink color (`--ink-rgb`, so one set of values serves both themes): `--btn-bg` (6%, rest) → `--btn-bg-hov` (10%, hover) → `--btn-bg-on` (15%, pressed / selected). No shadows or inner highlights; keyboard focus is the 2px accent ring from the elevation table (borderless controls have no other focus cue). Hover/press color changes use `--motion-fast`.
+
+**`button-secondary`** (`.btn-outline`, name kept from before the redesign) — Neutral tonal fill. Cancel/dismiss/toolbar actions.
+- `--btn-bg` background, `--fg` text, height 32px. Hover `--btn-bg-hov`, press `--btn-bg-on`. `.active` (chosen-among-choices) holds `--btn-bg-on`.
+- `.btn-outline--danger` stays neutral at rest and reveals the `--s-err-bg` tint plus `--s-err` text on hover/focus.
 
 **`button-danger`** — Reserved for destructive confirmations (delete).
 - Background `--s-err`, text `--s-err-fg` (inverse ink for contrast against the bright error tone).
 
-**`icon-btn-ghost`** — Borderless icon-only action, 28px square (24px `--sm` modifier for tighter contexts). Transparent at rest, fills with `--icon-hov` (an accent tint) on hover. Used for dismiss/close actions and any borderless icon action generally.
+**`icon-btn-ghost`** — Icon-only action with no fill at rest, 28px square (24px `--sm` modifier for tighter contexts). Fills with `--icon-hov` (an accent tint) on hover. Used for dismiss/close actions and any icon action that should sit quietly on its surface.
 
-**`icon-btn`** — Bordered icon-only action with an `.active` toggle state (filled `--control-active-bg`/`-fg`) for controls that need to show "this is currently on" (pin, compile, source toggle), not just hover feedback.
+**`icon-btn`** — Tonal icon-only action (`--btn-bg`, `{rounded.sm}`) with an `.active` toggle state (`--btn-bg-on` + `--control-active-fg`) for controls that need to show "this is currently on" (pin, compile, source toggle), not just hover feedback. `.icon-btn--lg` (32px) uses `{rounded.md}` to sit flush with inputs.
 
-**`seg`** / **`seg-btn`** — Segmented "pick one of N" pill container: bordered outer shell, flat buttons inside, `.active` steps to `--control-active-bg`/`-fg`. One shared definition backs every picker in the app (Inbox filter, chat mode toggle, settings pickers) so they can't drift apart in size.
+**`seg`** / **`seg-btn`** — Segmented "pick one of N" control: a `--btn-bg` track with 3px padding and flat buttons inside (inner radius `{rounded.sm}`); `.active` is a raised thumb, `--seg-thumb` (`--control-active-bg-on-soft` on dark, `--canvas` on light) with `--control-active-fg` text. One shared definition backs every picker in the app (Inbox filter, chat mode toggle, settings pickers) so they can't drift apart in size.
+
+**Chips and choice cards** (agent-bot chip, variable chip, effect card, copy button, load-more) follow the same ladder; they are not a separate component family.
 
 ### Dialogs & Overlays
 
@@ -372,7 +376,7 @@ Full-viewport or edge-docked chrome (drawer panel and its tab bar, scrims, `<htm
 
 ### Lists & Cards
 
-**`list-card`** — Notes list rows, inbox cards. Unread state stays flat on `--bg`; a read/cleared inbox card lifts to `--surface-soft` and dims its title/timestamp to `--muted`, dropping its unread dot entirely.
+**`list-card`** — Notes list rows, inbox cards. Note rows (Pinned, Folders, and the other lists that share that card) and a read/cleared inbox card sit on `--surface-soft` with no outline; the read card also dims its title/timestamp to `--muted` and drops its unread dot. An unread inbox card stays flat on `--bg` with a `--border-strong` outline.
 
 **`note-badge`** — Small status marker on a note card. The pin variant is a plain accent-colored glyph with no fill; the "done" variant is a solid accent fill with `--accent-fg` text.
 
@@ -395,6 +399,7 @@ Full-viewport or edge-docked chrome (drawer panel and its tab bar, scrims, `<htm
 - Keep the identity palette (cyan/pink/violet/green) theme-invariant — it marks "who/what", not "which mode".
 - Pair a semantic color's bright running-text tone with its own `-fg` token when using it as a solid fill, never with plain white/black.
 - Apply the shared `.icon-btn`/`.icon-btn-ghost`/`.seg`/`.seg-btn` components instead of a new per-page near-copy.
+- Build any new button from the `--btn-bg` / `--btn-bg-hov` / `--btn-bg-on` ladder; never add a border to one.
 
 ### Don't
 - Don't use the accent color as a section background or card fill.

@@ -1,4 +1,3 @@
-<div class="home-container">
   <!-- Sidebar + note list ─────────────────────────────────────────── -->
   <div class="home-shell"
        :class="{'content-pane-open': (contentPaneOpen || inboxSheetOpen), 'is-resizing': isPaneResizing}"
@@ -73,45 +72,35 @@
 
         <div class="home-side-group">
           <button type="button" class="side-nav-item home-side-item home-side-item--parent"
-                  :class="{'is-active': activeKey === 'graph:'}"
-                  @click="selectGraphIndex('')">
+                  @click="toggleKnowledge()">
             <svg class="side-nav-icon home-side-icon" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"
                  stroke-linejoin="round" viewBox="0 0 24 24">
-              <circle cx="12" cy="4.5" r="2.5" />
-              <path d="m10.2 6.3-3.9 3.9" />
-              <circle cx="4.5" cy="12" r="2.5" />
-              <path d="M7 12h10" />
-              <circle cx="19.5" cy="12" r="2.5" />
-              <path d="m13.8 17.7 3.9-3.9" />
-              <circle cx="12" cy="19.5" r="2.5" />
+              <path d="M12 7v14" />
+              <path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z" />
             </svg>
-            <span class="home-side-label">Graph</span>
-            <svg class="home-side-chevron" :class="{'is-open': graphOpen}" @click.stop="toggleGraph()"
+            <span class="home-side-label">Knowledge</span>
+            <svg class="home-side-chevron" :class="{'is-open': knowledgeOpen}"
                  fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" d="m9 18 6-6-6-6" />
             </svg>
           </button>
-          <div class="home-side-children" id="home-side-graph-body" :class="{'is-open': graphOpen}" x-cloak>
+          <div class="home-side-children" id="home-side-knowledge-body" :class="{'is-open': knowledgeOpen}" x-cloak>
             <div class="home-side-children-inner">
+              <button type="button" class="side-nav-item home-side-child" :class="{'is-active': activeKey === 'knowledge:'}"
+                      @click="selectKnowledgeIndex('')">
+                <span class="home-side-child-name">All</span>
+                <span class="home-side-count">{{.KnowledgeCount}}</span>
+              </button>
               {{range .IndexNotes}}
-              <button type="button" class="side-nav-item home-side-child" :class="{'is-active': activeKey === 'graph:{{.Path}}'}"
-                      @click="selectGraphIndex('{{.Path}}')">
+              <button type="button" class="side-nav-item home-side-child" :class="{'is-active': activeKey === 'knowledge:{{.Path}}'}"
+                      @click="selectKnowledgeIndex('{{.Path}}')">
                 <span class="home-side-child-name">{{label .}}</span>
+                <span class="home-side-count">{{.DepCount}}</span>
               </button>
               {{end}}
             </div>
           </div>
         </div>
-
-        <button type="button" class="side-nav-item home-side-item" :class="{'is-active': activeKey === 'knowledge'}"
-                @click="selectSection('knowledge', '/home/section?type=knowledge')">
-          <svg class="side-nav-icon home-side-icon" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"
-               stroke-linejoin="round" viewBox="0 0 24 24">
-            <path d="M12 7v14" />
-            <path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z" />
-          </svg>
-          <span class="home-side-label">Knowledge</span>
-        </button>
 
         <button type="button" class="side-nav-item home-side-item" :class="{'is-active': activeKey === 'memory'}"
                 @click="selectSection('memory', '/home/section?type=memory')">
@@ -206,7 +195,7 @@
           </svg>
         </button>
         <button type="button" class="icon-btn-ghost home-side-bottom-btn" :class="{'is-active': contentPaneOpen}"
-                :title="/Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent) ? 'Reading pane (⌘E)' : 'Reading pane (Ctrl+E)'"
+                :title="/Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent) ? 'Reading pane (⌘O)' : 'Reading pane (Ctrl+O)'"
                 @click="contentPaneOpen = !contentPaneOpen">
           <svg fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24">
             <rect x="3" y="3" width="18" height="18" rx="2" />
@@ -217,17 +206,17 @@
       </div>
     </aside>
 
-    <main class="home-list-pane" id="home-list-pane">
-      {{.SectionHTML}}
-    </main>
+    <!-- Common parent for everything right of the sidebar (mirrors .home-side);
+         closed in home.go once content_pane.html's markup is spliced in. -->
+    <div class="home-main">
+      <main class="home-list-pane" id="home-list-pane">
+        {{.SectionHTML}}
+      </main>
 
-    <!-- Resizer + editor pane below only show once a note is open in the
-         content pane (see content_pane.html) — .home-shell/.home-container are closed
-         in home.go, after the content-pane markup is spliced in right here, so
-         the editor pane sits in the same flex row as the list pane instead
-         of floating as a page-level overlay. -->
-    <div class="home-pane-resizer" id="home-pane-resizer" x-cloak
-         x-show="contentPaneOpen || inboxSheetOpen"
-         @mousedown="startPaneResize($event)"
-         @dblclick="splitRatio = 0.5"
-         title="Drag to resize"></div>
+      <!-- Resizer + editor pane below only show once a note is open in the
+           content pane (see content_pane.html). -->
+      <div class="home-pane-resizer" id="home-pane-resizer" x-cloak
+           x-show="contentPaneOpen || inboxSheetOpen"
+           @mousedown="startPaneResize($event)"
+           @dblclick="splitRatio = 0.5"
+           title="Drag to resize"></div>

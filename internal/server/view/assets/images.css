@@ -23,13 +23,25 @@
     /* ── Card ───────────────────────────────────────────────────── */
     /* Box + click interaction come from the shared
        .list-card.list-card--clickable (base.css); padding is overridden
-       back to 0 since the thumbnail must sit flush against the border. */
-    .img-card { padding: 0; overflow: hidden; }
+       back to 0 since the thumbnail must sit flush against the border.
+       Remove border and use surface-soft background. */
+    .img-card { 
+      padding: 0; 
+      overflow: hidden; 
+      border: none; 
+      background: var(--surface-soft); 
+      border-radius: var(--r-lg);
+    }
+    
+    /* Override hover background from .list-card--clickable */
+    .img-card:hover { 
+      background: var(--surface-soft); 
+    }
 
     /* ── Thumbnail ──────────────────────────────────────────────── */
     .img-thumb-wrap {
       position: relative;
-      width: 100%; aspect-ratio: 16 / 9; overflow: hidden; background: var(--border);
+      width: 100%; aspect-ratio: 16 / 9; overflow: hidden; background: var(--surface-soft);
       border-radius: 0;
       display: flex; align-items: center; justify-content: center;
     }
@@ -80,7 +92,9 @@
     .select-mode .img-select-check { display: flex; }
     .img-card.is-selected .img-select-check { border-color: var(--accent); background: var(--accent); }
     .img-card.is-selected .img-select-check svg { display: block; }
-    .img-card.is-selected { border-color: var(--accent) !important; }
+    .img-card.is-selected { 
+      border: 2px solid var(--accent) !important; 
+    }
 
     /* ── Toolbar (now lives inside the shared .home-list-head — see
        home.css — instead of its own bordered strip) ─────────────── */

@@ -471,7 +471,7 @@ Drop any skill directory into `~/.vaultr/skills/`, then enable it in **Settings 
 | Search                 | `⌘K`  | `Ctrl+K`        |
 | New Note               | `⌘N`  | `Ctrl+N`        |
 | Quick Note             | `⌘.`  | `Ctrl+.`        |
-| Toggle Editor          | `⌘E`  | `Ctrl+E`        |
+| Toggle Editor          | `⌘O`  | `Ctrl+O`        |
 | Close Editor Tab       | `⌘W`  | `Ctrl+W`        |
 | Find & Replace         | `⌘F`  | `Ctrl+F`        |
 | Expand / Shrink Editor | `⌘\`  | `Ctrl+\`        |

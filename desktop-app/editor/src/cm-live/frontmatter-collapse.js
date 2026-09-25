@@ -11,6 +11,7 @@
 // (decorators.js) read the same persisted value.
 import { StateField, StateEffect } from '@codemirror/state';
 import { Decoration, EditorView } from '@codemirror/view';
+import { syntaxTree } from '@codemirror/language';
 import { FrontmatterHeaderWidget } from './widgets.js';
 import { findFrontmatterNode } from './frontmatter-syntax.js';
 import { selectionTouchesRange, readingModeToggled } from './selection.js';
@@ -68,16 +69,26 @@ function buildHeaderDecorations(state, options) {
 export function frontmatterHeaderField(options) {
   return StateField.define({
     create(state) {
-      return buildHeaderDecorations(state, options);
+      return { decorations: buildHeaderDecorations(state, options), tree: syntaxTree(state) };
     },
     update(value, tr) {
       // tr.selection: caret crossing the frontmatter boundary toggles the
       // edit pencil's visibility. Cheap to check on every selection change
       // now — buildHeaderDecorations locates the node in O(1)
       // (findFrontmatterNode), not a full tree walk.
-      if (!tr.docChanged && !tr.selection && !readingModeToggled(tr.startState, tr.state) && !tr.effects.some((e) => e.is(setFrontmatterCollapsed))) return value;
-      return buildHeaderDecorations(tr.state, options);
+      //
+      // treeChanged: Frontmatter is always the tree's very first top-level
+      // node, so it's virtually always covered by @codemirror/language's
+      // guaranteed initial parse budget — but "virtually always" isn't
+      // "always" (a starved first chunk, an unusually large block), and this
+      // check is nearly free once found, so it's here for the same reason
+      // live-preview.js's LivePreviewPlugin and horizontalRuleField have it:
+      // catches the background-parse dispatch that has docChanged: false.
+      const tree = syntaxTree(tr.state);
+      const treeChanged = tree != value.tree;
+      if (!tr.docChanged && !tr.selection && !treeChanged && !readingModeToggled(tr.startState, tr.state) && !tr.effects.some((e) => e.is(setFrontmatterCollapsed))) return value;
+      return { decorations: buildHeaderDecorations(tr.state, options), tree };
     },
-    provide: (f) => EditorView.decorations.from(f),
+    provide: (f) => EditorView.decorations.from(f, (v) => v.decorations),
   });
 }

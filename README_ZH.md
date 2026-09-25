@@ -468,7 +468,7 @@ LLM Wiki 编译行为由 `~/.vaultr/skills/vaultr-compile-note/SKILL.md` 定义�
 | 搜索              | `⌘K`  | `Ctrl+K`        |
 | 新建笔记          | `⌘N`  | `Ctrl+N`        |
 | 快速笔记          | `⌘.`  | `Ctrl+.`        |
-| 切换编辑器        | `⌘E`  | `Ctrl+E`        |
+| 切换编辑器        | `⌘O`  | `Ctrl+O`        |
 | 关闭当前标签页    | `⌘W`  | `Ctrl+W`        |
 | 查找与替换        | `⌘F`  | `Ctrl+F`        |
 | 展开 / 收缩编辑器 | `⌘\`  | `Ctrl+\`        |

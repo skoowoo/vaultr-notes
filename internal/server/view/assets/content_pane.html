@@ -72,7 +72,7 @@
                horizontal strip. Each row is one open tab/draft. -->
           <button type="button" class="icon-btn-ghost content-pane-reading-btn"
                   @click.stop="editorMode.toggleReading()"
-                  :title="'Reading view (' + (isMac ? '⌘⇧E' : 'Ctrl+Shift+E') + ')'">
+                  :title="'Reading view (' + (isMac ? '⌘L' : 'Ctrl+L') + ')'">
             <!-- lucide "book-open" -->
             <svg fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
               <path d="M12 7v14"/>
@@ -105,28 +105,57 @@
                  x-transition:leave="transition ease-in duration-100"
                  x-transition:leave-start="opacity-100 translate-y-0 scale-100"
                  x-transition:leave-end="opacity-0 -translate-y-1 scale-[0.98]">
-              <template x-for="(tab, i) in tabs" :key="tab.id">
-                <div class="content-pane-tabs-menu-row" :class="{active: activeTab === i, 'kbd-active': tabsMenuActiveIndex === i}"
-                     @click.stop="contentPaneSwitchTab(i); tabsMenuOpen = false" :title="tab.title">
-                  <span class="content-pane-tabs-menu-title" x-text="tab.title"></span>
-                  <span class="content-pane-tab-draft-icon" x-show="!tab.path" title="Draft" aria-hidden="true">
-                    <svg fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M12 20h9"/>
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>
-                    </svg>
-                  </span>
-                  <button type="button" class="content-pane-tabs-menu-close"
-                          x-show="tab.path"
-                          @click.stop="contentPaneCloseTab(i)"
-                          title="Close tab">
-                    <svg fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" style="width:10px;height:10px">
-                      <path stroke-linecap="round" d="M18 6 6 18"/>
-                      <path stroke-linecap="round" d="m6 6 12 12"/>
-                    </svg>
-                  </button>
-                </div>
-              </template>
-              <div class="content-pane-tabs-menu-empty" x-show="tabs.length === 0">No open tabs</div>
+              <div class="content-pane-tabs-menu-header">
+                <span class="content-pane-tabs-menu-header-label">Open tabs</span>
+                <span class="content-pane-tabs-menu-header-hint" x-show="tabs.length > 1">↑↓ Enter</span>
+              </div>
+              <div class="content-pane-tabs-menu-list">
+                <template x-for="(tab, i) in tabs" :key="tab.id">
+                  <!-- active compares tab.id, not the loop index i, against
+                       the active tab's id — comparing against i directly
+                       went stale on the row Alpine reused/moved during a
+                       reorder (_moveActiveTabToFront splices+unshifts tabs
+                       on every switch): tab-scoped bindings (x-text, :title)
+                       tracked the move fine, but the outer-scope activeTab
+                       === i comparison didn't get re-evaluated on that node. -->
+                  <div class="content-pane-tabs-menu-row" :class="{active: tab.id === (tabs[activeTab] && tabs[activeTab].id), 'kbd-active': tabsMenuActiveIndex === i}"
+                       @click.stop="contentPaneSwitchTab(i); tabsMenuOpen = false" :title="tab.title">
+                    <!-- Shape/color from the shared .dot/.dot--accent (base.css); only
+                         the hidden-until-active visibility is local (content_pane.css). -->
+                    <span class="dot dot--accent content-pane-tabs-menu-dot" aria-hidden="true"></span>
+                    <span class="content-pane-tabs-menu-title" x-text="tab.title"></span>
+                    <span class="content-pane-tab-draft-icon" x-show="!tab.path" title="Draft" aria-hidden="true">
+                      <svg fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 20h9"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>
+                      </svg>
+                    </span>
+                    <button type="button" class="content-pane-tabs-menu-close"
+                            x-show="tab.path"
+                            @click.stop="contentPaneCloseTab(i)"
+                            title="Close tab">
+                      <svg fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" style="width:10px;height:10px">
+                        <path stroke-linecap="round" d="M18 6 6 18"/>
+                        <path stroke-linecap="round" d="m6 6 12 12"/>
+                      </svg>
+                    </button>
+                  </div>
+                </template>
+                <div class="content-pane-tabs-menu-empty" x-show="tabs.length === 0">No open tabs</div>
+              </div>
+              <div class="content-pane-more-divider" role="separator"></div>
+              <!-- Not a feature — mousedown-outside/Esc/picking a tab above
+                   already dismisses this menu; same convenience row as the
+                   more menu's Close (content_pane.css reuses its classes
+                   here rather than restyling one from scratch). -->
+              <button type="button" class="content-pane-more-item content-pane-more-item-close"
+                      @click.stop="tabsMenuOpen = false">
+                <svg fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                  <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
+                </svg>
+                <span>Close</span>
+                <span class="content-pane-more-item-kbd">Esc</span>
+              </button>
             </div>
           </div>
           <div class="content-pane-more-wrap" x-data="{ moreOpen: false, copied: false }"
@@ -156,6 +185,7 @@
                   <circle cx="11" cy="11" r="8"/><path stroke-linecap="round" stroke-linejoin="round" d="m21 21-4.34-4.34"/>
                 </svg>
                 <span>Find</span>
+                <span class="content-pane-more-item-kbd" x-text="isMac ? '⌘F' : 'Ctrl+F'"></span>
               </button>
               <button type="button" class="content-pane-more-item content-pane-source-toggle-btn"
                       @click.stop="moreOpen = false; editorMode.toggle()"
@@ -214,14 +244,28 @@
                 </svg>
                 Delete
               </button>
+              <div class="content-pane-more-divider" role="separator"></div>
+              <!-- Not a feature — mousedown-outside/Esc/picking any row above
+                   already dismisses the menu; this just gives mouse-only
+                   users the same escape hatch, so it's set apart by the
+                   divider and stays visually quiet (content_pane.css). -->
+              <button type="button" class="content-pane-more-item content-pane-more-item-close"
+                      @click.stop="moreOpen = false">
+                <svg fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                  <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
+                </svg>
+                <span>Close</span>
+                <span class="content-pane-more-item-kbd">Esc</span>
+              </button>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- ③ Editor area — single CodeMirror 6 view; editorMode.applyWysiwyg/
-           applySource toggle live-preview decorations on/off in place
-           (see content_pane.js) rather than swapping between two DOM mounts. -->
+      <!-- ③ Editor area — single CodeMirror 6 view; editorMode.enterSource/
+           exitSource toggle live-preview decorations on/off in place, and
+           note/tab switches swap in a fresh EditorState via view.setState()
+           (see content_pane.js) rather than mounting a separate editor. -->
       <div id="content-pane-edit-area" tabindex="-1"></div>
     </div>
 

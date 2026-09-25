@@ -29,11 +29,20 @@ const appTokensShared = `
       --tint-soft:rgba(var(--accent-rgb),0.06);
       --tint-md:rgba(var(--accent-rgb),0.10);
       --tint-strong:rgba(var(--accent-rgb),0.14);
+      /* Borderless neutral buttons: rest / hover+press / selected. Ink-based so one ladder serves both themes. */
+      --btn-bg:rgba(var(--ink-rgb),0.06);
+      --btn-bg-hov:rgba(var(--ink-rgb),0.10);
+      --btn-bg-on:rgba(var(--ink-rgb),0.15);
       --input-focus-ring:rgba(var(--accent-rgb),0.16);
       --selection-bg:rgba(var(--accent-rgb),0.30);
       /* --hairline: secondary seam (bg already differs, or inside a bordered card).
-         --border/--border-strong: sole separator or floating outer edge. */
+         --border/--border-strong: sole separator or floating outer edge.
+         --hairline-faint: one notch quieter still — a divider *inside* an
+         already-bordered floating panel (e.g. content-pane's more-menu),
+         where a full hairline reads as too heavy a line for what's really
+         just whitespace with a hint of a seam. */
       --hairline:rgba(var(--ink-rgb),0.13);
+      --hairline-faint:rgba(var(--ink-rgb),0.07);
       --nav-fg:rgba(var(--ink-rgb),0.82);
       --cm-active-line:rgba(var(--ink-rgb),0.04);
       --cnt-bg:rgba(var(--ink-rgb),0.07);
@@ -74,7 +83,7 @@ const appTokensShared = `
       --ls-cap:0.08em;
       --space-xxs:4px; --space-xs:8px; --space-sm:12px; --space-md:16px; --space-lg:24px;
       --space-xl:32px; --space-xxl:48px;
-      --topbar-h:40px; --action-btn-sz:28px;
+      --topbar-h:40px; --toolbar-h:52px; --action-btn-sz:28px;
       /* Sidebar width — content pane/inbox dock flush to this edge. */
       --home-side-w:248px;
       /* --btn-h primary; --btn-h-xs compact secondary; --btn-h-sm chrome-bar. */
@@ -88,6 +97,7 @@ const appTokensDark = `
       --muted:#8d92a0; --surface-soft:#212229; --surface-2:#292a33;
       /* Extra lift when container already sits on --surface-soft. */
       --control-active-bg-on-soft:#3d3e49;
+      --seg-thumb:var(--control-active-bg-on-soft);
       /* macOS vibrancy wash — pull native material toward --surface-soft. */
       --sidebar-glass-bg:rgba(33,34,41,0.6); --sidebar-glass-border:rgba(255,255,255,0.1);
       --sidebar-glass-active:rgba(255,255,255,0.08);
@@ -112,6 +122,7 @@ const appTokensLight = `
       --bg:#f9f9fb; --fg:#18181b;
       --muted:#6d7080; --surface-soft:#f5f5f7; --surface-2:#e3e3e9;
       --control-active-bg-on-soft:var(--surface-2);
+      --seg-thumb:var(--canvas);
       /* Brighter canvas needs a more visible thumb than the shared (dark-tuned) value. */
       --scrollbar-thumb:rgba(var(--ink-rgb),0.16); --scrollbar-thumb-hov:rgba(var(--ink-rgb),0.30);
       /* Vibrancy reads dull alone — lean lighter while staying translucent. */

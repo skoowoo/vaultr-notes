@@ -26,22 +26,17 @@
       border-radius: 0;
       transition: flex-grow 0s linear var(--content-pane-exit-ms, 200ms);
       contain: layout paint style;
-      /* Explicit for the same reason #home-list-pane sets it (home.css):
-         html.macos makes body transparent so the sidebar's vibrancy shows
-         through. .content-pane-panel's own background fades in/out with its
-         opacity transition below, so without this, that fade briefly
-         exposed the (lighter) vibrancy blur through this now-empty box
-         before the panel's solid bg caught up — this pane never actually
-         needs the vibrancy showing through it, so it just stays opaque. */
-      background: var(--bg);
+      /* No own background — .home-main (home.css) is the opaque backstop
+         behind the whole right-hand region, so this pane can stay empty
+         even mid-animation without any vibrancy leaking through. */
     }
     .content-pane-panel {
       position: relative;
       width: 100%; height: 100%;
       /* No border-left — .home-pane-resizer (home.css) is the one and
          only dividing line between the two content-area panes; this
-         panel doesn't draw its own edge on top of it. */
-      background: var(--bg);
+         panel doesn't draw its own edge on top of it. No own background
+         either, same reasoning as .content-pane above. */
       border-radius: 0;
       display: flex; flex-direction: column; overflow: hidden;
       /* Shared by every floating popover in here — tabs menu, more menu,
@@ -83,16 +78,9 @@
     .content-pane-tool-bar {
       flex-shrink: 0; display: flex; align-items: center; gap: 0.5rem;
       padding: 0 0.625rem 0 0.75rem;
-      border-bottom: var(--bd-w) solid var(--hairline); background: var(--bg);
+      background: var(--bg);
       border-radius: 0; /* flush chrome strip */
-      /* --content-header-h is the *measured* height of whichever
-         #home-list-pane section is currently showing (content_pane.js's
-         __vaultrSyncContentPaneHeaderHeight) — a calc() guess here can't
-         account for a specific section's controls (e.g. Pinned's .seg
-         toggle) rendering a hair taller than --btn-h-xs. The calc()
-         fallback only matters before that first sync runs, or for a
-         section with no .home-list-head at all (Graph). */
-      height: var(--content-header-h, calc(8px + 8px + var(--btn-h-xs)));
+      height: var(--toolbar-h);
     }
     /* Create-mode half */
     .content-pane-create-bar {
@@ -172,16 +160,47 @@
          own center. */
       transform-origin: top;
       min-width: 220px; max-width: min(320px, 90vw);
-      /* Exactly 10 rows before scrolling kicks in (an 11th+ tab is the
-         overflow case) — rows have a fixed height (below) specifically so
-         this arithmetic is exact instead of a guessed cap that clips a
-         fraction of the 10th row. */
-      max-height: calc(10 * var(--btn-h-xs) + 0.5rem);
-      overflow-y: auto;
+      /* Column, not itself the scroll region any more — header and the
+         Close footer (below) need to stay put while only the row list
+         (.content-pane-tabs-menu-list) scrolls. */
+      display: flex; flex-direction: column;
       padding: 0.25rem;
       background: var(--surface-soft); border: var(--bd-w) solid var(--border);
       border-radius: var(--r-md);
       box-shadow: var(--shadow-sm) var(--shadow-color);
+      /* kbd-active (below) reads --control-active-bg — same repoint as
+         .cselect-dropdown/.home-side for a panel sitting on --surface-soft,
+         where the plain --surface-2 default reads as too little contrast. */
+      --control-active-bg: var(--control-active-bg-on-soft);
+    }
+    /* "Open tabs" label + the ↑↓/Enter nav hint — this dropdown is reachable
+       from a plain icon button (no visible label of its own), so without
+       this row it's not obvious at a glance what the list actually is. */
+    .content-pane-tabs-menu-header {
+      display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;
+      padding: 0.2rem 0.55rem 0.35rem;
+    }
+    .content-pane-tabs-menu-header-label {
+      font-size: var(--text-2xs); font-weight: var(--fw-medium);
+      letter-spacing: var(--ls-cap); text-transform: uppercase;
+      color: var(--muted);
+    }
+    .content-pane-tabs-menu-header-hint {
+      font-size: var(--text-2xs); font-family: var(--font-mono);
+      color: var(--muted-soft); white-space: nowrap; flex-shrink: 0;
+    }
+    .content-pane-tabs-menu-list {
+      /* Own top/bottom breathing room — without it the first/last row sits
+         flush against this element's own overflow:auto clip edge, and its
+         border-radius visibly flattens there (the corner "disappears" into
+         the clip box instead of curving). Exactly 10 rows before scrolling
+         kicks in (an 11th+ tab is the overflow case): rows have a fixed
+         height (below) and this padding is accounted for in the max-height
+         so the arithmetic stays exact instead of clipping a fraction of
+         the 10th row. */
+      padding: 0.25rem 0;
+      max-height: calc(10 * var(--btn-h-xs) + 0.5rem);
+      overflow-y: auto;
     }
     .content-pane-tabs-menu-row {
       display: flex; align-items: center; gap: 0.45rem;
@@ -193,10 +212,17 @@
       cursor: pointer;
     }
     .content-pane-tabs-menu-row:hover { color: var(--fg); background: var(--icon-hov); }
-    .content-pane-tabs-menu-row.active { color: var(--accent-text); background: var(--tint-soft); }
-    /* Keyboard-nav highlight (Cmd/Ctrl+T then ↑/↓) — a ring layered on top
-       so it stays visible whether or not the row is also .active. */
-    .content-pane-tabs-menu-row.kbd-active { box-shadow: inset 0 0 0 1px var(--accent); }
+    /* The currently-open tab is marked by a dot (below), not a background —
+       that treatment is reserved for kbd-active (below) so "this is the
+       open tab" and "this is where ↑/↓ currently points" read as two
+       distinct signals instead of competing for the same fill. */
+    .content-pane-tabs-menu-dot { opacity: 0; }
+    .content-pane-tabs-menu-row.active .content-pane-tabs-menu-dot { opacity: 1; }
+    /* Keyboard-nav highlight (Cmd/Ctrl+T then ↑/↓) — the same solid
+       "this row is selected" surface used everywhere else in the app
+       (sidebar items, segmented controls, search results), not a
+       border/ring. */
+    .content-pane-tabs-menu-row.kbd-active { background: var(--control-active-bg); color: var(--control-active-fg); }
     .content-pane-tabs-menu-title { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .content-pane-tabs-menu-close {
       flex-shrink: 0; width: 16px; height: 16px;
@@ -213,7 +239,7 @@
     .content-pane-more-menu {
       position: absolute; top: calc(100% + var(--float-panel-gap)); right: 0; z-index: 50;
       transform-origin: top;
-      min-width: 130px; max-width: min(320px, 90vw); padding: 0.25rem;
+      min-width: 190px; max-width: min(320px, 90vw); padding: 0.25rem;
       background: var(--surface-soft); border: var(--bd-w) solid var(--border);
       border-radius: var(--r-md);
       box-shadow: var(--shadow-sm) var(--shadow-color);
@@ -227,6 +253,19 @@
       white-space: nowrap;
     }
     .content-pane-more-item svg { width: 13px; height: 13px; flex-shrink: 0; }
+    /* Shortcut-hint column — plain muted text, no box/border (unlike
+       Settings → Shortcuts' boxed .kbd; a border here would read as a
+       second button on every row). margin-left:auto pushes it to the row's
+       far end and min-width gives it a fixed starting x regardless of the
+       hint's own length, so hints on different rows line up in a column
+       instead of each hugging its label. Only rows with a real registered
+       hotkey (content_pane.js's __vaultrHotkeys) carry one. */
+    .content-pane-more-item-kbd {
+      margin-left: auto; min-width: 2.6rem; padding-left: 0.5rem;
+      flex-shrink: 0; text-align: right;
+      font-family: var(--font-mono); font-size: var(--text-xs);
+      color: var(--muted-soft);
+    }
     /* Both labels share one grid cell so the row (and the shrink-to-fit menu)
        keeps the wider label's width instead of jittering on swap. */
     .content-pane-copy-label { display: inline-grid; }
@@ -234,6 +273,18 @@
     .content-pane-copy-label > .is-hidden { visibility: hidden; }
     .content-pane-more-item:hover { color: var(--fg); background: var(--icon-hov); }
     .content-pane-more-item-danger:hover { color: var(--s-err); background: var(--s-err-bg); }
+    /* Separates the real actions above from the Close row below — inset to
+       the rows' own text padding (0.55rem) rather than the menu's edge, so
+       the line reads as a quiet seam under the content instead of a bar
+       spanning wider than it. --hairline-faint (shared_tokens.go), not
+       --hairline: this line sits inside a panel that already has its own
+       border, so even the "secondary seam" weight is too much here. */
+    .content-pane-more-divider { margin: 0.25rem 0.55rem; border-top: var(--bd-w) solid var(--hairline-faint); }
+    /* Close isn't a feature (mousedown-outside/Esc/any row above already
+       dismiss the menu) — stays muted even on hover so it doesn't compete
+       with the actions above it for attention. */
+    .content-pane-more-item-close,
+    .content-pane-more-item-close:hover { color: var(--muted-soft); }
     /* Pin/compile live in the more menu as regular .content-pane-more-item rows —
        active/is-compiling/success below are their only bespoke states, all
        using the brand accent since they read as "engaged" toggles, not
@@ -292,7 +343,29 @@
       overflow-y: auto;
       padding: 2.5rem max(clamp(1.25rem, 4vw, 2.5rem), calc(50% - 360px));
     }
-    #content-pane-edit-area .cm-editor.cm-reading .cm-scroller { padding-top: 1.5rem; }
+    /* The tool bar has no divider, so scrolled text dissolves into --bg
+       just under it rather than being cut off. Eased (smoothstep) stops keep
+       both ends of the ramp soft, so no edge reads as a gradient boundary;
+       it's 32px tall, which the scroller's top padding (and reading mode's,
+       below) fully clears at rest. right: 14px clears the scrollbar, which
+       is 11px wide under scrollbar-width: thin (the standard property beats
+       the 5px ::-webkit-scrollbar rule below); text never reaches there,
+       its horizontal padding is at least 20px. */
+    #content-pane-edit-area::before {
+      content: ""; position: absolute; z-index: 10; top: 0; left: 0; right: 14px; height: 32px;
+      pointer-events: none; border-radius: 0;
+      background: linear-gradient(to bottom,
+        var(--bg) 0,
+        color-mix(in srgb, var(--bg) 96%, transparent) 4px,
+        color-mix(in srgb, var(--bg) 84%, transparent) 8px,
+        color-mix(in srgb, var(--bg) 68%, transparent) 12px,
+        color-mix(in srgb, var(--bg) 50%, transparent) 16px,
+        color-mix(in srgb, var(--bg) 32%, transparent) 20px,
+        color-mix(in srgb, var(--bg) 16%, transparent) 24px,
+        color-mix(in srgb, var(--bg) 4%, transparent) 28px,
+        transparent 32px);
+    }
+    #content-pane-edit-area .cm-editor.cm-reading .cm-scroller { padding-top: 2rem; }
     #content-pane-edit-area .cm-content { padding: 0; }
     #content-pane-edit-area .cm-line { padding: 0; }
 
@@ -340,31 +413,52 @@
       transition-duration: 100ms;
       transition-timing-function: cubic-bezier(0.4, 0, 1, 1);
     }
+    /* display:flex column, not the old css-grid-via-display:contents trick
+       — that only worked while every row had exactly 2 cells (input, one
+       trailing button); the header row and find row each have a different
+       shape now (label+close; chevron+input), and the replace row's cells
+       don't share either one's columns (a leading spacer, not a chevron
+       or a label), so each row lays itself out instead of feeding cells
+       into one shared grid. */
     .vaultr-search-panel {
-      display: grid;
-      grid-template-columns: 1fr auto;
-      row-gap: 0.4rem; column-gap: 0.5rem;
-      align-items: center;
-      padding: 0.625rem 0.75rem;
-      width: 300px;
+      display: flex; flex-direction: column;
+      row-gap: 0.5rem;
+      padding: 0.7rem 0.8rem;
+      width: 350px;
     }
-    .vaultr-sr-row { display: contents; }
-    .vaultr-sr-input-wrap { position: relative; display: flex; align-items: center; }
+    /* "Find" label + Close — the panel's only non-search control, kept off
+       the Find row itself (below) so that row stays pure search actions. */
+    .vaultr-sr-header { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+    .vaultr-sr-header-label {
+      font-size: var(--text-2xs); font-weight: var(--fw-medium);
+      letter-spacing: var(--ls-cap); text-transform: uppercase;
+      color: var(--muted);
+    }
+    .vaultr-sr-row { display: flex; align-items: center; gap: 0.45rem; }
+    .vaultr-sr-input-wrap { position: relative; display: flex; align-items: center; flex: 1; min-width: 0; }
     .vaultr-sr-inset-btns {
-      position: absolute; right: 3px;
-      display: flex; align-items: center; gap: 1px;
+      position: absolute; right: 4px;
+      display: flex; align-items: center; gap: 3px;
     }
-    .vaultr-sr-input {
-      width: 100%; height: var(--btn-h-xs);
+    /* Box/border/focus/placeholder now come from the shared .field-input
+       (base.css) — findInput/replaceInput (content_pane.js) carry both
+       classes. This only resizes it for the compact toolbar (btn-h-xs,
+       not the shared btn-h) and reserves room for the inset buttons
+       floating over its right edge. `input.___`, not `.___` alone, to
+       outrank base.css's own `input.field-input` sizing at equal
+       specificity regardless of stylesheet order. */
+    input.vaultr-sr-input {
+      height: var(--btn-h-xs);
       padding: 0 0.5rem;
-      background: transparent; border: var(--bd-w) solid var(--border-strong);
-      color: var(--fg);
-      font-family: inherit; font-size: var(--text-sm); outline: none;
+      font-family: inherit;
     }
-    .vaultr-sr-input[main-field]       { padding-right: 4.5rem; }
-    .vaultr-sr-input:not([main-field]) { padding-right: 3rem; }
-    .vaultr-sr-input:focus { border-color: var(--accent); }
-    .vaultr-sr-input::placeholder { color: var(--muted-soft); }
+    /* Right padding reserves exactly the inset content's own width: row 1
+       is count + 3 icons, row 2 (replace) is 2 text buttons — sized for
+       these (with the wider gap/padding below folded in), not a shared
+       guess, so neither cramps its label. */
+    .vaultr-sr-input[main-field]       { padding-right: 7.25rem; }
+    .vaultr-sr-input:not([main-field]) { padding-right: 6.75rem; }
+    /* Placeholder color/italic now comes from the shared .field-input::placeholder (base.css). */
     .vaultr-sr-ibtn {
       flex-shrink: 0; width: 20px; height: 20px;
       display: flex; align-items: center; justify-content: center;
@@ -372,13 +466,37 @@
       color: var(--muted); cursor: pointer; padding: 0;
     }
     .vaultr-sr-ibtn:hover { color: var(--fg); background: var(--card-hov); }
+    /* Chevron left of the Find input — toggles the Replace row (collapsed
+       by default). Rotates in place rather than swapping glyphs, same
+       "one shape reads as two states" idea as .cselect-btn.open. */
+    .vaultr-sr-expand-btn svg { transition: transform var(--motion-fast) ease; }
+    .vaultr-sr-expand-btn.is-open svg { transform: rotate(90deg); }
+    /* Row 2's left-hand placeholder — holds the column open so its input
+       lines up under Find's (row 1 starts with the expand chevron; row 2
+       has no equivalent leading control). */
+    .vaultr-sr-row-spacer { flex: 0 0 20px; width: 20px; }
+    /* Match count ("2/7") ahead of the nav icons — plain label, not a
+       button; mono digits read as a counter rather than running text. */
+    .vaultr-sr-count {
+      flex-shrink: 0; padding: 0 0.35rem;
+      font-family: var(--font-mono); font-size: var(--text-3xs);
+      color: var(--muted-soft); white-space: nowrap; user-select: none;
+    }
     .vaultr-sr-toggle {
-      width: auto; padding: 0 3px;
+      width: auto; padding: 0 4px;
       font-size: var(--text-3xs); font-weight: 800; font-family: inherit; letter-spacing: -0.02em;
     }
     .vaultr-sr-toggle.active {
       color: var(--control-active-fg);
       background: var(--control-active-bg);
+    }
+    /* Replace/Replace All — short text labels (below), not a second icon
+       vocabulary; same size/weight family as the Aa toggle above so the
+       panel reads as one consistent "small caps label" language rather
+       than icons-plus-text. Plain buttons, not toggles, so no .active. */
+    .vaultr-sr-text {
+      width: auto; padding: 0 5px;
+      font-size: var(--text-3xs); font-weight: 700; font-family: inherit; letter-spacing: 0.01em;
     }
     /* Match highlights */
     #content-pane-edit-area .cm-searchMatch {
@@ -391,11 +509,6 @@
 
     html.macos .content-pane.open { -webkit-app-region: no-drag; }
     html.macos .content-pane.open .content-pane-panel { -webkit-app-region: no-drag; }
-    /* Inbox message detail reuses .content-pane-tool-bar for its header (see
-       content_pane.html's inbox-detail-panel) but, unlike the editor toolbar,
-       doesn't sit directly above other chrome that needs a dividing line. */
-    .inbox-detail-panel .content-pane-tool-bar { border-bottom: none; }
-
     html.macos .content-pane.open .content-pane-tool-bar { -webkit-app-region: drag; cursor: default; }
     html.macos .content-pane.open .content-pane-tool-bar button,
     html.macos .content-pane.open .content-pane-tool-bar input,

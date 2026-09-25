@@ -61,10 +61,10 @@
        borderless icon action (dismiss/close, graph zoom controls, etc.).
        --sm modifier drops to 24px for tighter contexts.
 
-       .icon-btn — bordered, plus a filled .active state for toggle-style
-       controls (pin, compile, source toggle) that need to show "currently
-       on", not just hover. Consolidates what used to be five near-identical
-       per-component rules. ── */
+       .icon-btn — tonal fill (no border), plus a stronger .active state for
+       toggle-style controls (pin, compile, source toggle) that need to show
+       "currently on", not just hover. Consolidates what used to be five
+       near-identical per-component rules. ── */
     .icon-btn-ghost {
       display: flex; align-items: center; justify-content: center;
       width: var(--action-btn-sz); height: var(--action-btn-sz);
@@ -78,59 +78,54 @@
     .icon-btn {
       display: flex; align-items: center; justify-content: center;
       width: var(--action-btn-sz); height: var(--action-btn-sz);
-      border-radius: var(--r-xs);
-      border: var(--bd-w) solid var(--border-strong); background: transparent;
+      border-radius: var(--r-sm);
+      border: none; background: var(--btn-bg);
       color: var(--muted); cursor: pointer; flex-shrink: 0;
+      transition: background-color var(--motion-fast), color var(--motion-fast);
     }
-    .icon-btn:hover { color: var(--fg); background: var(--icon-hov); border-color: var(--border-strong); }
-    .icon-btn:active:not(.active) { background: var(--tint-md); }
-    .icon-btn.active { color: var(--control-active-fg); background: var(--control-active-bg); border-color: var(--border-strong); }
+    .icon-btn:hover { color: var(--fg); background: var(--btn-bg-hov); }
+    .icon-btn:active:not(.active) { background: var(--btn-bg-on); }
+    .icon-btn.active { color: var(--control-active-fg); background: var(--btn-bg-on); }
     .icon-btn:disabled { opacity: 0.4; cursor: not-allowed; }
     .icon-btn svg { width: 14px; height: 14px; flex-shrink: 0; }
 
     /* Taller tier (32px, matches --btn-h) for an icon button sitting next
        to a form control — e.g. a password-reveal toggle beside a
        --btn-h input. The default 28px would look mismatched there. */
-    .icon-btn--lg { width: var(--btn-h); height: var(--btn-h); border-radius: var(--r-xs); }
+    .icon-btn--lg { width: var(--btn-h); height: var(--btn-h); border-radius: var(--r-md); }
     .icon-btn--lg svg { width: 13px; height: 13px; }
 
     /* ── Shared text buttons — every rectangular labeled button in the app
-       is one of exactly two kinds:
+       is one of exactly two kinds, both borderless:
 
-       .btn-outline — bordered, neutral fill. Secondary/cancel/toolbar
-       actions.
-       .btn-solid   — colored fill, no border. Primary/destructive actions;
-       add .btn-solid--danger for the latter. A neutral --border-strong
-       edge drawn over a saturated fill (accent/error) reads as a soft,
-       low-contrast smear rather than a crisp line — so solid buttons are
-       always borderless, full stop. Never add a border back onto one.
+       .btn-outline — neutral tonal fill (--btn-bg ladder). Secondary/
+       cancel/toolbar actions. The class name predates the borderless
+       redesign and is kept so templates don't churn.
+       .btn-solid   — colored fill. Primary/destructive actions; add
+       .btn-solid--danger for the latter.
 
        .btn--xs drops either to the compact --btn-h-xs tier used by inline
        row actions (list-item Edit/Delete, etc). ── */
     .btn-outline, .btn-solid {
       display: inline-flex; align-items: center; justify-content: center; gap: 0.35rem;
       height: var(--btn-h); padding: 0 0.875rem;
+      border: none;
       font-family: inherit; font-size: var(--text-base); font-weight: var(--fw-medium);
       cursor: pointer; white-space: nowrap; flex-shrink: 0;
+      transition: background-color var(--motion-fast), color var(--motion-fast);
     }
     .btn-outline svg, .btn-solid svg { width: 13px; height: 13px; flex-shrink: 0; }
-    .btn-outline {
-      border: var(--bd-w) solid var(--border-strong);
-      background: var(--bg); color: var(--fg);
-    }
-    .btn-outline:hover:not(:disabled) { background: var(--card-hov); }
-    .btn-outline:active:not(:disabled) { opacity: 0.85; }
+    .btn-outline { background: var(--btn-bg); color: var(--fg); }
+    .btn-outline:hover:not(:disabled) { background: var(--btn-bg-hov); }
+    .btn-outline:active:not(:disabled) { background: var(--btn-bg-on); }
     .btn-outline:disabled { opacity: 0.4; cursor: not-allowed; }
     /* Selected/chosen-among-choices state — same recipe as the shared
-       .icon-btn.active and .seg-btn.active, so a bordered "pick one (or
-       several) of N" chip never needs its own bespoke component just for
-       this. Declared after :hover so it wins over a transient hover. */
-    .btn-outline.active { color: var(--control-active-fg); background: var(--control-active-bg); }
+       .icon-btn.active, so a "pick one (or several) of N" chip never needs
+       its own bespoke component just for this. Its own :not(:disabled)
+       keeps specificity level with the :hover rule above so it wins. */
+    .btn-outline.active:not(:disabled) { color: var(--control-active-fg); background: var(--btn-bg-on); }
 
-    .btn-solid {
-      border: none;
-      background: var(--accent); color: var(--accent-fg);
-    }
+    .btn-solid { background: var(--accent); color: var(--accent-fg); }
     .btn-solid:hover:not(:disabled) { background: var(--accent-hov); }
     .btn-solid:active:not(:disabled) { opacity: 0.85; }
     .btn-solid:disabled { opacity: 0.4; cursor: not-allowed; }
@@ -147,30 +142,25 @@
        at rest. Layers on top of .btn-outline, not a replacement. */
     .btn-outline--danger:hover:not(:disabled),
     .btn-outline--danger:focus-visible {
-      border-color: var(--s-err-bd); color: var(--s-err); background: var(--s-err-bg);
+      color: var(--s-err); background: var(--s-err-bg);
+    }
+
+    /* No border to signal focus, so keyboard focus gets the DESIGN.md ring. */
+    .btn-outline:focus-visible, .btn-solid:focus-visible,
+    .icon-btn:focus-visible, .icon-btn-ghost:focus-visible, .seg-btn:focus-visible {
+      outline: 2px solid rgba(var(--accent-rgb), 0.5); outline-offset: 1px;
     }
 
     .btn--xs { height: var(--btn-h-xs); padding: 0 0.65rem; font-size: var(--text-xs); }
     .btn-outline.spinning svg { animation: btn-spin 0.6s linear infinite; }
     @keyframes btn-spin { to { transform: rotate(360deg); } }
 
-    /* ── Shared iOS-style toggle switch — one definition backs every on/off
-       control app-wide (notification prefs, agent bot enabled, …). ── */
-    .switch { display: inline-flex; align-items: center; cursor: pointer; flex-shrink: 0; }
-    .switch input[type="checkbox"] { display: none; }
-    .switch-track {
-      width: 36px; height: 20px; background: var(--bg);
-      border: var(--bd-w) solid var(--border-strong);
-      border-radius: var(--r-full);
-      position: relative;
-    }
-    .switch-track::after {
-      content: ''; position: absolute; width: 12px; height: 12px;
-      background: var(--border-strong); top: 2px; left: 3px;
-      border-radius: var(--r-full);
-    }
-    .switch input:checked + .switch-track { background: var(--accent); border-color: transparent; }
-    .switch input:checked + .switch-track::after { transform: translateX(14px); background: var(--border-strong); }
+    /* The pill-shaped iOS-style toggle switch that used to live here
+       (.switch/.switch-track) is gone — every on/off control app-wide
+       (bool config fields, notification prefs, agent bot enabled) now uses
+       the shared .seg/.seg-btn Off/On picker instead (below), the same
+       component Theme/Enter Effect/Line Breaks already used, so a binary
+       choice and an N-way choice read as the same kind of control. */
 
     /* ── Shared badge/label pill — neutral tag by default; add a semantic
        color modifier only when the color itself carries meaning (a status,
@@ -315,19 +305,35 @@
     .avatar--neutral { background: var(--muted); color: var(--inverse-ink); }
 
     /* ── Shared form field control — text input / select / textarea. One
-       recipe (border-strong box + bg fill + accent focus ring) backs
-       every field in the app. font-family is monospace throughout: most
-       of these fields already were (server URL, every Server-tab config
-       value, the note-path field), it matches the mono .cfg-field-key
-       label sitting right next to each config input, and it's a single
-       committed choice rather than switching per field's content. ── */
+       recipe backs every field in the app (Settings' every config/Agent
+       Bot field, the frontmatter YAML editor, the editor's Find/Replace).
+       font-family is monospace throughout: most of these fields already
+       were (server URL, every Server-tab config value, the note-path
+       field), it matches the mono .cfg-field-key label sitting right next
+       to each config input, and it's a single committed choice rather
+       than switching per field's content.
+       No border at rest — background: var(--btn-bg) is base.css's
+       borderless-button ink wash (rgba(ink,0.06)), a fixed *proportion*
+       darker than whatever surface the field sits on rather than a fixed
+       swatch, so it reads correctly whether the field's on --bg (Settings'
+       panel) or --surface-soft (a floating card): a swatch like --bg
+       itself either matches its own container exactly (invisible, no rest
+       affordance — Settings before this) or clashes with it (a flat dark
+       block stamped on a lighter card — the Find panel's old style).
+       Border reserved as transparent, not absent, so focus doesn't shift
+       layout: it's a real 1px box-model participant throughout, just
+       invisible until :focus swaps its color in. Focus is the border
+       appearing, not a fill change — a field either isn't being typed
+       into (quiet wash, no line) or is (line appears), one signal, not
+       two competing for the same moment. ── */
     .field-input {
       width: 100%;
-      background: var(--bg); border: var(--bd-w) solid var(--border-strong);
+      background: var(--btn-bg); border: var(--bd-w) solid transparent;
       font-size: var(--text-sm); color: var(--fg);
       outline: none; font-family: var(--font-mono);
     }
     .field-input:focus { border-color: var(--accent); }
+    .field-input::placeholder { color: var(--muted-soft); font-style: italic; }
     select.field-input { cursor: pointer; }
     /* Single-line control: fixed height matching every other --btn-h
        control in the app, horizontal-only padding. */
@@ -335,14 +341,18 @@
     /* Multi-line: padding-driven height instead, resizes vertically. */
     textarea.field-input { resize: vertical; min-height: 60px; padding: 0.6rem 0.7rem; line-height: 1.5; }
 
-    /* ── Shared segmented "pick one of N" toggle — bordered pill container +
-       flat buttons, filled .active state. One definition backs every
-       picker app-wide (Inbox filter, chat mode toggle, settings pickers) so
-       they can't drift apart in size. ── */
-    .seg { flex-shrink: 0; display: inline-flex; background: transparent; border: var(--bd-w) solid var(--border-strong); padding: 2px; gap: 2px; }
+    /* ── Shared segmented "pick one of N" toggle — tinted track + flat
+       buttons, raised .active thumb (--seg-thumb). One definition backs
+       every picker app-wide (Inbox filter, chat mode toggle, settings
+       pickers) so they can't drift apart in size. Padding is 3px (was 2px
+       + 1px border) so the overall size is unchanged; inner radius is the
+       outer 8px minus that padding. ── */
+    .seg { flex-shrink: 0; display: inline-flex; background: var(--btn-bg); border: none; padding: 3px; gap: 2px; }
     .seg-btn {
       display: flex; align-items: center; gap: 0.375rem;
       padding: 0.3rem 0.6rem; border: none; background: transparent;
+      border-radius: var(--r-sm);
+      transition: background-color var(--motion-fast), color var(--motion-fast);
       font-family: inherit; font-size: var(--text-sm); font-weight: var(--fw-medium);
       color: var(--muted); cursor: pointer; white-space: nowrap;
       /* Inter's "normal" line-height resolves much taller than the
@@ -350,8 +360,8 @@
          padding implies. */
       line-height: 1;
     }
-    .seg-btn:hover { color: var(--fg); background: var(--card-hov); }
-    .seg-btn.active { background: var(--control-active-bg); color: var(--control-active-fg); }
+    .seg-btn:hover { color: var(--fg); background: var(--btn-bg); }
+    .seg-btn.active { background: var(--seg-thumb); color: var(--control-active-fg); }
     .seg-btn svg { width: 13px; height: 13px; flex-shrink: 0; }
 
     /* ── Shared visible scrollbar — most panes hide the bar via a blanket

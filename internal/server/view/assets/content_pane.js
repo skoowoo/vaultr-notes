@@ -7,9 +7,8 @@
   // switching between two separately-mounted editors.
   var __vaultrEditor = {
     view: null,
-    initPromise: null, loading: false, dirty: false,
-    pendingBaselineFromEditor: false, pendingBaselineTimer: null,
-    currentPath: '', currentDraftId: '', currentMd: '', baselineMd: '',
+    initPromise: null, dirty: false,
+    currentPath: '', currentDraftId: '', currentMd: '',
     saveTimer: null, draftSaveTimer: null, draftSaveTabId: null,
     EditorView: null, EditorState: null, Compartment: null, keymap: null,
     defaultKeymap: null, historyKeymap: null, history: null,
@@ -109,20 +108,6 @@
       el.dataset.state = '';
     }
   }
-  function __vaultrEditorClearPendingBaselineSync() {
-    var s = __vaultrEditor;
-    s.pendingBaselineFromEditor = false;
-    if (s.pendingBaselineTimer) { clearTimeout(s.pendingBaselineTimer); s.pendingBaselineTimer = null; }
-  }
-  function __vaultrEditorMarkPendingBaselineSync() {
-    var s = __vaultrEditor;
-    s.pendingBaselineFromEditor = true;
-    if (s.pendingBaselineTimer) clearTimeout(s.pendingBaselineTimer);
-    s.pendingBaselineTimer = setTimeout(function() {
-      s.pendingBaselineTimer = null;
-      s.pendingBaselineFromEditor = false;
-    }, 500); // Milkdown debounces markdownUpdated at 200ms; 500ms gives safe margin
-  }
   function __vaultrEditorScheduleSave() {
     __vaultrEditorSaveStatus('●');
     clearTimeout(__vaultrEditor.saveTimer);
@@ -133,19 +118,13 @@
     var path = __vaultrEditor.currentPath;
     var content = __vaultrEditor.currentMd;
     if (!path) return;
-    if (content === __vaultrEditor.baselineMd) {
-      __vaultrEditor.dirty = false;
-      clearTimeout(__vaultrEditor.saveTimer); __vaultrEditor.saveTimer = null;
-      __vaultrEditorSaveStatus('');
-      return;
-    }
     try {
       var r = await fetch('/api/vault/write', {
         method: 'POST', headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({path: path, content: content}),
       });
       if (r.ok) {
-        __vaultrEditor.dirty = false; __vaultrEditor.baselineMd = content; __vaultrEditorSaveStatus('Saved');
+        __vaultrEditor.dirty = false; __vaultrEditorSaveStatus('Saved');
       } else {
         var errText = ''; try { errText = await r.text(); } catch(_) {}
         window.showError(errText || 'Server error — your changes may not be saved.', 'Save error');
@@ -347,37 +326,26 @@
       try { await store.delete(id); } catch(e) { console.warn('draft delete failed', e); }
     }
   }
-  function __vaultrEditorHandleContentChange(md, tighten) {
+  // Called only for real transactions — note/tab switches go through
+  // view.setState() (see s._buildState), which never reaches the
+  // updateListener below at all, so every docChanged transaction that does
+  // arrive here is a real edit (typing, paste-image insert, frontmatter
+  // dialog apply, undo/redo, …). No text comparison: the transaction having
+  // happened at all is the dirty signal.
+  function __vaultrEditorHandleContentChange(md) {
     var s = __vaultrEditor;
     var pane = window.__vaultrContentPane;
     if (pane && !pane.contentPaneOpen) return;
-    var next = tighten ? __vaultrEditorTightenLists(md) : md;
+    s.currentMd = md;
     var tab = __vaultrEditorActiveTab();
-    if (tab && tab.path && s.pendingBaselineFromEditor && tighten) {
-      s.pendingBaselineFromEditor = false;
-      if (s.pendingBaselineTimer) { clearTimeout(s.pendingBaselineTimer); s.pendingBaselineTimer = null; }
-      s.currentMd = next;
-      s.baselineMd = next;
-      s.dirty = false;
-      clearTimeout(s.saveTimer); s.saveTimer = null;
-      __vaultrEditorSaveStatus('');
-      return;
-    }
-    s.currentMd = next;
     if (tab && !tab.path) {
       s.dirty = false;
-      tab._draftContent = next;
+      tab._draftContent = md;
       __vaultrEditorScheduleDraftSave(tab);
       return;
     }
-    if (next !== s.baselineMd) {
-      s.dirty = true;
-      __vaultrEditorScheduleSave();
-    } else {
-      s.dirty = false;
-      clearTimeout(s.saveTimer); s.saveTimer = null;
-      __vaultrEditorSaveStatus('');
-    }
+    s.dirty = true;
+    __vaultrEditorScheduleSave();
   }
 
   // Open a wiki-link target in the pane.  value is the raw [[…]] inner text.
@@ -435,6 +403,15 @@
       btn.classList.toggle('active', s.inSource);
     });
   }
+  // Bookkeeping only, no dispatch — shared by editorMode's reconfigure()
+  // (user toggles mode on the current tab) and __vaultrEditorApplyState
+  // (a note/tab switch already baked the right mode into the new state).
+  function __vaultrEditorSetModeState(inSource, reading) {
+    var s = __vaultrEditor;
+    s.inSource = inSource;
+    s.readingActive = reading;
+    __vaultrEditorSyncViewButtons();
+  }
 
   // ── Lazy editor init ─────────────────────────────────────────────────────────
   async function __vaultrEnsureContentPaneEditor() {
@@ -444,7 +421,6 @@
     s.initPromise = (async function() {
       var mod = await import('/static/editor.js');
       s.EditorView = mod.EditorView; s.EditorState = mod.EditorState; s.Compartment = mod.Compartment;
-      s.Transaction = mod.Transaction;
       s.keymap = mod.keymap;
       s.defaultKeymap = mod.defaultKeymap; s.historyKeymap = mod.historyKeymap; s.history = mod.history;
       s.listIndentExtension = mod.listIndentExtension;
@@ -517,6 +493,13 @@
           // so frontmatter stays freely editable there. The Metadata
           // header's edit dialog is the only path in this mode.
           s.frontmatterReadOnly(),
+          // Also live-preview only — it's a decoration (the "Metadata" row
+          // widget), not doc text, but source mode must show the raw
+          // bytes untouched. Inside decoCompartment so entering source
+          // tears it down instead of painting the header over real YAML
+          // (frontmatterCollapseField, below the compartment, keeps the
+          // collapsed/expanded flag itself so it survives the round-trip).
+          s.frontmatterHeaderField({ onEditFrontmatter: __vaultrEditorEditFrontmatter }),
           s.livePreviewTheme,
           // Fenced-code token colors (keyword/string/comment/...) — see
           // cm-live/theme.js's codeHighlightStyle comment for why this is a
@@ -532,71 +515,116 @@
       s._sourceModeExt = function() {
         return [s.syntaxHighlighting(cmHighlight)];
       };
+      // Shared by editorMode.reconfigure() (user toggles mode on the current
+      // tab — see below) so the inSource/reading → extensions mapping lives
+      // in one place instead of copy-pasted at each call site.
+      s._modeEffects = function(inSource, reading) {
+        return [
+          s.decoCompartment.reconfigure(inSource ? s._sourceModeExt() : s._liveModeExt()),
+          s.readCompartment.reconfigure((!inSource && reading) ? s.readingExtensions() : []),
+        ];
+      };
       s.decoCompartment = new s.Compartment();
       s.readCompartment = new s.Compartment();
-      // Own compartment so editorMode.syncContent() (below) can wipe the
-      // undo stack on note/tab switch — this EditorView is a session-long
-      // singleton (__vaultrEnsureContentPaneEditor only ever creates it once),
-      // so without this reset Ctrl+Z after switching notes walks back into
-      // the PREVIOUS note's edit history against the new note's document.
-      s.historyCompartment = new s.Compartment();
+
+      // Extensions for every EditorState we build — one per note/tab switch
+      // now (see s._buildState below), not just the initial mount.
+      // decoInitial/readInitial seed s.decoCompartment/s.readCompartment with
+      // whatever mode this particular state should start in; editorMode's
+      // reconfigure() (below) swaps them later via view.dispatch() without
+      // needing a new state, since Compartments are reusable across states.
+      s._buildExtensions = function(decoInitial, readInitial) {
+        return [
+          s.sharedLanguage,
+          s.history(),
+          // listIndentExtension is Prec.highest internally (see
+          // cm-live/list-indent.js) — @codemirror/lang-markdown's own
+          // language support registers a high-precedence Enter binding for
+          // "continue list markup" that a plain keymap.of(...) here would
+          // lose to regardless of array position. It handles Tab/Shift-Tab
+          // (not bound by defaultKeymap at all — every outliner-style
+          // editor claims them, same as Cmd+]/Cmd+[) and Enter on an empty
+          // list item specifically (the built-in path is supposed to
+          // outdent/exit there but unreliably just inserts a blank line
+          // with the marker left dangling instead); a non-empty item's
+          // Enter isn't handled here and falls through to defaultKeymap.
+          s.listIndentExtension,
+          s.keymap.of([...s.defaultKeymap, ...s.historyKeymap]),
+          s.cmSearch({ top: true, createPanel: __vaultrCreateSearchPanel }),
+          s.EditorView.lineWrapping, cmTheme,
+          s.EditorView.contentAttributes.of({spellcheck: 'false'}),
+          s.linkClickHandler(), // click a collapsed link to open it, Obsidian-style — works in both modes, not compartmented
+          // Outside the compartment so the collapsed flag survives a
+          // source/live-preview toggle — reconfigure() tears down and
+          // recreates any StateField that was only inside _liveModeExt()
+          // (frontmatterHeaderField, which reads this flag, lives there
+          // now — see the comment on it in _liveModeExt above).
+          s.frontmatterCollapseField,
+          s.decoCompartment.of(decoInitial),
+          s.readCompartment.of(readInitial),
+          s.EditorView.updateListener.of(function(update) {
+            // Note/tab switches (s._buildState + view.setState(), see below)
+            // never reach this listener at all — setState() doesn't fire
+            // updateListener, confirmed against the CM6 version bundled in
+            // editor.js. So every docChanged transaction that does arrive
+            // here is a real edit; no "is this programmatic" flag needed.
+            if (!update.docChanged) return;
+            __vaultrEditorHandleContentChange(update.state.doc.toString());
+          }),
+          s.EditorView.domEventHandlers({
+            paste: function(e, view) {
+              var imgFile = __vaultrEditorFindImageFile(e.clipboardData);
+              if (!imgFile) return false;
+              e.preventDefault();
+              __vaultrEditorUploadImage(imgFile).then(function(src) {
+                var filename = src.split('/').pop();
+                var ins = '![[' + filename + ']]'; var sel = view.state.selection.main;
+                view.dispatch({changes:{from:sel.from,to:sel.to,insert:ins},selection:{anchor:sel.from+ins.length}});
+              }).catch(function(e) {
+                window.showError((e && e.message) || 'Image upload failed.', 'Upload error');
+              });
+              return true;
+            },
+            keydown: function(e) {
+              if (e.key === 'Enter' && !e.isComposing) window.__vaultrEditorEffects.trigger(s.view);
+              return false;
+            },
+          }),
+        ];
+      };
+      // Only used for the view's very first mount, below — note/tab switches
+      // One EditorState per note/tab, built fresh from its saved markdown —
+      // used for every note/tab switch (see __vaultrEditorApplyState) via
+      // view.setState(), never view.dispatch(). setState() swaps the whole
+      // state in one shot: no transaction is produced, so there's nothing to
+      // exclude from history and nothing for the frontmatter changeFilter to
+      // block — a switch just isn't an edit to begin with, instead of being
+      // one we have to talk our way around.
+      //
+      // This used to fall back to a dispatch()'d full-doc replace instead,
+      // because LivePreviewPlugin's decorations went stale past the first
+      // ~3000 chars of a freshly-built state and never recovered — traced to
+      // @codemirror/language only parsing that much of a *fresh* EditorState
+      // synchronously (Work.InitViewport), handing the rest to background
+      // parsing that lands through a separate dispatch our decoration
+      // plugins weren't listening for. Fixed at the source (live-preview.js,
+      // horizontal-rule-field.js, frontmatter-collapse.js all now compare
+      // syntaxTree(update.state) against the tree they last used — the same
+      // check CM6's own built-in TreeHighlighter uses for exactly this), so
+      // setState() is safe here again.
+      s._buildState = function(content, inSource, reading) {
+        return s.EditorState.create({
+          doc: content || '',
+          extensions: s._buildExtensions(
+            inSource ? s._sourceModeExt() : s._liveModeExt(),
+            (!inSource && reading) ? s.readingExtensions() : []
+          ),
+        });
+      };
 
       s.view = new s.EditorView({
         parent: editArea,
-        state: s.EditorState.create({
-          doc: s.currentMd || '',
-          extensions: [
-            s.sharedLanguage,
-            s.historyCompartment.of(s.history()),
-            // listIndentExtension is Prec.highest internally (see
-            // cm-live/list-indent.js) — @codemirror/lang-markdown's own
-            // language support registers a high-precedence Enter binding for
-            // "continue list markup" that a plain keymap.of(...) here would
-            // lose to regardless of array position. It handles Tab/Shift-Tab
-            // (not bound by defaultKeymap at all — every outliner-style
-            // editor claims them, same as Cmd+]/Cmd+[) and Enter on an empty
-            // list item specifically (the built-in path is supposed to
-            // outdent/exit there but unreliably just inserts a blank line
-            // with the marker left dangling instead); a non-empty item's
-            // Enter isn't handled here and falls through to defaultKeymap.
-            s.listIndentExtension,
-            s.keymap.of([...s.defaultKeymap, ...s.historyKeymap]),
-            s.cmSearch({ top: true, createPanel: __vaultrCreateSearchPanel }),
-            s.EditorView.lineWrapping, cmTheme,
-            s.EditorView.contentAttributes.of({spellcheck: 'false'}),
-            s.linkClickHandler(), // click a collapsed link to open it, Obsidian-style — works in both modes, not compartmented
-            // Outside the compartment so the collapsed flag survives a
-            // source/live-preview toggle — reconfigure() tears down and
-            // recreates any StateField that was only inside _liveModeExt().
-            s.frontmatterCollapseField,
-            s.frontmatterHeaderField({ onEditFrontmatter: __vaultrEditorEditFrontmatter }),
-            s.decoCompartment.of(s._liveModeExt()),
-            s.readCompartment.of([]),
-            s.EditorView.updateListener.of(function(update) {
-              if (!update.docChanged || s.loading) return;
-              __vaultrEditorHandleContentChange(update.state.doc.toString(), false);
-            }),
-            s.EditorView.domEventHandlers({
-              paste: function(e, view) {
-                var imgFile = __vaultrEditorFindImageFile(e.clipboardData);
-                if (!imgFile) return false;
-                e.preventDefault();
-                __vaultrEditorUploadImage(imgFile).then(function(src) {
-                  var filename = src.split('/').pop();
-                  var ins = '![[' + filename + ']]'; var sel = view.state.selection.main;
-                  view.dispatch({changes:{from:sel.from,to:sel.to,insert:ins},selection:{anchor:sel.from+ins.length}});
-                }).catch(function(e) {
-                  window.showError((e && e.message) || 'Image upload failed.', 'Upload error');
-                });
-                return true;
-              },
-              keydown: function(e) {
-                if (e.key === 'Enter' && !e.isComposing) window.__vaultrEditorEffects.trigger(s.view);
-                return false;
-              },
-            }),
-          ],
-        }),
+        state: s._buildState(s.currentMd, false, false),
       });
 
       document.querySelectorAll('.content-pane-view-btn-wysiwyg').forEach(function(btn) {
@@ -622,12 +650,30 @@
   // created, and every close goes through this wrapper, which holds the
   // real close call until .is-closing's CSS transition (content_pane.css) has
   // had time to finish.
+  //
+  // That hold-off is exactly what made Cmd+F/"Find" occasionally look dead:
+  // for the ~100ms between adding .is-closing and this timer actually
+  // calling realClose(), CM6's own search state still considers the panel
+  // open (that state only flips on the real close call). openSearchPanel()
+  // called in that window sees "already open" and just refocuses the
+  // fading-out DOM instead of reopening it — and this timer, still pending,
+  // then closes that freshly-reopened panel a moment later anyway. One
+  // fast Escape-then-Cmd+F (or Esc then clicking Find again) was enough to
+  // hit it. __vaultrEditorOpenFind cancels s._searchCloseTimer before
+  // asking CM6 to (re)open, and the timer is tracked as a single id here
+  // (not left to stack one per close call) so there's only ever one to
+  // cancel.
   function __vaultrEditorMakeAnimatedSearchClose(realClose) {
     return function(view) {
+      var s = __vaultrEditor;
+      if (s._searchCloseTimer) { clearTimeout(s._searchCloseTimer); s._searchCloseTimer = null; }
       var panel = document.querySelector('#content-pane-edit-area .cm-panels-top');
       if (!panel) { realClose(view); return; }
       panel.classList.add('is-closing');
-      setTimeout(function() { realClose(view); }, 100);
+      s._searchCloseTimer = setTimeout(function() {
+        s._searchCloseTimer = null;
+        realClose(view);
+      }, 100);
     };
   }
   function __vaultrCreateSearchPanel(view) {
@@ -635,19 +681,51 @@
     var dom = document.createElement('div');
     dom.className = 'vaultr-search-panel';
 
-    // Row 1: Find
+    // Header: what this floating panel is, plus its one non-search control
+    // (Close) — kept off the Find row itself so that row is only ever
+    // search controls, not a mix of "act on the query" and "dismiss the
+    // panel" buttons.
+    var headerRow = document.createElement('div');
+    headerRow.className = 'vaultr-sr-header';
+    var headerLabel = document.createElement('span');
+    headerLabel.className = 'vaultr-sr-header-label';
+    headerLabel.textContent = 'Find';
+
+    var closeBtn = document.createElement('button');
+    closeBtn.type = 'button'; closeBtn.className = 'vaultr-sr-ibtn'; closeBtn.setAttribute('aria-label', 'Close');
+    closeBtn.innerHTML = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>';
+
+    headerRow.append(headerLabel, closeBtn);
+
+    // Row 1: Find. Leading chevron reveals/hides row 2 (Replace, below) —
+    // collapsed by default since most Cmd+F visits are look-not-change.
     var findRow = document.createElement('div');
     findRow.className = 'vaultr-sr-row';
+
+    var expandBtn = document.createElement('button');
+    expandBtn.type = 'button'; expandBtn.className = 'vaultr-sr-ibtn vaultr-sr-expand-btn';
+    expandBtn.title = 'Toggle replace'; expandBtn.setAttribute('aria-label', 'Toggle replace');
+    expandBtn.setAttribute('aria-expanded', 'false');
+    expandBtn.innerHTML = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>';
+
     var findWrap = document.createElement('div');
     findWrap.className = 'vaultr-sr-input-wrap';
 
     var findInput = document.createElement('input');
     findInput.type = 'text'; findInput.placeholder = 'Find';
-    findInput.className = 'vaultr-sr-input'; findInput.setAttribute('main-field', '');
+    findInput.className = 'field-input vaultr-sr-input'; findInput.setAttribute('main-field', '');
     findInput.setAttribute('aria-label', 'Find');
 
     var findInset = document.createElement('div');
     findInset.className = 'vaultr-sr-inset-btns';
+
+    // Match count ("2/7") — a plain label, not a button; sits ahead of the
+    // nav icons so the two read together ("2/7, then ↑↓ to move"). Hidden
+    // (not just empty) when the field itself is empty, so it doesn't leave
+    // a dead gap before you've typed anything.
+    var countEl = document.createElement('span');
+    countEl.className = 'vaultr-sr-count'; countEl.setAttribute('aria-hidden', 'true');
+    countEl.style.display = 'none';
 
     var prevBtn = document.createElement('button');
     prevBtn.type = 'button'; prevBtn.className = 'vaultr-sr-ibtn'; prevBtn.title = 'Previous (Shift+Enter)';
@@ -661,39 +739,46 @@
     caseBtn.type = 'button'; caseBtn.className = 'vaultr-sr-ibtn vaultr-sr-toggle'; caseBtn.title = 'Match case';
     caseBtn.textContent = 'Aa';
 
-    var closeBtn = document.createElement('button');
-    closeBtn.type = 'button'; closeBtn.className = 'vaultr-sr-ibtn'; closeBtn.setAttribute('aria-label', 'Close');
-    closeBtn.innerHTML = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>';
-
-    findInset.append(prevBtn, nextBtn, caseBtn);
+    findInset.append(countEl, prevBtn, nextBtn, caseBtn);
     findWrap.append(findInput, findInset);
-    findRow.append(findWrap, closeBtn);
+    findRow.append(expandBtn, findWrap);
 
-    // Row 2: Replace
+    // Row 2: Replace — hidden by default (expandBtn toggles it). Prior
+    // versions drew Replace/Replace All as bare icons (a return-style arrow
+    // and a double-chevron); neither reads unambiguously at this size, so
+    // they're short text labels now — same treatment as the "Aa" toggle
+    // above, not a second icon language for two actions that matter.
     var replaceRow = document.createElement('div');
     replaceRow.className = 'vaultr-sr-row';
+    replaceRow.hidden = true;
+
+    // Empty — just holds the column open so replaceWrap lines up under
+    // findWrap instead of under expandBtn.
+    var replaceSpacer = document.createElement('div');
+    replaceSpacer.className = 'vaultr-sr-row-spacer';
+
     var replaceWrap = document.createElement('div');
     replaceWrap.className = 'vaultr-sr-input-wrap';
 
     var replaceInput = document.createElement('input');
     replaceInput.type = 'text'; replaceInput.placeholder = 'Replace';
-    replaceInput.className = 'vaultr-sr-input'; replaceInput.setAttribute('aria-label', 'Replace');
+    replaceInput.className = 'field-input vaultr-sr-input'; replaceInput.setAttribute('aria-label', 'Replace');
 
     var replaceInset = document.createElement('div');
     replaceInset.className = 'vaultr-sr-inset-btns';
 
     var replaceBtn = document.createElement('button');
-    replaceBtn.type = 'button'; replaceBtn.className = 'vaultr-sr-ibtn'; replaceBtn.title = 'Replace (Enter)';
-    replaceBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 4v7a4 4 0 0 1-4 4H4"/><path d="m9 10-5 5 5 5"/></svg>';
+    replaceBtn.type = 'button'; replaceBtn.className = 'vaultr-sr-ibtn vaultr-sr-text'; replaceBtn.title = 'Replace (Enter)';
+    replaceBtn.textContent = 'Replace';
 
     var replaceAllBtn = document.createElement('button');
-    replaceAllBtn.type = 'button'; replaceAllBtn.className = 'vaultr-sr-ibtn'; replaceAllBtn.title = 'Replace All';
-    replaceAllBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 17 5-5-5-5"/><path d="m13 17 5-5-5-5"/></svg>';
+    replaceAllBtn.type = 'button'; replaceAllBtn.className = 'vaultr-sr-ibtn vaultr-sr-text'; replaceAllBtn.title = 'Replace All';
+    replaceAllBtn.textContent = 'All';
 
     replaceInset.append(replaceBtn, replaceAllBtn);
     replaceWrap.append(replaceInput, replaceInset);
-    replaceRow.append(replaceWrap);
-    dom.append(findRow, replaceRow);
+    replaceRow.append(replaceSpacer, replaceWrap);
+    dom.append(headerRow, findRow, replaceRow);
 
     // State
     var caseSensitive = false;
@@ -701,7 +786,25 @@
     function buildQuery() {
       return new s.SearchQuery({ search: findInput.value, caseSensitive: caseSensitive, replace: replaceInput.value });
     }
-    function commit() { view.dispatch({ effects: s.setSearchQuery.of(buildQuery()) }); }
+    // Counts matches by walking the same SearchQuery cursor CM6 itself uses
+    // for find-next — no separate/approximate tally, so it can't drift from
+    // what Enter/↓ would actually land on. O(doc length); fine at note size.
+    function updateMatchCount() {
+      if (!findInput.value) { countEl.style.display = 'none'; countEl.textContent = ''; return; }
+      countEl.style.display = '';
+      var q = buildQuery();
+      if (!q.valid) { countEl.textContent = '0/0'; return; }
+      var pos = view.state.selection.main.head;
+      var cur = q.getCursor(view.state);
+      var total = 0, idx = 0, r = cur.next();
+      while (!r.done) {
+        total++;
+        if (!idx && r.value.from >= pos) idx = total;
+        r = cur.next();
+      }
+      countEl.textContent = total ? (idx || 1) + '/' + total : '0/0';
+    }
+    function commit() { view.dispatch({ effects: s.setSearchQuery.of(buildQuery()) }); updateMatchCount(); }
 
     findInput.addEventListener('input', commit);
     replaceInput.addEventListener('input', commit);
@@ -711,18 +814,25 @@
       caseBtn.classList.toggle('active', caseSensitive);
       commit(); findInput.focus();
     });
+    expandBtn.addEventListener('click', function() {
+      var open = replaceRow.hidden;
+      replaceRow.hidden = !open;
+      expandBtn.classList.toggle('is-open', open);
+      expandBtn.setAttribute('aria-expanded', String(open));
+      if (open) replaceInput.focus();
+    });
     findInput.addEventListener('keydown', function(e) {
-      if (e.key === 'Enter') { e.preventDefault(); if (e.shiftKey) s.cmFindPrev(view); else s.cmFindNext(view); }
+      if (e.key === 'Enter') { e.preventDefault(); if (e.shiftKey) s.cmFindPrev(view); else s.cmFindNext(view); updateMatchCount(); }
       if (e.key === 'Escape') { e.preventDefault(); s.cmCloseSearchPanel(view); }
     });
     replaceInput.addEventListener('keydown', function(e) {
-      if (e.key === 'Enter') { e.preventDefault(); s.cmReplaceNext(view); }
+      if (e.key === 'Enter') { e.preventDefault(); s.cmReplaceNext(view); updateMatchCount(); }
       if (e.key === 'Escape') { e.preventDefault(); s.cmCloseSearchPanel(view); }
     });
-    prevBtn.addEventListener('click', function() { s.cmFindPrev(view); });
-    nextBtn.addEventListener('click', function() { s.cmFindNext(view); });
-    replaceBtn.addEventListener('click', function() { s.cmReplaceNext(view); });
-    replaceAllBtn.addEventListener('click', function() { s.cmReplaceAll(view); });
+    prevBtn.addEventListener('click', function() { s.cmFindPrev(view); updateMatchCount(); });
+    nextBtn.addEventListener('click', function() { s.cmFindNext(view); updateMatchCount(); });
+    replaceBtn.addEventListener('click', function() { s.cmReplaceNext(view); updateMatchCount(); });
+    replaceAllBtn.addEventListener('click', function() { s.cmReplaceAll(view); updateMatchCount(); });
     closeBtn.addEventListener('click', function() { s.cmCloseSearchPanel(view); });
 
     return {
@@ -735,6 +845,7 @@
           if (txt && !txt.includes('\n')) { findInput.value = txt; commit(); }
         }
         findInput.focus(); findInput.select();
+        updateMatchCount();
         var panel = dom.closest('.cm-panels-top');
         if (panel) {
           panel.classList.add('is-entering');
@@ -747,96 +858,43 @@
   }
 
   // ── Editor mode state machine ────────────────────────────────────────────────
-  // Single authority for live-preview ↔ source ↔ reading transitions. All
-  // three are the same EditorView/doc — this only reconfigures s.decoCompartment
-  // (+ s.readCompartment for reading, which layers on live preview)
-  // (see __vaultrEnsureContentPaneEditor) and, when the caller is about to show a
-  // *different* note's content, syncs s.currentMd into the view first.
-  // applySource / applyWysiwyg: low-level, called by applyState (skipFocus=true).
-  // enterSource / exitSource / toggle: user-triggered, manage focus themselves.
+  // Single authority for live-preview ↔ source ↔ reading transitions *on the
+  // currently active tab's document*. All three are the same EditorView/doc —
+  // reconfigure() only swaps s.decoCompartment (+ s.readCompartment for
+  // reading, which layers on live preview), a pure decoration change with no
+  // `changes`, so it never touches the document, the undo stack, or dirty
+  // tracking. Switching to a *different* note/tab is a different operation
+  // entirely — see __vaultrEditorApplyState, which builds a fresh EditorState
+  // (mode baked in from the start) and swaps it in with view.setState().
   var editorMode = (function() {
-    function syncContent() {
+    function reconfigure(inSource, reading, opts) {
       var s = __vaultrEditor;
-      if (s.view.state.doc.toString() !== s.currentMd) {
-        // Whole-document swap (mode toggle, tab/note switch), not a user
-        // edit to frontmatter text — frontmatterReadOnly()'s changeFilter
-        // computes its blocked range from the *old* doc's frontmatter and
-        // would otherwise clip this replace, silently dropping everything
-        // after the old frontmatter (the exact "only frontmatter shows"
-        // bug). allowFrontmatterEdit is the filter's one escape hatch.
-        //
-        // Also resets historyCompartment and excludes this swap from
-        // history itself, in the same transaction — s.view is a session-
-        // long singleton reused across every note, so without this a note
-        // switch is just another undoable edit: Ctrl+Z right after opening
-        // a different note would revert its content to the PREVIOUS note's
-        // text while s.currentPath/s.currentMd still track the new note,
-        // risking that stale content gets autosaved under the new path.
-        var annotations = [s.Transaction.addToHistory.of(false)];
-        if (s.allowFrontmatterEdit) annotations.push(s.allowFrontmatterEdit.of(true));
-        s.view.dispatch({
-          changes: {from: 0, to: s.view.state.doc.length, insert: s.currentMd},
-          effects: s.historyCompartment.reconfigure(s.history()),
-          annotations: annotations,
-        });
-      }
-    }
-    function applyLive(reading, opts) {
-      var s = __vaultrEditor;
-      var tab = __vaultrEditorActiveTab();
-      if (tab && tab.path) __vaultrEditorMarkPendingBaselineSync();
-      s.loading = true;
-      syncContent();
-      s.view.dispatch({effects: [
-        s.decoCompartment.reconfigure(s._liveModeExt()),
-        s.readCompartment.reconfigure(reading ? s.readingExtensions() : []),
-      ]});
-      setTimeout(function() { s.loading = false; }, 50);
-      s.inSource = false;
-      s.readingActive = reading;
-      __vaultrEditorSyncViewButtons();
+      s.view.dispatch({effects: s._modeEffects(inSource, reading)});
+      __vaultrEditorSetModeState(inSource, reading);
       if (!(opts && opts.skipFocus)) focusManager.focusEditor();
     }
     return {
-      applySource: function(opts) {
-        var s = __vaultrEditor;
-        __vaultrEditorClearPendingBaselineSync();
-        s.loading = true;
-        syncContent();
-        s.view.dispatch({effects: [
-          s.decoCompartment.reconfigure(s._sourceModeExt()),
-          s.readCompartment.reconfigure([]),
-        ]});
-        s.loading = false;
-        s.inSource = true;
-        s.readingActive = false;
-        __vaultrEditorSyncViewButtons();
-        if (!(opts && opts.skipFocus)) focusManager.focusEditor();
-      },
-      applyWysiwyg: function(opts) { applyLive(false, opts); },
-      applyReading: function(opts) { applyLive(true, opts); },
       // User-triggered: live preview → source
       enterSource: function() {
         if (__vaultrEditor.readingActive) __vaultrEditorSetReadingPref(false);
-        this.applySource();
+        reconfigure(true, false);
       },
       // User-triggered: source / reading → live preview
       exitSource: function() {
         var s = __vaultrEditor;
         if (s.readingActive) __vaultrEditorSetReadingPref(false);
         s.currentMd = s.view.state.doc.toString();
-        this.applyWysiwyg();
+        reconfigure(false, false);
       },
       // User-triggered: any mode → reading view
       enterReading: function() {
         var s = __vaultrEditor;
         __vaultrEditorSetReadingPref(true);
         s.currentMd = s.view.state.doc.toString();
-        this.applyReading({skipFocus: true});
+        reconfigure(false, true, {skipFocus: true});
       },
       toggle: function() {
-        var s = __vaultrEditor;
-        if (s.inSource) this.exitSource(); else this.enterSource();
+        if (__vaultrEditor.inSource) this.exitSource(); else this.enterSource();
       },
       toggleReading: function() {
         if (__vaultrEditor.readingActive) this.exitSource(); else this.enterReading();
@@ -922,7 +980,6 @@
   // ── Content loaders ──────────────────────────────────────────────────────────
   async function __vaultrContentPaneLoadNote(path, tabId, savedState) {
     var s = __vaultrEditor;
-    __vaultrEditorClearPendingBaselineSync();
     if (s.dirty && s.currentPath && s.currentPath !== path) {
       clearTimeout(s.saveTimer); s.saveTimer = null; await __vaultrEditorDoSave();
     } else { clearTimeout(s.saveTimer); s.saveTimer = null; }
@@ -944,7 +1001,7 @@
     }
     var content = await resp.text();
     if (!__vaultrEditorIsActiveTabId(tabId)) return false;
-    s.currentPath = path; s.currentDraftId = ''; s.currentMd = __vaultrEditorTightenLists(content); s.baselineMd = s.currentMd; s.dirty = false;
+    s.currentPath = path; s.currentDraftId = ''; s.currentMd = __vaultrEditorTightenLists(content); s.dirty = false;
     
     // Apply state (will create new state if no saved state)
     return await __vaultrEditorApplyState(savedState || { inSource: false, scrollTop: 0 }, tabId);
@@ -952,12 +1009,11 @@
 
   async function __vaultrContentPaneSetContent(content, tabId, savedState, draftId) {
     var s = __vaultrEditor;
-    __vaultrEditorClearPendingBaselineSync();
     if (s.dirty && s.currentPath) { clearTimeout(s.saveTimer); s.saveTimer = null; await __vaultrEditorDoSave(); }
     else { clearTimeout(s.saveTimer); s.saveTimer = null; }
     if (!__vaultrEditorIsActiveTabId(tabId)) return false;
     __vaultrEditorSaveStatus('');
-    s.currentPath = ''; s.currentDraftId = draftId || ''; s.currentMd = __vaultrEditorTightenLists(content || ''); s.baselineMd = ''; s.dirty = false;
+    s.currentPath = ''; s.currentDraftId = draftId || ''; s.currentMd = __vaultrEditorTightenLists(content || ''); s.dirty = false;
     
     // Apply state
     return await __vaultrEditorApplyState(savedState || { inSource: false, scrollTop: 0 }, tabId);
@@ -965,29 +1021,27 @@
   
   async function __vaultrEditorApplyState(state, expectedTabId) {
     var s = __vaultrEditor;
-    s.loading = true;
     await __vaultrEnsureContentPaneEditor();
-    if (!__vaultrEditorIsActiveTabId(expectedTabId)) {
-      s.loading = false;
-      return false;
-    }
+    if (!__vaultrEditorIsActiveTabId(expectedTabId)) return false;
 
     var targetInSource = state.inSource || false;
     var targetScroll = state.scrollTop || 0;
+    // Reading takes priority over a saved source/live-preview mode; drafts
+    // (no currentPath) stay editable even while the preference is on.
+    var wantReading = !!(s.reading && s.currentPath);
+    var wantSource = !wantReading && targetInSource;
 
-    if (s.reading && s.currentPath) {
-      editorMode.applyReading({skipFocus: true});
-    } else if (targetInSource) {
-      editorMode.applySource({skipFocus: true});
-    } else {
-      editorMode.applyWysiwyg({skipFocus: true});
-    }
+    // A note/tab switch: brand-new EditorState (mode baked in from the
+    // start) swapped in via setState(), not a dispatch()'d replace onto the
+    // previous tab's state — see s._buildState's comment for why.
+    s.view.setState(s._buildState(s.currentMd, wantSource, wantReading));
+    __vaultrEditorSetModeState(wantSource, wantReading);
 
     if (s.pendingScrollRaf) { cancelAnimationFrame(s.pendingScrollRaf); s.pendingScrollRaf = null; }
     clearTimeout(s.pendingOpenScroll);
     var getScroller = function() { return document.querySelector('#content-pane-edit-area .cm-scroller'); };
-    // Set it once synchronously, in the same tick as the content swap above
-    // (dispatch() has already updated the DOM by the time this line runs) —
+    // Set it once synchronously, in the same tick as the state swap above
+    // (setState() has already updated the DOM by the time this line runs) —
     // otherwise the scroller keeps the PREVIOUS tab's scrollTop for at
     // least one paint, since the rAF/setTimeout calls below are the only
     // other place this gets set and both are deliberately deferred (see
@@ -1122,7 +1176,7 @@
         pi.classList.add('invalid'); return;
       }
       published = true;
-      __vaultrEditor.currentPath = apiPath; __vaultrEditor.dirty = false; __vaultrEditor.baselineMd = __vaultrEditor.currentMd; __vaultrEditorSaveStatus('Saved');
+      __vaultrEditor.currentPath = apiPath; __vaultrEditor.dirty = false; __vaultrEditorSaveStatus('Saved');
       __vaultrEditor.currentDraftId = '';
       __vaultrEditorPathAc && __vaultrEditorPathAc.close();
       if (pane) {
@@ -1596,15 +1650,8 @@
           __vaultrEditor.currentPath = ''; __vaultrEditor.currentDraftId = ''; __vaultrEditor.currentMd = ''; __vaultrEditor.dirty = false;
           __vaultrEditorSaveStatus('');
           if (__vaultrEditor.view) {
-            __vaultrEditor.loading = true;
-            // Clearing to empty removes the frontmatter range too — needs
-            // the same escape hatch as syncContent() above, or a note with
-            // frontmatter left behind a leftover (blocked) suppressed range.
-            __vaultrEditor.view.dispatch({
-              changes: {from: 0, to: __vaultrEditor.view.state.doc.length, insert: ''},
-              annotations: __vaultrEditor.allowFrontmatterEdit ? __vaultrEditor.allowFrontmatterEdit.of(true) : undefined,
-            });
-            setTimeout(function(){ __vaultrEditor.loading = false; }, 50);
+            __vaultrEditor.view.setState(__vaultrEditor._buildState('', false, false));
+            __vaultrEditorSetModeState(false, false);
           }
           return;
         }
@@ -1671,15 +1718,8 @@
           this.contentPaneOpen = false; this.activeTab = -1;
           __vaultrEditor.currentPath = ''; __vaultrEditor.currentDraftId = ''; __vaultrEditor.currentMd = ''; __vaultrEditorSaveStatus('');
           if (__vaultrEditor.view) {
-            __vaultrEditor.loading = true;
-            // Clearing to empty removes the frontmatter range too — needs
-            // the same escape hatch as syncContent() above, or a note with
-            // frontmatter left behind a leftover (blocked) suppressed range.
-            __vaultrEditor.view.dispatch({
-              changes: {from: 0, to: __vaultrEditor.view.state.doc.length, insert: ''},
-              annotations: __vaultrEditor.allowFrontmatterEdit ? __vaultrEditor.allowFrontmatterEdit.of(true) : undefined,
-            });
-            setTimeout(function(){ __vaultrEditor.loading=false; },50);
+            __vaultrEditor.view.setState(__vaultrEditor._buildState('', false, false));
+            __vaultrEditorSetModeState(false, false);
           }
         } else {
           this.activeTab = cur > 0 ? cur-1 : 0;
@@ -1804,7 +1844,7 @@
     } catch(_) { return '/home'; }
   };
 
-  window.__vaultrHotkeys.register('content-pane', 'e', function() {
+  window.__vaultrHotkeys.register('content-pane', 'o', function() {
     if (window.__vaultrContentPane) window.__vaultrContentPane.contentPaneOpen = !window.__vaultrContentPane.contentPaneOpen;
   });
 
@@ -1848,6 +1888,13 @@
   function __vaultrEditorOpenFind() {
     var s = __vaultrEditor;
     if (!s.cmOpenSearchPanel || !s.view) return;
+    // Cancel a still-pending animated close (__vaultrEditorMakeAnimatedSearchClose)
+    // and snap any fading-out panel back to visible first — otherwise that
+    // stale timer would go on to close the panel this call is about to
+    // (re)open. See the comment on __vaultrEditorMakeAnimatedSearchClose.
+    if (s._searchCloseTimer) { clearTimeout(s._searchCloseTimer); s._searchCloseTimer = null; }
+    var panel = document.querySelector('#content-pane-edit-area .cm-panels-top');
+    if (panel) panel.classList.remove('is-closing');
     s.cmOpenSearchPanel(s.view);
   }
 
@@ -1863,15 +1910,14 @@
     }
   }
 
-  window.__vaultrHotkeys.registerRaw('content-pane-reading-toggle', function(e, mod) {
-    if (!mod || !e.shiftKey || e.altKey || e.key.toLowerCase() !== 'e') return;
+  // Plain Mod-L now (no Shift needed) — .register() handles that, unlike
+  // the Mod-Shift-E it replaced which needed registerRaw's manual check.
+  window.__vaultrHotkeys.register('content-pane-reading-toggle', 'l', function() {
     var pane = window.__vaultrContentPane;
     if (!pane || !pane.contentPaneOpen || !__vaultrEditor.view) return;
     var tab = pane.tabs[pane.activeTab];
     if (!tab || !tab.path) return;
-    e.preventDefault();
     editorMode.toggleReading();
-    return true;
   });
 
   window.__vaultrHotkeys.registerRaw('content-pane-find', function(e, mod) {
@@ -1946,27 +1992,4 @@
       if (_pane.activeTab < _pane.tabs.length - 1) void _pane.contentPaneSwitchTab(_pane.activeTab + 1);
     }
   }, true);
-
-  // Keeps .content-pane-tool-bar's height pixel-matched to whichever
-  // #home-list-pane section is currently showing, rather than guessing a
-  // CSS constant that has to independently agree with every section's own
-  // header (Pinned's .home-list-head grows a hair past --btn-h-xs because
-  // its .seg control's own border+padding don't sum to exactly 28px — a
-  // fixed height on both sides can't account for that without measuring).
-  // Graph has no .home-list-head at all, so the property is cleared and
-  // content_pane.css's calc() fallback takes over.
-  function __vaultrSyncContentPaneHeaderHeight() {
-    var head = document.querySelector('#home-list-pane .home-list-head');
-    var root = document.documentElement;
-    if (head) {
-      var h = head.getBoundingClientRect().height;
-      if (h > 0) { root.style.setProperty('--content-header-h', h + 'px'); return; }
-    }
-    root.style.removeProperty('--content-header-h');
-  }
-  document.body.addEventListener('htmx:afterSwap', function(e) {
-    var target = e.detail && e.detail.target;
-    if (target && target.id === 'home-list-pane') __vaultrSyncContentPaneHeaderHeight();
-  });
-  __vaultrSyncContentPaneHeaderHeight();
 

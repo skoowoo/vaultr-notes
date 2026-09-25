@@ -9,7 +9,7 @@ import (
 )
 
 // noteItem is the shared per-note view model rendered by home's note list,
-// folder view, and Graph sidebar group.
+// folder view, and Knowledge sidebar group.
 type noteItem struct {
 	Name        string
 	Title       string // LLM-generated title; non-empty for distill notes
@@ -52,7 +52,7 @@ func noteToItem(n storage.Note) noteItem {
 }
 
 // listIndexItems returns all index notes, newest first, with DepCount filled
-// in. Used by home.go's Graph sidebar group.
+// in. Used by home.go's Knowledge sidebar group.
 func (vh *ViewHandler) listIndexItems() []noteItem {
 	notes, err := vh.vault.ListAllNotes(storage.ListOptions{
 		OnlyKinds:  []storage.Kind{storage.KindIndex},

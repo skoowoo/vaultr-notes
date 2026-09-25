@@ -16,7 +16,9 @@ const settingsModalCSS = `
       width: 1040px; max-width: calc(100vw - 2rem);
       height: 720px; max-height: calc(100vh - 2rem);
       background: var(--bg);
-      border: var(--bd-w) solid var(--border);
+      /* --hairline, not --border — the shadow below already carries the
+         floating edge; the line itself just needs to be a whisper. */
+      border: var(--bd-w) solid var(--hairline);
       border-radius: var(--r-xl);
       box-shadow: var(--shadow-lg) var(--shadow-color);
       display: flex; flex-direction: column; overflow: hidden;
@@ -25,14 +27,18 @@ const settingsModalCSS = `
       position: relative;
     }
 
-    /* Floats over whichever pane is showing, same corner offset as the
-       app's other floating chrome (graph's zoom controls/node panel use the
-       same 12px). No title bar above it any more — .settings-sidebar
-       (below) now runs the full height of the panel instead of starting
-       under a 40px bar, so this is the only thing left in that space. */
+    /* Positioned against the whole panel rather than just .settings-content,
+       so it also floats above .settings-sidebar (which has no header of its
+       own) — same 12px corner offset as the app's other floating chrome
+       (graph's zoom controls/node panel). Lands inside the content header's
+       row (below) on the right. */
     .settings-modal-close {
       position: absolute; top: 12px; right: 12px; z-index: 5;
     }
+    /* Sits outside .home-list-head in the DOM, so its drag region isn't
+       carved out by that selector's own "button" no-drag rule (home.css) —
+       needs its own, or the click never reaches it. */
+    html.macos .settings-modal-close { -webkit-app-region: no-drag; }
     .settings-modal-inner {
       flex: 1; min-height: 0; display: flex; overflow: hidden;
       border-radius: 0;
@@ -63,6 +69,11 @@ const settingsModalCSS = `
 
     /* ── Content area ─────────────────────────────────────────── */
     .settings-content { flex: 1; min-width: 0; display: flex; flex-direction: column; overflow: hidden; border-radius: 0; }
+    /* Reuses the shared .home-list-head (home.css) so this pane's top
+       chrome matches every other section's header row instead of
+       inventing its own; just a title here since the pane below already
+       carries whatever controls it needs. */
+    .settings-content-title { font-size: var(--text-base); font-weight: 600; color: var(--fg); }
 
     /* ── Pane ─────────────────────────────────────────────────── */
     .settings-pane { flex: 1; overflow-y: auto; padding: 1.75rem 1.5rem 3rem; }
@@ -128,13 +139,18 @@ const settingsModalCSS = `
       padding: 1.75rem 1.5rem 3rem;
     }
     .cfg-fields { max-width: 640px; display: flex; flex-direction: column; }
+    /* No border — a card reads as a card from its background against the
+       pane behind it (same idiom as home-note-row/img-card), not a line. */
     .cfg-section {
       max-width: 640px; margin-bottom: 0.45rem;
-      border: var(--bd-w) solid var(--border-strong);
       border-radius: var(--r-lg);
-      background: transparent; overflow: hidden;
+      background: var(--surface-soft); overflow: hidden;
     }
-    .cfg-section.is-open { background: var(--card-hov); border-color: var(--border); }
+    /* Neutral, not card-hov — is-open is a structural state, hover (below)
+       is transient interaction feedback; keeping them on different tokens
+       means glancing at a closed row mid-hover can't be mistaken for one
+       that's actually expanded. */
+    .cfg-section.is-open { background: var(--surface-2); }
     .cfg-section-head {
       display: flex; align-items: flex-start; justify-content: space-between;
       gap: 0.75rem; width: 100%; margin: 0; padding: 0.7rem 0.9rem;
@@ -168,7 +184,7 @@ const settingsModalCSS = `
       grid-template-columns: 1fr 220px;
       grid-template-areas: "meta ctrl" "desc desc";
       column-gap: 1rem; padding: 0.88rem 0;
-      border-bottom: var(--bd-w) solid var(--border); border-radius: 0; align-items: center;
+      border-bottom: var(--bd-w) solid var(--hairline); border-radius: 0; align-items: center;
     }
     .cfg-field.multiline {
       grid-template-columns: 1fr;
@@ -200,11 +216,11 @@ const settingsModalCSS = `
     .cfg-wechat-meta { font-size: var(--text-xs); color: var(--muted); line-height: 1.55; margin: 0 0 0.75rem; }
     .cfg-wechat-meta code {
       font-size: var(--text-2xs); padding: 0.05rem 0.3rem; border-radius: var(--r-xs);
-      background: var(--code-bg); border: 1px solid var(--code-bd);
+      background: var(--code-bg);
     }
     .cfg-wechat-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
     .cfg-wechat-qr {
-      margin-top: 0.85rem; padding: 0.75rem; border: var(--bd-w) solid var(--code-bd);
+      margin-top: 0.85rem; padding: 0.75rem;
       background: var(--code-bg); text-align: center;
     }
     .cfg-wechat-qr img { width: 180px; height: 180px; object-fit: contain; background: #fff; }
@@ -215,7 +231,9 @@ const settingsModalCSS = `
     input[type="number"].field-input.cfg-input { width: 110px; }
     .cfg-reveal-wrap { display: flex; gap: 0.375rem; align-items: center; width: 100%; }
     /* .cfg-reveal-btn now uses the shared .icon-btn.icon-btn--lg (base.css). */
-    /* Toggle switches now use the shared .switch/.switch-track (base.css). */
+    /* Bool config fields now use the shared .seg/.seg-btn Off/On toggle
+       (base.css) — same picker as Theme/Line Breaks above, not the old
+       pill switch. */
     .cfg-loader { font-size: var(--text-xs); color: var(--muted); padding: 2rem 0; }
     .cfg-err-msg { font-size: var(--text-xs); color: var(--s-err); padding: 2rem 0; }
 
@@ -227,10 +245,13 @@ const settingsModalCSS = `
     .agents-summary { font-size: var(--text-xs); color: var(--muted); }
     .agents-list { display: flex; flex-direction: column; gap: 0.45rem; }
     /* Box comes from the shared .list-card (base.css); this is a static
-       display card, not a click target, so no interaction modifier. */
+       display card, not a click target, so no interaction modifier. Drops
+       the outline and sits on surface-soft instead — same idiom as
+       home-note-row/img-card (home.css/images.css). */
     .agent-card {
       display: flex; flex-direction: column; gap: 0.625rem;
       min-width: 0; overflow: hidden;
+      border-color: transparent; background: var(--surface-soft);
     }
     .agent-card:hover { background: var(--card-hov); }
     .agent-card.unavailable { opacity: 0.48; }
@@ -296,24 +317,26 @@ const settingsModalCSS = `
     }
     .agent-cli-copy {
       flex-shrink: 0; height: 20px; padding: 0 7px;
-      border: var(--bd-w) solid var(--code-bd);
-      background: transparent; color: var(--muted);
+      border: none;
+      background: var(--btn-bg); color: var(--muted);
       font-size: var(--text-2xs); font-family: var(--font-mono); cursor: pointer;
       white-space: nowrap;
+      transition: background-color var(--motion-fast), color var(--motion-fast);
     }
-    .agent-cli-copy:hover { color: var(--fg); background: var(--card-hov); }
-    .agent-cli-copy.copied { color: var(--s-ok); border-color: var(--s-ok-bd); }
+    .agent-cli-copy:hover { color: var(--fg); background: var(--btn-bg-hov); }
+    .agent-cli-copy.copied { color: var(--s-ok); background: var(--s-ok-bg); }
 
     /* ── Editor effects ───────────────────────────────────────── */
     .effect-card {
       display: flex; flex-direction: column; align-items: flex-start;
-      padding: 0.38rem 0.8rem; border: var(--bd-w) solid var(--code-bd);
-      background: var(--code-bg); cursor: pointer; min-width: 86px;
+      padding: 0.38rem 0.8rem; border: none;
+      background: var(--btn-bg); cursor: pointer; min-width: 86px;
       text-align: left;
+      transition: background-color var(--motion-fast);
     }
-    .effect-card:hover { border-color: var(--muted); background: var(--card-hov); }
-    .effect-card:active:not(.active) { opacity: 0.85; }
-    .effect-card.active { border-color: var(--border-strong); background: var(--control-active-bg); color: var(--control-active-fg); }
+    .effect-card:hover { background: var(--btn-bg-hov); }
+    .effect-card:active:not(.active) { background: var(--btn-bg-on); }
+    .effect-card.active { background: var(--btn-bg-on); color: var(--control-active-fg); }
     .effect-card-name { font-size: var(--text-sm); font-weight: 600; color: var(--fg); }
     .effect-card-desc { font-size: var(--text-xs); color: var(--muted); margin-top: 0.1rem; white-space: nowrap; }
 
@@ -328,7 +351,7 @@ const settingsModalCSS = `
     .shortcuts-list { display: flex; flex-direction: column; }
     .shortcuts-row {
       display: flex; align-items: center; justify-content: space-between;
-      padding: 0.55rem 0; border-bottom: var(--bd-w) solid var(--border-strong); border-radius: 0; gap: 1rem;
+      padding: 0.55rem 0; border-bottom: var(--bd-w) solid var(--hairline); border-radius: 0; gap: 1rem;
     }
     .shortcuts-list .shortcuts-row:last-child { border-bottom: none; }
     .shortcuts-row-meta { min-width: 0; flex: 1; }
@@ -351,9 +374,11 @@ const settingsModalCSS = `
     .agent-bots-empty { font-size: var(--text-sm); color: var(--muted); padding: 1.5rem 0; }
     /* Box + hover come from the shared .list-card.list-card--hover
        (base.css); the row itself isn't a click target (actions live in
-       its own buttons), so no cursor/active. */
+       its own buttons), so no cursor/active. Same borderless/surface-soft
+       override as .agent-card above. */
     .agent-bot-card {
       display: flex; align-items: flex-start; gap: 0.875rem;
+      border-color: transparent; background: var(--surface-soft);
     }
     .agent-bot-card.disabled-card { opacity: 0.45; }
     /* .agent-bot-avatar now uses the shared .avatar.avatar--lg.avatar--neutral (base.css). */
@@ -390,7 +415,7 @@ const settingsModalCSS = `
       display: flex; align-items: center; gap: 0.6rem; white-space: nowrap;
     }
     .agent-bot-form-section-title::after {
-      content: ''; flex: 1; height: 2px; background: var(--border-strong); border-radius: 0;
+      content: ''; flex: 1; height: 2px; background: var(--hairline); border-radius: 0;
     }
     .agent-bot-trigger-section-top { display: flex; flex-direction: column; gap: 0.4rem; }
     .agent-bot-section-desc { font-size: var(--text-sm); color: var(--muted); line-height: 1.5; margin: 0; }
@@ -414,7 +439,7 @@ const settingsModalCSS = `
     .agent-bot-trigger-add:hover { color: var(--fg); }
     .agent-bot-triggers-empty {
       font-size: var(--text-sm); color: var(--muted); line-height: 1.5;
-      padding: 1.1rem 1rem; border: var(--bd-w) solid var(--code-bd);
+      padding: 1.1rem 1rem; border-radius: var(--r-lg); background: var(--surface-soft);
       text-align: center; font-style: italic; opacity: 0.6;
     }
     .agent-bot-var-panel { margin-bottom: 0.5rem; }
@@ -425,28 +450,28 @@ const settingsModalCSS = `
     .agent-bot-var-chips { display: flex; flex-wrap: wrap; gap: 0.35rem; }
     .agent-bot-var-chip {
       display: inline-flex; align-items: center; height: var(--btn-h-xs); padding: 0 0.6rem;
-      border: var(--bd-w) solid var(--border-strong); background: var(--bg);
+      border: none; background: var(--btn-bg);
       border-radius: var(--r-full);
       cursor: pointer;
+      transition: background-color var(--motion-fast);
     }
-    .agent-bot-var-chip:hover { border-color: var(--border-strong); background: transparent; }
-    .agent-bot-var-chip:active { opacity: 0.85; }
+    .agent-bot-var-chip:hover { background: var(--btn-bg-hov); }
+    .agent-bot-var-chip:active { background: var(--btn-bg-on); }
     .agent-bot-var-chip code {
       font-family: var(--font-mono);
       font-size: var(--text-xs); font-weight: 600; color: var(--fg); opacity: 0.8;
     }
     .agent-bot-trigger-list { display: flex; flex-direction: column; gap: 1rem; }
     .agent-bot-trigger-card {
-      background: var(--bg); border: var(--bd-w) solid var(--border-strong);
+      background: var(--surface-soft);
       border-radius: var(--r-lg);
       padding: 1rem 1.15rem 1.15rem;
       display: flex; flex-direction: column; gap: 1rem;
     }
     .agent-bot-trigger-hdr {
       display: flex; align-items: center; justify-content: space-between;
-      /* Header-to-body seam inside .agent-bot-trigger-card, whose own outer
-         edge already carries --border-strong — see shared_tokens.go's
-         --hairline comment. */
+      /* Header-to-body seam inside .agent-bot-trigger-card, which reads as
+         a card from its own surface-soft background (above), not a line. */
       padding-bottom: 0.75rem; border-bottom: var(--bd-w) solid var(--hairline); border-radius: 0;
     }
     .agent-bot-trigger-label { font-size: var(--text-sm); font-weight: 600; color: var(--fg); }
@@ -495,14 +520,16 @@ const settingsModalCSS = `
     .skills-desc code {
       font-family: var(--font-mono); font-size: var(--text-xs);
       padding: 0.05rem 0.35rem; border-radius: var(--r-xs);
-      background: var(--code-bg); border: var(--bd-w) solid var(--border-strong);
+      background: var(--code-bg);
     }
     .skills-list { display: flex; flex-direction: column; gap: 0.45rem; }
     .skills-empty { font-size: var(--text-sm); color: var(--muted); padding: 1.5rem 0; }
     /* Box + hover come from the shared .list-card.list-card--hover
-       (base.css); see .agent-bot-card above for why no cursor/active. */
+       (base.css); see .agent-bot-card above for why no cursor/active, and
+       for the same borderless/surface-soft override. */
     .skill-card {
       display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+      border-color: transparent; background: var(--surface-soft);
     }
     .skill-card.not-installed .skill-card-left { opacity: 0.7; }
     .skill-card.not-installed:hover .skill-card-left { opacity: 1; }
@@ -522,15 +549,10 @@ const settingsModalCSS = `
     .skill-repo-link:hover { color: var(--accent-text); opacity: 1; }
     /* Install/Uninstall now use the shared .btn-outline /
        .btn-solid.btn-solid--danger with the .btn--xs size modifier. */
-
-    /* ── Placeholder text ────────────────────────────────────── */
-    .agent-bot-form-input::placeholder,
-    .agent-bot-form-textarea::placeholder,
-    .cfg-input::placeholder,
-    .cfg-textarea::placeholder,
-    .settings-input::placeholder {
-      color: var(--muted); opacity: 0.38; font-style: italic;
-    }`
+    /* Placeholder text for every field here (.agent-bot-form-input/-textarea,
+       .cfg-input/-textarea, .settings-input) now comes from the shared
+       .field-input::placeholder (base.css) — they all carry that class
+       already, so this no longer needs its own copy. */`
 
 // settingsModalHTML returns the settings modal DOM. Include once per page —
 // opened via the sidebar's bottom-row Settings button (see home.html).
@@ -647,6 +669,11 @@ func settingsModalHTML() string {
 
         <div class="settings-content">
 
+          <div class="home-list-head">
+            <span class="settings-content-title"
+                  x-text="({appearance:'Appearance',server:'Server','agent-bots':'Agent Bots',skills:'Skills',agents:'Agent CLI',notifications:'Notifications',shortcuts:'Shortcuts'})[tab] || ''"></span>
+          </div>
+
           <!-- Appearance tab -->
           <div class="settings-pane" x-show="tab === 'appearance'">
             <div class="settings-fields">
@@ -756,12 +783,10 @@ func settingsModalHTML() string {
                             </div>
                             <div class="cfg-field-ctrl">
                               <template x-if="field.type === 'bool'">
-                                <label class="switch">
-                                  <input type="checkbox"
-                                         :checked="!!getVal(field.key)"
-                                         @change="setVal(field.key, $event.target.checked)">
-                                  <span class="switch-track"></span>
-                                </label>
+                                <div class="seg">
+                                  <button type="button" class="seg-btn" :class="{active: !getVal(field.key)}" @click="setVal(field.key, false)">Off</button>
+                                  <button type="button" class="seg-btn" :class="{active: !!getVal(field.key)}" @click="setVal(field.key, true)">On</button>
+                                </div>
                               </template>
                               <template x-if="field.type === 'string' && field.enum && field.enum.length">
                                 <select class="field-input cfg-input" @change="setVal(field.key, $event.target.value)">
@@ -953,11 +978,10 @@ func settingsModalHTML() string {
                 <div>
                   <div class="notif-row">
                     <label class="settings-field-label" style="margin:0">Text Notifications</label>
-                    <label class="switch">
-                      <input type="checkbox" :checked="notifySettings.textEnabled"
-                             @change="notifySettings.textEnabled = $event.target.checked; saveNotifySettings()">
-                      <span class="switch-track"></span>
-                    </label>
+                    <div class="seg">
+                      <button type="button" class="seg-btn" :class="{active: !notifySettings.textEnabled}" @click="notifySettings.textEnabled = false; saveNotifySettings()">Off</button>
+                      <button type="button" class="seg-btn" :class="{active: notifySettings.textEnabled}" @click="notifySettings.textEnabled = true; saveNotifySettings()">On</button>
+                    </div>
                   </div>
                   <p class="settings-field-desc">Show a system notification when a new inbox message arrives.</p>
                 </div>
@@ -965,11 +989,10 @@ func settingsModalHTML() string {
                 <div>
                   <div class="notif-row">
                     <label class="settings-field-label" style="margin:0">Sound</label>
-                    <label class="switch">
-                      <input type="checkbox" :checked="notifySettings.soundEnabled"
-                             @change="notifySettings.soundEnabled = $event.target.checked; saveNotifySettings()">
-                      <span class="switch-track"></span>
-                    </label>
+                    <div class="seg">
+                      <button type="button" class="seg-btn" :class="{active: !notifySettings.soundEnabled}" @click="notifySettings.soundEnabled = false; saveNotifySettings()">Off</button>
+                      <button type="button" class="seg-btn" :class="{active: notifySettings.soundEnabled}" @click="notifySettings.soundEnabled = true; saveNotifySettings()">On</button>
+                    </div>
                   </div>
                   <p class="settings-field-desc">Play a sound when a new inbox message arrives.</p>
                 </div>
@@ -1086,10 +1109,10 @@ func settingsModalHTML() string {
                       </div>
                       <div style="flex:0 0 auto;min-width:90px">
                         <label class="agent-bot-form-label">Enabled</label>
-                        <label class="switch">
-                          <input type="checkbox" :checked="agentBotDraft.enabled" @change="agentBotDraft.enabled = $event.target.checked">
-                          <span class="switch-track"></span>
-                        </label>
+                        <div class="seg">
+                          <button type="button" class="seg-btn" :class="{active: !agentBotDraft.enabled}" @click="agentBotDraft.enabled = false">Off</button>
+                          <button type="button" class="seg-btn" :class="{active: agentBotDraft.enabled}" @click="agentBotDraft.enabled = true">On</button>
+                        </div>
                       </div>
                     </div>
                     <div>
@@ -1269,7 +1292,7 @@ func settingsModalHTML() string {
                                   </template>
                                 </div>
                               </div>
-                              <textarea class="agent-bot-form-textarea agent-bot-prompt-textarea" x-model="t.prompt" rows="2"
+                              <textarea class="field-input agent-bot-form-textarea agent-bot-prompt-textarea" x-model="t.prompt" rows="2"
                                         @focus="agentBotActivePromptIdx = ti"
                                         :placeholder="agentBotPromptPlaceholder(t)"></textarea>
                             </div>
@@ -1563,10 +1586,10 @@ const settingsCtrlJS = `
         { id: 'dismiss',        label: 'Dismiss',                desc: 'Close any open overlay or dialog',          mac: 'Esc',  win: 'Esc' },
         { id: 'toggle-search',  label: 'Search',                 desc: 'Open the quick search overlay',             mac: '⌘K',   win: 'Ctrl+K' },
         { id: 'new-note',       label: 'New Note',               desc: 'Open a new blank note in the editor',       mac: '⌘N',   win: 'Ctrl+N' },
-        { id: 'toggle-editor',  label: 'Toggle Editor',          desc: 'Open or close the editor panel',            mac: '⌘E',   win: 'Ctrl+E' },
+        { id: 'toggle-editor',  label: 'Toggle Editor',          desc: 'Open or close the editor panel',            mac: '⌘O',   win: 'Ctrl+O' },
         { id: 'close-tab',      label: 'Close Editor Tab',       desc: 'Close the active tab in the editor',        mac: '⌘W',   win: 'Ctrl+W' },
         { id: 'expand-editor',  label: 'Expand / Shrink Editor', desc: 'Toggle editor between 80% and 100% width',  mac: '⌘\\',  win: 'Ctrl+\\' },
-        { id: 'reading-mode',   label: 'Reading Mode',           desc: 'Toggle read-only view for saved notes',     mac: '⌘⇧E',  win: 'Ctrl+Shift+E' },
+        { id: 'reading-mode',   label: 'Reading Mode',           desc: 'Toggle read-only view for saved notes',     mac: '⌘L',   win: 'Ctrl+L' },
         { id: 'refresh',        label: 'Refresh',               desc: 'Reload the current page',                   mac: '⌘R',   win: 'Ctrl+R' },
         { id: 'open-settings',  label: 'Settings',               desc: 'Open the settings dialog',                  mac: '⌘,',   win: 'Ctrl+,' },
       ],

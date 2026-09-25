@@ -12,11 +12,10 @@
        has to be the one that goes transparent — it's the layer directly
        above the window's own compositor surface, so it's the only thing
        actually standing between the vibrancy and the sidebar's pixels.
-       .home-list-pane picks up its own explicit background so the content
-       pane still reads as solid; everywhere else (web browser, Windows/
-       Linux Electron) is untouched. */
+       .home-main picks up its own explicit background so the content pane
+       still reads as solid; everywhere else (web browser, Windows/Linux
+       Electron) is untouched. */
     html.macos body { background: transparent; }
-    .lib-body { flex: 1; display: flex; min-height: 0; overflow: hidden; border-radius: 0; }
     /* ── Home layout: sidebar + list body fills the full height ───── */
     .home-container {
       flex: 1;
@@ -30,27 +29,14 @@
     ::-webkit-scrollbar { display: none; }
 
     /* ── Sidebar + list shell ──────────────────────────────────── */
-    /* Three flex items in document order: .home-side (fixed width) →
-       #home-list-pane → .home-pane-resizer → .content-pane (the editor
-       pane, see content_pane.css). --split-ratio/--split-ratio-inv normally come
-       from home.html's :style binding (content_pane.js's splitRatio state); a
+    /* Two flex items: .home-side (fixed width), .home-main. --split-ratio/
+       --split-ratio-inv normally come from home.html's :style binding; a
        live drag instead writes them straight to this element's inline
-       style every animation frame (startPaneResize), bypassing Alpine so
-       the hot path never re-evaluates the whole :style expression.
-
-       flex-grow itself never tweens (duration 0s always, both here and on
-       .content-pane in content_pane.css) — animating flex-grow/width directly
-       forces a synchronous layout (and, worse, fires CodeMirror's
-       ResizeObserver on every intermediate frame) instead of running on
-       the compositor. Opening snaps the split to its target size in one
-       reflow and lets .content-pane-panel's transform/opacity transition (see
-       content_pane.css) fake the slide-in on top of an already-correctly-sized
-       box. Closing runs that same fade first and only *then* collapses
-       the layout, via transition-delay: var(--content-pane-exit-ms) below (an
-       instant, zero-duration change, just deferred until the fade has had
-       time to finish) — the base rule (this element, not yet
-       .content-pane-open) carries that delay, and .content-pane-open resets it to 0s
-       so opening is never held up by it. */
+       style every animation frame (startPaneResize), bypassing Alpine —
+       they inherit down to .home-main's children below either way.
+       Carries the sidebar's own background too — .home-side stays
+       transparent and just shows this through, so the two never need to
+       agree on a color separately (see .home-side's own rule below). */
     .home-shell {
       flex: 1;
       display: flex;
@@ -60,7 +46,45 @@
       --split-ratio: 0.5;
       --split-ratio-inv: 0.5;
       --content-pane-exit-ms: 200ms;
+      background: var(--surface-soft);
     }
+    /* macOS Electron only: see .home-side's own html.macos rule below for
+       why — same swap, just one level up now. */
+    html.macos .home-shell {
+      background: var(--sidebar-glass-bg);
+    }
+    /* One parent for everything right of the sidebar, mirroring .home-side.
+       Also the opaque backstop for that whole region — #home-list-pane,
+       .home-pane-resizer and .content-pane (+.content-pane-panel) stay
+       transparent and just show this through, same idea as .home-shell/
+       .home-side above. Unlike .home-side, this one never goes translucent
+       on macOS: the editor/list content still needs to read as solid,
+       vibrancy or not (see content_pane.css's .content-pane). */
+    .home-main {
+      flex: 1;
+      display: flex;
+      min-width: 0; min-height: 0;
+      overflow: hidden;
+      border-radius: 0;
+      background: var(--bg);
+    }
+    /* Three flex items in document order: #home-list-pane →
+       .home-pane-resizer → .content-pane (the editor pane, see
+       content_pane.css). flex-grow itself never tweens (duration 0s
+       always, both here and on .content-pane in content_pane.css) —
+       animating flex-grow/width directly forces a synchronous layout
+       (and, worse, fires CodeMirror's ResizeObserver on every
+       intermediate frame) instead of running on the compositor. Opening
+       snaps the split to its target size in one reflow and lets
+       .content-pane-panel's transform/opacity transition (see
+       content_pane.css) fake the slide-in on top of an
+       already-correctly-sized box. Closing runs that same fade first and
+       only *then* collapses the layout, via transition-delay:
+       var(--content-pane-exit-ms) below (an instant, zero-duration
+       change, just deferred until the fade has had time to finish) — the
+       base rule (this element, not yet .content-pane-open) carries that
+       delay, and .content-pane-open resets it to 0s so opening is never
+       held up by it. */
     .home-shell.content-pane-open #home-list-pane { flex-grow: var(--split-ratio); transition-delay: 0s; }
     .home-shell.content-pane-open .content-pane { flex-grow: var(--split-ratio-inv); transition-delay: 0s; }
 
@@ -93,17 +117,16 @@
     }
 
     /* ── Sidebar ──────────────────────────────────────────────── */
-    /* Fills the role the old left .lib-nav rail used to (now removed —
-       its New/ContentPane/Search/Settings actions live in the top/bottom rows
-       below), so it takes over that rail's background for continuity. The
-       aside itself no longer scrolls as a whole; only the middle nav list
-       does, so the top/bottom action rows stay put as the note list grows. */
+    /* No own background — .home-shell paints it now (above), so the aside
+       just shows that through. The rest still fills the old .lib-nav
+       rail's role (New/ContentPane/Search/Settings live in the top/bottom
+       rows below); it no longer scrolls as a whole, only the middle nav
+       list does, so those rows stay put as the note list grows. */
     .home-side {
       flex: 0 0 var(--home-side-w); max-width: var(--home-side-w);
       display: flex; flex-direction: column;
       min-height: 0; overflow: hidden;
       padding: 0;
-      background: var(--surface-soft);
       /* --hairline instead of --border — sidebar/content sit close enough
          in tone now that the full-contrast --border reads as too heavy a
          seam; the ink-alpha hairline keeps the boundary a thin, quiet line. */
@@ -112,19 +135,16 @@
       /* Every "currently active" row in here (.home-side-item.is-active,
          .home-side-child.is-active, the content-pane-toggle icon button) just
          consumes the generic --control-active-bg, same as any other
-         selected-state control app-wide — but since this container's own
-         background is --surface-soft rather than --bg, that generic token
-         is locally repointed at --control-active-bg-on-soft (shared_tokens.go)
-         so it still reads as a clear lift instead of nearly disappearing
-         into the surface it sits on. */
+         selected-state control app-wide — but since what's behind this
+         container is --surface-soft rather than --bg (.home-shell above),
+         that generic token is locally repointed at --control-active-bg-on-soft
+         (shared_tokens.go) so it still reads as a clear lift instead of
+         nearly disappearing into the surface it sits on. */
       --control-active-bg: var(--control-active-bg-on-soft);
     }
-    /* macOS Electron only: drop the sidebar's own fill so the window's
-       native vibrancy (main.js) shows through instead — see the html.macos
-       body rule above for why body has to go transparent for this to reach
-       the compositor at all. */
+    /* macOS Electron only: the fill itself now lives on .home-shell
+       (html.macos .home-shell above); this just swaps the border to match. */
     html.macos .home-side {
-      background: var(--sidebar-glass-bg);
       border-right-color: var(--sidebar-glass-border);
     }
     /* Every hairline in the glass sidebar shares this one line colour —
@@ -133,8 +153,7 @@
        read as one consistent (if restrained) set of dividers instead of
        each drifting to its own contrast against the vibrancy. */
     html.macos .home-side-sep,
-    html.macos .home-side-new-btn,
-    html.macos .home-side-bottom {
+    html.macos .home-side-new-btn {
       border-color: var(--sidebar-glass-border);
     }
     html.macos .home-side-sep { background: var(--sidebar-glass-border); }
@@ -176,7 +195,7 @@
       border-radius: 0; /* flush divider row — the global rounded-corner
         reset (base.css) was clipping the border-top/bottom short of the
         sidebar's edges, reading as a doubled/thicker line at the corner. */
-      border-top: var(--bd-w) solid var(--hairline);
+      /* border-top removed for cleaner visual integration */
     }
     html.macos .home-side-top {
       padding-left: 76px;
@@ -330,58 +349,48 @@
          over the rest of the page — cheap insurance for a pane that's
          frequently resized. */
       contain: layout paint style;
-      /* Explicit even though it matches what body already painted here —
-         once html.macos makes body transparent for the sidebar's vibrancy
-         (above), this is what keeps the content pane looking solid. */
-      background: var(--bg);
+      /* No own background — .home-main is the opaque backstop for this
+         whole region (see its own rule above). */
     }
     /* The shared header row for sections that need one (Pinned, a folder,
-       Inbox, Images, Agents, Shorts) — same height/padding/no-border
-       everywhere instead of each inventing its own toolbar. A section only
-       puts a title in it when the title carries information the sidebar
-       selection doesn't already (a folder's name, or a count/badge like
-       Pinned's total or Inbox's unread count) — Images/Agents/Shorts skip
-       the count and just host their own controls (Select toggle, conv-type
-       seg, Shorts' month select) right-aligned via .home-list-head-spacer.
-       Graph skips this row altogether; it has nothing that belongs in it.
+       Knowledge, Inbox, Images, Agents, Shorts) — same height/padding/no-border
+       everywhere instead of each inventing its own toolbar. It carries no
+       title (the sidebar selection already says where you are): only a
+       low-key count pill where a section has a number worth showing, plus
+       the section's own controls right-aligned via .home-list-head-spacer.
+       Knowledge's graph view sits below this row too (its seg control lives
+       here), so .graph-main just becomes the other flex child instead of
+       filling the whole pane.
 
-       min-height pins the row's CONTENT line (i.e. the box excluding this
-       rule's own padding) to --btn-h-xs (28px, this row's actual controls —
-       .seg, .btn-outline.btn--xs — all size to around this already).
-       Written as calc(padding-top + padding-bottom +
-       28px) rather than a flat number because with box-sizing:border-box a
-       plain `min-height: 28px` is measured against the PADDED box, and a
-       title-only row's padded height would otherwise exceed a bare 28px —
-       so the min-height would silently do nothing for exactly the row
-       (Pinned) it's meant to constrain. Explicitly adding the padding back
-       in is what makes it bite: a bare-title row gets padded out to the
-       same total height as a row with a real 28px-tall control in it, so
-       the title centers at the same Y in both instead of sinking into
-       whichever row happens to hold a taller button.
+       Height is --toolbar-h, the same constant the editor tool bar uses, so
+       controls on both sides of the pane divider sit on one line; align-items
+       centers whatever the row holds (28px controls, a 20px pill).
 
-       No border-top: this row sits flush against the true window top now
-       (the standalone .lib-topbar that used to own that edge is gone), the
-       same as the sidebar's own top row — neither needs a border there.
-       border-bottom is the only border this row needs. */
+       No borders at all: this row sits flush against the true window top
+       (the standalone .lib-topbar that used to own that edge is gone), and
+       the list scrolls under it with a plain edge, no divider or fade. */
     .home-list-head {
       flex-shrink: 0; display: flex; align-items: center; gap: 8px;
-      min-height: calc(8px + 8px + var(--btn-h-xs));
+      min-height: var(--toolbar-h);
       padding: 8px 24px;
-      /* --hairline, not --border — matches the sidebar/content seam
-         (.home-side) so header-strip dividers read at the same weight. */
-      border-bottom: var(--bd-w) solid var(--hairline);
       border-radius: 0; /* flush chrome strip — never rounds */
     }
     /* macOS: this row sits at the true window top now (no more full-width
-       .lib-topbar drag strip), so its own blank space (the title/control
-       gap, .home-list-head-spacer) needs to pick up dragging itself —
+       .lib-topbar drag strip), so its own blank space (.home-list-head-spacer
+       and the gaps) needs to pick up dragging itself —
        mirrors .home-side-top's treatment. Buttons opt back out so clicks
        still register instead of dragging the window. */
     html.macos .home-list-head { -webkit-app-region: drag; cursor: default; }
     html.macos .home-list-head button,
     html.macos .home-list-head a { -webkit-app-region: no-drag; }
-    .home-list-title { font-size: var(--text-title-sm); font-weight: var(--fw-semibold); color: var(--fg); letter-spacing: -0.01em; line-height: 1; }
-    .home-list-count { font-size: var(--text-xs); color: var(--muted); font-variant-numeric: tabular-nums; line-height: 1; }
+    /* Same pill recipe as the graph index counts (--cnt-bg/--cnt-tx). */
+    .home-list-count {
+      flex-shrink: 0; display: inline-flex; align-items: center;
+      height: 20px; padding: 0 8px; border-radius: var(--r-full);
+      font-size: var(--text-xs); font-weight: var(--fw-medium); line-height: 1;
+      color: var(--cnt-tx); background: var(--cnt-bg);
+      font-variant-numeric: tabular-nums;
+    }
     .home-list-body {
       flex: 1; min-height: 0; overflow-y: auto;
       padding: 20px 24px 40px;
@@ -393,23 +402,41 @@
        container's layout mode and a few of the row's own rules change. */
     .home-list-body.is-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(216px, 1fr));
       align-content: start;
-      gap: 0.75rem;
+      gap: 0.85rem;
     }
-    .home-list-body.is-grid .home-list-card { margin-bottom: 0; display: flex; flex-direction: column; }
+    /* A touch more breathing room than the shared .list-card padding (list
+       rows keep that one untouched) — cards read a little too tight at this
+       larger min-width otherwise. */
+    .home-list-body.is-grid .home-list-card { margin-bottom: 0; display: flex; flex-direction: column; padding: 1rem 1.35rem; }
     .home-list-body.is-grid .home-note-row-title {
       white-space: normal; display: -webkit-box;
       -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+      /* Reserve 2 lines' height even for a title that only fills one — a
+         short-title card would otherwise come out shorter than its
+         2-line neighbors in the same grid row. */
+      min-height: calc(var(--lh-normal) * 2em);
     }
     .home-list-body.is-grid .home-note-row-meta { margin-top: auto; padding-top: 0.5rem; }
     /* Cover fills the whole card as a background; it is out of flow so the
        card keeps the exact size its text gives it, cover or not. Fixed dark
        base + scrim keep the light text readable while loading / on failure /
-       in the light theme. */
-    .home-list-body.is-grid .home-list-card.has-cover { position: relative; overflow: hidden; }
+       in the light theme.
+
+       The card itself (.home-list-card, a grid item here) deliberately never
+       gets `overflow: hidden` in grid mode — a grid item's automatic minimum
+       size drops to 0 once its own overflow isn't visible, which was
+       collapsing has-cover cards down to a sliver (or, at one card per row,
+       overlapping the next row entirely) at narrower pane widths, while
+       cover-less cards (still overflow:visible) sized normally. The rounded-
+       corner clip that overflow:hidden used to buy us here instead lives on
+       .home-note-cover, which is absolutely positioned and out of flow, so
+       nothing about it ever feeds back into the grid item's own sizing. */
+    .home-list-body.is-grid .home-list-card.has-cover { position: relative; }
     .home-list-body.is-grid .home-note-cover {
       display: block; position: absolute; inset: 0; background: #26262a;
+      border-radius: inherit; overflow: hidden;
     }
     .home-list-body.is-grid .home-note-cover::after {
       content: ""; position: absolute; inset: 0;
@@ -431,20 +458,22 @@
     .home-list-body.is-grid .home-list-empty { grid-column: 1 / -1; }
 
     /* ── Wide note row ─────────────────────────────────────────── */
-    /* ── Shared bordered list-card row — the note list's rows and Inbox's
-       message cards were two separately-defined rules identical in every
-       property except display mode (block vs flex, since inbox cards lay
-       out an unread-dot + content side by side). One definition now backs
-       both; each keeps only its own layout mode on top. ── */
+    /* ── Shared list-card row — the note list's rows and Inbox's message
+       cards were two separately-defined rules identical in every property
+       except display mode (block vs flex, since inbox cards lay out an
+       unread-dot + content side by side). One definition now backs both;
+       each keeps only its own layout mode on top. ── */
     /* Box + click interaction come from the shared
-       .list-card.list-card--clickable (base.css). */
+       .list-card.list-card--clickable (base.css). Note rows drop the
+       outline and sit on surface-soft, same as a read inbox card. */
     .home-list-card {
       margin-bottom: 0.5rem;
       /* overflow:hidden (has-cover) zeroes the flex min-height, so cards would
          get squashed in the column-flex list body */
       flex-shrink: 0;
     }
-    .home-note-row { display: block; }
+    .home-note-row { display: block; background: var(--surface-soft); border-color: transparent; }
+    .home-note-row:hover { background: var(--card-hov); }
     /* List mode: cover is only a right-side background layer. The card keeps
        the same block layout and padding as rows without covers, so badges and
        timestamps stay pinned to the far right instead of being squeezed into a
@@ -602,9 +631,9 @@
     .home-inbox-list { flex: 1; min-height: 0; overflow-y: auto; padding: 20px 24px 40px; display: flex; flex-direction: column; }
 
     .home-inbox-card { display: flex; align-items: flex-start; gap: 0.5rem; }
-    /* Read cards recede one surface step (bg -> surface-soft) with a softer
-       border, so unread items stay visually "raised" against them. */
-    .home-inbox-card:not(.is-unread) { background: var(--surface-soft); border-color: var(--border); }
+    /* Read cards recede one surface step (bg -> surface-soft) with no
+       outline, so unread items stay visually "raised" against them. */
+    .home-inbox-card:not(.is-unread) { background: var(--surface-soft); border-color: transparent; }
     .home-inbox-card:not(.is-unread):hover { background: var(--card-hov); }
     .home-inbox-card:not(.is-unread) .home-inbox-card-title,
     .home-inbox-card:not(.is-unread) .home-inbox-card-time { color: var(--muted); }
