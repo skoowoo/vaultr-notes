@@ -277,6 +277,17 @@
     .dot--accent { background: var(--accent); }
     .dot--fg     { background: var(--fg); }
 
+    /* ── Shared key-combo glyph — renders a "⌘K"/"Ctrl+K"-style hint via
+       vaultrKbdHTML() (note_shared.js), which wraps ⌘ in .kbd-cmd. ⌘ isn't
+       in the mono font so it falls back to a symbol font that renders
+       smaller than the mono letters beside it; .kbd-cmd scales it back up,
+       and the inline-flex here re-centers the row on its own baseline so
+       that upscaled glyph doesn't throw off vertical alignment the way
+       plain inline text would. One recipe backs both the content pane's
+       Find hint and Settings → Shortcuts' key list. ── */
+    .kbd-combo { display: inline-flex; align-items: center; line-height: 1; }
+    .kbd-combo .kbd-cmd { font-size: 1.3em; line-height: 1; }
+
     /* ── Shared avatar circle — a colored circle with a name's initials.
        One recipe backs every agent/bot identity marker app-wide; only
        size and default color differ per caller (both still accept a

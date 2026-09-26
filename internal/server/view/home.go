@@ -2,6 +2,7 @@ package view
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"math"
@@ -11,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hardhacker/vaultr/internal/plugins/search"
 	"github.com/hardhacker/vaultr/internal/storage"
 )
 
@@ -230,9 +232,9 @@ func renderHomeSectionFull(data homeSectionData) (template.HTML, error) {
 // #home-list-pane contents for whichever sidebar item is active. This is the
 // dispatch point between the right pane's different "view kinds": today a
 // generic note list (pinned/folder), the rendered Shorts stream, the image
-// gallery grid, the knowledge graph canvas, the inbox message list, or the
-// agent chat panel; more kinds can be added here as new cases without
-// touching the sidebar's swap mechanism (see home.js
+// gallery grid, the tag cloud/picker, the knowledge graph canvas, the inbox
+// message list, or the agent chat panel; more kinds can be added here as new
+// cases without touching the sidebar's swap mechanism (see home.js
 // selectSection/selectFolder).
 func (vh *ViewHandler) renderHomeSectionHTML(r *http.Request) (template.HTML, error) {
 	switch r.URL.Query().Get("type") {
@@ -240,6 +242,8 @@ func (vh *ViewHandler) renderHomeSectionHTML(r *http.Request) (template.HTML, er
 		return vh.renderHomeShortsSection(r)
 	case "images":
 		return vh.renderHomeImagesSection(r)
+	case "tags":
+		return vh.renderHomeTagsSection(r)
 	case "inbox":
 		// Same story as graph: the message list is entirely client-rendered
 		// (home.js fetches /api/inbox itself once #home-inbox-list lands in
@@ -343,7 +347,94 @@ func (vh *ViewHandler) renderHomeImagesSection(r *http.Request) (template.HTML, 
 	return template.HTML(buf.String()), nil //nolint:gosec // server-rendered fragment, not user HTML
 }
 
-// HomeSection handles GET /home/section?type=pinned|folder|shorts|images|knowledge|inbox|chat[&path=DIR][&index=PATH&view=list|grid|graph]
+// tagWallMaxTags caps how many distinct tags the wall/picker ever fetch —
+// generous for "a few hundred tags" without dragging in a vault's entire
+// long tail (TagDistribution's own default is 500; a vault with more than
+// this many distinct tags still works, it just won't show the extreme tail
+// in the wall).
+const tagWallMaxTags = 2000
+
+// tagNotesLimit caps how many notes a single tag's filtered list can show.
+// Unlike folder/knowledge lists this has no "load more" pagination (mirrors
+// Knowledge's index-drilldown, which also fetches its full note set in one
+// shot) — a limit this high is just a safety valve, not a real page size.
+const tagNotesLimit = 5000
+
+// tagItem is one word in the Tags wall's cloud, or one option in the
+// filterable tag picker dropdown shown above a selected tag's note list (see
+// homeTagsSectionHTML). JSON tags matter: the wall passes the whole slice to
+// the client as JSON (see the "tagsJSON" template func below) for d3-cloud
+// to lay out — see __vaultrRenderTagCloud in home.js.
+type tagItem struct {
+	Name  string `json:"name"`
+	Count int    `json:"count"`
+}
+
+// homeTagsData drives the Tags section. Selected == "" renders the wall (all
+// tags, weighted by use); Selected != "" renders just that tag's own pill +
+// count plus a dropdown for jumping to any other tag, above the filtered
+// note list. NextURL always stays empty — see tagNotesLimit — but "rows"
+// (homeSectionRowsHTML) references .NextURL unconditionally, so the field
+// has to exist here too.
+type homeTagsData struct {
+	Tags     []tagItem
+	Selected string
+	Items    []noteItem
+	Count    int
+	NextURL  string
+	EmptyMsg string
+}
+
+// renderHomeTagsSection renders the Tags wall (no ?tag=) or, once a tag is
+// picked, that tag's filtered note list with a one-line head (current tag +
+// count + a single "switch tag" dropdown) instead of listing every tag —
+// switching never requires returning to the wall first (see selectTag in
+// home.js). Both states share one fetch of the full tag distribution, since
+// the picker dropdown reuses the wall's own tag/count data.
+func (vh *ViewHandler) renderHomeTagsSection(r *http.Request) (template.HTML, error) {
+	data := homeTagsData{EmptyMsg: "No notes with this tag"}
+
+	if vh.searcher != nil {
+		counts, err := vh.searcher.TagDistribution(tagWallMaxTags)
+		if err != nil {
+			return "", err
+		}
+		data.Tags = make([]tagItem, 0, len(counts))
+		for _, c := range counts {
+			data.Tags = append(data.Tags, tagItem{Name: c.Tag, Count: int(c.Count)})
+		}
+	}
+
+	if selected := strings.TrimSpace(r.URL.Query().Get("tag")); selected != "" && vh.searcher != nil {
+		data.Selected = selected
+		results, err := vh.searcher.Search(selected, search.SearchOptions{Type: "tag", Limit: tagNotesLimit})
+		if err != nil {
+			return "", err
+		}
+		paths := make([]storage.Path, 0, len(results))
+		for _, res := range results {
+			if p, ok := storage.ParsePath(storage.JoinPath(res.Dir, res.Name)); ok {
+				paths = append(paths, p)
+			}
+		}
+		if len(paths) > 0 {
+			notes, err := vh.vault.GetNotesByPaths(paths)
+			if err != nil {
+				return "", err
+			}
+			data.Items = vh.noteItemsFromNotes(notes)
+		}
+		data.Count = len(data.Items)
+	}
+
+	var buf bytes.Buffer
+	if err := homeTagsSectionTemplate.ExecuteTemplate(&buf, "tags", data); err != nil {
+		return "", err
+	}
+	return template.HTML(buf.String()), nil //nolint:gosec // server-rendered fragment, not user HTML
+}
+
+// HomeSection handles GET /home/section?type=pinned|folder|shorts|images|tags|knowledge|inbox|chat[&path=DIR][&tag=NAME][&index=PATH&view=list|grid|graph]
 // Returns the full #home-list-pane contents, used when the sidebar selection changes.
 func (vh *ViewHandler) HomeSection(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
@@ -387,6 +478,18 @@ func (vh *ViewHandler) HomeSectionMore(w http.ResponseWriter, r *http.Request) {
 }
 
 var homeTemplateFuncs = template.FuncMap{
+	// tagsJSON serializes the wall's tag list for __vaultrRenderTagCloud
+	// (home.js) to lay out client-side via d3-cloud. Returned as a plain
+	// string, not template.HTML, so html/template still HTML-escapes it into
+	// the data-tags attribute (the JSON's own double quotes become &#34;) —
+	// the browser unescapes that back to valid JSON before JS reads it.
+	"tagsJSON": func(tags []tagItem) string {
+		b, err := json.Marshal(tags)
+		if err != nil {
+			return "[]"
+		}
+		return string(b)
+	},
 	"label": func(item noteItem) string {
 		if item.Title != "" {
 			return item.Title
@@ -504,6 +607,88 @@ var homeSectionTemplate = template.Must(
 		template.New("rows").Funcs(homeTemplateFuncs).Parse(homeSectionRowsHTML),
 	).New("full").Funcs(homeTemplateFuncs).Parse(homeSectionFullHTML),
 )
+
+// homeTagsSectionHTML is the Tags section: with no tag selected, a
+// d3-cloud-packed word cloud of every tag (plain text sized by how often
+// it's used — see __vaultrRenderTagCloud, home.js); with one selected, just
+// that tag's own pill + a count, plus a single dropdown trigger for jumping
+// to another tag (a vault can have hundreds of tags, so listing them all as
+// a permanent header row — the first cut of this — doesn't scale; a
+// filterable dropdown does). The dropdown reuses the app's shared
+// .cselect/.cselect-btn--ghost combo (same component Shorts' month picker
+// uses, home.go's homeShortsSectionHTML) with a search input pinned above
+// its option list (see .tag-picker-dropdown, home.css) — plain .cselect has
+// no such input since none of its other uses need to filter hundreds of
+// rows. Switching tags re-requests this same fragment with a different
+// &tag=, never routing back through the wall first (see selectTag in
+// home.js); "All tags" is folded into the dropdown itself rather than a
+// separate always-visible control, to keep the header down to "current tag
+// + one control" as asked.
+const homeTagsSectionHTML = `{{define "tags"}}{{if .Selected}}<div class="home-list-head">
+  <span class="tag-current"><span class="tag-current-name">{{.Selected}}</span></span>
+  <span class="home-list-count" id="home-list-count" title="Notes">{{.Count}}</span>
+  <div class="home-list-head-spacer"></div>
+  <div class="cselect cselect--inline tag-picker" x-data="{tpOpen:false,tpQuery:''}" @click.outside="tpOpen=false">
+    <button type="button" class="cselect-btn cselect-btn--ghost" :class="{open:tpOpen}"
+            @click="tpOpen=!tpOpen; tpQuery=''; $nextTick(function(){$refs.tpInput && $refs.tpInput.focus()})"
+            @keydown.escape="tpOpen=false" aria-label="Switch tag">
+      <span class="cselect-btn-text">Switch tag</span>
+      <svg fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+    </button>
+    <div class="cselect-dropdown tag-picker-dropdown" x-show="tpOpen" x-cloak>
+      <div class="tag-picker-search">
+        <input x-ref="tpInput" type="text" x-model="tpQuery" placeholder="Filter tags…" @keydown.escape="tpOpen=false">
+      </div>
+      <div class="cselect-divider"></div>
+      <button type="button" class="cselect-option tag-picker-alltags" @click="selectSection('tags', '/home/section?type=tags'); tpOpen=false">
+        <svg fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+          <rect width="7" height="7" x="3" y="3" rx="1" /><rect width="7" height="7" x="14" y="3" rx="1" />
+          <rect width="7" height="7" x="14" y="14" rx="1" /><rect width="7" height="7" x="3" y="14" rx="1" />
+        </svg>
+        <span>All tags</span>
+      </button>
+      <div class="cselect-divider"></div>
+      <div class="tag-picker-options">
+        {{$sel := .Selected}}
+        {{range .Tags}}
+        <button type="button" class="cselect-option{{if eq .Name $sel}} sel{{end}}"
+                x-show="tpQuery === '' || '{{.Name}}'.toLowerCase().includes(tpQuery.toLowerCase())"
+                @click="selectTag('{{.Name}}'); tpOpen=false">
+          <span class="dot dot--fg cselect-option-dot"></span>
+          <span class="tag-picker-option-name">{{.Name}}</span><span class="tag-picker-option-count">{{.Count}}</span>
+        </button>
+        {{end}}
+      </div>
+    </div>
+  </div>
+  <div class="seg">
+    <button type="button" class="seg-btn" :class="currentListView() === 'list' ? 'active' : ''"
+            @click="setListView('list')" title="List view">
+      <svg fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+        <path d="M3 6h18" /><path d="M3 12h18" /><path d="M3 18h18" />
+      </svg>
+    </button>
+    <button type="button" class="seg-btn" :class="currentListView() === 'grid' ? 'active' : ''"
+            @click="setListView('grid')" title="Grid view">
+      <svg fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+        <rect width="7" height="7" x="3" y="3" rx="1" /><rect width="7" height="7" x="14" y="3" rx="1" />
+        <rect width="7" height="7" x="14" y="14" rx="1" /><rect width="7" height="7" x="3" y="14" rx="1" />
+      </svg>
+    </button>
+  </div>
+</div>
+<div class="home-list-body" id="home-list-body" :class="{'is-grid': currentListView() === 'grid'}">{{template "rows" .}}</div>
+{{else}}<div class="home-list-head">
+  <span class="home-list-count" id="home-list-count" title="Tags">{{len .Tags}}</span>
+</div>
+<div class="home-list-body" id="home-list-body">{{if .Tags}}
+  <div class="tag-cloud" id="tag-cloud" data-tags="{{tagsJSON .Tags}}"></div>
+  {{else}}
+  <div class="home-list-empty">No tags yet</div>
+{{end}}</div>
+{{end}}{{end}}`
+
+var homeTagsSectionTemplate = template.Must(homeSectionTemplate.New("tags").Funcs(homeTemplateFuncs).Parse(homeTagsSectionHTML))
 
 // homeShortsSectionHTML lays out Shorts as a single column: the shared
 // .home-list-head (title + a "jump to month" picker, in place of the old
@@ -1119,6 +1304,7 @@ var homePageHTML = `<!DOCTYPE html>
   <script src="/static/vendor/layout-base.js"></script>
   <script src="/static/vendor/cose-base.js"></script>
   <script src="/static/vendor/cytoscape-fcose.min.js"></script>
+  <script src="/static/vendor/d3-cloud.min.js"></script>
   <script src="/static/vendor/marked.min.js"></script>
   <script src="/static/vendor/dompurify.min.js"></script>
   <script>

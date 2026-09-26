@@ -366,6 +366,8 @@ const settingsModalCSS = `
       font-family: var(--font-mono);
       font-size: var(--text-xs); color: var(--fg); white-space: nowrap; line-height: 1.4;
     }
+    /* .kbd-cmd sizing/alignment now comes from the shared .kbd-combo
+       (base.css) — see that rule for why. */
 
     /* ── Agent Bots pane ───────────────────────────────────────────── */
     .agent-bots-pane { flex: 1; overflow-y: auto; padding: 1.75rem 1.5rem 3rem; }
@@ -952,7 +954,7 @@ func settingsModalHTML() string {
                     </div>
                     <div class="shortcuts-keys">
                       <template x-for="k in getEffectiveKeys(s)" :key="k">
-                        <span class="kbd" x-text="k"></span>
+                        <span class="kbd kbd-combo" x-html="vaultrKbdHTML(k)"></span>
                       </template>
                     </div>
                   </div>

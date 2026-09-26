@@ -237,6 +237,8 @@
       font-family: var(--font-mono); font-size: var(--text-xs);
       color: var(--muted-soft);
     }
+    /* .kbd-cmd sizing/alignment now comes from the shared .kbd-combo
+       (base.css) — see that rule for why. */
     /* Both labels share one grid cell so the row (and the shrink-to-fit menu)
        keeps the wider label's width instead of jittering on swap. */
     .content-pane-copy-label { display: inline-grid; }

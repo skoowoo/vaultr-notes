@@ -175,7 +175,7 @@
        count badge also reads it as a (necessarily opaque) text colour. */
     html.macos .home-side-item.is-active,
     html.macos .home-side-child.is-active,
-    html.macos .home-side-bottom .icon-btn-ghost.is-active {
+    html.macos .home-side-bottom-btn.is-active {
       background: var(--sidebar-glass-active);
     }
     /* Scrollbar thumb: the shared --scrollbar-thumb (base.css) is tuned for
@@ -190,19 +190,20 @@
     html.macos .home-side-nav::-webkit-scrollbar-thumb:hover {
       background: var(--sidebar-glass-scrollbar-thumb-hov);
     }
-    /* Top row now only holds Search, right-aligned — it shares the window's
-       true top edge with the macOS traffic lights (same row, not stacked
-       above/below them), so the lights just need horizontal clearance on
-       the left, the same way the old full-width .lib-topbar reserved it. */
+    /* Top row holds Search + the reading-pane toggle, right-aligned — it
+       shares the window's true top edge with the macOS traffic lights
+       (same row, not stacked above/below them), so the lights just need
+       horizontal clearance on the left, the same way the old full-width
+       .lib-topbar reserved it. */
     .home-side-top {
       flex-shrink: 0; height: var(--topbar-h);
-      display: flex; align-items: center; justify-content: flex-end;
+      display: flex; align-items: center; justify-content: flex-end; gap: 4px;
       padding: 0 14px;
       border-radius: 0;
     }
     .home-side-bottom {
-      flex-shrink: 0; display: flex; align-items: center; justify-content: space-between;
-      padding: 12px 14px;
+      flex-shrink: 0; display: flex; align-items: center;
+      height: var(--topbar-h); padding: 0 14px;
       border-radius: 0; /* flush divider row — the global rounded-corner
         reset (base.css) was clipping the border-top/bottom short of the
         sidebar's edges, reading as a doubled/thicker line at the corner. */
@@ -236,16 +237,16 @@
     .home-side-new-btn svg { width: 14px; height: 14px; flex-shrink: 0; }
     /* The reading-pane toggle's open state reuses the same surface-2 lift as every
        other "currently active" indicator app-wide (no border — matches
-       .home-side-child.is-active below), scoped to the sidebar's own ghost
-       icon buttons rather than added to the shared component. (--control-
-       active-bg resolves to the stronger --control-active-bg-on-soft value
-       here — see .home-side's own rule above.) */
-    .home-side-bottom .icon-btn-ghost.is-active {
+       .home-side-child.is-active below), scoped by its own class rather
+       than added to the shared component. (--control-active-bg resolves to
+       the stronger --control-active-bg-on-soft value here — see .home-side's
+       own rule above.) */
+    .home-side-bottom-btn.is-active {
       background: var(--control-active-bg); color: var(--control-active-fg);
     }
     /* One size step up from .icon-btn-ghost's default 14px — Settings and
-       ContentPane are the only two controls down here, so they can afford a
-       touch more presence than a dense toolbar's icons would. */
+       ContentPane are the only controls carrying this class, so they can
+       afford a touch more presence than a dense toolbar's icons would. */
     .home-side-bottom-btn svg { width: 16px; height: 16px; }
     .home-side-nav {
       flex: 1; min-height: 0; overflow-y: auto;
@@ -267,7 +268,7 @@
        (visible), so it never resets their minimum size. */
     .home-side-sep {
       flex-shrink: 0;
-      height: var(--bd-w); background: var(--border); margin: 11px 8px;
+      height: var(--bd-w); background: var(--hairline); margin: 11px 8px;
       border-radius: 0; /* divider line — never rounds */
     }
     /* Row/hover/active/icon now come from the shared .side-nav-item /
@@ -754,6 +755,87 @@
       padding: 3rem 0.75rem; text-align: center;
       font-size: var(--text-sm); color: var(--muted);
     }
+
+    /* ── Tags: word-cloud wall + tag picker (home.go's homeTagsSectionHTML) ──
+       Two states of one section, not two pages: with no tag picked,
+       .tag-cloud fills the whole list-body with a d3-cloud-packed word cloud
+       (tag is the subject); with one picked, .home-list-head shrinks to just
+       that tag's own pill + count + a single dropdown trigger for switching
+       (see .tag-picker below) instead of listing every tag in the header —
+       a vault's tag count isn't bounded the way a handful of view-toggle
+       buttons is. */
+    /* __vaultrRenderTagCloud (home.js) sets this element's own height (the
+       word cloud needs a fixed box to lay out into) and fills it with
+       absolutely-positioned .tag-cloud-word buttons at the x/y d3-cloud
+       computed — position:relative is all this container itself needs. */
+    .tag-cloud { position: relative; width: 100%; }
+    /* Plain sized text, not a pill — d3-cloud's tight interlocking packing
+       is computed from each word's own glyph shape (rendered to a hidden
+       canvas to measure it); wrapping that in a padded/bordered box would
+       make the measured shape wrong and reopen gaps the layout just closed.
+       Font-size is the only weight signal (no color scale — same "size
+       only" rule as everywhere else tag weight shows up in this app).
+       transform: translate(-50%,-50%) because d3-cloud's x/y are each
+       word's center, not its top-left corner. */
+    .tag-cloud-word {
+      position: absolute; transform: translate(-50%, -50%);
+      border: none; background: none; padding: 0; margin: 0;
+      color: var(--fg); cursor: pointer;
+      font-family: inherit; line-height: 1; white-space: nowrap;
+      transition: color var(--motion-fast) ease;
+    }
+    .tag-cloud-word:hover { color: var(--accent); }
+    .tag-cloud-word:focus-visible { outline: 2px solid var(--accent-focus); outline-offset: 2px; }
+
+    /* Filtered-state head: current tag + count on the left, the picker
+       pinned right via the usual .home-list-head-spacer. */
+    .tag-current {
+      display: inline-flex; align-items: center;
+      font-size: var(--text-base); font-weight: var(--fw-semibold); color: var(--fg);
+    }
+    .tag-current-name::before { content: "#"; color: var(--muted); font-weight: var(--fw-regular); }
+
+    /* Tag picker: the app's shared inline/ghost .cselect (cselect.css),
+       with a search input pinned above the option list — plain .cselect has
+       no such input since none of its other uses (Shorts' month picker,
+       Settings dropdowns) need to filter hundreds of rows. The dropdown's
+       own overflow-y:auto (cselect.css) would otherwise scroll the input
+       away with the options, so this switches it to a column flex layout
+       and moves the scrolling + max-height onto .tag-picker-options alone.
+       Search input / "All tags" / the scrollable list are separated by
+       .cselect-divider (cselect.css) — an inset hairline, not a
+       border-bottom on each section, which used to sit flush against the
+       dropdown's rounded corners and read as arced at both ends once this
+       block's own overflow:visible experiment (since reverted, see below)
+       stopped .cselect-dropdown's rounding from cleanly clipping it. */
+    /* .tag-picker (ancestor) prefix matches .cselect--inline .cselect-dropdown's
+       specificity so this actually overrides its width:max-content instead
+       of losing the tie despite coming later in the sheet. overflow stays
+       hidden (not visible) so the dropdown's own rounded corners still
+       cleanly clip its content, same as the base component — only
+       .tag-picker-options scrolls, via its own overflow-y. */
+    .tag-picker .tag-picker-dropdown {
+      display: flex; flex-direction: column;
+      max-height: 320px; overflow: hidden;
+      width: 220px;
+    }
+    .tag-picker-search { flex-shrink: 0; padding: 0.15rem 0.15rem 0.4rem; }
+    .tag-picker-search input {
+      width: 100%; height: 28px; padding: 0 0.55rem;
+      border: var(--bd-w) solid var(--border); border-radius: var(--r-sm);
+      background: var(--btn-bg); color: var(--fg);
+      font-family: inherit; font-size: var(--text-sm);
+    }
+    .tag-picker-search input:focus { outline: none; border-color: var(--accent); }
+    .tag-picker-alltags { flex-shrink: 0; }
+    .tag-picker-alltags svg { width: 13px; height: 13px; color: var(--muted); }
+    .tag-picker-options { flex: 1; min-height: 0; overflow-y: auto; }
+    /* min-width:0 lets this flex item actually shrink below its text's
+       intrinsic width instead of wrapping/pushing the count off — same
+       truncation recipe as .cselect-btn-text above. */
+    .tag-picker-option-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .tag-picker-option-count { flex-shrink: 0; margin-left: auto; color: var(--muted); font-variant-numeric: tabular-nums; }
+    .cselect-option.sel .tag-picker-option-count { color: inherit; opacity: 0.7; }
 
     /* ── Short note content in content pane ──────────────────────── */
     .short-day-frag {

@@ -169,7 +169,7 @@
                   <circle cx="11" cy="11" r="8"/><path stroke-linecap="round" stroke-linejoin="round" d="m21 21-4.34-4.34"/>
                 </svg>
                 <span>Find</span>
-                <span class="content-pane-more-item-kbd" x-text="isMac ? '⌘F' : 'Ctrl+F'"></span>
+                <span class="content-pane-more-item-kbd kbd-combo" x-html="vaultrKbdHTML(isMac ? '⌘F' : 'Ctrl+F')"></span>
               </button>
               <button type="button" class="content-pane-more-item content-pane-source-toggle-btn"
                       @click.stop="moreOpen = false; editorMode.toggle()"
