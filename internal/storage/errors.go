@@ -39,6 +39,16 @@ var (
 
 	// ErrAlreadyExists is returned when an operation's destination path is
 	// already occupied by another note (on disk or in the metadata DB) and
-	// the operation would silently overwrite it. Used by MoveNote.
+	// the operation would silently overwrite it. Used by MoveNote and
+	// RenameNote — for RenameNote the check is vault-wide (any dir), not just
+	// the note's own directory, since filenames are expected to be unique
+	// across the whole vault.
 	ErrAlreadyExists = errors.New("a note already exists at the destination")
+
+	// ErrRenameNotAllowed is returned by RenameNote when the note cannot be
+	// safely renamed: its kind is system-managed (short/knowledge/index —
+	// each has a subsystem elsewhere that assumes a stable filename), or it
+	// lives under a system directory (an underscore-prefixed path segment,
+	// e.g. "/_shorts", "/_knowledge" — see dirHasUnderscoreSegment).
+	ErrRenameNotAllowed = errors.New("this note cannot be renamed")
 )

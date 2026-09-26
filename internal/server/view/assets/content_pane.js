@@ -8,8 +8,8 @@
   var __vaultrEditor = {
     view: null,
     initPromise: null, dirty: false,
-    currentPath: '', currentDraftId: '', currentMd: '',
-    saveTimer: null, draftSaveTimer: null, draftSaveTabId: null,
+    currentPath: '', currentMd: '',
+    saveTimer: null,
     EditorView: null, EditorState: null, Compartment: null, keymap: null,
     defaultKeymap: null, historyKeymap: null, history: null,
     markdown: null, HighlightStyle: null, syntaxHighlighting: null, tags: null,
@@ -37,17 +37,30 @@
     try { localStorage.setItem('vaultr.reading', on ? '1' : '0'); } catch(_) {}
   }
 
-  var CONTENT_PANE_CREATE_KEY = 'vaultr.content-pane-create';
   var __vaultrEditorTabSeq = 0;
   function __vaultrEditorNewTabId() {
     __vaultrEditorTabSeq = (__vaultrEditorTabSeq + 1) % 1000;
     return Date.now() * 1000 + __vaultrEditorTabSeq;
   }
 
-  // ── Autocomplete (path input in create mode) ─────────────────────────────────
-  var __CONTENT_PANE_PATH_DBL_ENTER_MS = 2000;
-  var __vaultrEditorPathAc = null; // created in __vaultrEditorSetupCreateMode
+  var CONTENT_PANE_MAX_TABS = 10;
+  // Oldest evictable tab index, or -1. Skips the active tab and any
+  // unmaterialized tab that still has real content (_pendingContent) — an
+  // empty one is free to evict, or it'd sit protected forever and push out
+  // real notes instead.
+  function __vaultrOldestEvictableTabIdx(tabs, activeTab) {
+    var oldestIdx = -1, oldestId = Infinity;
+    for (var j = 0; j < tabs.length; j++) {
+      if (j !== activeTab && !tabs[j]._pendingContent && tabs[j].id < oldestId) { oldestIdx = j; oldestId = tabs[j].id; }
+    }
+    return oldestIdx;
+  }
 
+  // ── Directory-path autocomplete (kept for reuse, not currently wired in) ────
+  // Parses "…/parti" into {dirPath, partial} for __vaultrPathAcCreate
+  // (path_ac.js) — used by the old create-mode path input. Nothing calls
+  // this today (new notes no longer ask for a path up front), but it's
+  // generic and worth keeping for a future directory picker.
   function __vaultrEditorAcParseCtx(val, caret) {
     val = typeof val === 'string' ? val : '';
     if (caret == null || caret > val.length) caret = val.length;
@@ -120,41 +133,13 @@
     return (await resp.json()).src;
   }
 
-  // ── Electron draft store helpers ────────────────────────────────────────────
-  function __vaultrEditorDraftStore() {
-    return window.vaultrDesktop && window.vaultrDesktop.drafts ? window.vaultrDesktop.drafts : null;
-  }
-  function __vaultrEditorNewDraftId() {
-    return 'draft-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
-  }
+  // ── Note materialization ─────────────────────────────────────────────────────
+  // A brand-new tab has no path — and nothing on the server — until its
+  // first real edit (see __vaultrEditorHandleContentChange below). There is
+  // no draft state to load/flush/discard before that point.
   function __vaultrEditorActiveTab() {
     var pane = window.__vaultrContentPane;
     return pane ? pane.tabs[pane.activeTab] : null;
-  }
-  function __vaultrEditorPathInputValue() {
-    var pi = document.getElementById('content-pane-path-input');
-    return pi ? pi.value : '';
-  }
-  function __vaultrEditorDraftTitle(pathInput, content) {
-    var name = (pathInput || '').trim();
-    if (name) return name.replace(/\.md$/i, '').split('/').pop() || 'New note';
-    var first = String(content || '').split(/\r?\n/).map(function(line) {
-      return line.replace(/^#+\s*/, '').trim();
-    }).find(Boolean);
-    return first ? first.slice(0, 48) : 'New note';
-  }
-  function __vaultrEditorEnsureDraftId(tab) {
-    if (!tab || tab.path) return '';
-    if (!tab.draftId) {
-      tab.draftId = __vaultrEditorNewDraftId();
-      var pane = window.__vaultrContentPane;
-      if (pane) pane._persist();
-    }
-    return tab.draftId;
-  }
-  function __vaultrEditorIsActiveTab(tab) {
-    var pane = window.__vaultrContentPane;
-    return !!(pane && tab && pane.tabs[pane.activeTab] === tab);
   }
   function __vaultrEditorIsActiveTabId(tabId) {
     if (!tabId) return true;
@@ -162,133 +147,41 @@
     var tab = pane && pane.tabs[pane.activeTab];
     return !!(tab && tab.id === tabId);
   }
-  function __vaultrEditorGetScrollState() {
-    var s = __vaultrEditor;
-    var scroller = document.querySelector('#content-pane-edit-area .cm-scroller');
-    return {scrollTop: scroller ? scroller.scrollTop : 0, inSource: s.inSource};
-  }
-  function __vaultrEditorCaptureDraft(tab) {
-    if (!tab || tab.path) return null;
-    var pane = window.__vaultrContentPane;
-    var active = __vaultrEditorIsActiveTab(tab);
-    var live = !!(active && pane && pane.contentPaneOpen && __vaultrEditor.currentDraftId === tab.draftId);
-    var content = live ? __vaultrEditor.currentMd : (tab._draftContent || tab.draftContent || '');
-    var pathInput = live ? __vaultrEditorPathInputValue() : (tab._pathVal || '');
-    var scroll = active ? __vaultrEditorGetScrollState() : (__vaultrEditorRestoreTabState(tab.id) || {});
-    tab._draftContent = content || '';
-    tab._pathVal = pathInput || '';
-    tab.title = __vaultrEditorDraftTitle(tab._pathVal, tab._draftContent);
-    return {
-      version: 1,
-      draftId: __vaultrEditorEnsureDraftId(tab),
-      content: tab._draftContent,
-      pathInput: tab._pathVal,
-      title: tab.title,
-      mode: scroll.inSource ? 'source' : 'wysiwyg',
-      scrollTop: scroll.scrollTop || 0,
-      createdAt: tab.createdAt || Date.now(),
-    };
-  }
-  function __vaultrEditorClearDraftTimer(tab) {
-    if (!__vaultrEditor.draftSaveTimer) return;
-    if (!tab || __vaultrEditor.draftSaveTabId === tab.id) {
-      clearTimeout(__vaultrEditor.draftSaveTimer);
-      __vaultrEditor.draftSaveTimer = null;
-      __vaultrEditor.draftSaveTabId = null;
-    }
-  }
-  async function __vaultrEditorFlushDraft(tab) {
-    if (!tab || tab.path) return;
-    __vaultrEditorClearDraftTimer(tab);
-    var store = __vaultrEditorDraftStore();
-    if (!store || !store.write) return;
-    var data = __vaultrEditorCaptureDraft(tab);
-    if (!data || !data.draftId) return;
-    try {
-      await store.write(data.draftId, data);
-      tab.createdAt = data.createdAt;
-    } catch(e) {
-      console.warn('draft write failed', e);
-    }
-  }
   async function __vaultrEditorSaveTabForLeave(tab) { await tabStateManager.saveForLeave(tab); }
-  function __vaultrEditorScheduleDraftSave(tab) {
-    if (!tab || tab.path) return;
-    __vaultrEditorCaptureDraft(tab);
-    __vaultrEditorClearDraftTimer(tab);
-    __vaultrEditor.draftSaveTabId = tab.id;
-    __vaultrEditor.draftSaveTimer = setTimeout(function() {
-      __vaultrEditor.draftSaveTimer = null;
-      __vaultrEditor.draftSaveTabId = null;
-      void __vaultrEditorFlushDraft(tab);
-    }, 350);
-  }
-  function __vaultrEditorScheduleActiveDraftSave() {
-    var tab = __vaultrEditorActiveTab();
-    if (tab && !tab.path) __vaultrEditorScheduleDraftSave(tab);
-  }
-  async function __vaultrEditorLoadDraft(tab) {
-    if (!tab || tab.path) return {content:'', pathInput:'', inSource:false, scrollTop:0};
-    var store = __vaultrEditorDraftStore();
-    var content = tab._draftContent || tab.draftContent || '';
-    var pathInput = tab._pathVal || '';
-    var loaded = null;
-    __vaultrEditorEnsureDraftId(tab);
-    if (store && store.read) {
-      try { loaded = await store.read(tab.draftId); } catch(_) { loaded = null; }
-    }
-    if (loaded) {
-      content = typeof loaded.content === 'string' ? loaded.content : '';
-      pathInput = typeof loaded.pathInput === 'string' ? loaded.pathInput : (loaded.path || '');
-      tab.createdAt = loaded.createdAt || tab.createdAt || Date.now();
-      tab.title = loaded.title || __vaultrEditorDraftTitle(pathInput, content);
-    } else {
-      tab.createdAt = tab.createdAt || Date.now();
-      tab.title = __vaultrEditorDraftTitle(pathInput, content);
-    }
-    tab._draftContent = __vaultrEditorTightenLists(content || '');
-    tab._pathVal = pathInput || '';
-    if (!loaded && store && store.write) {
-      try {
-        await store.write(tab.draftId, {
-          version: 1,
-          draftId: tab.draftId,
-          content: tab._draftContent,
-          pathInput: tab._pathVal,
-          title: tab.title,
-          mode: 'wysiwyg',
-          scrollTop: 0,
-          createdAt: tab.createdAt,
-        });
-      } catch(e) {
-        console.warn('draft write failed', e);
+
+  // _materializing lives on the tab itself, not a shared variable — two
+  // different unmaterialized tabs can be in flight at once.
+  async function __vaultrEditorMaterializeTab(tab, md) {
+    if (tab._materializing) return;
+    tab._materializing = true;
+    if (__vaultrEditorIsActiveTabId(tab.id)) __vaultrEditorSaveStatus('●');
+    try {
+      var resp = await fetch('/api/vault/create-untitled', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({content: md}),
+      });
+      if (tab.path) return; // defensive — nothing else should set this first
+      if (!resp.ok) {
+        var errText = ''; try { errText = await resp.text(); } catch(_) {}
+        window.showError(errText || 'Server error — your note may not be saved.', 'Save error');
+        return;
       }
-    }
-    return {
-      content: tab._draftContent,
-      pathInput: tab._pathVal,
-      inSource: loaded && loaded.mode === 'source',
-      scrollTop: loaded ? (loaded.scrollTop || 0) : 0,
-    };
-  }
-  function __vaultrEditorDraftEditorState(draft, savedState) {
-    return {
-      content: draft && typeof draft.content === 'string' ? draft.content : '',
-      inSource: savedState && typeof savedState.inSource === 'boolean' ? savedState.inSource : !!(draft && draft.inSource),
-      scrollTop: savedState && typeof savedState.scrollTop === 'number' ? savedState.scrollTop : ((draft && draft.scrollTop) || 0),
-    };
-  }
-  async function __vaultrEditorDeleteDraft(tab) {
-    if (!tab || !tab.draftId) return;
-    __vaultrEditorClearDraftTimer(tab);
-    var store = __vaultrEditorDraftStore();
-    var id = tab.draftId;
-    tab.draftId = '';
-    tab._draftContent = '';
-    tab._pathVal = '';
-    if (__vaultrEditor.currentDraftId === id) __vaultrEditor.currentDraftId = '';
-    if (store && store.delete) {
-      try { await store.delete(id); } catch(e) { console.warn('draft delete failed', e); }
+      var data = await resp.json();
+      tab.path = data.path;
+      tab.title = __vaultrStripMdExt(data.path.split('/').pop()) || data.path;
+      delete tab._pendingContent;
+      if (!__vaultrEditorIsActiveTabId(tab.id)) return; // switched away while this was in flight — nothing to autosave right now
+      var s = __vaultrEditor;
+      s.currentPath = data.path;
+      s.dirty = true; // re-arm autosave — more may have been typed while the create call was in flight
+      __vaultrEditorScheduleSave();
+      var ptEl = document.getElementById('content-pane-path-text');
+      if (ptEl) ptEl.textContent = data.path;
+      if (window.__vaultrAfterVaultMutation) await window.__vaultrAfterVaultMutation();
+    } catch(e) {
+      window.showError((e && e.message) || 'Network error — your note may not be saved.', 'Save error');
+    } finally {
+      tab._materializing = false;
     }
   }
   // Called only for real transactions — note/tab switches go through
@@ -304,9 +197,11 @@
     s.currentMd = md;
     var tab = __vaultrEditorActiveTab();
     if (tab && !tab.path) {
-      s.dirty = false;
-      tab._draftContent = md;
-      __vaultrEditorScheduleDraftSave(tab);
+      // In-memory only (never persisted) — lets switching back to this tab
+      // while its create-untitled call is still in flight show what was
+      // typed instead of a blank editor. Cleared once materialized.
+      tab._pendingContent = md;
+      void __vaultrEditorMaterializeTab(tab, md);
       return;
     }
     s.dirty = true;
@@ -926,11 +821,6 @@
       var s = __vaultrEditor;
       if (s.view) s.view.focus();
     },
-    // Focus the path input (create-mode toolbar).
-    focusPathInput: function() {
-      var pi = document.getElementById('content-pane-path-input');
-      if (pi) pi.focus();
-    },
     // Blur whatever currently has focus.
     blurActive: function() {
       if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
@@ -989,7 +879,6 @@
       saveForLeave: async function(tab) {
         if (!tab) return;
         this.save(tab.id);
-        if (!tab.path) await __vaultrEditorFlushDraft(tab);
       },
     };
   })();
@@ -1018,19 +907,19 @@
     }
     var content = await resp.text();
     if (!__vaultrEditorIsActiveTabId(tabId)) return false;
-    s.currentPath = path; s.currentDraftId = ''; s.currentMd = __vaultrEditorTightenLists(content); s.dirty = false;
+    s.currentPath = path; s.currentMd = __vaultrEditorTightenLists(content); s.dirty = false;
     
     // Apply state (will create new state if no saved state)
     return await __vaultrEditorApplyState(savedState || { inSource: false, scrollTop: 0 }, tabId);
   }
 
-  async function __vaultrContentPaneSetContent(content, tabId, savedState, draftId) {
+  async function __vaultrContentPaneSetContent(content, tabId, savedState) {
     var s = __vaultrEditor;
     if (s.dirty && s.currentPath) { clearTimeout(s.saveTimer); s.saveTimer = null; await __vaultrEditorDoSave(); }
     else { clearTimeout(s.saveTimer); s.saveTimer = null; }
     if (!__vaultrEditorIsActiveTabId(tabId)) return false;
     __vaultrEditorSaveStatus('');
-    s.currentPath = ''; s.currentDraftId = draftId || ''; s.currentMd = __vaultrEditorTightenLists(content || ''); s.dirty = false;
+    s.currentPath = ''; s.currentMd = __vaultrEditorTightenLists(content || ''); s.dirty = false;
     
     // Apply state
     return await __vaultrEditorApplyState(savedState || { inSource: false, scrollTop: 0 }, tabId);
@@ -1043,8 +932,9 @@
 
     var targetInSource = state.inSource || false;
     var targetScroll = state.scrollTop || 0;
-    // Reading takes priority over a saved source/live-preview mode; drafts
-    // (no currentPath) stay editable even while the preference is on.
+    // Reading takes priority over a saved source/live-preview mode; a
+    // not-yet-materialized tab (no currentPath) stays editable even while
+    // the preference is on.
     var wantReading = !!(s.reading && s.currentPath);
     var wantSource = !wantReading && targetInSource;
 
@@ -1081,9 +971,7 @@
         s.pendingScrollRaf = null;
         if (!__vaultrEditorIsActiveTabId(expectedTabId)) return;
         var el = getScroller(); if (el) el.scrollTop = targetScroll;
-        var tabForFocus = __vaultrEditorActiveTab();
-        var isDraftTab = tabForFocus && !tabForFocus.path;
-        if (!focusManager.isInsideEditor() && !isDraftTab) {
+        if (!focusManager.isInsideEditor()) {
           focusManager.focusEditor();
         }
       });
@@ -1097,138 +985,6 @@
   }
 
 
-  // ── Create mode: path input handlers + Publish ───────────────────────────────
-  function __vaultrEditorSetupCreateMode() {
-    var pi = document.getElementById('content-pane-path-input');
-    var pb = document.getElementById('content-pane-publish-btn');
-    if (!pi) return;
-
-    // Build the autocomplete instance via the shared factory.
-    var enterFirstTs = 0;
-    __vaultrEditorPathAc = __vaultrPathAcCreate({
-      getInput: function() { return document.getElementById('content-pane-path-input'); },
-      getList:  function() { return document.getElementById('content-pane-path-ac'); },
-      parseCtx: __vaultrEditorAcParseCtx,
-      onApply: function(input, newVal, caretPos) {
-        input.value = newVal;
-        input.setSelectionRange(caretPos, caretPos);
-        input.focus();
-        input.classList.remove('invalid');
-        input.placeholder = 'filename.md  ·  or  /folder/note.md';
-        __vaultrEditorScheduleActiveDraftSave();
-      },
-      escKey: 'content-pane-ac',
-    });
-
-    pi.addEventListener('input', function() {
-      enterFirstTs = 0;
-      pi.classList.remove('invalid');
-      pi.placeholder = 'filename.md  ·  or  /folder/note.md';
-      __vaultrEditorPathAc.refresh();
-      __vaultrEditorScheduleActiveDraftSave();
-    });
-    pi.addEventListener('click', function() { __vaultrEditorPathAc.refresh(); });
-    pi.addEventListener('keyup', function(ev) {
-      if (ev.key === 'ArrowLeft' || ev.key === 'ArrowRight' || ev.key === 'Home' || ev.key === 'End')
-        __vaultrEditorPathAc.refresh();
-    });
-    pi.addEventListener('blur', function() {
-      enterFirstTs = 0;
-      setTimeout(function() {
-        var acEl = document.getElementById('content-pane-path-ac');
-        if (!acEl || !acEl.contains(document.activeElement)) __vaultrEditorPathAc.close();
-      }, 180);
-    });
-    pi.addEventListener('keydown', function(ev) {
-      if (__vaultrEditorPathAc.handleKeydown(ev)) return;
-      if (ev.key !== 'Enter') return;
-      var now = Date.now();
-      if (enterFirstTs && (now - enterFirstTs) <= __CONTENT_PANE_PATH_DBL_ENTER_MS) {
-        ev.preventDefault(); enterFirstTs = 0;
-        var s = __vaultrEditor;
-        if (s.view) s.view.focus();
-        return;
-      }
-      enterFirstTs = now;
-    });
-    if (pb) pb.addEventListener('click', __vaultrContentPanePublish);
-  }
-
-  async function __vaultrContentPanePublish() {
-    var pi = document.getElementById('content-pane-path-input');
-    var pb = document.getElementById('content-pane-publish-btn');
-    if (!pi || !pb) return;
-    var pane = window.__vaultrContentPane;
-    var tab = pane ? pane.tabs[pane.activeTab] : null;
-    if (tab && !tab.path) await __vaultrEditorFlushDraft(tab);
-    var name = pi.value.trim();
-    if (!name) {
-      window.showError('A file name is required to publish.', 'Cannot publish');
-      pi.classList.add('invalid'); pi.focus(); return;
-    }
-    var apiPath = name.startsWith('/') ? name : '/' + name;
-    if (!apiPath.endsWith('.md')) apiPath += '.md';
-    pb.disabled = true; pb.textContent = 'Publishing…';
-    var published = false;
-    try {
-      var statResp = await fetch('/api/vault/stat', {
-        method: 'POST', headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({path: apiPath}),
-      });
-      if (statResp.ok) {
-        window.showError('"' + apiPath + '" already exists — rename the file.', 'Cannot publish');
-        pi.classList.add('invalid'); return;
-      }
-      var baseName = apiPath.split('/').pop();
-      var resolveResp = await fetch('/api/notes/resolve', {
-        method: 'POST', headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({name: baseName}),
-      });
-      if (resolveResp.ok) {
-        var resolveData = await resolveResp.json();
-        if (resolveData.count > 0) {
-          window.showError('"' + baseName.replace(/\.md$/i, '') + '" already exists in the vault — rename the file.', 'Cannot publish');
-          pi.classList.add('invalid'); return;
-        }
-      }
-      var resp = await fetch('/api/vault/write', {
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({path: apiPath, content: __vaultrEditor.currentMd}),
-      });
-      if (!resp.ok) {
-        var msg = (await resp.text()) || 'Publish failed.';
-        window.showError(msg, 'Publish failed');
-        pi.classList.add('invalid'); return;
-      }
-      published = true;
-      __vaultrEditor.currentPath = apiPath; __vaultrEditor.dirty = false; __vaultrEditorSaveStatus('Saved');
-      __vaultrEditor.currentDraftId = '';
-      __vaultrEditorPathAc && __vaultrEditorPathAc.close();
-      if (pane) {
-        if (tab && !tab.path) {
-          var oldDraftId = tab.draftId;
-          tab.path = apiPath;
-          tab.title = apiPath.split('/').pop().replace(/\.md$/, '') || apiPath;
-          tab.draftId = '';
-          tab._draftContent = '';
-          tab._pathVal = '';
-          pane._persist();
-          var draftStore = __vaultrEditorDraftStore();
-          if (oldDraftId && draftStore && draftStore.delete)
-            void draftStore.delete(oldDraftId).catch(function(){});
-        }
-      }
-      var ptEl = document.getElementById('content-pane-path-text');
-      if (ptEl) ptEl.textContent = apiPath;
-      pb.classList.add('success'); pb.textContent = '✓ Published';
-      setTimeout(function(){ pb.disabled = false; pb.textContent = 'Publish'; pb.classList.remove('success'); }, 1200);
-      if (window.__vaultrAfterVaultMutation) await window.__vaultrAfterVaultMutation();
-    } catch(e) {
-      window.showError((e && e.message) || 'Network error.', 'Publish failed');
-      pi.classList.add('invalid');
-    } finally { if (!published) { pb.disabled = false; pb.textContent = 'Publish'; } }
-  }
-
   // ── Global note-card helper ───────────────────────────────────────────────────
   function __vaultrOpenNote(el) {
     var d = el && el.dataset; if (!d || !d.notePath) return;
@@ -1238,10 +994,22 @@
       d.noteCanCompile === 'true');
   }
 
+  // Strips a trailing .md/.markdown (case-insensitive) — mirrors the server's
+  // accepted extensions (internal/util/markdown.go's markdownExts), so the
+  // rename box's "bare name" and its no-op check agree with what actually
+  // counts as a name change.
+  function __vaultrStripMdExt(name) {
+    return (name || '').replace(/\.(md|markdown)$/i, '');
+  }
+
   // ── Content-pane controller factory ────────────────────────────────────────────────
   function contentPaneCtrl() {
     return {
       contentPaneOpen: false, tabs: [], activeTab: -1,
+      _skipNextOpenLoad: false, // see _openPane()
+      renaming: false, // true while #content-pane-rename-input replaces #content-pane-path-text
+      _renameSubmitting: false, // reentrancy guard — see submitRenameActiveNote's leading comment
+      _renameCheckTimer: null, // debounce handle for checkRenameNameAvailable's /api/vault/check-name call
       splitRatio: 0.5, isPaneResizing: false, _prevSplitRatio: 0.5,
 
       // Tab-bar maximize/restore button — same spot/icon the old "focus
@@ -1332,16 +1100,13 @@
       _persist() {
         try {
           localStorage.setItem('vaultr.content-pane', JSON.stringify({
-            tabs: this.tabs.map(function(t){
-              var obj = {id:t.id, title:t.title, path:t.path, isKnowledge:!!t.isKnowledge, pinned:!!t.pinned, isIndex:!!t.isIndex, canCompile:!!t.canCompile};
-              if (!t.path) {
-                obj.draftId = t.draftId || '';
-                if (!t.draftId && (t.draftContent || t._pathVal)) {
-                  obj.draftContent = t.draftContent || '';
-                  obj._pathVal = t._pathVal || '';
-                }
-              }
-              return obj;
+            // A not-yet-materialized tab (no path) has nothing worth
+            // persisting across a reload: if it's still empty, dropping it
+            // is a no-op; if the user typed something,
+            // __vaultrEditorMaterializeTab already gave it a real path
+            // before this next persist call fires.
+            tabs: this.tabs.filter(function(t){ return !!t.path; }).map(function(t){
+              return {id:t.id, title:t.title, path:t.path, isKnowledge:!!t.isKnowledge, pinned:!!t.pinned, isIndex:!!t.isIndex, canCompile:!!t.canCompile};
             }),
             activeTab: this.activeTab,
           }));
@@ -1354,26 +1119,17 @@
           var data = JSON.parse(raw);
           if (!data || !Array.isArray(data.tabs) || !data.tabs.length) return;
           var tabs = data.tabs;
-          var MAX_TABS = 10;
-          if (tabs.length > MAX_TABS) {
-            var publishedByAge = tabs.filter(function(t){ return !!t.path; }).sort(function(a,b){return a.id-b.id;});
-            var removeCount = Math.min(tabs.length-MAX_TABS, publishedByAge.length);
-            var remove = new Set(publishedByAge.slice(0, removeCount).map(function(t){return t.id;}));
+          if (tabs.length > CONTENT_PANE_MAX_TABS) {
+            var byAge = tabs.slice().sort(function(a,b){return a.id-b.id;});
+            var remove = new Set(byAge.slice(0, tabs.length-CONTENT_PANE_MAX_TABS).map(function(t){return t.id;}));
             tabs = tabs.filter(function(t){return !remove.has(t.id);});
           }
           this.tabs = tabs.map(function(t) {
             var path = t.path || '';
             if (!path && t.fragmentUrl) { try { path = new URL(t.fragmentUrl, location.origin).searchParams.get('path') || ''; } catch(_){} }
             if (!path && t.pageUrl)     { try { path = new URL(t.pageUrl,     location.origin).searchParams.get('path') || ''; } catch(_){} }
-            var tab = {id:t.id, title:t.title||'Note', path:path, isKnowledge:!!t.isKnowledge, pinned:!!t.pinned, isIndex:!!t.isIndex, canCompile:!!t.canCompile};
-            if (!path) {
-              tab.draftId = t.draftId || '';
-              tab.draftContent = t.draftContent || '';
-              tab._draftContent = t.draftContent || '';
-              tab._pathVal = t._pathVal || '';
-            }
-            return tab;
-          });
+            return {id:t.id, title:t.title||'Note', path:path, isKnowledge:!!t.isKnowledge, pinned:!!t.pinned, isIndex:!!t.isIndex, canCompile:!!t.canCompile};
+          }).filter(function(t){ return !!t.path; });
           if (!this.tabs.length) return;
           this.activeTab = Math.min(Math.max(data.activeTab||0, 0), this.tabs.length-1);
         } catch(_) {}
@@ -1386,7 +1142,6 @@
           var savedRatio = parseFloat(localStorage.getItem('vaultr.splitRatio'));
           if (!isNaN(savedRatio) && savedRatio >= 0 && savedRatio <= 0.9) this.splitRatio = savedRatio;
         } catch(_) {}
-        __vaultrEditorSetupCreateMode();
 
         var self = this; var prevOpen = false;
         // Esc still closes whatever's layered on top of the editor (the
@@ -1430,10 +1185,11 @@
             setTimeout(function() { _paneOverlayEl.classList.remove('content-pane-is-opening'); }, 320);
           }
           if (window.__vaultrEscPush) window.__vaultrEscPush('content-pane', _paneEscClose);
+          if (self._skipNextOpenLoad) { self._skipNextOpenLoad = false; return; } // see _openPane()
           // Refresh key-behavior config on every open so settings changes take
           // effect immediately without restarting the app. Called before any
-          // content loading so all code paths (same note, new note, draft) pick
-          // it up. No-op if the editor hasn't been created yet (handled later in
+          // content loading so all code paths (same note, new note) pick it
+          // up. No-op if the editor hasn't been created yet (handled later in
           // __vaultrEnsureContentPaneEditor's initPromise).
           // Always read latest tabs from localStorage before opening — other
           // WebContentsViews (same session, different JS context) may have
@@ -1445,7 +1201,7 @@
           var savedState = __vaultrEditorRestoreTabState(tab.id);
           
           if (!tab.path) {
-            await self._activateDraftTab(tab, savedState);
+            await self._openUntitledTab(tab, savedState);
             return;
           }
           if (__vaultrEditor.currentPath !== tab.path || !__vaultrEditor.dirty) {
@@ -1492,11 +1248,12 @@
       // Open an existing note in the pane.
       async openNoteInContentPane(path, title, isKnowledge, pinned, isIndex, canCompile) {
         if (!path) return;
+        this.cancelRenameActiveNote(); // opening any note (even re-opening the active one) always discards an in-progress rename on whatever tab was showing
         var prevTab = this.tabs[this.activeTab];
         if (this.contentPaneOpen && prevTab) await __vaultrEditorSaveTabForLeave(prevTab);
         this.upsertTab(path, title, isKnowledge, pinned, isIndex, canCompile);
         __vaultrEditorResetCompileBtn();
-        this.contentPaneOpen = true;
+        this._openPane();
         // Already loaded with unsaved edits — don't clobber with a server fetch
         if (__vaultrEditor.currentPath === path && __vaultrEditor.dirty) return;
         var tab = this.tabs[this.activeTab];
@@ -1504,8 +1261,12 @@
         await __vaultrContentPaneLoadNote(path, tab ? tab.id : null, savedState);
       },
 
-      // Open the pane in create mode (new note or imported file).
-      async openNewInContentPane(content, suggestedName) {
+      // Open the pane on a brand-new, empty tab. Nothing is created
+      // server-side yet — the first real edit materializes it (see
+      // __vaultrEditorMaterializeTab) with an auto-generated name; there's
+      // no filename to ask for up front and no draft/publish step.
+      async openNewInContentPane() {
+        this.cancelRenameActiveNote(); // see openNoteInContentPane
         var s = __vaultrEditor;
         var prevTab = this.tabs[this.activeTab];
         if (this.contentPaneOpen && prevTab) await __vaultrEditorSaveTabForLeave(prevTab);
@@ -1513,26 +1274,12 @@
         else { clearTimeout(s.saveTimer); s.saveTimer = null; }
         __vaultrEditorSaveStatus('');
 
-        var rawName = suggestedName || '';
-        var title = rawName ? rawName.replace(/\.md$/i,'').split('/').pop() || 'New note' : 'New note';
-        var normalizedContent = __vaultrEditorTightenLists(content || '');
-        var newTab = {id:__vaultrEditorNewTabId(), title:title, path:'', isKnowledge:false, pinned:false,
-                      draftId:__vaultrEditorNewDraftId(), _draftContent:normalizedContent, _pathVal: rawName,
-                      createdAt: Date.now()};
+        var newTab = {id:__vaultrEditorNewTabId(), title:'Untitled', path:'', isKnowledge:false, pinned:false};
         this.tabs.push(newTab);
         this.activeTab = this.tabs.length - 1;
-        s.currentPath = ''; s.currentDraftId = newTab.draftId; s.currentMd = normalizedContent; s.dirty = false;
-        var initialPi = document.getElementById('content-pane-path-input');
-        if (initialPi) initialPi.value = rawName;
-        await __vaultrEditorFlushDraft(newTab);
-        
-        var MAX_TABS = 10;
-        if (this.tabs.length > MAX_TABS) {
-          var oldestIdx = -1, oldestId = Infinity;
-          for (var j = 0; j < this.tabs.length; j++) {
-            if (j !== this.activeTab && this.tabs[j].path && this.tabs[j].id < oldestId)
-              { oldestIdx = j; oldestId = this.tabs[j].id; }
-          }
+
+        if (this.tabs.length > CONTENT_PANE_MAX_TABS) {
+          var oldestIdx = __vaultrOldestEvictableTabIdx(this.tabs, this.activeTab);
           if (oldestIdx >= 0) {
             var evictedTab = this.tabs[oldestIdx];
             __vaultrEditorClearTabState(evictedTab.id);
@@ -1541,18 +1288,12 @@
           }
         }
         this._moveActiveTabToFront();
-        this.contentPaneOpen = true;
+        this._openPane();
 
-        s.currentPath = ''; s.currentDraftId = newTab.draftId; s.currentMd = normalizedContent; s.dirty = false;
-        
-        // Use the new state application method
-        await __vaultrEditorApplyState({ content: normalizedContent, inSource: false, scrollTop: 0 }, newTab.id);
-
-        setTimeout(function() {
-          var pi = document.getElementById('content-pane-path-input');
-          if (pi) { pi.value = rawName; pi.classList.remove('invalid'); pi.placeholder='filename.md  ·  or  /folder/note.md'; __vaultrEditorPathAc && __vaultrEditorPathAc.close(); }
-          focusManager.focusPathInput();
-        }, 0);
+        s.currentPath = ''; s.currentMd = ''; s.dirty = false;
+        var ptEl = document.getElementById('content-pane-path-text');
+        if (ptEl) ptEl.textContent = 'Untitled';
+        await __vaultrEditorApplyState({ inSource: false, scrollTop: 0 }, newTab.id);
       },
 
       // Keeps the tabs list ordered most-recently-opened-first, so the
@@ -1581,12 +1322,8 @@
         } else {
           this.tabs.push({id:__vaultrEditorNewTabId(), title:title||'Note', path:path, isKnowledge:!!isKnowledge, pinned:!!pinned, isIndex:!!isIndex, canCompile:!!canCompile});
           this.activeTab = this.tabs.length - 1;
-          var MAX_TABS = 10;
-          if (this.tabs.length > MAX_TABS) {
-            var oldestIdx=-1, oldestId=Infinity;
-            for (var j=0; j<this.tabs.length; j++) {
-              if (j !== this.activeTab && this.tabs[j].path && this.tabs[j].id < oldestId) { oldestIdx=j; oldestId=this.tabs[j].id; }
-            }
+          if (this.tabs.length > CONTENT_PANE_MAX_TABS) {
+            var oldestIdx = __vaultrOldestEvictableTabIdx(this.tabs, this.activeTab);
             if (oldestIdx >= 0) {
               var evicted = this.tabs[oldestIdx];
               __vaultrEditorClearTabState(evicted.id);
@@ -1598,41 +1335,45 @@
         this._moveActiveTabToFront();
       },
 
+      // Flips contentPaneOpen false→true while telling its $watch (in
+      // initContentPane) to skip self._restore() + reload: the caller
+      // already pushed/upserted the right tab and will load it itself.
+      _openPane() {
+        if (!this.contentPaneOpen) this._skipNextOpenLoad = true;
+        this.contentPaneOpen = true;
+      },
+
       markTabCompiled(path) {
         for (var i = 0; i < this.tabs.length; i++) {
           if (this.tabs[i].path === path) { this.tabs[i].canCompile = false; return; }
         }
       },
 
-      // Activate a draft tab: load draft, populate path input, focus it.
-      // savedState comes from tabStateManager.restore() — pass null if unavailable.
-      async _activateDraftTab(tab, savedState) {
-        var draft = await __vaultrEditorLoadDraft(tab);
+      // Re-open a not-yet-materialized tab: nothing to load from the server
+      // (it doesn't exist there yet) — just restore whatever was typed
+      // before the user switched away (see __vaultrEditorHandleContentChange's
+      // tab._pendingContent) and focus the editor.
+      async _openUntitledTab(tab, savedState) {
+        await __vaultrContentPaneSetContent(tab._pendingContent || '', tab.id, savedState);
         if (!__vaultrEditorIsActiveTabId(tab.id)) return;
-        var draftState = __vaultrEditorDraftEditorState(draft, savedState);
-        await __vaultrContentPaneSetContent(draftState.content, tab.id, draftState, tab.draftId);
-        setTimeout(function() {
-          if (!__vaultrEditorIsActiveTabId(tab.id)) return;
-          var pi = document.getElementById('content-pane-path-input');
-          if (pi) { pi.value = draft.pathInput || ''; pi.classList.remove('invalid'); pi.placeholder = 'filename.md  ·  or  /folder/note.md'; }
-          focusManager.focusPathInput();
-        }, 0);
+        var ptEl = document.getElementById('content-pane-path-text');
+        if (ptEl) ptEl.textContent = 'Untitled';
       },
 
       async contentPaneSwitchTab(i) {
+        this.cancelRenameActiveNote(); // see openNoteInContentPane
         focusManager.blurActive();
         if (i === this.activeTab) return;
 
         var prevTab = this.tabs[this.activeTab];
         var nextTab = this.tabs[i];
         if (!nextTab) return;
-        
+
         // Save current tab's state
         if (prevTab) {
           await __vaultrEditorSaveTabForLeave(prevTab);
-          if (!prevTab.path) __vaultrEditorPathAc && __vaultrEditorPathAc.close();
         }
-        
+
         // Switch active tab
         this.activeTab = i;
         this._moveActiveTabToFront();
@@ -1640,9 +1381,9 @@
 
         // Load next tab's content with saved state
         var savedState = __vaultrEditorRestoreTabState(nextTab.id);
-        
+
         if (!nextTab.path) {
-          await this._activateDraftTab(nextTab, savedState);
+          await this._openUntitledTab(nextTab, savedState);
         } else {
           await __vaultrContentPaneLoadNote(nextTab.path, nextTab.id, savedState);
         }
@@ -1650,9 +1391,9 @@
 
       async contentPaneCloseTab(i) {
         if (i < 0 || i >= this.tabs.length) return;
+        this.cancelRenameActiveNote(); // see openNoteInContentPane
         var wasActive = (i === this.activeTab);
         var closingTab = this.tabs[i];
-        var closingCreate = !closingTab.path;
         if (wasActive && closingTab.path && __vaultrEditor.dirty && __vaultrEditor.currentPath === closingTab.path) {
           clearTimeout(__vaultrEditor.saveTimer); __vaultrEditor.saveTimer = null;
           await __vaultrEditorDoSave();
@@ -1661,18 +1402,16 @@
           i = liveIdx;
           wasActive = (i === this.activeTab);
         }
-        
+
         // Clear saved state for this tab
         __vaultrEditorClearTabState(closingTab.id);
-        if (closingCreate) void __vaultrEditorDeleteDraft(closingTab);
-        
+
         this.tabs.splice(i, 1);
-        if (closingCreate && wasActive) __vaultrEditorPathAc && __vaultrEditorPathAc.close();
-        
+
         if (this.tabs.length === 0) {
           this.contentPaneOpen = false; this.activeTab = -1;
           clearTimeout(__vaultrEditor.saveTimer); __vaultrEditor.saveTimer = null;
-          __vaultrEditor.currentPath = ''; __vaultrEditor.currentDraftId = ''; __vaultrEditor.currentMd = ''; __vaultrEditor.dirty = false;
+          __vaultrEditor.currentPath = ''; __vaultrEditor.currentMd = ''; __vaultrEditor.dirty = false;
           __vaultrEditorSaveStatus('');
           if (__vaultrEditor.view) {
             __vaultrEditor.view.setState(__vaultrEditor._buildState('', false, false));
@@ -1680,28 +1419,22 @@
           }
           return;
         }
-        
-        if (i < this.activeTab) { 
-          this.activeTab -= 1; 
+
+        if (i < this.activeTab) {
+          this.activeTab -= 1;
         } else if (wasActive) {
           this.activeTab = Math.min(i, this.tabs.length-1);
           var t = this.tabs[this.activeTab];
           if (!t) return;
-          
+
           var savedState = __vaultrEditorRestoreTabState(t.id);
-          
+
           if (t.path) {
             void __vaultrContentPaneLoadNote(t.path, t.id, savedState);
           } else {
-            void this._activateDraftTab(t, savedState);
+            void this._openUntitledTab(t, savedState);
           }
         }
-      },
-
-      discardNewNote() {
-        var i = this.activeTab;
-        if (i < 0 || !this.tabs[i] || this.tabs[i].path) return;
-        void this.contentPaneCloseTab(i);
       },
 
       async togglePinActiveNote() {
@@ -1741,7 +1474,7 @@
         this.tabs.splice(cur, 1);
         if (this.tabs.length === 0) {
           this.contentPaneOpen = false; this.activeTab = -1;
-          __vaultrEditor.currentPath = ''; __vaultrEditor.currentDraftId = ''; __vaultrEditor.currentMd = ''; __vaultrEditorSaveStatus('');
+          __vaultrEditor.currentPath = ''; __vaultrEditor.currentMd = ''; __vaultrEditorSaveStatus('');
           if (__vaultrEditor.view) {
             __vaultrEditor.view.setState(__vaultrEditor._buildState('', false, false));
             __vaultrEditorSetModeState(false, false);
@@ -1751,7 +1484,7 @@
           var nextTab = this.tabs[this.activeTab];
           if (nextTab && nextTab.path) void __vaultrContentPaneLoadNote(nextTab.path, nextTab.id, __vaultrEditorRestoreTabState(nextTab.id));
           else if (nextTab) {
-            void this._activateDraftTab(nextTab, __vaultrEditorRestoreTabState(nextTab.id));
+            void this._openUntitledTab(nextTab, __vaultrEditorRestoreTabState(nextTab.id));
           }
         }
         if (window.__vaultrAfterVaultMutation) await window.__vaultrAfterVaultMutation();
@@ -1781,7 +1514,180 @@
           if (ptEl) ptEl.textContent = newPath;
         }
       },
+
+      // Renaming only ever changes the active tab's filename, never its
+      // directory (see storage.Vault.RenameNote) — dir+move is drag-and-drop
+      // only, from the sidebar (home.js), same split as noteMoved above.
+      renameActiveNote() {
+        var tab = this.tabs[this.activeTab];
+        if (!tab || !tab.path || this.renaming) return;
+        this.renaming = true;
+        // Focus-independent fallback: @keydown.escape only fires while the
+        // input has focus, which tryFocus below isn't always able to land.
+        var self = this;
+        if (window.__vaultrEscPush) window.__vaultrEscPush('content-pane-rename', function() { self.cancelRenameActiveNote(); });
+
+        var base = __vaultrStripMdExt(tab.path.split('/').pop());
+        this.$nextTick(function() {
+          // Retry a few frames: something else (an Alpine transition,
+          // CodeMirror) occasionally wins the focus race right after this.
+          var tryFocus = function(attemptsLeft) {
+            var input = document.getElementById('content-pane-rename-input');
+            if (!input || !self.renaming) return;
+            input.disabled = false; // a leftover disabled state silently blocks focus()
+            input.value = base;
+            input.classList.remove('invalid');
+            input.title = '';
+            input.focus();
+            input.select();
+            if (document.activeElement !== input && attemptsLeft > 0) {
+              requestAnimationFrame(function() { tryFocus(attemptsLeft - 1); });
+            }
+          };
+          tryFocus(3);
+        });
+      },
+
+      // Single close path, so the ESC-stack push/pop above always pairs up.
+      cancelRenameActiveNote() {
+        if (!this.renaming) return;
+        this.renaming = false;
+        clearTimeout(this._renameCheckTimer);
+        if (window.__vaultrEscPop) window.__vaultrEscPop('content-pane-rename');
+      },
+
+      // Advisory-only, debounced "is this name already taken?" hint while the
+      // user types — never blocks Enter/submit, which still re-checks
+      // server-side atomically with the actual rename (see RenameNote/
+      // dbNameTaken). This can only ever be a UX nicety: the check and the
+      // eventual submit are two separate requests, so another tab/rename
+      // could always take the name in between.
+      checkRenameNameAvailable() {
+        clearTimeout(this._renameCheckTimer);
+        var self = this;
+        var input = document.getElementById('content-pane-rename-input');
+        var tab = this.tabs[this.activeTab];
+        if (!input || !tab || !tab.path) return;
+
+        var newBase = input.value.trim();
+        var currentBase = __vaultrStripMdExt(tab.path.split('/').pop());
+        if (!newBase || newBase === currentBase || /[\/\\]/.test(newBase)) {
+          // Unchanged, empty, or a "/" — already handled elsewhere at submit time.
+          input.classList.remove('invalid');
+          input.title = '';
+          return;
+        }
+
+        this._renameCheckTimer = setTimeout(async function() {
+          var resp;
+          try {
+            resp = await fetch('/api/vault/check-name?path=' + encodeURIComponent(tab.path) + '&newName=' + encodeURIComponent(newBase));
+          } catch (_) { return; } // best-effort hint only — a network hiccup here must never block typing
+          // The box may have closed, or the text moved on, while this was in flight.
+          if (!self.renaming || input.value.trim() !== newBase) return;
+          if (!resp.ok) return;
+          var data = await resp.json();
+          if (data.available === false) {
+            input.classList.add('invalid');
+            input.title = 'A note named "' + newBase + '" already exists in the vault.';
+          } else {
+            input.classList.remove('invalid');
+            input.title = '';
+          }
+        }, 300);
+      },
+
+      async submitRenameActiveNote() {
+        // input.disabled below synchronously blurs the input, re-entering
+        // here via @blur while the first call's fetch is still in flight —
+        // without this guard that fires a duplicate POST for the same old
+        // path, and whichever the server processes second 404s.
+        if (this._renameSubmitting) return;
+        if (!this.renaming) return; // already closed (Escape, tab switch, …)
+        clearTimeout(this._renameCheckTimer); // the authoritative check below supersedes the advisory one
+        var tab = this.tabs[this.activeTab];
+        var input = document.getElementById('content-pane-rename-input');
+        if (!tab || !tab.path || !input) { this.cancelRenameActiveNote(); return; }
+
+        var newBase = input.value.trim();
+        var currentBase = __vaultrStripMdExt(tab.path.split('/').pop());
+        if (!newBase || newBase === currentBase) { this.cancelRenameActiveNote(); return; }
+        if (/[\/\\]/.test(newBase)) {
+          window.showError('A file name cannot contain "/".', 'Cannot rename');
+          input.classList.add('invalid');
+          return;
+        }
+
+        this._renameSubmitting = true;
+        try {
+          await this.flushPendingSaveFor(tab.path); // save the latest content before the file underneath it moves
+
+          input.disabled = true; // triggers the synchronous re-entrant blur the guard above exists for
+          var resp = await fetch('/api/vault/rename', {
+            method: 'POST', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({path: tab.path, newName: newBase}),
+          });
+          if (!resp.ok) {
+            var msg = (await resp.text()).trim() || 'Rename failed.';
+            if (resp.status === 409) msg = 'A note named "' + newBase + '" already exists in the vault — note names must be unique.';
+            else if (resp.status === 403) msg = 'This note can’t be renamed.';
+            window.showError(msg, 'Cannot rename');
+            input.classList.add('invalid');
+            input.disabled = false;
+            input.focus();
+            return;
+          }
+          var data = await resp.json();
+          input.disabled = false; // undo the disable a few lines up — left true after a successful rename, the *next* rename could never focus this same <input> node again
+          this.noteRenamed(tab.path, data.path);
+          this.cancelRenameActiveNote(); // renamed successfully — same box-closing path as a cancel, just after committing
+          if (window.__vaultrAfterVaultMutation) await window.__vaultrAfterVaultMutation();
+          if (data.renameJobId) void __vaultrPollRenameJob(data.renameJobId);
+        } catch (e) {
+          window.showError((e && e.message) || 'Network error.', 'Cannot rename');
+          input.disabled = false;
+        } finally {
+          this._renameSubmitting = false;
+        }
+      },
+
+      noteRenamed(oldPath, newPath) {
+        var tab = this.tabs.find(function(t) { return t.path === oldPath; });
+        if (!tab) return;
+        tab.path = newPath;
+        tab.title = __vaultrStripMdExt(newPath.split('/').pop()) || newPath;
+        if (__vaultrEditor.currentPath === oldPath) __vaultrEditor.currentPath = newPath;
+        if (this.tabs[this.activeTab] === tab) {
+          var ptEl = document.getElementById('content-pane-path-text');
+          if (ptEl) ptEl.textContent = newPath;
+        }
+      },
     };
+  }
+
+  // Best-effort poll for the async wikilink/source_notes sweep a rename
+  // enqueues (internal/plugins/renamesync) — purely informational, never
+  // blocks or retries the rename itself, which has already fully committed
+  // by the time this runs. Silent on success (matches Pin/Unpin's existing
+  // no-toast convention here); only speaks up if the sweep itself failed, so
+  // the user knows some [[wikilinks]] elsewhere may still say the old name.
+  async function __vaultrPollRenameJob(jobId) {
+    var deadline = Date.now() + 5 * 60 * 1000;
+    await new Promise(function(r) { setTimeout(r, 600); });
+    while (Date.now() < deadline) {
+      var resp;
+      try { resp = await fetch('/api/vault/rename-status?id=' + encodeURIComponent(jobId)); }
+      catch (_) { return; }
+      if (resp.ok) {
+        var st = await resp.json();
+        if (st.status === 'done') return;
+        if (st.status === 'failed') {
+          if (window.showError) window.showError('Some [[wikilinks]] to the old name may not have been updated automatically.', 'Rename cleanup incomplete');
+          return;
+        }
+      }
+      await new Promise(function(r) { setTimeout(r, 1500); });
+    }
   }
 
   // ── Compile raw note from pane ─────────────────────────────────────────────
@@ -1899,7 +1805,7 @@
   });
 
   window.__vaultrHotkeys.register('new-note', 'n', function() {
-    if (window.__vaultrContentPane) void window.__vaultrContentPane.openNewInContentPane('', '');
+    if (window.__vaultrContentPane) void window.__vaultrContentPane.openNewInContentPane();
   });
 
   window.__vaultrHotkeys.register('content-pane-maximize', '\\', function() {

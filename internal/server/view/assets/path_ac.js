@@ -62,7 +62,7 @@ function __vaultrPathAcCreate(opts) {
   function doFilter(ctx) {
     var pref = (ctx.partial || '').toLowerCase();
     var filtered = st.cachedDirs.filter(function(d) { return !pref || d.toLowerCase().indexOf(pref) === 0; });
-    var noMatch = !st.cachedDirs.length ? 'No folders' : 'No match — new folders are created on Publish';
+    var noMatch = !st.cachedDirs.length ? 'No folders' : 'No match';
     render(filtered, filtered.length ? '' : noMatch);
     var list = opts.getList();
     if (list) { list.classList.add('open'); list.hidden = false; list.setAttribute('aria-expanded', 'true'); }

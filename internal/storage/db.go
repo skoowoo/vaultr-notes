@@ -10,7 +10,7 @@ import (
 	_ "modernc.org/sqlite" // pure-Go SQLite driver
 )
 
-const currentDBVersion = 23
+const currentDBVersion = 24
 
 // schema is the notes table DDL.
 //
@@ -130,6 +130,27 @@ CREATE TABLE IF NOT EXISTS images (
 );
 `
 
+// renameJobsSchema creates the rename_jobs table: one row per Vault.RenameNote
+// call, tracking the async vault-wide wikilink/back-reference sweep that
+// follows the (fast, synchronous) filename change itself. See
+// internal/plugins/renamesync — 'failed' rows are not auto-retried, so one
+// poison job can't loop the process forever.
+const renameJobsSchema = `
+CREATE TABLE IF NOT EXISTS rename_jobs (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    dir           TEXT    NOT NULL,
+    old_name      TEXT    NOT NULL,
+    new_name      TEXT    NOT NULL,
+    status        TEXT    NOT NULL DEFAULT 'pending', -- pending | running | done | failed
+    total         INTEGER NOT NULL DEFAULT 0,
+    done          INTEGER NOT NULL DEFAULT 0,
+    updated_count INTEGER NOT NULL DEFAULT 0,
+    error         TEXT    NOT NULL DEFAULT '',
+    created_at    INTEGER NOT NULL,
+    updated_at    INTEGER NOT NULL
+);
+`
+
 // openDB opens (or creates) the SQLite database at <vaultRoot>/.vaultr/meta.db
 // and applies the full schema on every open (all DDL uses IF NOT EXISTS).
 func openDB(vaultRoot string) (*sql.DB, error) {
@@ -166,6 +187,8 @@ func openDB(vaultRoot string) (*sql.DB, error) {
 		{knowledgeDepsSchema, "create knowledge_deps table"},
 		{indexDepsSchema, "create index_deps table"},
 		{knowledgeLinksSchema, "create knowledge_links table"},
+		{renameJobsSchema, "create rename_jobs table"},
+		{`CREATE INDEX IF NOT EXISTS idx_rename_jobs_status ON rename_jobs(status)`, "create idx_rename_jobs_status"},
 		{`CREATE INDEX IF NOT EXISTS idx_kl_source ON knowledge_links(source_dir, source_name)`, "create idx_kl_source"},
 		{`CREATE INDEX IF NOT EXISTS idx_kl_target ON knowledge_links(target_dir, target_name)`, "create idx_kl_target"},
 		{`CREATE INDEX IF NOT EXISTS idx_kd_knowledge ON knowledge_deps(knowledge_dir, knowledge_name)`, "create idx_kd_knowledge"},
@@ -689,6 +712,206 @@ func dbMove(db *sql.DB, old Path, newDir string) error {
 	}
 
 	return tx.Commit()
+}
+
+// queryRower is satisfied by both *sql.DB and *sql.Tx, so dbNameTaken can run
+// either as an early, pre-filesystem-mutation check (Vault.RenameNote) or as
+// the authoritative check inside dbRename's own transaction.
+type queryRower interface {
+	QueryRow(query string, args ...any) *sql.Row
+}
+
+// dbNameTaken reports whether some note in the vault is already named
+// newName — filenames must stay unique across the whole vault (see
+// Vault.RenameNote).
+func dbNameTaken(q queryRower, newName string) (bool, error) {
+	var occupied int
+	if err := q.QueryRow(`SELECT COUNT(*) FROM notes WHERE name = ?`, newName).Scan(&occupied); err != nil {
+		return false, fmt.Errorf("storage: name check %q: %w", newName, err)
+	}
+	return occupied > 0, nil
+}
+
+// dbRename cascades old's filename change to every relation table it might
+// participate in — same tables dbMove cascades, UPDATE-ing *_name instead of
+// *_dir. Unlike dbMove, the destination check is vault-wide, not scoped to
+// old's dir: filenames must stay unique across the vault (see
+// Vault.RenameNote). Returns ErrAlreadyExists if any note is already named
+// newName, without touching anything.
+//
+// Only keeps old's own identity in sync — every other note that refers to it
+// by name (a wikilink, a bare source_notes: entry) still holds the old text;
+// Vault.RenameNote fixes those up separately, vault-wide.
+func dbRename(db *sql.DB, old Path, newName string) error {
+	tx, err := db.Begin()
+	if err != nil {
+		return fmt.Errorf("storage: rename: begin tx: %w", err)
+	}
+	defer tx.Rollback() //nolint:errcheck
+
+	dir, name := old.Dir(), old.Base()
+
+	if taken, err := dbNameTaken(tx, newName); err != nil {
+		return err
+	} else if taken {
+		return ErrAlreadyExists
+	}
+
+	if _, err := tx.Exec(`UPDATE notes SET name = ? WHERE dir = ? AND name = ?`, newName, dir, name); err != nil {
+		return fmt.Errorf("storage: rename: notes: %w", err)
+	}
+	if _, err := tx.Exec(
+		`UPDATE note_assets SET note_name = ? WHERE note_dir = ? AND note_name = ?`,
+		newName, dir, name,
+	); err != nil {
+		return fmt.Errorf("storage: rename: note_assets: %w", err)
+	}
+	if _, err := tx.Exec(
+		`UPDATE knowledge_deps SET knowledge_name = ? WHERE knowledge_dir = ? AND knowledge_name = ?`,
+		newName, dir, name,
+	); err != nil {
+		return fmt.Errorf("storage: rename: knowledge_deps (as knowledge): %w", err)
+	}
+	if _, err := tx.Exec(
+		`UPDATE knowledge_deps SET source_name = ? WHERE source_dir = ? AND source_name = ?`,
+		newName, dir, name,
+	); err != nil {
+		return fmt.Errorf("storage: rename: knowledge_deps (as source): %w", err)
+	}
+	if _, err := tx.Exec(
+		`UPDATE index_deps SET index_name = ? WHERE index_dir = ? AND index_name = ?`,
+		newName, dir, name,
+	); err != nil {
+		return fmt.Errorf("storage: rename: index_deps (as index): %w", err)
+	}
+	if _, err := tx.Exec(
+		`UPDATE index_deps SET knowledge_name = ? WHERE knowledge_dir = ? AND knowledge_name = ?`,
+		newName, dir, name,
+	); err != nil {
+		return fmt.Errorf("storage: rename: index_deps (as knowledge): %w", err)
+	}
+	if _, err := tx.Exec(
+		`UPDATE knowledge_links SET source_name = ? WHERE source_dir = ? AND source_name = ?`,
+		newName, dir, name,
+	); err != nil {
+		return fmt.Errorf("storage: rename: knowledge_links (as source): %w", err)
+	}
+	if _, err := tx.Exec(
+		`UPDATE knowledge_links SET target_name = ? WHERE target_dir = ? AND target_name = ?`,
+		newName, dir, name,
+	); err != nil {
+		return fmt.Errorf("storage: rename: knowledge_links (as target): %w", err)
+	}
+
+	return tx.Commit()
+}
+
+// dbEnqueueRenameJob inserts a new rename_jobs row in the 'pending' state and
+// returns its id. Called synchronously by Vault.RenameNote right after the
+// filename change commits.
+func dbEnqueueRenameJob(db *sql.DB, dir, oldName, newName string) (int64, error) {
+	now := time.Now().UnixNano()
+	res, err := db.Exec(`
+		INSERT INTO rename_jobs(dir, old_name, new_name, status, created_at, updated_at)
+		VALUES (?, ?, ?, 'pending', ?, ?)`,
+		dir, oldName, newName, now, now,
+	)
+	if err != nil {
+		return 0, fmt.Errorf("storage: enqueue rename job: %w", err)
+	}
+	return res.LastInsertId()
+}
+
+// dbPendingRenameJobs returns every rename_jobs row still in 'pending' or
+// 'running', oldest first. Called by renamesync.Plugin.Start on process
+// startup to resume any sweep that didn't reach 'done' before a crash or
+// restart — safe because the sweep itself is idempotent (see renameJobsSchema).
+func dbPendingRenameJobs(db *sql.DB) ([]RenameJob, error) {
+	rows, err := db.Query(`
+		SELECT id, dir, old_name, new_name, status, total, done, updated_count, error, created_at, updated_at
+		FROM rename_jobs WHERE status IN ('pending', 'running') ORDER BY created_at ASC`)
+	if err != nil {
+		return nil, fmt.Errorf("storage: pending rename jobs: %w", err)
+	}
+	defer rows.Close()
+	return dbScanRenameJobs(rows)
+}
+
+// dbGetRenameJob returns a single rename_jobs row by id, for the HTTP status
+// polling endpoint.
+func dbGetRenameJob(db *sql.DB, id int64) (RenameJob, error) {
+	row := db.QueryRow(`
+		SELECT id, dir, old_name, new_name, status, total, done, updated_count, error, created_at, updated_at
+		FROM rename_jobs WHERE id = ?`, id)
+	return dbScanRenameJob(row)
+}
+
+// dbStartRenameJob marks a job 'running' and records the total note count the
+// sweep will walk.
+func dbStartRenameJob(db *sql.DB, id int64, total int) error {
+	_, err := db.Exec(`UPDATE rename_jobs SET status='running', total=?, updated_at=? WHERE id=?`,
+		total, time.Now().UnixNano(), id)
+	return err
+}
+
+// dbUpdateRenameJobProgress records how many notes the sweep has walked
+// (done) and how many it actually rewrote (updatedCount) so far. Called
+// periodically (not per-note) by the sweep to avoid hammering SQLite.
+func dbUpdateRenameJobProgress(db *sql.DB, id int64, done, updatedCount int) error {
+	_, err := db.Exec(`UPDATE rename_jobs SET done=?, updated_count=?, updated_at=? WHERE id=?`,
+		done, updatedCount, time.Now().UnixNano(), id)
+	return err
+}
+
+// dbFinishRenameJob marks a job 'done' with its final counts.
+func dbFinishRenameJob(db *sql.DB, id int64, total, updatedCount int) error {
+	_, err := db.Exec(`UPDATE rename_jobs SET status='done', done=?, total=?, updated_count=?, updated_at=? WHERE id=?`,
+		total, total, updatedCount, time.Now().UnixNano(), id)
+	return err
+}
+
+// dbFailRenameJob marks a job 'failed' with an error message. Failed jobs are
+// not picked up again by dbPendingRenameJobs, so a single poison job can't
+// loop the process forever.
+func dbFailRenameJob(db *sql.DB, id int64, errMsg string) error {
+	_, err := db.Exec(`UPDATE rename_jobs SET status='failed', error=?, updated_at=? WHERE id=?`,
+		errMsg, time.Now().UnixNano(), id)
+	return err
+}
+
+func dbScanRenameJob(row *sql.Row) (RenameJob, error) {
+	var j RenameJob
+	var status string
+	var createdNs, updNs int64
+	if err := row.Scan(&j.ID, &j.Dir, &j.OldName, &j.NewName, &status,
+		&j.Total, &j.Done, &j.UpdatedCount, &j.Error, &createdNs, &updNs); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return RenameJob{}, ErrNotFound
+		}
+		return RenameJob{}, fmt.Errorf("storage: scan rename job: %w", err)
+	}
+	j.Status = RenameJobStatus(status)
+	j.CreatedAt = time.Unix(0, createdNs)
+	j.UpdatedAt = time.Unix(0, updNs)
+	return j, nil
+}
+
+func dbScanRenameJobs(rows *sql.Rows) ([]RenameJob, error) {
+	var jobs []RenameJob
+	for rows.Next() {
+		var j RenameJob
+		var status string
+		var createdNs, updNs int64
+		if err := rows.Scan(&j.ID, &j.Dir, &j.OldName, &j.NewName, &status,
+			&j.Total, &j.Done, &j.UpdatedCount, &j.Error, &createdNs, &updNs); err != nil {
+			return nil, fmt.Errorf("storage: scan rename job: %w", err)
+		}
+		j.Status = RenameJobStatus(status)
+		j.CreatedAt = time.Unix(0, createdNs)
+		j.UpdatedAt = time.Unix(0, updNs)
+		jobs = append(jobs, j)
+	}
+	return jobs, rows.Err()
 }
 
 // dbClearAll removes every row from the notes table.

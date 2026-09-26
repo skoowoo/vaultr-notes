@@ -309,6 +309,68 @@ func (c *Client) MoveNote(relPath, newDir string) (string, error) {
 	return out.Path, nil
 }
 
+// RenameNote renames the note at relPath to newName, keeping it in the same
+// directory (use MoveNote for a directory change). Returns the note's new
+// vault-absolute path and the id of the asynchronous rename job that fixes up
+// vault-wide wikilink/source_notes references to the old name (0 if it could
+// not be enqueued) — see RenameStatus.
+func (c *Client) RenameNote(relPath, newName string) (string, int64, error) {
+	resp, err := c.postJSON(c.baseURL+"/api/vault/rename", map[string]any{"path": relPath, "newName": newName})
+	if err != nil {
+		return "", 0, wrapConnErr(err)
+	}
+	defer resp.Body.Close()
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", 0, fmt.Errorf("rename %q: read response: %w", relPath, err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		return "", 0, fmt.Errorf("rename %q: %s", relPath, statusMsg(resp.StatusCode, body))
+	}
+	var out struct {
+		Path        string `json:"path"`
+		RenameJobID int64  `json:"renameJobId"`
+	}
+	if err := json.Unmarshal(body, &out); err != nil {
+		return "", 0, fmt.Errorf("rename %q: decode response: %w", relPath, err)
+	}
+	return out.Path, out.RenameJobID, nil
+}
+
+// RenameJobStatus mirrors the JSON body of GET /api/vault/rename-status.
+type RenameJobStatus struct {
+	Status       string `json:"status"`
+	Total        int    `json:"total"`
+	Done         int    `json:"done"`
+	UpdatedCount int    `json:"updatedCount"`
+	Error        string `json:"error"`
+}
+
+// RenameStatus fetches the progress of the asynchronous sweep enqueued by RenameNote.
+func (c *Client) RenameStatus(jobID int64) (RenameJobStatus, error) {
+	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/api/vault/rename-status?id=%d", c.baseURL, jobID), nil)
+	if err != nil {
+		return RenameJobStatus{}, err
+	}
+	resp, err := c.do(req)
+	if err != nil {
+		return RenameJobStatus{}, wrapConnErr(err)
+	}
+	defer resp.Body.Close()
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return RenameJobStatus{}, fmt.Errorf("rename status %d: read response: %w", jobID, err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		return RenameJobStatus{}, fmt.Errorf("rename status %d: %s", jobID, statusMsg(resp.StatusCode, body))
+	}
+	var out RenameJobStatus
+	if err := json.Unmarshal(body, &out); err != nil {
+		return RenameJobStatus{}, fmt.Errorf("rename status %d: decode response: %w", jobID, err)
+	}
+	return out, nil
+}
+
 // ShortEntry mirrors storage.ShortEntry for JSON decoding.
 type ShortEntry struct {
 	Content   string    `json:"content"`

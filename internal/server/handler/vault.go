@@ -32,6 +32,8 @@ func writeVaultError(w http.ResponseWriter, err error) {
 	case errors.Is(err, storage.ErrIsDir), errors.Is(err, storage.ErrIsFile),
 		errors.Is(err, storage.ErrAlreadyExists):
 		http.Error(w, err.Error(), http.StatusConflict)
+	case errors.Is(err, storage.ErrRenameNotAllowed):
+		http.Error(w, err.Error(), http.StatusForbidden)
 	default:
 		http.Error(w, "internal error: "+err.Error(), http.StatusInternalServerError)
 	}

@@ -22,6 +22,7 @@ import (
 	"github.com/hardhacker/vaultr/internal/plugins/compile"
 	discordplugin "github.com/hardhacker/vaultr/internal/plugins/discord"
 	"github.com/hardhacker/vaultr/internal/plugins/gitsync"
+	"github.com/hardhacker/vaultr/internal/plugins/renamesync"
 	"github.com/hardhacker/vaultr/internal/plugins/search"
 	wechatplugin "github.com/hardhacker/vaultr/internal/plugins/wechat"
 	"github.com/hardhacker/vaultr/internal/skills"
@@ -54,6 +55,12 @@ func New(cfg *config.Config, cfgFileLoaded string, logger *slog.Logger, vault *s
 
 	mgr.Register(assets.New(vault, logger))
 	logger.Info("assets plugin registered")
+
+	// rename_sync is always active: it finishes the vault-wide wikilink/
+	// source_notes sweep that Vault.RenameNote enqueues but doesn't run
+	// inline (see internal/plugins/renamesync).
+	mgr.Register(renamesync.New(vault, logger))
+	logger.Info("rename_sync plugin registered")
 
 	var gitPlugin *gitsync.Plugin
 	if cfg.Plugins.GitSync.Enabled {

@@ -13,12 +13,6 @@ contextBridge.exposeInMainWorld("vaultrDesktop", {
   syncVaultDataAcrossSections: () => ipcRenderer.invoke("sync-vault-data-across-sections"),
   setViewBgColor: (color, theme) => ipcRenderer.send("set-view-bg-color", color, theme),
   setWindowButtonVisibility: (visible) => ipcRenderer.send("set-window-button-visibility", visible),
-  drafts: {
-    list:   ()         => ipcRenderer.invoke("draft:list"),
-    read:   (id)       => ipcRenderer.invoke("draft:read", id),
-    write:  (id, data) => ipcRenderer.invoke("draft:write", id, data),
-    delete: (id)       => ipcRenderer.invoke("draft:delete", id),
-  },
   pickFolder: (opts) => ipcRenderer.invoke("pick-folder", opts),
   inboxNotify: {
     getSettings: ()           => ipcRenderer.invoke("inbox-notify:get-settings"),

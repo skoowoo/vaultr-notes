@@ -82,54 +82,25 @@
       border-radius: 0; /* flush chrome strip */
       height: var(--toolbar-h);
     }
-    /* Create-mode half */
-    .content-pane-create-bar {
-      flex: 1; min-width: 0; display: flex; align-items: center; gap: 0.5rem;
-    }
-    .content-pane-path-input-wrap {
-      flex: 1; min-width: 0; position: relative; display: flex; align-items: center;
-    }
-    .content-pane-path-input {
-      width: 100%; background: transparent; border: none; outline: none;
-      border-radius: 0; /* no padding at the start edge — the 8px default would clip the caret there */
-      font-size: var(--text-xs); line-height: var(--lh-relaxed); color: var(--muted);
-      font-family: var(--font-mono);
-      transition: color var(--motion-fast);
-    }
-    .content-pane-path-input:focus { color: var(--fg); }
-    .content-pane-path-input.invalid { color: var(--s-err); }
-    .content-pane-path-input::placeholder { color: var(--muted-soft); font-style: italic; }
-    .content-pane-path-ac {
-      display: none; position: absolute; top: calc(100% + 4px); left: 0;
-      min-width: 360px; max-width: min(440px, 90vw); max-height: min(240px, 40vh); overflow-y: auto;
-      margin: 0; padding: 4px 0; list-style: none;
-      background: var(--surface-soft); border: var(--bd-w) solid var(--border-strong);
-      box-shadow: var(--shadow-sm) var(--shadow-color);
-      z-index: 200;
-    }
-    .content-pane-path-ac.open { display: block; }
-    .content-pane-path-ac li {
-      padding: 0.4rem 0.65rem; font-size: var(--text-xs);
-      font-family: var(--font-mono);
-      color: var(--fg); cursor: pointer; user-select: none;
-    }
-    .content-pane-path-ac li:hover, .content-pane-path-ac li[aria-selected="true"] { background: var(--card-hov); }
-    .content-pane-path-ac li:not(.path-ac-muted):active { opacity: 0.85; }
-    .content-pane-path-ac li.path-ac-muted { color: var(--muted); cursor: default; font-style: italic; }
-    .content-pane-path-ac li.path-ac-muted:hover { background: transparent; }
-    /* #content-pane-publish-btn's structure/color now come from the shared
-       .btn-solid.btn--xs (base.css); only its transient "just published"
-       state is local. */
-    #content-pane-publish-btn.success { background: var(--s-ok); color: var(--s-ok-fg); opacity: 1; }
-    /* Discard button now uses the shared .btn-outline.btn--xs (base.css). */
-    /* Edit-mode half */
     .content-pane-path-text {
       flex: 1; min-width: 0; font-size: var(--text-xs);
       font-family: var(--font-mono);
       color: var(--muted);
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
       border-radius: 0;
+      cursor: text;
     }
+    /* Inline rename box — same slot/typography as .content-pane-path-text
+       (only one of the two is ever visible), but editable. Only the
+       filename is ever shown/edited here; the directory never changes. */
+    .content-pane-rename-input {
+      flex: 1; min-width: 0; background: transparent; border: none; outline: none;
+      border-bottom: var(--bd-w) solid var(--accent);
+      padding: 0; border-radius: 0;
+      font-size: var(--text-xs); font-family: var(--font-mono);
+      color: var(--fg);
+    }
+    .content-pane-rename-input.invalid { color: var(--s-err); border-bottom-color: var(--s-err); }
     .content-pane-tool-actions { flex-shrink: 0; display: flex; align-items: center; gap: 0.3rem; }
     .content-pane-save-status {
       flex-shrink: 0; display: flex; align-items: center; justify-content: center;
@@ -312,12 +283,6 @@
        (menu open) is overridden here with the same brand-accent treatment
        as above. */
     .content-pane-more-btn.active { color: var(--accent-text); background: var(--tint-md); }
-    /* Source/Preview view toggle uses the shared .seg-btn.active as-is
-       (neutral surface-2 fill, base.css) — it's a row-selection control
-       like every other .seg/.seg-btn picker, not an "engaged" brand
-       toggle like pin/compile/the more-menu above. Only the tighter
-       horizontal padding stays local, for this toolbar's tight fit. */
-    .content-pane-view-seg .seg-btn { padding: 0.3rem 0.5rem; }
 
     /* ── Editor area ─────────────────────────────────────────────── */
     /* One CodeMirror 6 view mounts directly into #content-pane-edit-area now
@@ -512,7 +477,6 @@
     html.macos .content-pane.open .content-pane-tool-bar { -webkit-app-region: drag; cursor: default; }
     html.macos .content-pane.open .content-pane-tool-bar button,
     html.macos .content-pane.open .content-pane-tool-bar input,
-    html.macos .content-pane.open .content-pane-path-ac,
     html.macos .content-pane.open .content-pane-tabs-menu,
     html.macos .content-pane.open .content-pane-more-menu { -webkit-app-region: no-drag; }
     html.macos .content-pane.open.content-pane-is-opening .content-pane-tool-bar { -webkit-app-region: no-drag; }

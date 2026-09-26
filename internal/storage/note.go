@@ -159,6 +159,38 @@ type ListOptions struct {
 	Before time.Time
 }
 
+// RenameJobStatus is the lifecycle state of a RenameJob.
+type RenameJobStatus string
+
+const (
+	RenameJobPending RenameJobStatus = "pending"
+	RenameJobRunning RenameJobStatus = "running"
+	RenameJobDone    RenameJobStatus = "done"
+	RenameJobFailed  RenameJobStatus = "failed"
+)
+
+// RenameJob tracks the vault-wide wikilink/back-reference sweep that follows
+// a Vault.RenameNote call. The rename itself (filesystem + metadata DB) is
+// synchronous and already complete by the time a RenameJob exists; this
+// record is purely for the slow part — rewriting every other note in the
+// vault that refers to the renamed note by its old name.
+//
+// See internal/plugins/renamesync, which owns running the sweep and moving a
+// job through these states.
+type RenameJob struct {
+	ID           int64
+	Dir          string
+	OldName      string
+	NewName      string
+	Status       RenameJobStatus
+	Total        int
+	Done         int
+	UpdatedCount int
+	Error        string
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
+}
+
 // ShortEntry is a single parsed entry from a short daily aggregation file.
 type ShortEntry struct {
 	Content   string    `json:"content"`

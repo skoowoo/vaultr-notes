@@ -554,86 +554,6 @@ ipcMain.on("set-view-bg-color", (event, color, theme) => {
   }
 });
 
-// ── IPC: drafts ───────────────────────────────────────────────────────────────
-
-const MAX_DRAFTS = 10;
-function getDraftsDir() { return path.join(app.getPath("userData"), "drafts"); }
-const DRAFT_ID_RE = /^[A-Za-z0-9._-]{1,128}$/;
-
-function assertDraftId(id) {
-  if (typeof id !== "string" || !DRAFT_ID_RE.test(id)) {
-    throw new Error("invalid draft id");
-  }
-  return id;
-}
-
-function ensureDraftsDir() {
-  const dir = getDraftsDir();
-  fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
-  return dir;
-}
-
-function getDraftPath(id) {
-  id = assertDraftId(id);
-  const dir = ensureDraftsDir();
-  const file = path.join(dir, id + ".json");
-  if (path.dirname(file) !== dir) throw new Error("invalid draft path");
-  return file;
-}
-
-ipcMain.handle("draft:list", () => {
-  const dir = ensureDraftsDir();
-  try {
-    return fs.readdirSync(dir)
-      .filter(f => f.endsWith(".json"))
-      .map(f => {
-        try {
-          const d = JSON.parse(fs.readFileSync(path.join(dir, f), "utf8"));
-          return {
-            id: f.slice(0, -5),
-            path: d.path || d.pathInput || "",
-            title: d.title || "",
-            updatedAt: d.updatedAt || 0,
-          };
-        } catch { return null; }
-      })
-      .filter(Boolean)
-      .sort((a, b) => b.updatedAt - a.updatedAt);
-  } catch { return []; }
-});
-
-ipcMain.handle("draft:read", (_e, id) => {
-  try {
-    return JSON.parse(fs.readFileSync(getDraftPath(id), "utf8"));
-  } catch { return null; }
-});
-
-ipcMain.handle("draft:write", (_e, id, data) => {
-  const dir = ensureDraftsDir();
-  const target = getDraftPath(id);
-  const tmp = path.join(dir, `${id}.${process.pid}.${Date.now()}.tmp`);
-  const payload = JSON.stringify({ ...data, updatedAt: Date.now() });
-  fs.writeFileSync(tmp, payload, { encoding: "utf8", mode: 0o600 });
-  fs.renameSync(tmp, target);
-  try {
-    const files = fs.readdirSync(dir).filter(f => f.endsWith(".json"));
-    if (files.length > MAX_DRAFTS) {
-      const sorted = files.map(f => {
-        try { return { f, updatedAt: JSON.parse(fs.readFileSync(path.join(dir, f), "utf8")).updatedAt || 0 }; }
-        catch { return { f, updatedAt: 0 }; }
-      }).sort((a, b) => a.updatedAt - b.updatedAt);
-      for (let i = 0; i < files.length - MAX_DRAFTS; i++) {
-        fs.rmSync(path.join(dir, sorted[i].f), { force: true });
-      }
-    }
-  } catch { }
-});
-
-ipcMain.handle("draft:delete", (_e, id) => {
-  fs.rmSync(getDraftPath(id), { force: true });
-});
-
-
 ipcMain.handle("inbox-notify:preview-sound", (_e, sound) => {
   playSound(sound);
 });
@@ -720,7 +640,6 @@ app.whenReady().then(() => {
     }
   }
 
-  fs.mkdirSync(getDraftsDir(), { recursive: true });
   createWindow();
 
   // Install bundled CLI to system PATH in the background — does not block window startup.

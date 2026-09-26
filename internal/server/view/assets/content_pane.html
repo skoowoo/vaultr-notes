@@ -8,7 +8,7 @@
          choreography (content_pane.css) instead of each animating on its own. -->
     <div class="content-pane-panel" x-show="!inboxSheetOpen">
 
-      <!-- ① Tool bar: maximize | create-mode fields | edit-mode fields -->
+      <!-- ① Tool bar: maximize | path/rename | save status | note actions -->
       <div class="content-pane-tool-bar">
         <!-- Maximize/restore — unconditional (doesn't depend on create vs
              edit mode below), same spot/icon the old tab bar's own button
@@ -27,38 +27,23 @@
             <path d="M9 19v-4H5"/><path d="M15 19v-4h4"/>
           </svg>
         </button>
-        <!-- Create mode: editable path input + source / discard / publish -->
-        <div class="content-pane-create-bar" x-show="tabs[activeTab] && !tabs[activeTab].path" style="display:none">
-          <div class="content-pane-path-input-wrap">
-            <input type="text" id="content-pane-path-input" class="content-pane-path-input"
-                   placeholder="filename.md  ·  or  /folder/note.md"
-                   spellcheck="false" autocomplete="off"
-                   aria-autocomplete="list" aria-controls="content-pane-path-ac">
-            <ul class="content-pane-path-ac" id="content-pane-path-ac" role="listbox" aria-expanded="false" hidden></ul>
-          </div>
-          <div class="seg content-pane-view-seg">
-            <button type="button" class="seg-btn content-pane-view-btn content-pane-view-btn-wysiwyg active" title="Live preview">
-              <svg fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
-                <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/>
-                <circle cx="12" cy="12" r="3"/>
-              </svg>
-            </button>
-            <button type="button" class="seg-btn content-pane-view-btn content-pane-view-btn-source" title="Raw markdown">
-              <svg fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="m18 16 4-4-4-4"/>
-                <path stroke-linecap="round" stroke-linejoin="round" d="m6 8-4 4 4 4"/>
-                <path stroke-linecap="round" stroke-linejoin="round" d="m14.5 4-5 16"/>
-              </svg>
-            </button>
-          </div>
-          <button type="button" class="btn-outline btn--xs" @click.stop="discardNewNote()">Discard</button>
-          <button type="button" id="content-pane-publish-btn" class="btn-solid btn--xs">Publish</button>
-        </div>
-        <!-- Edit mode: path label + save status + note actions -->
+        <!-- Path label + save status + note actions. Every tab is a real
+             note from its first keystroke onward (see content_pane.js's
+             __vaultrEditorMaterializeTab) — there's no separate create-mode
+             toolbar; a brand-new, not-yet-materialized tab just shows
+             "Untitled" here until that first edit lands. -->
         <span id="content-pane-path-text" class="content-pane-path-text"
-              x-show="activeTab >= 0 && (!tabs[activeTab] || tabs[activeTab].path)"></span>
+              x-show="!renaming && activeTab >= 0"
+              @dblclick="renameActiveNote()" title="Double-click to rename"></span>
+        <!-- Filename only, no extension — ".md" is implicit (ensureMarkdownName). -->
+        <input type="text" id="content-pane-rename-input" class="content-pane-rename-input"
+               x-show="renaming" x-cloak
+               @input="checkRenameNameAvailable()"
+               @keydown.enter="submitRenameActiveNote()"
+               @keydown.escape="cancelRenameActiveNote()"
+               @blur="submitRenameActiveNote()" />
         <span id="content-pane-save-status" class="content-pane-save-status"
-              x-show="activeTab >= 0 && (!tabs[activeTab] || tabs[activeTab].path)">
+              x-show="activeTab >= 0">
           <svg class="ssi-pending" width="8" height="8" viewBox="0 0 8 8" fill="currentColor">
             <circle cx="4" cy="4" r="3.5"/>
           </svg>
@@ -66,7 +51,7 @@
             <path d="M2 7l4 4 6-6"/>
           </svg>
         </span>
-        <div class="content-pane-tool-actions" x-show="activeTab >= 0 && (!tabs[activeTab] || tabs[activeTab].path)">
+        <div class="content-pane-tool-actions" x-show="activeTab >= 0">
           <!-- Tabs stay functionally the same (open several notes, switch,
                close) — just a vertical dropdown list instead of a
                horizontal strip. Each row is one open tab/draft. -->
@@ -124,14 +109,13 @@
                          the hidden-until-active visibility is local (content_pane.css). -->
                     <span class="dot dot--accent content-pane-tabs-menu-dot" aria-hidden="true"></span>
                     <span class="content-pane-tabs-menu-title" x-text="tab.title"></span>
-                    <span class="content-pane-tab-draft-icon" x-show="!tab.path" title="Draft" aria-hidden="true">
+                    <span class="content-pane-tab-draft-icon" x-show="!tab.path" title="New — not saved yet" aria-hidden="true">
                       <svg fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 20h9"/>
                         <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>
                       </svg>
                     </span>
                     <button type="button" class="content-pane-tabs-menu-close"
-                            x-show="tab.path"
                             @click.stop="contentPaneCloseTab(i)"
                             title="Close tab">
                       <svg fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" style="width:10px;height:10px">
@@ -236,6 +220,16 @@
                   <path d="M15 4V2"/><path d="M15 16v-2"/><path d="M8 9h2"/><path d="M20 9h2"/><path d="M17.8 11.8 19 13"/><path d="M15 9h.01"/><path d="M17.8 6.2 19 5"/><path d="m3 21 9-9"/><path d="M12.2 6.2 11 5"/>
                 </svg>
                 <span class="content-pane-compile-label">Compile</span>
+              </button>
+              <button type="button" class="content-pane-more-item content-pane-rename-btn"
+                      x-show="tabs[activeTab] && tabs[activeTab].path"
+                      @click.stop="moreOpen = false; renameActiveNote()"
+                      title="Rename note">
+                <svg fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                  <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
+                  <path d="m15 5 4 4"/>
+                </svg>
+                <span>Rename</span>
               </button>
               <button type="button" class="content-pane-more-item content-pane-more-item-danger"
                       @click.stop="moreOpen = false; deleteActiveNote()">

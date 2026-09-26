@@ -531,6 +531,50 @@ func (g *Vault) WriteNoteWithMeta(p Path, data []byte, meta Note) error {
 	return nil
 }
 
+// CreateUntitledNote creates a brand-new note in dir, auto-named
+// "Untitled <timestamp>" (deduplicated with a "(2)", "(3)", … suffix if
+// that exact name is somehow already taken), with the given initial
+// content. Used by the editor's "new note" flow: nothing is created
+// server-side until the user types the first character (see
+// POST /api/vault/create-untitled) — there's no separate draft state to
+// publish or discard, and no filename to pick up front. The caller can
+// rename it any time afterward via RenameNote.
+func (g *Vault) CreateUntitledNote(dir string, content []byte) (Path, error) {
+	if dirHasUnderscoreSegment(dir) {
+		return "", ErrInvalidPath
+	}
+
+	g.mu.Lock()
+	defer g.mu.Unlock()
+
+	base := "Untitled " + time.Now().Format("2006-01-02 15-04-05")
+	name := base + ".md"
+	for i := 2; ; i++ {
+		abs, err := g.osPath(Path(JoinPath(dir, name)))
+		if err != nil {
+			return "", err
+		}
+		taken, err := dbNameTaken(g.db, name)
+		if err != nil {
+			return "", err
+		}
+		if !taken {
+			if _, statErr := os.Stat(abs); errors.Is(statErr, fs.ErrNotExist) {
+				break
+			} else if statErr != nil {
+				return "", mapOSError(statErr)
+			}
+		}
+		name = fmt.Sprintf("%s (%d).md", base, i)
+	}
+
+	p := Path(JoinPath(dir, name))
+	if _, _, err := g.writeNoteLocked(p, content, Note{}); err != nil {
+		return "", err
+	}
+	return p, nil
+}
+
 // PrependNote inserts incoming into the note at p immediately after the first
 // H1 heading. When heading is non-empty the content is inserted at the start
 // of the first section whose heading matches (case-insensitive), falling back
@@ -744,6 +788,194 @@ func (g *Vault) rewriteDependentPathRefs(knowledgeDependents, indexDependents []
 			_ = g.WriteNote(ip, out, "")
 		}
 	}
+}
+
+// NameTaken reports whether newName is already used by some note in the
+// vault. It backs a purely advisory frontend precheck (an inline "name
+// already exists" hint while the user is still typing) — it is NOT the
+// authoritative guard. RenameNote re-checks this itself, atomically with the
+// actual rename and right before touching the filesystem, so a stale,
+// skipped, or raced call to NameTaken can never let a colliding rename
+// through.
+func (g *Vault) NameTaken(newName string) (bool, error) {
+	g.mu.RLock()
+	defer g.mu.RUnlock()
+	return dbNameTaken(g.db, newName)
+}
+
+// RenameNote renames the note at p to newName in place (use MoveNote for a
+// directory change). Returns the new path and the id of the RenameJob
+// enqueued for the vault-wide reference sweep — valid once err is nil, even
+// though that sweep hasn't run yet (see internal/plugins/renamesync).
+//
+// The destination check is vault-wide, not scoped to p's dir: wikilinks
+// resolve by name only (util.ExtractWikilinkNames), so filenames must stay
+// unique across the whole vault or links become ambiguous.
+//
+// ErrRenameNotAllowed for a system-managed note (non-empty kind, or an
+// underscore-prefixed directory — see dirHasUnderscoreSegment): those assume
+// a stable filename elsewhere (AppendShort's daily naming, compile's own
+// regeneration), so a bad rename is destructive in a way a bad move isn't.
+//
+// dbRename cascades relation tables the same way dbMove does, and reuses
+// rewriteDependentPathRefs for direct dependents' literal full-path refs.
+// What neither covers is every OTHER note that refers to p by name alone —
+// a rename, unlike a move, changes the string those resolve against — so
+// that vault-wide sweep is deferred to the async RenameJob this enqueues.
+func (g *Vault) RenameNote(p Path, newName string) (Path, int64, error) {
+	if err := validateNoteName(p.Base()); err != nil {
+		return "", 0, err
+	}
+	if err := validateNoteName(newName); err != nil {
+		return "", 0, err
+	}
+	if strings.ContainsRune(newName, '/') {
+		return "", 0, ErrInvalidPath
+	}
+	newPath := Path(JoinPath(p.Dir(), newName))
+	if newPath == p {
+		return p, 0, nil
+	}
+
+	g.mu.Lock()
+
+	existing, err := dbGet(g.db, p)
+	if err != nil {
+		g.mu.Unlock()
+		return "", 0, err
+	}
+	if existing.Kind != "" || dirHasUnderscoreSegment(p.Dir()) {
+		g.mu.Unlock()
+		return "", 0, ErrRenameNotAllowed
+	}
+
+	absOld, err := g.osPath(p)
+	if err != nil {
+		g.mu.Unlock()
+		return "", 0, err
+	}
+	absNew, err := g.osPath(newPath)
+	if err != nil {
+		g.mu.Unlock()
+		return "", 0, err
+	}
+	if newInfo, statErr := os.Stat(absNew); statErr == nil {
+		// A case-insensitive filesystem (macOS's default APFS, Windows) also
+		// resolves absNew for a pure case change (note.md -> Note.md) to p
+		// itself — os.SameFile tells that apart from an actual collision.
+		if oldInfo, oldErr := os.Stat(absOld); oldErr != nil || !os.SameFile(oldInfo, newInfo) {
+			g.mu.Unlock()
+			return "", 0, ErrAlreadyExists
+		}
+	} else if !errors.Is(statErr, fs.ErrNotExist) {
+		g.mu.Unlock()
+		return "", 0, mapOSError(statErr)
+	}
+
+	// Check vault-wide name uniqueness before touching the filesystem: a
+	// rejected rename must never move the file. dbRename repeats this check
+	// inside its own transaction as the authoritative guard; this is just to
+	// avoid doing (and then having to undo) an os.Rename for the common case.
+	if taken, err := dbNameTaken(g.db, newName); err != nil {
+		g.mu.Unlock()
+		return "", 0, err
+	} else if taken {
+		g.mu.Unlock()
+		return "", 0, ErrAlreadyExists
+	}
+
+	if err := os.Rename(absOld, absNew); err != nil {
+		g.mu.Unlock()
+		return "", 0, mapOSError(err)
+	}
+
+	// Snapshot dependents before dbRename renames these very rows out from
+	// under p's old (dir, name) identity below.
+	knowledgeDependents, _ := dbGetSourceKnowledges(g.db, p)
+	indexDependents, _ := dbGetKnowledgeIndexes(g.db, p)
+
+	if dbErr := dbRename(g.db, p, newName); dbErr != nil {
+		// The precheck above means this should only fire on a genuine DB
+		// error (not ErrAlreadyExists, unless another goroutine somehow
+		// raced past the precheck). Roll the file back to match; if that
+		// itself fails, say so explicitly instead of swallowing it — the
+		// vault is left inconsistent (file at absNew, metadata still at p)
+		// and needs a human, not a silent best-effort.
+		if rbErr := os.Rename(absNew, absOld); rbErr != nil {
+			g.mu.Unlock()
+			return "", 0, fmt.Errorf("vault: metadata rename %q: %w (and rollback of the file rename also failed: %v — file is now at %q but metadata still refers to %q)", p.String(), dbErr, rbErr, absNew, p.String())
+		}
+		g.mu.Unlock()
+		return "", 0, fmt.Errorf("vault: metadata rename %q: %w", p.String(), dbErr)
+	}
+
+	// The rename itself has already committed above; a failure to enqueue the
+	// sweep job only means the vault-wide reference cleanup won't run for this
+	// rename (best-effort, same spirit as the wikilink/table rewrites below) —
+	// it must not undo or fail the rename. jobID is 0 in that case.
+	jobID, _ := dbEnqueueRenameJob(g.db, p.Dir(), p.Base(), newName)
+
+	g.mu.Unlock()
+
+	g.rewriteDependentPathRefs(knowledgeDependents, indexDependents, p, newPath)
+
+	g.emit("vault_delete", p.String(), false, time.Now())
+	g.emit("vault_create", newPath.String(), false, time.Now())
+	g.emitEvent(plugin.Event{
+		Type: plugin.EventVaultRename, Path: newPath.String(), OldPath: p.String(), Time: time.Now(),
+	})
+	return newPath, jobID, nil
+}
+
+// ── rename job hooks (used by internal/plugins/renamesync) ────────────────────
+// RenameNote enqueues the job; these let the sweep plugin claim/progress/
+// finish it without touching SQL directly (same convention as every plugin).
+
+// PendingRenameJobs returns every RenameJob still 'pending' or 'running',
+// oldest first — safe to call repeatedly since re-running a finished sweep is a no-op.
+func (g *Vault) PendingRenameJobs() ([]RenameJob, error) {
+	g.mu.RLock()
+	defer g.mu.RUnlock()
+	return dbPendingRenameJobs(g.db)
+}
+
+// GetRenameJob returns a single RenameJob by id, for the HTTP status-polling endpoint.
+func (g *Vault) GetRenameJob(id int64) (RenameJob, error) {
+	g.mu.RLock()
+	defer g.mu.RUnlock()
+	return dbGetRenameJob(g.db, id)
+}
+
+// StartRenameJob marks a job 'running' and records the total note count the sweep will walk.
+func (g *Vault) StartRenameJob(id int64, total int) error {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	return dbStartRenameJob(g.db, id, total)
+}
+
+// UpdateRenameJobProgress records how many notes the sweep has walked (done)
+// and how many it actually rewrote (updatedCount) so far. Call periodically,
+// not per-note, to avoid hammering the metadata DB.
+func (g *Vault) UpdateRenameJobProgress(id int64, done, updatedCount int) error {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	return dbUpdateRenameJobProgress(g.db, id, done, updatedCount)
+}
+
+// FinishRenameJob marks a job 'done' with its final counts.
+func (g *Vault) FinishRenameJob(id int64, total, updatedCount int) error {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	return dbFinishRenameJob(g.db, id, total, updatedCount)
+}
+
+// FailRenameJob marks a job 'failed' with an error message. A failed job is
+// not returned by PendingRenameJobs again, so a single poison job (e.g. one
+// whose ListAllNotes call keeps erroring) can't loop the process forever.
+func (g *Vault) FailRenameJob(id int64, errMsg string) error {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	return dbFailRenameJob(g.db, id, errMsg)
 }
 
 // AppendShort appends content as a new short note entry to today's daily file

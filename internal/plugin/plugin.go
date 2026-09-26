@@ -30,6 +30,19 @@ const (
 	EventVaultWrite  EventType = "vault_write"  // existing note overwritten or appended via Vault API
 	EventVaultDelete EventType = "vault_delete" // note(s) permanently deleted via Vault API
 
+	// EventVaultRename is emitted by Vault.RenameNote once the filename change
+	// itself has committed (filesystem + metadata DB). Path carries the new
+	// vault-absolute path, OldPath the previous one. Always paired with a
+	// vault_delete(OldPath)+vault_create(Path) pair (same as MoveNote), so
+	// plugins that only care about content/index sync (e.g. search) don't
+	// need to special-case it — this event exists for plugins that care
+	// specifically about the rename itself, currently just
+	// internal/plugins/renamesync, which uses it purely as a low-latency
+	// wake-up to check for pending RenameJob rows (see storage.RenameJob);
+	// its correctness never depends on this event actually arriving.
+	// Not subject to vault deduplication.
+	EventVaultRename EventType = "vault_rename"
+
 	// EventVaultShortAppend is emitted after every successful AppendShort call,
 	// regardless of whether the daily file is new or existing. It is not subject
 	// to deduplication and is never paired with an fs_* event.
@@ -66,6 +79,10 @@ type Event struct {
 	Time    time.Time
 	IsDir   bool   // true when Path is a directory (only meaningful for delete events)
 	Content string // note content, short note body, or WeChat message text
+
+	// OldPath is the vault-absolute path the note had before the mutation.
+	// Only set for EventVaultRename, where Path is the new path.
+	OldPath string
 
 	// WechatUserID is the iLink user ID associated with the event.
 	// For EventWechatMessage: the sender's user ID.
