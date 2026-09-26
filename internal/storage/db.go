@@ -2,6 +2,7 @@ package storage
 
 import (
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -10,7 +11,7 @@ import (
 	_ "modernc.org/sqlite" // pure-Go SQLite driver
 )
 
-const currentDBVersion = 24
+const currentDBVersion = 25
 
 // schema is the notes table DDL.
 //
@@ -24,6 +25,7 @@ const currentDBVersion = 24
 //	created_at  — first-write Unix nanoseconds (never overwritten on UPDATE)
 //	updated_at  — last-write  Unix nanoseconds
 //	indexed     — 1 after the bleve search index has successfully indexed this note
+//	preview     — JSON-encoded NotePreview (cached content summary), recomputed on every write
 const schema = `
 CREATE TABLE IF NOT EXISTS notes (
     id            INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -38,6 +40,7 @@ CREATE TABLE IF NOT EXISTS notes (
     pinned        INTEGER NOT NULL DEFAULT 0,
     compile_count INTEGER NOT NULL DEFAULT 0,
     tags          TEXT    NOT NULL DEFAULT '',
+    preview       TEXT    NOT NULL DEFAULT '{}',
     UNIQUE(dir, name)
 );
 `
@@ -151,8 +154,71 @@ CREATE TABLE IF NOT EXISTS rename_jobs (
 );
 `
 
-// openDB opens (or creates) the SQLite database at <vaultRoot>/.vaultr/meta.db
-// and applies the full schema on every open (all DDL uses IF NOT EXISTS).
+// migration is one forward-only schema change applied after the baseline
+// CREATE TABLE/INDEX statements below. apply must be idempotent — safe to
+// run again against a database that already has it — since a crash between
+// a migration committing and user_version being persisted means it can be
+// re-attempted on the next open. Column additions go through
+// addColumnIfMissing rather than a bare ALTER TABLE so re-running one is
+// safe without relying on matching a driver's "duplicate column" error text.
+//
+// To ship a new schema change: bump currentDBVersion and append an entry
+// here. Never edit or remove an existing entry — vaults upgrading from an
+// older version must still see every step between their version and the
+// new one.
+var migrations = []struct {
+	version int
+	desc    string
+	apply   func(tx *sql.Tx) error
+}{
+	{25, "add notes.preview", func(tx *sql.Tx) error {
+		return addColumnIfMissing(tx, "notes", "preview", "TEXT NOT NULL DEFAULT '{}'")
+	}},
+}
+
+// columnExists reports whether table has the given column, via PRAGMA
+// table_info — this way a migration checks the database's actual state
+// instead of guessing from user_version alone.
+func columnExists(tx *sql.Tx, table, column string) (bool, error) {
+	rows, err := tx.Query(fmt.Sprintf("PRAGMA table_info(%s)", table))
+	if err != nil {
+		return false, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var cid, notNull, pk int
+		var name, ctype string
+		var dflt sql.NullString
+		if err := rows.Scan(&cid, &name, &ctype, &notNull, &dflt, &pk); err != nil {
+			return false, err
+		}
+		if name == column {
+			return true, nil
+		}
+	}
+	return false, rows.Err()
+}
+
+// addColumnIfMissing runs ALTER TABLE ... ADD COLUMN only when column isn't
+// already present, so migrations stay safe to re-run.
+func addColumnIfMissing(tx *sql.Tx, table, column, columnDDL string) error {
+	exists, err := columnExists(tx, table, column)
+	if err != nil {
+		return fmt.Errorf("check column %s.%s: %w", table, column, err)
+	}
+	if exists {
+		return nil
+	}
+	_, err = tx.Exec(fmt.Sprintf("ALTER TABLE %s ADD COLUMN %s %s", table, column, columnDDL))
+	return err
+}
+
+// openDB opens (or creates) the SQLite database at <vaultRoot>/.vaultr/meta.db.
+// The baseline schema (all DDL uses IF NOT EXISTS) is applied unconditionally
+// first, so a brand-new database always starts at the latest structure with
+// no migrations to run. Any database that already existed at an older
+// user_version then has the pending steps from migrations applied, in a
+// single transaction, before user_version is bumped to currentDBVersion.
 func openDB(vaultRoot string) (*sql.DB, error) {
 	dbPath := vaultDBPath(vaultRoot)
 	db, err := sql.Open("sqlite", dbPath)
@@ -165,16 +231,6 @@ func openDB(vaultRoot string) (*sql.DB, error) {
 	if _, err := db.Exec("PRAGMA journal_mode=WAL"); err != nil {
 		db.Close()
 		return nil, fmt.Errorf("storage: enable WAL: %w", err)
-	}
-
-	var version int
-	db.QueryRow("PRAGMA user_version").Scan(&version) //nolint:errcheck
-
-	if version < currentDBVersion {
-		if _, err := db.Exec(fmt.Sprintf("PRAGMA user_version = %d", currentDBVersion)); err != nil {
-			db.Close()
-			return nil, fmt.Errorf("storage: set schema version: %w", err)
-		}
 	}
 
 	for _, step := range []struct {
@@ -201,6 +257,36 @@ func openDB(vaultRoot string) (*sql.DB, error) {
 		if _, err := db.Exec(step.ddl); err != nil {
 			db.Close()
 			return nil, fmt.Errorf("storage: %s: %w", step.msg, err)
+		}
+	}
+
+	var version int
+	db.QueryRow("PRAGMA user_version").Scan(&version) //nolint:errcheck
+
+	if version < currentDBVersion {
+		tx, err := db.Begin()
+		if err != nil {
+			db.Close()
+			return nil, fmt.Errorf("storage: begin migration: %w", err)
+		}
+		for _, m := range migrations {
+			if m.version <= version {
+				continue
+			}
+			if err := m.apply(tx); err != nil {
+				tx.Rollback() //nolint:errcheck
+				db.Close()
+				return nil, fmt.Errorf("storage: migration %d (%s): %w", m.version, m.desc, err)
+			}
+		}
+		if _, err := tx.Exec(fmt.Sprintf("PRAGMA user_version = %d", currentDBVersion)); err != nil {
+			tx.Rollback() //nolint:errcheck
+			db.Close()
+			return nil, fmt.Errorf("storage: set schema version: %w", err)
+		}
+		if err := tx.Commit(); err != nil {
+			db.Close()
+			return nil, fmt.Errorf("storage: commit migrations: %w", err)
 		}
 	}
 
@@ -252,7 +338,7 @@ func dbListByDir(db *sql.DB, dir string, opts ListOptions) ([]Note, error) {
 	}
 
 	query := fmt.Sprintf(`
-		SELECT dir, name, size, created_at, updated_at, indexed, kind, title, pinned, compile_count, tags
+		SELECT dir, name, size, created_at, updated_at, indexed, kind, title, pinned, compile_count, tags, preview
 		FROM notes
 		WHERE %s
 		ORDER BY %s`, strings.Join(where, " AND "), orderBy)
@@ -317,7 +403,7 @@ func dbListAll(db *sql.DB, opts ListOptions) ([]Note, error) {
 	}
 
 	query := fmt.Sprintf(`
-		SELECT dir, name, size, created_at, updated_at, indexed, kind, title, pinned, compile_count, tags
+		SELECT dir, name, size, created_at, updated_at, indexed, kind, title, pinned, compile_count, tags, preview
 		FROM notes %s
 		ORDER BY %s`, whereClause, orderBy)
 
@@ -342,7 +428,7 @@ func dbListRecentByKindByCreatedDesc(db *sql.DB, kind Kind, limit int) ([]Note, 
 		limit = 7
 	}
 	rows, err := db.Query(`
-		SELECT dir, name, size, created_at, updated_at, indexed, kind, title, pinned, compile_count, tags
+		SELECT dir, name, size, created_at, updated_at, indexed, kind, title, pinned, compile_count, tags, preview
 		FROM notes
 		WHERE kind = ?
 		ORDER BY created_at DESC
@@ -359,11 +445,11 @@ func dbGet(db *sql.DB, p Path) (Note, error) {
 	var n Note
 	var size, createdNs, updNs int64
 	var indexed, pinned int
-	var tagsRaw string
+	var tagsRaw, previewRaw string
 	err := db.QueryRow(`
-		SELECT dir, name, size, created_at, updated_at, indexed, kind, title, pinned, compile_count, tags
+		SELECT dir, name, size, created_at, updated_at, indexed, kind, title, pinned, compile_count, tags, preview
 		FROM notes WHERE dir = ? AND name = ?`, p.Dir(), p.Base()).
-		Scan(&n.Dir, &n.Name, &size, &createdNs, &updNs, &indexed, &n.Kind, &n.Title, &pinned, &n.CompileCount, &tagsRaw)
+		Scan(&n.Dir, &n.Name, &size, &createdNs, &updNs, &indexed, &n.Kind, &n.Title, &pinned, &n.CompileCount, &tagsRaw, &previewRaw)
 	if errors.Is(err, sql.ErrNoRows) {
 		return Note{}, ErrMetadataNotFound
 	}
@@ -376,6 +462,7 @@ func dbGet(db *sql.DB, p Path) (Note, error) {
 	n.Indexed = indexed == 1
 	n.Pinned = pinned == 1
 	n.Tags = splitTags(tagsRaw)
+	n.Preview = unmarshalPreview(previewRaw)
 	return n, nil
 }
 
@@ -392,7 +479,7 @@ func dbGetByNames(db *sql.DB, names []string) ([]Note, error) {
 		args[i] = n
 	}
 	rows, err := db.Query(`
-		SELECT dir, name, size, created_at, updated_at, indexed, kind, title, pinned, compile_count, tags
+		SELECT dir, name, size, created_at, updated_at, indexed, kind, title, pinned, compile_count, tags, preview
 		FROM notes WHERE name IN (`+placeholders+`) ORDER BY updated_at DESC`, args...)
 	if err != nil {
 		return nil, fmt.Errorf("storage: notes by names: %w", err)
@@ -415,7 +502,7 @@ func dbGetByPaths(db *sql.DB, paths []Path) ([]Note, error) {
 		args = append(args, p.Dir(), p.Base())
 	}
 	rows, err := db.Query(`
-		SELECT dir, name, size, created_at, updated_at, indexed, kind, title, pinned, compile_count, tags
+		SELECT dir, name, size, created_at, updated_at, indexed, kind, title, pinned, compile_count, tags, preview
 		FROM notes WHERE `+strings.Join(clauses, " OR ")+`
 		ORDER BY updated_at DESC`, args...)
 	if err != nil {
@@ -428,7 +515,7 @@ func dbGetByPaths(db *sql.DB, paths []Path) ([]Note, error) {
 // dbGetByName returns every row whose name column equals the given filename
 func dbGetByName(db *sql.DB, name string) ([]Note, error) {
 	rows, err := db.Query(`
-		SELECT dir, name, size, created_at, updated_at, indexed, kind, title, pinned, compile_count, tags
+		SELECT dir, name, size, created_at, updated_at, indexed, kind, title, pinned, compile_count, tags, preview
 		FROM notes
 		WHERE name = ?
 		ORDER BY updated_at DESC, dir ASC`, name)
@@ -447,14 +534,15 @@ func dbScan_(rows *sql.Rows) ([]Note, error) {
 		var n Note
 		var createdNs, updNs int64
 		var indexed, pinned int
-		var tagsRaw string
-		if err := rows.Scan(&n.Dir, &n.Name, &n.Size, &createdNs, &updNs, &indexed, &n.Kind, &n.Title, &pinned, &n.CompileCount, &tagsRaw); err != nil {
+		var tagsRaw, previewRaw string
+		if err := rows.Scan(&n.Dir, &n.Name, &n.Size, &createdNs, &updNs, &indexed, &n.Kind, &n.Title, &pinned, &n.CompileCount, &tagsRaw, &previewRaw); err != nil {
 			return nil, fmt.Errorf("storage: scan note: %w", err)
 		}
 		n.CreatedAt = time.Unix(0, createdNs)
 		n.UpdatedAt = time.Unix(0, updNs)
 		n.Indexed = indexed == 1
 		n.Pinned = pinned == 1
+		n.Preview = unmarshalPreview(previewRaw)
 		n.Tags = splitTags(tagsRaw)
 		notes = append(notes, n)
 	}
@@ -471,15 +559,16 @@ func dbUpsert(db *sql.DB, n Note) error {
 		updNs = n.UpdatedAt.UnixNano()
 	}
 	_, err := db.Exec(`
-		INSERT INTO notes(dir, name, size, created_at, updated_at, indexed, kind, title, tags)
-		VALUES (?, ?, ?, ?, ?, 0, ?, ?, ?)
+		INSERT INTO notes(dir, name, size, created_at, updated_at, indexed, kind, title, tags, preview)
+		VALUES (?, ?, ?, ?, ?, 0, ?, ?, ?, ?)
 		ON CONFLICT(dir, name) DO UPDATE SET
 		    size        = excluded.size,
 		    updated_at  = excluded.updated_at,
 		    indexed     = CASE WHEN excluded.updated_at > notes.updated_at THEN 0 ELSE notes.indexed END,
 		    title       = CASE WHEN excluded.title != '' THEN excluded.title ELSE notes.title END,
-		    tags        = excluded.tags`,
-		n.Dir, n.Name, n.Size, now, updNs, string(n.Kind), n.Title, joinTags(n.Tags),
+		    tags        = excluded.tags,
+		    preview     = excluded.preview`,
+		n.Dir, n.Name, n.Size, now, updNs, string(n.Kind), n.Title, joinTags(n.Tags), marshalPreview(n.Preview),
 	)
 	return err
 }
@@ -930,8 +1019,8 @@ func dbInsertFull(db *sql.DB, n Note) error {
 	}
 	updNs := n.UpdatedAt.UnixNano()
 	_, err := db.Exec(`
-		INSERT INTO notes(dir, name, size, created_at, updated_at, indexed, kind, title, compile_count, tags)
-		VALUES (?, ?, ?, ?, ?, 0, ?, ?, ?, ?)
+		INSERT INTO notes(dir, name, size, created_at, updated_at, indexed, kind, title, compile_count, tags, preview)
+		VALUES (?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?)
 		ON CONFLICT(dir, name) DO UPDATE SET
 		    size          = excluded.size,
 		    created_at    = excluded.created_at,
@@ -940,8 +1029,9 @@ func dbInsertFull(db *sql.DB, n Note) error {
 		    kind          = excluded.kind,
 		    title         = excluded.title,
 		    compile_count = excluded.compile_count,
-		    tags          = excluded.tags`,
-		n.Dir, n.Name, n.Size, createdNs, updNs, string(n.Kind), n.Title, n.CompileCount, joinTags(n.Tags),
+		    tags          = excluded.tags,
+		    preview       = excluded.preview`,
+		n.Dir, n.Name, n.Size, createdNs, updNs, string(n.Kind), n.Title, n.CompileCount, joinTags(n.Tags), marshalPreview(n.Preview),
 	)
 	return err
 }
@@ -959,7 +1049,7 @@ func dbSetPinned(db *sql.DB, p Path, pinned bool) error {
 // dbListPinned returns all notes where pinned = 1, ordered by updated_at DESC.
 func dbListPinned(db *sql.DB) ([]Note, error) {
 	rows, err := db.Query(`
-		SELECT dir, name, size, created_at, updated_at, indexed, kind, title, pinned, compile_count, tags
+		SELECT dir, name, size, created_at, updated_at, indexed, kind, title, pinned, compile_count, tags, preview
 		FROM notes WHERE pinned = 1
 		ORDER BY updated_at DESC`)
 	if err != nil {
@@ -972,6 +1062,15 @@ func dbListPinned(db *sql.DB) ([]Note, error) {
 // dbSetTitle sets the title column for the note path.
 func dbSetTitle(db *sql.DB, p Path, title string) error {
 	_, err := db.Exec(`UPDATE notes SET title = ? WHERE dir = ? AND name = ?`, title, p.Dir(), p.Base())
+	return err
+}
+
+// dbSetPreview sets the preview column for the note path, without touching
+// any other column (dbUpsert's preview overwrite would need tags/title/etc.
+// passed back through too, or it'd clobber them — this is the narrower tool
+// for a preview-only update). Used by Vault.BackfillPreviews.
+func dbSetPreview(db *sql.DB, p Path, preview NotePreview) error {
+	_, err := db.Exec(`UPDATE notes SET preview = ? WHERE dir = ? AND name = ?`, marshalPreview(preview), p.Dir(), p.Base())
 	return err
 }
 
@@ -1586,4 +1685,21 @@ func splitTags(s string) []string {
 		return nil
 	}
 	return strings.Split(s, "\n")
+}
+
+// marshalPreview serialises a NotePreview to the JSON object stored in the
+// notes.preview column. Marshaling a struct of string fields cannot fail.
+func marshalPreview(p NotePreview) string {
+	b, _ := json.Marshal(p) //nolint:errcheck
+	return string(b)
+}
+
+// unmarshalPreview parses the notes.preview column back into a NotePreview.
+// A blank or malformed value (e.g. a database file edited by hand) yields
+// the zero value rather than an error, since preview is a disposable cache
+// that the next write regenerates.
+func unmarshalPreview(raw string) NotePreview {
+	var p NotePreview
+	_ = json.Unmarshal([]byte(raw), &p) //nolint:errcheck
+	return p
 }

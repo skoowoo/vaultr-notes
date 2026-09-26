@@ -14,6 +14,7 @@ type noteItem struct {
 	Name        string
 	Title       string // LLM-generated title; non-empty for distill notes
 	Dir         string
+	Preview     string // short content excerpt (storage.Note.Preview.Text); empty when not yet computed
 	Path        string
 	UpdatedAt   string
 	URL         string // full view page URL
@@ -26,6 +27,8 @@ type noteItem struct {
 	IsCompiled  bool   // true when raw note has been compiled at least once (compile_count>0, not knowledge/index)
 	DepCount    int    // number of knowledge deps; set on index cards
 	Cover       string // image filename only; empty = no cover
+	TodoTotal   int    // GFM task-list checkboxes anywhere in the note; 0 = no checklist
+	TodoDone    int    // how many of TodoTotal are checked
 }
 
 // noteToItem converts a storage.Note to a noteItem for template rendering.
@@ -38,6 +41,9 @@ func noteToItem(n storage.Note) noteItem {
 		Name:        strings.TrimSuffix(n.Name, ".md"),
 		Title:       n.Title,
 		Dir:         n.Dir,
+		Preview:     n.Preview.Text,
+		TodoTotal:   n.Preview.TodoTotal,
+		TodoDone:    n.Preview.TodoDone,
 		Path:        n.PathString(),
 		UpdatedAt:   formatRelativeTime(n.UpdatedAt),
 		Pinned:      n.Pinned,

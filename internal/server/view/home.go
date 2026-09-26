@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"html/template"
+	"math"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -408,7 +409,31 @@ var homeTemplateFuncs = template.FuncMap{
 		}
 		return "/api/images/serve?name=" + url.QueryEscape(name)
 	},
+	// todoRingDash returns the stroke-dasharray for the todo progress ring
+	// (see .home-note-badge--todo-fill): "<filled length> <circumference>",
+	// where filled is the arc length representing done/total around a
+	// circle of radius todoRingRadius. The gap value only needs to be at
+	// least the circle's full circumference — however much filled leaves
+	// unused just stays empty, which is exactly the un-done remainder.
+	"todoRingDash": func(done, total int) string {
+		if total <= 0 {
+			return fmt.Sprintf("0 %.2f", todoRingCircumference)
+		}
+		ratio := float64(done) / float64(total)
+		if ratio < 0 {
+			ratio = 0
+		} else if ratio > 1 {
+			ratio = 1
+		}
+		return fmt.Sprintf("%.2f %.2f", todoRingCircumference*ratio, todoRingCircumference)
+	},
 }
+
+// todoRingRadius matches the <circle r="..."> in the "rows" template's
+// .home-note-badge--todo markup — keep the two in sync if that ever changes.
+const todoRingRadius = 8.0
+
+var todoRingCircumference = 2 * math.Pi * todoRingRadius
 
 const homeSectionRowsHTML = `{{define "rows"}}{{range .Items}}
 <div class="list-card list-card--clickable home-list-card home-note-row{{if .Cover}} has-cover{{end}}" @click="__vaultrOpenNote($event.currentTarget)"
@@ -418,13 +443,20 @@ const homeSectionRowsHTML = `{{define "rows"}}{{range .Items}}
      data-note-can-compile="{{.CanCompile}}" data-note-pinned="{{.Pinned}}">
   {{if .Cover}}<div class="home-note-cover" aria-hidden="true"><img src="{{coverURL .Cover}}" alt="" draggable="false" loading="lazy" decoding="async"></div>{{end}}
   <div class="home-note-row-top">
-    <span class="home-note-row-title">{{label .}}</span>
+    <div class="home-note-row-titleblock">
+      <div class="home-note-row-titlerow">
+        <span class="home-note-row-title">{{label .}}</span>
+        {{if .TodoTotal}}{{if eq .TodoDone .TodoTotal}}<span class="home-note-badge home-note-badge--done" title="{{.TodoDone}}/{{.TodoTotal}} done"><svg fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span>{{else}}<span class="home-note-badge home-note-badge--todo" title="{{.TodoDone}}/{{.TodoTotal}}"><svg viewBox="0 0 20 20"><circle class="home-note-badge--todo-track" cx="10" cy="10" r="8"/><circle class="home-note-badge--todo-fill" cx="10" cy="10" r="8" transform="rotate(-90 10 10)" stroke-dasharray="{{todoRingDash .TodoDone .TodoTotal}}"/></svg></span>{{end}}{{end}}
+      </div>
+      {{if .Preview}}<span class="home-note-row-preview-grid">{{.Preview}}</span>{{end}}
+    </div>
     <div class="home-note-row-badges">
       {{if .Pinned}}<span class="home-note-badge home-note-badge--pin" title="Pinned"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M17 3a2 2 0 0 1 2 2v15a1 1 0 0 1-1.496.868l-4.512-2.578a2 2 0 0 0-1.984 0l-4.512 2.578A1 1 0 0 1 5 20V5a2 2 0 0 1 2-2z"/></svg></span>{{end}}
       {{if .IsCompiled}}<span class="home-note-badge home-note-badge--done" title="Compiled"><svg fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span>{{end}}
     </div>
   </div>
   <div class="home-note-row-meta">
+    {{if .Preview}}<span class="home-note-row-preview">{{.Preview}}</span>{{end}}
     <span class="home-note-row-dir">{{.Dir}}</span>
     <span class="home-note-row-time">{{.UpdatedAt}}</span>
   </div>

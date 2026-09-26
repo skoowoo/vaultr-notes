@@ -406,6 +406,45 @@ func (g *Vault) BackfillKnowledgeLinks(knowledgeOutputDir string) error {
 	return nil
 }
 
+// BackfillPreviews recomputes the preview column (excerpt text + checklist/
+// image/code flags — see util.GeneratePreview) for every note currently
+// registered in the metadata DB, reading each one's content fresh from disk.
+// Unlike ScanAndRegisterFull, it only touches the preview column — kind,
+// tags, knowledge deps, and the search index are all left exactly as they
+// are. Used by `vaultr init --preview-only` to backfill a vault that predates
+// the preview feature (or one last registered by a version of
+// ScanAndRegisterFull that didn't compute it), without redoing the rest of a
+// full rescan. A note whose file can't be read (permissions, removed
+// mid-run) is skipped rather than aborting the rest of the batch — preview is
+// a disposable cache, not something worth failing the whole command over.
+func (g *Vault) BackfillPreviews() (int, error) {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+
+	notes, err := dbListAll(g.db, ListOptions{})
+	if err != nil {
+		return 0, fmt.Errorf("storage: backfill previews: list notes: %w", err)
+	}
+
+	count := 0
+	for _, n := range notes {
+		absPath, err := g.osPath(n.Path())
+		if err != nil {
+			continue
+		}
+		data, err := os.ReadFile(absPath)
+		if err != nil {
+			continue
+		}
+		preview := notePreviewFromSummary(util.GeneratePreview(data, 0))
+		if err := dbSetPreview(g.db, n.Path(), preview); err != nil {
+			continue
+		}
+		count++
+	}
+	return count, nil
+}
+
 // SetNoteTitle sets the title column for the note at p.
 func (g *Vault) SetNoteTitle(p Path, title string) error {
 	g.mu.Lock()
@@ -1572,65 +1611,69 @@ func (g *Vault) ScanAndRegisterFull(knowledgeOutputDir string) (int, error) {
 			Kind:      "",
 		}
 
+		// Read once and reuse for kind detection below and for preview — every
+		// other registration path (WriteNote, the fs watcher) already computes
+		// preview from the content it just touched, and a full rescan is the
+		// one path that previously never read plain notes' content at all, so
+		// they came out of it with an empty preview until individually re-saved.
+		data, readErr := os.ReadFile(absPath)
+
 		// Detect knowledge notes by path prefix and `kind: knowledge` frontmatter,
 		// matching the runtime check in the compile plugin.
 		isUnderKnowledgeDir := slashRel == knowledgeOutputDir ||
 			strings.HasPrefix(slashRel, distillPrefix)
-		if isUnderKnowledgeDir {
-			data, readErr := os.ReadFile(absPath)
-			if readErr == nil {
-				fm, body := util.ParseFrontmatter(data)
-				if fm.HasMeta() {
-					var kind, title, domain, entityType string
-					var compileCount int
-					var srcNotes []string
-					for _, e := range fm.All {
-						switch e.Key {
-						case "kind":
-							kind = e.Value
-						case "title":
-							title = e.Value
-						case "domain":
-							domain = e.Value
-						case "compile_count":
-							if cv, err := strconv.Atoi(strings.TrimSpace(e.Value)); err == nil {
-								compileCount = cv
-							}
-						case "source_notes":
-							srcNotes = e.List
-						case "entity_type":
-							entityType = strings.TrimSpace(e.Value)
+		if isUnderKnowledgeDir && readErr == nil {
+			fm, body := util.ParseFrontmatter(data)
+			if fm.HasMeta() {
+				var kind, title, domain, entityType string
+				var compileCount int
+				var srcNotes []string
+				for _, e := range fm.All {
+					switch e.Key {
+					case "kind":
+						kind = e.Value
+					case "title":
+						title = e.Value
+					case "domain":
+						domain = e.Value
+					case "compile_count":
+						if cv, err := strconv.Atoi(strings.TrimSpace(e.Value)); err == nil {
+							compileCount = cv
 						}
+					case "source_notes":
+						srcNotes = e.List
+					case "entity_type":
+						entityType = strings.TrimSpace(e.Value)
 					}
-					switch {
-					case strings.EqualFold(kind, "knowledge"):
-						n.Kind = KindKnowledge
-						n.Title = title
-						n.CompileCount = compileCount
-						n.Tags = fm.Tags
-						if len(srcNotes) > 0 {
-							depsToRecord = append(depsToRecord, kDep{
-								path:        Path(slashRel),
-								sourceNotes: srcNotes,
-							})
-						}
-						// Collect wikilink targets for K→K edge resolution after walk.
-						if wlNames := util.ExtractWikilinkNames(body); len(wlNames) > 0 {
-							linksToRecord = append(linksToRecord, kLink{
-								path:          Path(slashRel),
-								entityType:    entityType,
-								wikilinkNames: wlNames,
-							})
-						}
-					case strings.EqualFold(kind, "index"):
-						n.Kind = KindIndex
-						n.Title = domain
-						n.Tags = fm.Tags
-						indexDepsToRecord = append(indexDepsToRecord, iDep{
-							path: Path(slashRel),
-							body: body,
+				}
+				switch {
+				case strings.EqualFold(kind, "knowledge"):
+					n.Kind = KindKnowledge
+					n.Title = title
+					n.CompileCount = compileCount
+					n.Tags = fm.Tags
+					if len(srcNotes) > 0 {
+						depsToRecord = append(depsToRecord, kDep{
+							path:        Path(slashRel),
+							sourceNotes: srcNotes,
 						})
 					}
+					// Collect wikilink targets for K→K edge resolution after walk.
+					if wlNames := util.ExtractWikilinkNames(body); len(wlNames) > 0 {
+						linksToRecord = append(linksToRecord, kLink{
+							path:          Path(slashRel),
+							entityType:    entityType,
+							wikilinkNames: wlNames,
+						})
+					}
+				case strings.EqualFold(kind, "index"):
+					n.Kind = KindIndex
+					n.Title = domain
+					n.Tags = fm.Tags
+					indexDepsToRecord = append(indexDepsToRecord, iDep{
+						path: Path(slashRel),
+						body: body,
+					})
 				}
 			}
 		}
@@ -1639,10 +1682,13 @@ func (g *Vault) ScanAndRegisterFull(knowledgeOutputDir string) (int, error) {
 		// configured shorts directory.
 		shortsVaultPrefix := "/" + strings.Trim(g.shortsDir, "/") + "/"
 		if n.Kind == "" && strings.HasPrefix(slashRel, shortsVaultPrefix) {
-			data, readErr := os.ReadFile(absPath)
 			if readErr == nil && util.IsShortNote(data) {
 				n.Kind = KindShort
 			}
+		}
+
+		if readErr == nil {
+			n.Preview = notePreviewFromSummary(util.GeneratePreview(data, 0))
 		}
 
 		if dbErr := dbInsertFull(g.db, n); dbErr != nil {
@@ -1846,6 +1892,7 @@ func (g *Vault) writeNoteLocked(p Path, data []byte, meta Note) (isNew bool, mod
 	if fm, _ := util.ParseFrontmatter(data); len(fm.Tags) > 0 {
 		meta.Tags = fm.Tags
 	}
+	meta.Preview = notePreviewFromSummary(util.GeneratePreview(data, 0))
 	if dbErr := dbUpsert(g.db, meta); dbErr != nil {
 		return false, time.Time{}, fmt.Errorf("vault: metadata upsert %q: %w", p.String(), dbErr)
 	}

@@ -17,6 +17,7 @@ var (
 	vaultInitLinkImagesOnly bool
 	vaultInitReindex        bool
 	vaultInitRebuildGraph   bool
+	vaultInitPreviewOnly    bool
 )
 
 func newInitCmd() *cobra.Command {
@@ -42,6 +43,8 @@ directory and search indexing behaviour.`,
 		"delete and rebuild the full-text search index from scratch (requires an existing .vaultr/ in the vault)")
 	cmd.Flags().BoolVar(&vaultInitRebuildGraph, "rebuild-graph", false,
 		"rebuild the knowledge graph link index from scratch (requires an existing .vaultr/ in the vault)")
+	cmd.Flags().BoolVar(&vaultInitPreviewOnly, "preview-only", false,
+		"recompute every note's preview (content excerpt + checklist/image/code flags) (requires an existing .vaultr/ in the vault)")
 	return cmd
 }
 
@@ -107,6 +110,19 @@ func runVaultInit(_ *cobra.Command, args []string) error {
 		return runRebuildGraph(vault)
 	}
 
+	if vaultInitPreviewOnly {
+		if !initd {
+			fmt.Fprintf(os.Stderr, "Not a Vaultr vault (missing %s); run vaultr init first.\n", filepath.Join(root, ".vaultr"))
+			return fmt.Errorf("vault not initialized")
+		}
+		vault, err := storage.New(root)
+		if err != nil {
+			return fmt.Errorf("open vault: %w", err)
+		}
+		defer vault.Close()
+		return runPreviewOnly(vault)
+	}
+
 	if initd {
 		fmt.Printf("Already initialized (%s exists); skipping.\n", filepath.Join(root, ".vaultr"))
 		return nil
@@ -167,6 +183,16 @@ func runLinkImagesWork(vault *storage.Vault) error {
 		return fmt.Errorf("link images: %w", err)
 	}
 	fmt.Println("Done.")
+	return nil
+}
+
+func runPreviewOnly(vault *storage.Vault) error {
+	fmt.Println("Recomputing note previews...")
+	count, err := vault.BackfillPreviews()
+	if err != nil {
+		return fmt.Errorf("backfill previews: %w", err)
+	}
+	fmt.Printf("Recomputed preview for %d notes\n", count)
 	return nil
 }
 

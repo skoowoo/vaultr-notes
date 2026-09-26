@@ -165,12 +165,22 @@ func (w *Watcher) syncUpsert(relPath string, info os.FileInfo) bool {
 		return false
 	}
 
+	// Read the file so an out-of-band change (external editor, sync client)
+	// keeps preview current too, not just size/mtime.
+	var preview NotePreview
+	if abs, absErr := w.g.osPath(p); absErr == nil {
+		if data, readErr := os.ReadFile(abs); readErr == nil {
+			preview = notePreviewFromSummary(util.GeneratePreview(data, 0))
+		}
+	}
+
 	w.g.mu.Lock()
 	err := dbUpsert(w.g.db, Note{
 		Dir:       p.Dir(),
 		Name:      p.Base(),
 		Size:      info.Size(),
 		UpdatedAt: info.ModTime(),
+		Preview:   preview,
 	})
 	w.g.mu.Unlock()
 

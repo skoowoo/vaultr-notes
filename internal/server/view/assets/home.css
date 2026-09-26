@@ -436,7 +436,7 @@
        container's layout mode and a few of the row's own rules change. */
     .home-list-body.is-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(216px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
       align-content: start;
       gap: 0.85rem;
     }
@@ -444,13 +444,45 @@
        rows keep that one untouched) — cards read a little too tight at this
        larger min-width otherwise. */
     .home-list-body.is-grid .home-list-card { margin-bottom: 0; display: flex; flex-direction: column; padding: 1rem 1.35rem; }
+    /* Badges pin to the title's first line, not the vertical center of the
+       whole (now possibly multi-line) title+excerpt block below. */
+    .home-list-body.is-grid .home-note-row-top { align-items: flex-start; }
+    /* A 2-line title still only puts the ring next to its first line, not
+       stretched/centered across the whole clamped block. */
+    .home-list-body.is-grid .home-note-row-titlerow { align-items: flex-start; }
+    /* Title fills up to 2 (title-sized) lines and the excerpt takes
+       whatever's left of a budget worth "2 lines of title + 2 lines of
+       excerpt" — a short 1-line title hands its unused line to the excerpt
+       instead of sitting there as blank space, while a full 2-line title
+       still leaves the excerpt some room. The budget is spelled out from
+       each font's own size/line-height rather than one shared em value:
+       title and excerpt don't share a font-size, so "N generic lines" of
+       .home-note-row-titleblock's own (inherited, third) font-size doesn't
+       equal N lines of either child's actual text — it was quietly letting
+       excerpts run a full extra line over budget. Capping the whole block
+       (instead of also flooring it there) is deliberate: it bounds how tall
+       any one card can get without forcing short titles/excerpts to pad
+       themselves out to match — CSS grid already aligns a row's cards to
+       its tallest member on its own. */
+    .home-list-body.is-grid .home-note-row-titleblock {
+      max-height: calc(2 * var(--text-base) * var(--lh-normal) + 2 * var(--text-sm) * var(--lh-normal));
+      overflow: hidden;
+    }
     .home-list-body.is-grid .home-note-row-title {
       white-space: normal; display: -webkit-box;
       -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
-      /* Reserve 2 lines' height even for a title that only fills one — a
-         short-title card would otherwise come out shorter than its
-         2-line neighbors in the same grid row. */
-      min-height: calc(var(--lh-normal) * 2em);
+    }
+    .home-list-body.is-grid .home-note-row-preview-grid {
+      display: -webkit-box; margin-top: 0.25rem;
+      font-size: var(--text-sm); font-weight: var(--fw-normal); color: var(--muted);
+      line-height: var(--lh-normal);
+      /* Its own clamp (rather than relying only on the titleblock's overflow
+         cutoff above) keeps this to whole lines with a trailing "…" when it
+         doesn't fit — a plain overflow:hidden cutoff can slice a line in
+         half instead. The titleblock's max-height is still what actually
+         varies how many of these lines end up visible when the title above
+         took 2 lines instead of 1. */
+      -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
     }
     .home-list-body.is-grid .home-note-row-meta { margin-top: auto; padding-top: 0.5rem; }
     /* Cover fills the whole card as a background; it is out of flow so the
@@ -481,13 +513,15 @@
       transition: transform var(--motion-base);
     }
     .home-list-body.is-grid .has-cover:hover .home-note-cover img { transform: scale(1.04); }
-    .home-list-body.is-grid .has-cover > :not(.home-note-cover) { position: relative; z-index: 1; }
     .home-list-body.is-grid .has-cover .home-note-row-title { color: #fff; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45); }
+    .home-list-body.is-grid .has-cover .home-note-row-preview-grid,
     .home-list-body.is-grid .has-cover .home-note-row-dir,
     .home-list-body.is-grid .has-cover .home-note-row-time { color: rgba(255, 255, 255, 0.78); text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45); }
     .home-list-body.is-grid .has-cover .home-note-badge { color: #fff; border-color: rgba(255, 255, 255, 0.55); }
     .home-list-body.is-grid .has-cover .home-note-badge--pin { border-color: transparent; }
     .home-list-body.is-grid .has-cover .home-note-badge--done { background: #fff; color: #26262a; border-color: transparent; }
+    .home-list-body.is-grid .has-cover .home-note-badge--todo-track { stroke: rgba(255, 255, 255, 0.4); }
+    .home-list-body.is-grid .has-cover .home-note-badge--todo-fill { stroke: #fff; }
     .home-list-body.is-grid .home-load-sentinel,
     .home-list-body.is-grid .home-list-empty { grid-column: 1 / -1; }
 
@@ -607,20 +641,49 @@
     .home-list-body:not(.is-grid) .has-cover:hover .home-note-cover img {
       filter: brightness(1.08); transform: scale(1.02);
     }
-    .home-list-body:not(.is-grid) .has-cover > :not(.home-note-cover) { position: relative; z-index: 1; }
     @media (max-width: 520px) {
       .home-list-body:not(.is-grid) .home-note-cover { display: none; }
+    }
+    /* The cover photo is absolutely positioned with no z-index of its own
+       (auto). That would still paint above normal-flow siblings by default
+       (any positioned element beats a static one, regardless of source
+       order), so the two real content blocks are bumped into the
+       positioned-but-unraised layer to sit back on top. */
+    .home-note-row-top,
+    .home-note-row-meta {
+      position: relative; z-index: 1;
     }
     .home-note-row-top {
       display: flex; align-items: center; justify-content: space-between;
       gap: 0.75rem; margin-bottom: 0.3rem;
     }
+    /* Wraps the title (and, grid-only, its preview excerpt) so the pair can
+       share one flex slot in .home-note-row-top; list mode gives it no
+       styling of its own beyond the flex sizing .home-note-row-title used
+       to carry directly. */
+    .home-note-row-titleblock { flex: 1; min-width: 0; }
+    /* Pairs the title with its checklist progress ring (when there is one)
+       on the same line, right next to the text it's progress on — rather
+       than off in the corner badge row with pin/compiled, which reads as
+       this note's *status* (pinned, compiled) more than a property of the
+       title itself. */
+    .home-note-row-titlerow { display: flex; align-items: center; gap: 0.35rem; min-width: 0; }
     .home-note-row-title {
-      flex: 1; min-width: 0;
+      /* Grow:0 (not flex:1) is deliberate — this sits in a row with the
+         optional todo ring now, and a growing title would claim all of
+         that row's width even when the text itself is short, stranding
+         the ring off at the row's far edge instead of snug against the
+         text. Shrink:1 + min-width:0 still let a genuinely long title give
+         up width down to its own ellipsis, same as before. */
+      flex: 0 1 auto; min-width: 0;
       font-size: var(--text-base); font-weight: var(--fw-semibold); color: var(--fg);
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
       border-radius: 0; line-height: var(--lh-normal);
     }
+    /* Grid-only excerpt shown under the title (see the .is-grid rules
+       below); list mode keeps its excerpt down on the path line instead
+       (.home-note-row-preview), so this stays hidden there. */
+    .home-note-row-preview-grid { display: none; }
     .home-note-row-badges { flex-shrink: 0; display: flex; align-items: center; gap: 0.3rem; }
     .home-note-badge {
       flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center;
@@ -633,10 +696,31 @@
     .home-note-badge--done { background: var(--fg); color: var(--bg); border-color: transparent; }
     .home-note-badge--pin { background: transparent; border-color: transparent; color: var(--fg); }
     .home-note-badge--pin svg { width: 14px; height: 14px; }
+    /* Checklist progress ring — same size as the pin/compiled circles, just
+       filled by an SVG arc instead of an icon glyph, so a partly-done
+       checklist reads as "how much" at a glance without spelling out a
+       fraction in text (title="n/m" still gives the exact count on hover).
+       Colored with the user's own accent (not --fg) specifically so it
+       stands out as a highlight next to the plain-colored title, rather
+       than blending in as just another gray/black UI glyph — track and
+       fill share that same hue (a light tint vs. the solid color) rather
+       than pairing it with a neutral gray track, so the ring reads as one
+       deliberately-colored unit. Once done/total reaches 1:1 the template
+       swaps this out for the same solid checkmark .home-note-badge--done
+       already uses elsewhere (a compiled note) — one shared "done" visual
+       language project-wide, rather than a second checkmark style just for
+       checklists. */
+    .home-note-badge--todo { border-color: transparent; padding: 0; }
+    .home-note-badge--todo svg { width: 100%; height: 100%; }
+    .home-note-badge--todo-track { fill: none; stroke: rgba(var(--accent-rgb), 0.22); stroke-width: 2.5; }
+    .home-note-badge--todo-fill {
+      fill: none; stroke: var(--accent); stroke-width: 2.5; stroke-linecap: round;
+    }
     .home-note-row-meta {
       display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;
     }
-    .home-note-row-dir {
+    .home-note-row-dir,
+    .home-note-row-preview {
       flex: 1; min-width: 0; font-size: var(--text-sm); color: var(--muted);
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
       border-radius: 0;
@@ -644,6 +728,24 @@
     .home-note-row-time {
       flex-shrink: 0; font-size: var(--text-sm); color: var(--muted);
       font-variant-numeric: tabular-nums;
+    }
+    /* When a note has a preview excerpt, it takes over the path line — the
+       path span itself stays in the DOM (list mode's .home-note-row-preview
+       is still the sibling hook this relies on; grid mode's excerpt lives
+       in .home-note-row-preview-grid instead, up by the title, but the
+       hidden .home-note-row-preview sibling is still rendered either way
+       and still does its job here) — just hidden. No excerpt means nothing
+       to hide, and the path shows exactly as before, in both modes.
+       (Element order in the "rows" template matters: .home-note-row-preview
+       comes before .home-note-row-dir for this ~ combinator to match.) */
+    .home-note-row-preview ~ .home-note-row-dir {
+      display: none;
+    }
+    /* List mode shows the excerpt right on the path line; grid mode shows
+       it up by the title instead (.home-note-row-preview-grid) — so grid
+       hides this copy, same as before the excerpt existed. */
+    .home-list-body.is-grid .home-note-row-preview {
+      display: none;
     }
 
     /* ── Sentinel / empty ─────────────────────────────────────── */

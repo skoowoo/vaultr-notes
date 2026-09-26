@@ -5,6 +5,8 @@ import (
 	"path"
 	"strings"
 	"time"
+
+	"github.com/hardhacker/vaultr/internal/util"
 )
 
 // PathParts splits a vault-absolute path into (dir, name).
@@ -95,17 +97,47 @@ const (
 // Note is the metadata for a single markdown file inside a Vault.
 // It never carries content; use Vault.ReadNote for that.
 type Note struct {
-	Dir          string    `json:"dir"`  // vault-absolute directory path; "/" = vault root
-	Name         string    `json:"name"` // base filename, e.g. "april.md"
-	Size         int64     `json:"size,omitempty"`
-	CreatedAt    time.Time `json:"created_at,omitempty"`
-	UpdatedAt    time.Time `json:"updated_at"`
-	Indexed      bool      `json:"indexed,omitempty"`
-	Pinned       bool      `json:"pinned,omitempty"`
-	CompileCount int       `json:"compile_count,omitempty"`
-	Kind         Kind      `json:"kind,omitempty"`
-	Title        string    `json:"title,omitempty"` // human-readable title; set by plugins (e.g. compile), empty for raw notes
-	Tags         []string  `json:"tags,omitempty"`  // frontmatter tags
+	Dir          string      `json:"dir"`  // vault-absolute directory path; "/" = vault root
+	Name         string      `json:"name"` // base filename, e.g. "april.md"
+	Size         int64       `json:"size,omitempty"`
+	CreatedAt    time.Time   `json:"created_at,omitempty"`
+	UpdatedAt    time.Time   `json:"updated_at"`
+	Indexed      bool        `json:"indexed,omitempty"`
+	Pinned       bool        `json:"pinned,omitempty"`
+	CompileCount int         `json:"compile_count,omitempty"`
+	Kind         Kind        `json:"kind,omitempty"`
+	Title        string      `json:"title,omitempty"` // human-readable title; set by plugins (e.g. compile), empty for raw notes
+	Tags         []string    `json:"tags,omitempty"`  // frontmatter tags
+	Preview      NotePreview `json:"preview"`         // cached content summary, recomputed on every write
+}
+
+// NotePreview holds cached, cheap-to-render summary information about a
+// note's content, refreshed on every write (see Vault.writeNoteLocked).
+// It's stored as a single JSON object in the notes.preview column rather
+// than one column per field, so more summary info (e.g. a detected cover
+// color, estimated reading time) can be added later as a new field here,
+// without another schema migration.
+type NotePreview struct {
+	Text      string `json:"text,omitempty"`       // short excerpt of the body; see util.GeneratePreview
+	TodoTotal int    `json:"todo_total,omitempty"` // GFM task-list checkboxes anywhere in the note
+	TodoDone  int    `json:"todo_done,omitempty"`  // how many of those are checked
+	HasImage  bool   `json:"has_image,omitempty"`  // note contains at least one embedded image
+	HasCode   bool   `json:"has_code,omitempty"`   // note contains at least one fenced/indented code block
+}
+
+// notePreviewFromSummary converts a util.GeneratePreview result into the
+// persisted NotePreview shape. A small named conversion, rather than passing
+// util.PreviewSummary around directly, keeps the notes.preview JSON shape
+// (and its field names/tags) owned by storage rather than by util's parsing
+// internals.
+func notePreviewFromSummary(sum util.PreviewSummary) NotePreview {
+	return NotePreview{
+		Text:      sum.Text,
+		TodoTotal: sum.TodoTotal,
+		TodoDone:  sum.TodoDone,
+		HasImage:  sum.HasImage,
+		HasCode:   sum.HasCode,
+	}
 }
 
 // Path returns the Note's full vault-absolute path as a Path object.

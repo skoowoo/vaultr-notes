@@ -103,6 +103,14 @@
       });
       if (r.ok) {
         __vaultrEditor.dirty = false; __vaultrEditorSaveStatus('Saved');
+        // A plain content save is by far the most frequent vault mutation
+        // (every ~800ms of idle-after-typing) — unlike pin/delete/rename/move,
+        // which go through window.__vaultrAfterVaultMutation() and refetch +
+        // re-render the whole active section, this patches only the one row
+        // that could have changed, straight from the save response, with no
+        // extra request at all.
+        var saved = null; try { saved = await r.json(); } catch(_) {}
+        if (saved) __vaultrPatchNoteRowAfterSave(path, saved);
       } else {
         var errText = ''; try { errText = await r.text(); } catch(_) {}
         window.showError(errText || 'Server error — your changes may not be saved.', 'Save error');
@@ -110,6 +118,37 @@
     } catch(e) {
       window.showError((e && e.message) || 'Network error — your changes may not be saved.', 'Save error');
     }
+  }
+  // Mirrors the "rows" template's path-line markup (home.go): a
+  // .home-note-row-preview span shown when there's an excerpt, replacing
+  // the (still-present, CSS-hidden) .home-note-row-dir span — see
+  // home.css's ":not(.is-grid) .home-note-row-preview ~ .home-note-row-dir"
+  // rule. Only touches the row if it's actually rendered in the list right
+  // now; most saves happen while some other section is showing, and there's
+  // nothing to patch then.
+  function __vaultrPatchNoteRowAfterSave(path, note) {
+    var row = document.querySelector('.home-note-row[data-note-path="' + CSS.escape(path) + '"]');
+    if (!row) return;
+    var meta = row.querySelector('.home-note-row-meta');
+    if (!meta) return;
+
+    var previewEl = meta.querySelector('.home-note-row-preview');
+    var previewText = (note.preview && note.preview.text) || '';
+    if (previewText) {
+      if (!previewEl) {
+        previewEl = document.createElement('span');
+        previewEl.className = 'home-note-row-preview';
+        meta.insertBefore(previewEl, meta.firstChild);
+      }
+      previewEl.textContent = previewText;
+    } else if (previewEl) {
+      previewEl.remove();
+    }
+
+    // formatRelativeTime (search.go) returns exactly this for anything under
+    // a minute old, which a just-completed save always is.
+    var timeEl = meta.querySelector('.home-note-row-time');
+    if (timeEl) timeEl.textContent = 'just now';
   }
 
   // ── Misc helpers ─────────────────────────────────────────────────────────────
